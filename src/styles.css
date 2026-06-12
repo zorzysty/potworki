@@ -1,0 +1,264 @@
+@import "tailwindcss";
+
+/* Baloo 2 self-hostowany (variable 400–800) — gra ma działać też offline */
+@font-face {
+	font-family: "Baloo 2";
+	font-style: normal;
+	font-weight: 400 800;
+	font-display: swap;
+	src: url("./assets/fonts/baloo2-latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193,
+		U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: "Baloo 2";
+	font-style: normal;
+	font-weight: 400 800;
+	font-display: swap;
+	src: url("./assets/fonts/baloo2-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+		U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+		U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@custom-variant land (@media (min-aspect-ratio: 1/1));
+
+@theme {
+	--font-display: "Baloo 2", "Comic Sans MS", system-ui, sans-serif;
+	--color-grape: #7c5cf0;
+	--color-grape-dark: #5f45c4;
+	--color-bubblegum: #ff5e8a;
+	--color-sunny: #ffd95e;
+}
+
+html,
+body {
+	overscroll-behavior: none;
+}
+
+body {
+	font-family: var(--font-display);
+	-webkit-tap-highlight-color: transparent;
+	-webkit-touch-callout: none;
+	user-select: none;
+}
+
+/* ---------- animacje potworków (wnętrza SVG) ---------- */
+
+.monster-bob {
+	animation: bob 2.4s ease-in-out infinite;
+	transform-box: fill-box;
+	transform-origin: center bottom;
+}
+
+.monster-eyes {
+	animation: blink 4.4s ease-in-out infinite;
+	transform-box: fill-box;
+	transform-origin: center;
+}
+
+.monster-aura {
+	animation: aura-pulse 2.8s ease-in-out infinite;
+	transform-box: fill-box;
+	transform-origin: center;
+}
+
+@keyframes bob {
+	0%,
+	100% {
+		transform: translateY(0) scaleY(1);
+	}
+	50% {
+		transform: translateY(-5px) scaleY(1.02);
+	}
+}
+
+@keyframes blink {
+	0%,
+	93%,
+	100% {
+		transform: scaleY(1);
+	}
+	95%,
+	97% {
+		transform: scaleY(0.08);
+	}
+}
+
+@keyframes aura-pulse {
+	0%,
+	100% {
+		opacity: 0.16;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.3;
+		transform: scale(1.06);
+	}
+}
+
+/* ---------- animacje UI ---------- */
+
+.anim-shake {
+	animation: shake 0.45s ease-in-out;
+}
+
+@keyframes shake {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	20%,
+	60% {
+		transform: translateX(-9px);
+	}
+	40%,
+	80% {
+		transform: translateX(9px);
+	}
+}
+
+.anim-pop {
+	animation: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pop {
+	0% {
+		transform: scale(0.3);
+		opacity: 0;
+	}
+	100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+.anim-pop-in {
+	animation: pop-in 0.7s cubic-bezier(0.34, 1.8, 0.64, 1);
+}
+
+@keyframes pop-in {
+	0% {
+		transform: scale(0.1) rotate(-12deg);
+		opacity: 0;
+	}
+	70% {
+		transform: scale(1.12) rotate(3deg);
+	}
+	100% {
+		transform: scale(1) rotate(0);
+	}
+}
+
+.anim-wobble {
+	animation: wobble 0.5s ease-in-out;
+}
+
+@keyframes wobble {
+	0%,
+	100% {
+		transform: rotate(0);
+	}
+	25% {
+		transform: rotate(-7deg);
+	}
+	50% {
+		transform: rotate(6deg);
+	}
+	75% {
+		transform: rotate(-4deg);
+	}
+}
+
+.anim-float {
+	animation: float 2.6s ease-in-out infinite;
+}
+
+@keyframes float {
+	0%,
+	100% {
+		transform: translateY(0) rotate(-2deg);
+	}
+	50% {
+		transform: translateY(-8px) rotate(2deg);
+	}
+}
+
+.anim-fade-up {
+	animation: fade-up 0.4s ease-out both;
+}
+
+@keyframes fade-up {
+	0% {
+		transform: translateY(14px);
+		opacity: 0;
+	}
+	100% {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+.anim-rainbow {
+	animation: rainbow-shift 3s linear infinite;
+}
+
+@keyframes rainbow-shift {
+	0% {
+		filter: hue-rotate(0deg);
+	}
+	100% {
+		filter: hue-rotate(360deg);
+	}
+}
+
+.anim-sparkle {
+	animation: sparkle 1.4s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+	0%,
+	100% {
+		opacity: 0.5;
+		transform: scale(0.85);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.15);
+	}
+}
+
+.anim-glow {
+	animation: glow 1.6s ease-in-out infinite;
+}
+
+@keyframes glow {
+	0%,
+	100% {
+		box-shadow: 0 0 8px 1px rgb(255 217 94 / 0.55);
+	}
+	50% {
+		box-shadow: 0 0 20px 5px rgb(255 217 94 / 0.85);
+	}
+}
+
+.anim-bounce-slow {
+	animation: bounce-slow 1.8s ease-in-out infinite;
+}
+
+@keyframes bounce-slow {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-6px);
+	}
+}
+
+/* sylwetka nieodkrytego potworka */
+.monster-silhouette {
+	filter: brightness(0);
+	opacity: 0.3;
+}
