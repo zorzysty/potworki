@@ -26,7 +26,7 @@ Jeden store zustand (`src/store/store.ts`) koordynuje całość: ekrany to maszy
 
 ## Zasady projektowe (project-wide)
 
-1. **Szybkość tylko nagradza, nigdy nie karze**: brak widocznego stopera, brak auto-submitu (literówka nie może liczyć się jako błąd), błędna odpowiedź i tak daje fragment jajka, wolna poprawna odpowiedź daje pełny postęp przy 0 gwiazdek. Każda nowa mechanika musi respektować tę zasadę.
+1. **Szybkość tylko nagradza, nigdy nie karze**: brak widocznego stopera, błędna odpowiedź i tak daje fragment jajka, wolna poprawna odpowiedź daje pełny postęp przy 0 gwiazdek. Każda nowa mechanika musi respektować tę zasadę. (Odpowiedź zatwierdza się automatycznie po wpisaniu właściwej liczby cyfr — literówka liczy się jako pomyłka, świadoma decyzja na rzecz tempa.)
 2. Postęp dziecka jest święty: zamrożony seed katalogu potworków (szczegóły w `src/monsters/CLAUDE.md`) i obowiązkowe migracje zapisu (szczegóły w `src/store/CLAUDE.md`).
 3. UI wyłącznie po polsku; tablet-first (duże cele dotykowe, zdarzenia pointer, żadnych natywnych `<input>` — szczegóły w `src/CLAUDE.md`).
 

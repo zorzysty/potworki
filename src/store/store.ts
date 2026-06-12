@@ -177,7 +177,11 @@ export const useGame = create<GameState>()(
 				const { round } = get()
 				if (!round || (round.phase !== "answering" && round.phase !== "wrong")) return
 				if (round.answer.length >= 3) return
-				set({ round: { ...round, answer: round.answer + String(digit) } })
+				const answer = round.answer + String(digit)
+				set({ round: { ...round, answer } })
+				// auto-submit: gdy wpisano tyle cyfr, ile ma oczekiwany wynik
+				const digits = String(round.question.a * round.question.b).length
+				if (answer.length >= digits) get().pressConfirm()
 			},
 
 			pressBackspace: () => {
