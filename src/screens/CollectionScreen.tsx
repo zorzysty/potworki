@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { BigButton } from "../components/BigButton"
+import { HelpTip } from "../components/HelpTip"
 import { RARITY_META } from "../components/rarity"
 import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
@@ -34,22 +35,36 @@ export function CollectionScreen() {
 				<div className="text-2xl font-extrabold text-grape-dark">
 					Moje Potworki {ownedCount}/{MONSTER_COUNT}
 				</div>
-				<div className="rounded-full bg-white/80 px-4 py-2 text-lg font-extrabold text-amber-500 shadow">
-					✨ {iskierki}
+				<div className="flex items-center gap-1.5">
+					<HelpTip
+						placement="bottom"
+						align="right"
+						text="To twoje iskierki ✨. Dostajesz je, gdy z jajka wykluje się potworek, którego już masz. Uzbieraj ich dość, a kupisz Jajko Życzeń!"
+					/>
+					<div className="rounded-full bg-white/80 px-4 py-2 text-lg font-extrabold text-amber-500 shadow">
+						✨ {iskierki}
+					</div>
 				</div>
 			</div>
 
 			{iskierki > 0 && !allOwned && (
-				<BigButton
-					onClick={buyWishEgg}
-					trigger="tap"
-					variant="secondary"
-					disabled={iskierki < cost}
-					className="mx-auto w-full max-w-sm py-3 text-xl"
-				>
-					Jajko Życzeń 🌟 — {cost} ✨
-					{dreamMonsterId !== null && !(dreamMonsterId in ownedMonsters) && " (wymarzony!)"}
-				</BigButton>
+				<div className="mx-auto flex w-full max-w-sm items-center gap-2">
+					<BigButton
+						onClick={buyWishEgg}
+						trigger="tap"
+						variant="secondary"
+						disabled={iskierki < cost}
+						className="flex-1 py-3 text-xl"
+					>
+						Jajko Życzeń 🌟 — {cost} ✨
+						{dreamMonsterId !== null && !(dreamMonsterId in ownedMonsters) && " (wymarzony!)"}
+					</BigButton>
+					<HelpTip
+						placement="bottom"
+						align="right"
+						text="Kupujesz je za iskierki ✨. Masz wymarzonego potworka? Dostaniesz dokładnie jego — na pewno! Nie masz? Wykluje się jakiś nowy potworek, którego jeszcze nie masz. (Sam wymarzony jest za darmo i tylko sprawia, że zwykłe jajka częściej wykluwają właśnie jego.)"
+					/>
+				</div>
 			)}
 
 			<div className="grid grid-cols-3 gap-3 pb-6 min-[420px]:grid-cols-4">
@@ -121,16 +136,23 @@ export function CollectionScreen() {
 								Już go nie chcę 💔
 							</BigButton>
 						) : (
-							<BigButton
-								onClick={() => {
-									setDreamMonster(selected.id)
-									setSelectedId(null)
-								}}
-								trigger="tap"
-								className="w-full py-3 text-lg"
-							>
-								To mój wymarzony potworek! 💖
-							</BigButton>
+							<div className="flex w-full items-center gap-2">
+								<BigButton
+									onClick={() => {
+										setDreamMonster(selected.id)
+										setSelectedId(null)
+									}}
+									trigger="tap"
+									className="flex-1 py-3 text-lg"
+								>
+									To mój wymarzony potworek! 💖
+								</BigButton>
+								<HelpTip
+									placement="top"
+									align="right"
+									text="Zaznacz potworka, o którym marzysz. Będzie na ciebie czekał — częściej będzie się wykluwał, a Jajko Życzeń da ci dokładnie jego. Możesz mieć tylko jednego wymarzonego naraz."
+								/>
+							</div>
 						)}
 						<button
 							type="button"

@@ -17,6 +17,7 @@ Ten doc jest właścicielem `App.tsx`, `main.tsx`, `styles.css`, `components/`, 
 - Żadnych natywnych `<input>` w grze — iPad otwierałby klawiaturę systemową; odpowiedź renderowana w stylizowanym divie.
 - Wszystkie `@keyframes`, klasy `anim-*`/`monster-*` i custom variant `land:` (media `min-aspect-ratio: 1/1`, obsługuje landscape tabletu i laptop) żyją w `styles.css`.
 - Komponenty współdzielone w `components/`, pełne ekrany w `screens/`; metadane rzadkości (polskie etykiety, kolory) w `components/rarity.ts`.
+- Tooltipy wyjaśniające mechaniki dziecku: `components/HelpTip.tsx` — dotykowy znaczek „?" z dymkiem (`onPointerDown`, zatrzymuje propagację; przezroczysta warstwa zamyka). Nad przyciskiem `onPointerDown` umieszczać jako rodzeństwo w `relative` wrapperze (nie zagnieżdżać `<button>` w `<button>`).
 
 ## Work Guidance
 

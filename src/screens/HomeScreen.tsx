@@ -1,5 +1,6 @@
 import { BigButton } from "../components/BigButton"
 import { EggView } from "../components/EggView"
+import { HelpTip } from "../components/HelpTip"
 import { fragmentsForEgg, unlockedFactors } from "../game/facts"
 import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
@@ -47,21 +48,30 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					</div>
 				)}
 				{dreamMonsterId !== null && (
-					<button
-						type="button"
-						onPointerDown={() => goTo("collection")}
-						className="touch-manipulation flex flex-col items-center active:scale-95"
-					>
-						<div className="anim-glow rounded-3xl border-4 border-amber-300 bg-white/60 p-2">
-							<MonsterSvg
-								id={dreamMonsterId}
-								size={84}
-								animate={false}
-								className="monster-silhouette"
+					<div className="relative">
+						<button
+							type="button"
+							onPointerDown={() => goTo("collection")}
+							className="touch-manipulation flex flex-col items-center active:scale-95"
+						>
+							<div className="anim-glow rounded-3xl border-4 border-amber-300 bg-white/60 p-2">
+								<MonsterSvg
+									id={dreamMonsterId}
+									size={84}
+									animate={false}
+									className="monster-silhouette"
+								/>
+							</div>
+							<div className="mt-1 text-sm font-extrabold text-amber-500">Wymarzony ✨</div>
+						</button>
+						<div className="absolute -right-2 -top-2">
+							<HelpTip
+								placement="bottom"
+								align="right"
+								text="To potworek, o którym marzysz. Teraz częściej będzie się wykluwał, a Jajko Życzeń (w „Moich Potworkach”) da ci dokładnie jego. Stuknij obrazek, żeby go obejrzeć."
 							/>
 						</div>
-						<div className="mt-1 text-sm font-extrabold text-amber-500">Wymarzony ✨</div>
-					</button>
+					</div>
 				)}
 			</div>
 			{newestOwned !== undefined && (
@@ -74,10 +84,11 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 				Graj! 🚀
 			</BigButton>
 
+			<div className="relative w-full max-w-xs">
 			<button
 				type="button"
 				onPointerDown={() => pendingEggs.length > 0 && goTo("hatch")}
-				className="touch-manipulation flex w-full max-w-xs items-center justify-between rounded-3xl bg-white/80 px-5 py-3 shadow-md active:scale-95"
+				className="touch-manipulation flex w-full items-center justify-between rounded-3xl bg-white/80 px-5 py-3 shadow-md active:scale-95"
 			>
 				<div className="text-xl font-extrabold text-slate-600">🪺 Gniazdo</div>
 				{firstEgg ? (
@@ -103,6 +114,14 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					</div>
 				)}
 			</button>
+				<div className="absolute -right-2 -top-2">
+					<HelpTip
+						placement="bottom"
+						align="right"
+						text="Tu czekają twoje jajka. Kiedy pasek się zapełni, do gniazda wskoczy nowe jajko. Stuknij gniazdo, żeby wykluć potworka!"
+					/>
+				</div>
+			</div>
 
 			<BigButton
 				onClick={() => goTo("collection")}
@@ -112,7 +131,12 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 				Moje Potworki 👾 {ownedCount}/{MONSTER_COUNT}
 			</BigButton>
 
-			<div className="mt-auto flex flex-wrap justify-center gap-2 pb-2">
+			<div className="mt-auto flex flex-wrap items-center justify-center gap-2 pb-2">
+				<HelpTip
+					placement="top"
+					align="left"
+					text="To tabliczki mnożenia. Te z kłódką 🔒 jeszcze śpią. Kiedy dobrze opanujesz odblokowane liczby, kłódka pęknie i pojawi się nowa!"
+				/>
 				{ALL_TABLES.map(n => (
 					<div
 						key={n}
