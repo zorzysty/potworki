@@ -48,11 +48,12 @@ export const IDS_BY_RARITY: Record<Rarity, readonly number[]> = {
 	legendary: [45, 46, 47],
 }
 
-function rollDna(rand: () => number, rarity: Rarity): Dna {
+function rollDna(rand: () => number, rarity: Rarity, id: number): Dna {
+	// paleta przydzielana po id (przekątna), nie losowo — równy rozkład kolorów
 	const palette =
 		rarity === "legendary" ? 7
 		: rarity === "epic" ? 6
-		: Math.floor(rand() * 6)
+		: (id + Math.floor(id / 6)) % 6
 	const accessory: Dna["accessory"] =
 		rarity === "legendary" ? "crown"
 		: rarity === "epic" ? (rand() < 0.5 ? "wings" : "aura")
@@ -82,7 +83,7 @@ function buildCatalog(): Monster[] {
 		let dna: Dna
 		do {
 			const rng = mulberry32(GLOBAL_SEED ^ Math.imul(id + salt * MONSTER_COUNT, 0x9e3779b9))
-			dna = rollDna(rng, rarity)
+			dna = rollDna(rng, rarity, id)
 			salt++
 		} while (usedDna.has(dnaSignature(dna)))
 		usedDna.add(dnaSignature(dna))

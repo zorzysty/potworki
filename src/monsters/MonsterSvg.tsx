@@ -55,7 +55,8 @@ export function MonsterSvg({ id, size = 160, animate = true, className }: Props)
 				</clipPath>
 			</defs>
 			<g className={animate ? "monster-bob" : undefined}>
-				{dna.accessory === "aura" && <Aura palette={pal} />}
+				{/* legendarne mają koronę I aurę */}
+				{(dna.accessory === "aura" || dna.accessory === "crown") && <Aura palette={pal} />}
 				{dna.accessory === "wings" && <Wings palette={pal} />}
 				<Feet palette={pal} fill={rainbow ? "#C7CEEA" : pal.base} />
 				<path d={path} fill={bodyFill} stroke={pal.outline} strokeWidth={5} strokeLinejoin="round" />

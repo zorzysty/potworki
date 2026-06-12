@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { EGG_LABELS, EggView } from "../components/EggView"
 import { RARITY_META } from "../components/rarity"
-import { MONSTERS } from "../monsters/catalog"
+import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
 
@@ -16,20 +16,22 @@ export function HatchScreen() {
 	const [cracks, setCracks] = useState(0)
 	const [wobbleNonce, setWobbleNonce] = useState(0)
 
+	const ownedCount = useGame(s => Object.keys(s.ownedMonsters).length)
 	const egg = pendingEggs[0]
 	const monster = lastHatch ? MONSTERS[lastHatch.monsterId] : undefined
+	const collectionComplete = lastHatch?.isNew === true && ownedCount === MONSTER_COUNT
 
 	useEffect(() => {
 		if (!lastHatch?.isNew) return
 		confetti({ particleCount: 130, spread: 80, origin: { y: 0.55 } })
-		if (lastHatch.isDream) {
+		if (lastHatch.isDream || collectionComplete) {
 			const timer = setTimeout(
 				() => confetti({ particleCount: 180, spread: 120, origin: { y: 0.4 } }),
 				350,
 			)
 			return () => clearTimeout(timer)
 		}
-	}, [lastHatch])
+	}, [lastHatch, collectionComplete])
 
 	const tapEgg = () => {
 		if (!egg) return
@@ -71,6 +73,11 @@ export function HatchScreen() {
 						{lastHatch.isNew && (
 							<div className="anim-pop rounded-full bg-gradient-to-r from-bubblegum to-orange-400 px-6 py-2 text-2xl font-extrabold text-white shadow-lg">
 								{lastHatch.isDream ? "WYMARZONY POTWOREK! 💖" : "NOWY POTWOREK! ✨"}
+							</div>
+						)}
+						{collectionComplete && (
+							<div className="anim-pop rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-6 py-2 text-2xl font-extrabold text-white shadow-lg">
+								🏆 MISTRZYNI KOLEKCJI! 🏆
 							</div>
 						)}
 						<div

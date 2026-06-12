@@ -12,7 +12,7 @@ const GRADIENTS: Record<PendingEgg["quality"], [string, string]> = {
 	normal: ["#FFFBF0", "#F2E2BC"],
 	silver: ["#F8FAFD", "#C3D2E6"],
 	gold: ["#FFF6CC", "#F2C14E"],
-	rainbow: ["#FFD3DA", "#C7CEEA"],
+	rainbow: ["#FF9FB8", "#8ECDF7"],
 	wish: ["#F8F0FF", "#D9C2FF"],
 }
 
