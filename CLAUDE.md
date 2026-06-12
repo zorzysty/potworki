@@ -20,27 +20,103 @@ Brak test runnera i lintera — weryfikacja przez typecheck, ekran debug (`?debu
 
 Deploy: push do `main` → GitHub Actions buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`.
 
-## Architektura
+## Architektura (przegląd)
 
-Jeden store zustand (`src/store/store.ts`) jest sercem wszystkiego:
+Jeden store zustand (`src/store/store.ts`) koordynuje całość: ekrany to maszyna stanów bez routera, logika gry to czyste funkcje w `src/game/` i `src/monsters/`, persystencja jest wersjonowana. Szczegółowe kontrakty każdej domeny są w child docs — patrz Child DOX Index; przed edycją przeczytaj łańcuch DOX dla ścieżki, którą zmieniasz.
 
-- **Dwie strefy stanu**: persystowana (`SaveState` z `src/store/schema.ts` — facts, jajka, kolekcja, iskierki, wymarzony potworek) i efemeryczna (`screen`, `round`, `lastHatch`). `partialize` w persist decyduje, co trafia do localStorage pod kluczem `potworki-save`.
-- **Routing nie istnieje** — pole `screen` + `switch` w `App.tsx` (5 ekranów: home/round/hatch/collection/debug). `goTo()` czyści stan rundy przy każdej nawigacji poza `round`. Przycisk Wstecz przeglądarki jest neutralizowany (popstate → home).
-- **Commit per odpowiedź**: statystyki działania i fragmenty jajek zapisywane są do strefy persystowanej natychmiast po każdej odpowiedzi (nie na końcu rundy) — zamknięcie karty w środku rundy nie traci postępu. Efemeryczne są tylko kolejka pytań i licznik gwiazdek.
-- **Logika gry to czyste funkcje** w `src/game/` (adaptive, rewards, facts) i `src/monsters/` (catalog, names) — store jest cienkim koordynatorem. Nowa mechanika powinna trafić do czystej funkcji, a store tylko ją wywoływać.
-- Wejście dotykowe i klawiaturowe to **jeden code path**: keypad woła akcje store przez `onPointerDown`, globalny `keydown` w `App.tsx` mapuje klawisze na te same akcje. Żadnych natywnych `<input>` w grze (iPad otwierałby klawiaturę systemową).
+## Zasady projektowe (project-wide)
 
-Przepływ rundy: 10 pytań (do 12 z powtórkami po błędach), gwiazdki za szybkość względem budżetu `4000 + 800×max(a,b)` ms, suma gwiazdek → jakość jajek (zwykłe/srebrne/złote/tęczowe) nadawana na końcu rundy; 5 fragmentów = jajko, fragmenty przenoszą się między rundami. Wyklucie: losowanie tieru wg jakości jajka → priorytet „wymarzonego" przy trafionym tierze → duplikaty zamieniają się w iskierki → Jajko Życzeń gwarantuje wymarzonego.
-
-Silnik adaptacyjny (`src/game/adaptive.ts`): 55 działań komutatywnych (klucz `"axb"` zawsze z `a <= b`, orientacja wyświetlania losowa), pojedynczy score `mastery` 0..1 z decayem po dniach, losowanie ważone `(1-mastery)² + 0.05`, etapy tabliczek odblokowywane średnią mastery ≥ 0.65.
-
-## Twarde ograniczenia — nie łamać
-
-1. **NIGDY nie zmieniaj `GLOBAL_SEED` ani kodu generacji w `src/monsters/catalog.ts`** (w tym kolejności wywołań `rand()` w `rollDna`/`generateName`). Zapisujemy tylko `monsterId`; każda zmiana generacji podmienia całą kolekcję na urządzeniu dziecka.
-2. **Każda zmiana kształtu `SaveState`** wymaga podbicia `SAVE_VERSION` i wpisu w `MIGRATIONS` (`src/store/schema.ts`, wzorzec w komentarzu). Zapis dziecka nie może przepaść po deployu.
-3. **Szybkość tylko nagradza, nigdy nie karze** — to świadoma zasada projektowa: brak widocznego stopera, brak auto-submitu (literówka nie może liczyć się jako błąd), błędna odpowiedź i tak daje fragment jajka, wolna poprawna odpowiedź daje pełny postęp przy 0 gwiazdek. Nowe mechaniki muszą respektować tę zasadę.
+1. **Szybkość tylko nagradza, nigdy nie karze**: brak widocznego stopera, brak auto-submitu (literówka nie może liczyć się jako błąd), błędna odpowiedź i tak daje fragment jajka, wolna poprawna odpowiedź daje pełny postęp przy 0 gwiazdek. Każda nowa mechanika musi respektować tę zasadę.
+2. Postęp dziecka jest święty: zamrożony seed katalogu potworków (szczegóły w `src/monsters/CLAUDE.md`) i obowiązkowe migracje zapisu (szczegóły w `src/store/CLAUDE.md`).
+3. UI wyłącznie po polsku; tablet-first (duże cele dotykowe, zdarzenia pointer, żadnych natywnych `<input>` — szczegóły w `src/CLAUDE.md`).
 
 ## Testowanie w przeglądarce (WSL)
 
 Playwright zawiesza się w tym środowisku. Działa **puppeteer-core** wskazany na headless shell Playwrighta:
 `~/.cache/ms-playwright/chromium_headless_shell-1223/chrome-headless-shell-linux64/chrome-headless-shell` z argami `--no-sandbox --disable-gpu`. Kliknięcia puppeteera odpalają `onPointerDown` (przyciski gry nie używają `onClick`). Brak fontów emoji w WSL = puste kwadraty na zrzutach (to nie bug).
+
+# DOX framework
+
+- DOX is highly performant CLAUDE.md hierarchy installed here
+- Agent must follow DOX instructions across any edits
+
+## Core Contract
+
+- CLAUDE.md files are binding work contracts for their subtrees
+- Work products, source materials, instructions, records, assets, and durable docs must stay understandable from the nearest applicable CLAUDE.md plus every parent CLAUDE.md above it
+
+## Read Before Editing
+
+1. Read the root CLAUDE.md
+2. Identify every file or folder you expect to touch
+3. Walk from the repository root to each target path
+4. Read every CLAUDE.md found along each route
+5. If a parent CLAUDE.md lists a child CLAUDE.md whose scope contains the path, read that child and continue from there
+6. Use the nearest CLAUDE.md as the local contract and parent docs for repo-wide rules
+7. If docs conflict, the closer doc controls local work details, but no child doc may weaken DOX
+
+Do not rely on memory. Re-read the applicable DOX chain in the current session before editing.
+
+## Update After Editing
+
+Every meaningful change requires a DOX pass before the task is done.
+
+Update the closest owning CLAUDE.md when a change affects:
+
+- purpose, scope, ownership, or responsibilities
+- durable structure, contracts, workflows, or operating rules
+- required inputs, outputs, permissions, constraints, side effects, or artifacts
+- user preferences about behavior, communication, process, organization, or quality
+- CLAUDE.md creation, deletion, move, rename, or index contents
+
+Update parent docs when parent-level structure, ownership, workflow, or child index changes. Update child docs when parent changes alter local rules. Remove stale or contradictory text immediately. Small edits that do not change behavior or contracts may leave docs unchanged, but the DOX pass still must happen.
+
+## Hierarchy
+
+- Root CLAUDE.md is the DOX rail: project-wide instructions, global preferences, durable workflow rules, and the top-level Child DOX Index
+- Child CLAUDE.md files own domain-specific instructions and their own Child DOX Index
+- Each parent explains what its direct children cover and what stays owned by the parent
+- The closer a doc is to the work, the more specific and practical it must be
+
+## Child Doc Shape
+
+- Create a child CLAUDE.md when a folder becomes a durable boundary with its own purpose, rules, responsibilities, workflow, materials, or quality standards
+- Work Guidance must reflect the current standards of the project or user instructions; if there are no specific standards or instructions yet, leave it empty
+- Verification must reflect an existing check; if no verification framework exists yet, leave it empty and update it when one exists
+
+Default section order:
+- Purpose
+- Ownership
+- Local Contracts
+- Work Guidance
+- Verification
+- Child DOX Index
+
+## Style
+
+- Keep docs concise, current, and operational
+- Document stable contracts, not diary entries
+- Put broad rules in parent docs and concrete details in child docs
+- Prefer direct bullets with explicit names
+- Do not duplicate rules across many files unless each scope needs a local version
+- Delete stale notes instead of explaining history
+- Trim obvious statements, repeated rules, misplaced detail, and warnings for risks that no longer exist
+
+## Closeout
+
+1. Re-check changed paths against the DOX chain
+2. Update nearest owning docs and any affected parents or children
+3. Refresh every affected Child DOX Index
+4. Remove stale or contradictory text
+5. Run existing verification when relevant
+6. Report any docs intentionally left unchanged and why
+
+## User Preferences
+
+When the user requests a durable behavior change, record it here or in the relevant child CLAUDE.md
+
+## Child DOX Index
+
+- [src/CLAUDE.md](src/CLAUDE.md) — cały kod aplikacji: warstwa UI (ekrany, komponenty, wejście, animacje) oraz indeks domen `game/` (logika adaptacyjna i nagrody), `monsters/` (zamrożony katalog potworków), `store/` (persystencja i przepływ gry). Root zachowuje: komendy, deploy, zasady projektowe, testowanie w WSL.
+
+Poza `src/` nie ma child docs: `.github/workflows/` (jeden plik deployu), `public/` (favicon) i pliki konfiguracyjne w rocie są opisane sekcją „Komendy" powyżej.
