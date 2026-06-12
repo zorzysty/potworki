@@ -89,7 +89,7 @@ export function DebugScreen() {
 			</details>
 
 			<details open className="mt-4">
-				<summary className="cursor-pointer text-lg font-extrabold">Galeria (48)</summary>
+				<summary className="cursor-pointer text-lg font-extrabold">Galeria ({MONSTERS.length})</summary>
 				<div className="mt-2 grid grid-cols-4 gap-2 md:grid-cols-6">
 					{MONSTERS.map(monster => (
 						<div

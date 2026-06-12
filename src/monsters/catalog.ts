@@ -32,21 +32,35 @@ export interface Monster {
 	name: string
 }
 
-export const MONSTER_COUNT = 48
+export const MONSTER_COUNT = 72
+
+// Szerokość kroku salta w seedzie kolizji DNA — ZAMROŻONA na 48 (pierwotne
+// MONSTER_COUNT). Odpięta od MONSTER_COUNT, by dodawanie potworków nie zmieniało
+// DNA istniejących sztuk, które potrzebowały salt>0.
+const SALT_STRIDE = 48
 
 export function rarityOf(id: number): Rarity {
+	if (id >= 48) {
+		// nowe potworki 48–71 (decyzja: +12 common, +7 rare, +4 epic, +1 legendary)
+		if (id >= 71) return "legendary" // 71
+		if (id >= 67) return "epic" // 67–70
+		if (id >= 60) return "rare" // 60–66
+		return "common" // 48–59
+	}
+	// ZAMROŻONE granice 0–47
 	if (id >= 45) return "legendary"
 	if (id >= 38) return "epic"
 	if (id >= 24) return "rare"
 	return "common"
 }
 
-export const IDS_BY_RARITY: Record<Rarity, readonly number[]> = {
-	common: Array.from({ length: 24 }, (_, i) => i),
-	rare: Array.from({ length: 14 }, (_, i) => 24 + i),
-	epic: Array.from({ length: 7 }, (_, i) => 38 + i),
-	legendary: [45, 46, 47],
-}
+// Wyprowadzone z rarityOf — grupuje wszystkie id po rzadkości (niezbędnie
+// niesąsiadujące zakresy po dodaniu nowych potworków).
+export const IDS_BY_RARITY: Record<Rarity, readonly number[]> = (() => {
+	const map: Record<Rarity, number[]> = { common: [], rare: [], epic: [], legendary: [] }
+	for (let id = 0; id < MONSTER_COUNT; id++) map[rarityOf(id)].push(id)
+	return map
+})()
 
 function rollDna(rand: () => number, rarity: Rarity, id: number): Dna {
 	// paleta przydzielana po id (przekątna), nie losowo — równy rozkład kolorów
@@ -82,7 +96,7 @@ function buildCatalog(): Monster[] {
 		let salt = 0
 		let dna: Dna
 		do {
-			const rng = mulberry32(GLOBAL_SEED ^ Math.imul(id + salt * MONSTER_COUNT, 0x9e3779b9))
+			const rng = mulberry32(GLOBAL_SEED ^ Math.imul(id + salt * SALT_STRIDE, 0x9e3779b9))
 			dna = rollDna(rng, rarity, id)
 			salt++
 		} while (usedDna.has(dnaSignature(dna)))

@@ -17,6 +17,7 @@ Ten doc jest właścicielem `App.tsx`, `main.tsx`, `styles.css`, `components/`, 
 - Żadnych natywnych `<input>` w grze — iPad otwierałby klawiaturę systemową; odpowiedź renderowana w stylizowanym divie.
 - Wszystkie `@keyframes`, klasy `anim-*`/`monster-*` i custom variant `land:` (media `min-aspect-ratio: 1/1`, obsługuje landscape tabletu i laptop) żyją w `styles.css`.
 - Komponenty współdzielone w `components/`, pełne ekrany w `screens/`; metadane rzadkości (polskie etykiety, kolory) w `components/rarity.ts`.
+- Ekran kolekcji sortuje potworki jawnie po rzadkości (`RARITY_ORDER`, w obrębie rzadkości po id) — id nie są już ciągłe po rzadkości (nowe dochodzą na końcu katalogu), więc kolejność id sama nie grupuje.
 - Tooltipy wyjaśniające mechaniki dziecku: `components/HelpTip.tsx` — dotykowy znaczek „?" z dymkiem (`onPointerDown`, zatrzymuje propagację; przezroczysta warstwa zamyka). Nad przyciskiem `onPointerDown` umieszczać jako rodzeństwo w `relative` wrapperze (nie zagnieżdżać `<button>` w `<button>`).
 
 ## Work Guidance
@@ -32,5 +33,5 @@ Ten doc jest właścicielem `App.tsx`, `main.tsx`, `styles.css`, `components/`, 
 ## Child DOX Index
 
 - [game/CLAUDE.md](game/CLAUDE.md) — czysta logika gry: silnik adaptacyjny (mastery, selekcja, etapy), gwiazdki/budżety czasowe, ekonomia nagród i losowanie wyklucia
-- [monsters/CLAUDE.md](monsters/CLAUDE.md) — deterministyczny katalog 48 potworków, imiona i rendering SVG; **ZAMROŻONY SEED — przeczytaj przed każdą zmianą w tym folderze**
+- [monsters/CLAUDE.md](monsters/CLAUDE.md) — deterministyczny katalog 72 potworków, imiona i rendering SVG; **ZAMROŻONY SEED — przeczytaj przed każdą zmianą w tym folderze**
 - [store/CLAUDE.md](store/CLAUDE.md) — store zustand i persystencja: wersjonowany SaveState z migracjami, strefy persystowana/efemeryczna, commit-per-odpowiedź, mechanika kolejki rundy

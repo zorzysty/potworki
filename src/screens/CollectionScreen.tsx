@@ -2,9 +2,18 @@ import { useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { HelpTip } from "../components/HelpTip"
 import { RARITY_META } from "../components/rarity"
+import { RARITY_ORDER } from "../game/rewards"
 import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame, wishEggCost } from "../store/store"
+
+// Wyświetlanie po rzadkości (common→legendary), w obrębie rzadkości po id.
+// Id nie są już ciągłe po rzadkości (nowe potworki dochodzą na końcu), więc
+// sortujemy jawnie zamiast polegać na kolejności id.
+const SORTED_MONSTERS = [...MONSTERS].sort(
+	(a, b) =>
+		RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity) || a.id - b.id,
+)
 
 export function CollectionScreen() {
 	const ownedMonsters = useGame(s => s.ownedMonsters)
@@ -68,7 +77,7 @@ export function CollectionScreen() {
 			)}
 
 			<div className="grid grid-cols-3 gap-3 pb-6 min-[420px]:grid-cols-4">
-				{MONSTERS.map(monster => {
+				{SORTED_MONSTERS.map(monster => {
 					const owned = monster.id in ownedMonsters
 					const isDream = monster.id === dreamMonsterId
 					return (

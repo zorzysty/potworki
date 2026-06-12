@@ -79,7 +79,7 @@ export function rollWish(ctx: RollContext): number | null {
 	const available = RARITY_ORDER.filter(tier =>
 		idsByRarity[tier].some(id => !owned.has(id)),
 	)
-	if (available.length === 0) return null // 48/48 — UI ukrywa przycisk
+	if (available.length === 0) return null // komplet — UI ukrywa przycisk
 	const odds = RARITY_ODDS.gold
 	const weights = available.map(tier => odds[RARITY_ORDER.indexOf(tier)] ?? 0)
 	const total = weights.reduce((s, w) => s + w, 0)

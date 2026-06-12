@@ -16,7 +16,7 @@ bun run preview   # serwuje dist/
 bun run typecheck # sam typecheck
 ```
 
-Brak test runnera i lintera — weryfikacja przez typecheck, ekran debug (`?debug` w URL → link „debug" na ekranie głównym: tabela mastery, galeria 48 potworków, przyciski oszukiwania) oraz ręczny click-through. Logikę z `src/game/` i `src/monsters/` można testować skryptem uruchamianym bezpośrednio przez `bun` (czyste moduły TS bez zależności od DOM).
+Brak test runnera i lintera — weryfikacja przez typecheck, ekran debug (`?debug` w URL → link „debug" na ekranie głównym: tabela mastery, galeria 72 potworków, przyciski oszukiwania) oraz ręczny click-through. Logikę z `src/game/` i `src/monsters/` można testować skryptem uruchamianym bezpośrednio przez `bun` (czyste moduły TS bez zależności od DOM).
 
 Deploy: push do `main` → GitHub Actions buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`.
 
