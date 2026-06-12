@@ -9,6 +9,7 @@ export function DebugScreen() {
 	const iskierki = useGame(s => s.iskierki)
 	const unlockedStage = useGame(s => s.unlockedStage)
 	const totalRounds = useGame(s => s.totalRounds)
+	const eggsEarned = useGame(s => s.eggsEarned)
 	const goTo = useGame(s => s.goTo)
 	const debugSetAllMastery = useGame(s => s.debugSetAllMastery)
 	const debugOwnRarity = useGame(s => s.debugOwnRarity)
@@ -24,7 +25,7 @@ export function DebugScreen() {
 				← Home
 			</button>
 			<div className="my-2 font-bold">
-				etap: {unlockedStage} | rundy: {totalRounds} | iskierki: {iskierki}
+				etap: {unlockedStage} | rundy: {totalRounds} | iskierki: {iskierki} | jajka: {eggsEarned}
 			</div>
 			<div className="flex flex-wrap gap-2 pb-4">
 				<button type="button" className={btn} onPointerDown={() => debugSetAllMastery(0.7)}>

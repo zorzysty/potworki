@@ -6,9 +6,9 @@ export interface PendingEgg {
 }
 
 export function eggQuality(roundStars: number): EggQuality {
-	if (roundStars >= 26) return "rainbow"
-	if (roundStars >= 18) return "gold"
-	if (roundStars >= 10) return "silver"
+	if (roundStars >= 30) return "rainbow" // tylko za komplet 30/30
+	if (roundStars >= 27) return "gold"
+	if (roundStars >= 22) return "silver"
 	return "normal"
 }
 

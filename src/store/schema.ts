@@ -2,14 +2,15 @@ import type { FactStats } from "../game/adaptive"
 import type { FactKey } from "../game/facts"
 import type { PendingEgg } from "../game/rewards"
 
-export const SAVE_VERSION = 1
+export const SAVE_VERSION = 2
 
 export interface SaveState {
 	facts: Partial<Record<FactKey, FactStats>>
 	unlockedStage: number
 	ownedMonsters: Record<number, { hatchedAt: number }>
 	iskierki: number
-	eggFragments: number // 0–4, resztki przenoszone między rundami
+	eggFragments: number // 0–(próg−1), resztki przenoszone między rundami
+	eggsEarned: number // ile jajek z fragmentów już powstało — steruje progiem (fragmentsForEgg)
 	pendingEggs: PendingEgg[]
 	dreamMonsterId: number | null
 	totalRounds: number
@@ -21,6 +22,7 @@ export const INITIAL_SAVE: SaveState = {
 	ownedMonsters: {},
 	iskierki: 0,
 	eggFragments: 0,
+	eggsEarned: 0,
 	pendingEggs: [],
 	dreamMonsterId: null,
 	totalRounds: 0,
@@ -29,9 +31,18 @@ export const INITIAL_SAVE: SaveState = {
 export const SAVE_KEYS = Object.keys(INITIAL_SAVE) as (keyof SaveState)[]
 
 // Migracje: MIGRATIONS[v] przeprowadza zapis z wersji v do v+1.
-// Wzorzec — gdy podbijasz SAVE_VERSION do 2, dodaj:
-//   1: state => ({ ...(state as SaveStateV1), nowePole: wartoscDomyslna }),
-export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {}
+// Wzorzec — gdy podbijasz SAVE_VERSION do 3, dodaj:
+//   2: state => ({ ...(state as SaveStateV2), nowePole: wartoscDomyslna }),
+export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
+	// v1→v2: dodano eggsEarned. Estymujemy z dotychczasowego postępu (posiadane + w gnieździe),
+	// żeby próg fragmentów nie zresetował się do najtańszego — dziecko już sporo wykluło.
+	1: state => {
+		const s = state as Record<string, unknown>
+		const owned = s.ownedMonsters && typeof s.ownedMonsters === "object" ? Object.keys(s.ownedMonsters).length : 0
+		const pending = Array.isArray(s.pendingEggs) ? s.pendingEggs.length : 0
+		return { ...s, eggsEarned: owned + pending }
+	},
+}
 
 export function migrateSave(state: unknown, fromVersion: number): unknown {
 	let migrated = state

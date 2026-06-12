@@ -4,7 +4,7 @@ import { applyAnswer, decayStats, emptyStats, pickNextFact, shouldUnlockNextStag
 import type { Fact, FactKey } from "../game/facts"
 import {
 	FACTS_BY_KEY,
-	FRAGMENTS_PER_EGG,
+	fragmentsForEgg,
 	isMaxStage,
 	MAX_QUESTIONS_PER_ROUND,
 	QUESTIONS_PER_ROUND,
@@ -214,15 +214,19 @@ export const useGame = create<GameState>()(
 				const stats = state.facts[q.key] ?? emptyStats()
 				const facts = { ...state.facts, [q.key]: applyAnswer(stats, fact, correct, elapsed, now) }
 
-				const gained = correct ? starsFor(elapsed, fact) : 0
+				// błędne działanie (powtórka) daje maks. 1 gwiazdkę, nawet jeśli poprawka jest szybka
+				const earned = correct ? starsFor(elapsed, fact) : 0
+				const gained = q.isRequeue ? Math.min(1, earned) : earned
 				const stars = round.stars + gained
 
 				// fragment przyznany niezależnie od wyniku — postęp nigdy nie przepada
 				let eggFragments = state.eggFragments + 1
 				let pendingEggs = state.pendingEggs
+				let eggsEarned = state.eggsEarned
 				const eggsCreated = [...round.eggsCreated]
-				if (eggFragments >= FRAGMENTS_PER_EGG) {
+				if (eggFragments >= fragmentsForEgg(eggsEarned)) {
 					eggFragments = 0
+					eggsEarned++
 					// prowizoryczna jakość z gwiazdek-dotąd; finalna nadawana na końcu rundy
 					pendingEggs = [...pendingEggs, { quality: eggQuality(stars) }]
 					eggsCreated.push(pendingEggs.length - 1)
@@ -232,6 +236,7 @@ export const useGame = create<GameState>()(
 					set({
 						facts,
 						eggFragments,
+						eggsEarned,
 						pendingEggs,
 						round: { ...round, phase: "correct", stars, lastStars: gained, eggsCreated },
 					})
@@ -247,6 +252,7 @@ export const useGame = create<GameState>()(
 					set({
 						facts,
 						eggFragments,
+						eggsEarned,
 						pendingEggs,
 						round: {
 							...round,

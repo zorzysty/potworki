@@ -66,4 +66,10 @@ export function starsFor(elapsedMs: number, fact: Fact): 0 | 1 | 2 | 3 {
 export const QUESTIONS_PER_ROUND = 10
 export const MAX_QUESTIONS_PER_ROUND = 12
 export const MAX_STARS_PER_ROUND = 30
-export const FRAGMENTS_PER_EGG = 5
+
+// Próg fragmentów na jajko rośnie z liczbą już zdobytych jajek (wyklucie ma być osiągnięciem):
+// 1. jajko = 10, jajka 2–10 = 14, 11–20 = 18, 21–30 = 22, +4 za każdą kolejną dziesiątkę.
+export function fragmentsForEgg(eggsEarned: number): number {
+	if (eggsEarned <= 0) return 10
+	return 14 + 4 * Math.floor(eggsEarned / 10)
+}

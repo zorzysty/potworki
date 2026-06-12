@@ -1,13 +1,14 @@
 import { BigButton } from "../components/BigButton"
 import { EGG_LABELS, EggView } from "../components/EggView"
 import { StarMeter } from "../components/StarMeter"
-import { FRAGMENTS_PER_EGG, STAGES } from "../game/facts"
+import { fragmentsForEgg, STAGES } from "../game/facts"
 import { useGame } from "../store/store"
 
 export function RoundSummary() {
 	const round = useGame(s => s.round)
 	const pendingEggs = useGame(s => s.pendingEggs)
 	const eggFragments = useGame(s => s.eggFragments)
+	const eggsEarned = useGame(s => s.eggsEarned)
 	const unlockedStage = useGame(s => s.unlockedStage)
 	const goTo = useGame(s => s.goTo)
 	if (!round || round.phase !== "summary") return null
@@ -42,7 +43,7 @@ export function RoundSummary() {
 				</div>
 			) : (
 				<div className="text-lg font-bold text-slate-500">
-					Fragmenty jajka: {eggFragments} / {FRAGMENTS_PER_EGG} — tak trzymaj!
+					Fragmenty jajka: {eggFragments} / {fragmentsForEgg(eggsEarned)} — tak trzymaj!
 				</div>
 			)}
 

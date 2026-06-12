@@ -1,6 +1,6 @@
 import { BigButton } from "../components/BigButton"
 import { EggView } from "../components/EggView"
-import { FRAGMENTS_PER_EGG, unlockedFactors } from "../game/facts"
+import { fragmentsForEgg, unlockedFactors } from "../game/facts"
 import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
@@ -11,6 +11,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const ownedMonsters = useGame(s => s.ownedMonsters)
 	const pendingEggs = useGame(s => s.pendingEggs)
 	const eggFragments = useGame(s => s.eggFragments)
+	const eggsEarned = useGame(s => s.eggsEarned)
 	const dreamMonsterId = useGame(s => s.dreamMonsterId)
 	const unlockedStage = useGame(s => s.unlockedStage)
 	const startRound = useGame(s => s.startRound)
@@ -23,6 +24,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 		(x, y) => (ownedMonsters[y]?.hatchedAt ?? 0) - (ownedMonsters[x]?.hatchedAt ?? 0),
 	)[0]
 	const firstEgg = pendingEggs[0]
+	const eggThreshold = fragmentsForEgg(eggsEarned)
 
 	return (
 		<div className="flex min-h-dvh flex-col items-center gap-4 p-5 pt-8">
@@ -88,15 +90,15 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 						</div>
 					</div>
 				) : (
-					<div className="flex items-center gap-1.5">
-						{Array.from({ length: FRAGMENTS_PER_EGG }, (_, i) => (
+					<div className="flex items-center gap-2">
+						<div className="h-3 w-24 overflow-hidden rounded-full bg-slate-200">
 							<div
-								key={i}
-								className={`size-4 rounded-full ${i < eggFragments ? "bg-amber-400" : "bg-slate-200"}`}
+								className="h-full rounded-full bg-amber-400 transition-[width]"
+								style={{ width: `${(eggFragments / eggThreshold) * 100}%` }}
 							/>
-						))}
-						<span className="ml-1 text-sm font-bold text-slate-400">
-							{eggFragments}/{FRAGMENTS_PER_EGG}
+						</div>
+						<span className="text-sm font-bold text-slate-400">
+							{eggFragments}/{eggThreshold}
 						</span>
 					</div>
 				)}
