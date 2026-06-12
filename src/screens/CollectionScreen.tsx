@@ -25,7 +25,7 @@ export function CollectionScreen() {
 			<div className="flex items-center justify-between">
 				<button
 					type="button"
-					onPointerDown={() => goTo("home")}
+					onClick={() => goTo("home")}
 					className="touch-manipulation rounded-full bg-white/80 px-5 py-2 text-2xl font-extrabold text-grape-dark shadow active:scale-90"
 					aria-label="Wróć do domku"
 				>
@@ -42,6 +42,7 @@ export function CollectionScreen() {
 			{iskierki > 0 && !allOwned && (
 				<BigButton
 					onClick={buyWishEgg}
+					trigger="tap"
 					variant="secondary"
 					disabled={iskierki < cost}
 					className="mx-auto w-full max-w-sm py-3 text-xl"
@@ -59,7 +60,7 @@ export function CollectionScreen() {
 						<button
 							key={monster.id}
 							type="button"
-							onPointerDown={() => setSelectedId(monster.id)}
+							onClick={() => setSelectedId(monster.id)}
 							className={`touch-manipulation relative flex flex-col items-center rounded-2xl border-4 bg-white/80 p-2 shadow-sm transition-transform active:scale-95
 								${RARITY_META[monster.rarity].border} ${isDream ? "ring-4 ring-amber-300" : ""}`}
 						>
@@ -83,11 +84,11 @@ export function CollectionScreen() {
 			{selected && (
 				<div
 					className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-5 backdrop-blur-sm"
-					onPointerDown={() => setSelectedId(null)}
+					onClick={() => setSelectedId(null)}
 				>
 					<div
 						className="anim-pop flex w-full max-w-sm flex-col items-center gap-3 rounded-[2rem] bg-white p-6 shadow-2xl"
-						onPointerDown={e => e.stopPropagation()}
+						onClick={e => e.stopPropagation()}
 					>
 						<MonsterSvg
 							id={selected.id}
@@ -113,6 +114,7 @@ export function CollectionScreen() {
 									setDreamMonster(null)
 									setSelectedId(null)
 								}}
+								trigger="tap"
 								variant="secondary"
 								className="w-full py-3 text-lg"
 							>
@@ -124,6 +126,7 @@ export function CollectionScreen() {
 									setDreamMonster(selected.id)
 									setSelectedId(null)
 								}}
+								trigger="tap"
 								className="w-full py-3 text-lg"
 							>
 								To mój wymarzony potworek! 💖
@@ -131,7 +134,7 @@ export function CollectionScreen() {
 						)}
 						<button
 							type="button"
-							onPointerDown={() => setSelectedId(null)}
+							onClick={() => setSelectedId(null)}
 							className="touch-manipulation pt-1 text-lg font-bold text-slate-400 active:scale-95"
 						>
 							Zamknij
