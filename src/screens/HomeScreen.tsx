@@ -1,7 +1,7 @@
 import { BigButton } from "../components/BigButton"
 import { EggView } from "../components/EggView"
 import { HelpTip } from "../components/HelpTip"
-import { fragmentsForEgg, unlockedFactors } from "../game/facts"
+import { fragmentsForEgg, isMaxStage, unlockedFactors } from "../game/facts"
 import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
@@ -15,6 +15,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const eggsEarned = useGame(s => s.eggsEarned)
 	const dreamMonsterId = useGame(s => s.dreamMonsterId)
 	const unlockedStage = useGame(s => s.unlockedStage)
+	const celebratedStage = useGame(s => s.celebratedStage)
 	const startRound = useGame(s => s.startRound)
 	const goTo = useGame(s => s.goTo)
 
@@ -26,6 +27,8 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	)[0]
 	const firstEgg = pendingEggs[0]
 	const eggThreshold = fragmentsForEgg(eggsEarned)
+	const hasNewGate = unlockedStage > celebratedStage
+	const allGatesOpen = isMaxStage(unlockedStage)
 
 	return (
 		<div className="flex min-h-dvh flex-col items-center gap-4 p-5 pt-8">
@@ -130,6 +133,17 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 			>
 				Moje Potworki 👾 {ownedCount}/{MONSTER_COUNT}
 			</BigButton>
+
+			<div className="relative w-full max-w-xs">
+				<BigButton onClick={() => goTo("map")} variant="secondary" className="w-full">
+					Kraina Potworków {allGatesOpen ? "👑" : "🗺️"}
+				</BigButton>
+				{hasNewGate && (
+					<div className="anim-pop absolute -right-2 -top-2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-3 py-0.5 text-sm font-extrabold text-white shadow-lg">
+						✨ nowa brama!
+					</div>
+				)}
+			</div>
 
 			<div className="mt-auto flex flex-wrap items-center justify-center gap-2 pb-2">
 				<HelpTip

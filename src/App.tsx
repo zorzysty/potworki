@@ -3,6 +3,7 @@ import { CollectionScreen } from "./screens/CollectionScreen"
 import { DebugScreen } from "./screens/DebugScreen"
 import { HatchScreen } from "./screens/HatchScreen"
 import { HomeScreen } from "./screens/HomeScreen"
+import { MapScreen } from "./screens/MapScreen"
 import { RoundScreen } from "./screens/RoundScreen"
 import { useGame } from "./store/store"
 
@@ -46,7 +47,9 @@ export function App() {
 	const background =
 		screen === "hatch"
 			? "bg-gradient-to-b from-indigo-950 via-purple-900 to-indigo-900"
-			: "bg-gradient-to-b from-violet-200 via-fuchsia-100 to-amber-50"
+			: screen === "map"
+				? "bg-gradient-to-b from-sky-200 via-violet-100 to-emerald-50"
+				: "bg-gradient-to-b from-violet-200 via-fuchsia-100 to-amber-50"
 
 	return (
 		<div className={`min-h-dvh ${background}`}>
@@ -55,6 +58,7 @@ export function App() {
 				{screen === "round" && <RoundScreen />}
 				{screen === "hatch" && <HatchScreen />}
 				{screen === "collection" && <CollectionScreen />}
+				{screen === "map" && <MapScreen />}
 				{screen === "debug" && DEBUG_ENABLED && <DebugScreen />}
 			</div>
 		</div>

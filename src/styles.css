@@ -262,3 +262,41 @@ body {
 	filter: brightness(0);
 	opacity: 0.3;
 }
+
+/* ---------- otwarcie bramy na mapie ---------- */
+
+/* biały rozbłysk portalu w chwili otwarcia */
+.anim-gate-flash {
+	animation: gate-flash 1s ease-out forwards;
+}
+
+@keyframes gate-flash {
+	0% {
+		opacity: 0;
+		transform: scale(0.4);
+	}
+	35% {
+		opacity: 0.95;
+		transform: scale(1);
+	}
+	100% {
+		opacity: 0;
+		transform: scale(1.7);
+	}
+}
+
+/* mgła/szron znikający, gdy brama się otwiera */
+.anim-mist-clear {
+	animation: mist-clear 0.8s ease-out forwards;
+}
+
+@keyframes mist-clear {
+	0% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	100% {
+		opacity: 0;
+		transform: scale(1.15);
+	}
+}

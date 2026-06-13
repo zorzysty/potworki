@@ -1,7 +1,7 @@
 import { BigButton } from "../components/BigButton"
 import { EGG_LABELS, EggView } from "../components/EggView"
 import { StarMeter } from "../components/StarMeter"
-import { fragmentsForEgg, STAGES } from "../game/facts"
+import { fragmentsForEgg } from "../game/facts"
 import { useGame } from "../store/store"
 
 export function RoundSummary() {
@@ -9,13 +9,11 @@ export function RoundSummary() {
 	const pendingEggs = useGame(s => s.pendingEggs)
 	const eggFragments = useGame(s => s.eggFragments)
 	const eggsEarned = useGame(s => s.eggsEarned)
-	const unlockedStage = useGame(s => s.unlockedStage)
 	const goTo = useGame(s => s.goTo)
 	if (!round || round.phase !== "summary") return null
 
 	const eggsThisRound = round.eggsCreated.length
 	const quality = round.finalQuality ?? "normal"
-	const newFactors = round.unlockedThisRound ? (STAGES[unlockedStage] ?? []) : []
 
 	return (
 		<div className="flex min-h-dvh flex-col items-center justify-center gap-5 p-6">
@@ -47,13 +45,18 @@ export function RoundSummary() {
 				</div>
 			)}
 
-			{newFactors.length > 0 && (
-				<div className="anim-pop rounded-3xl bg-gradient-to-r from-amber-300 to-orange-400 px-6 py-3 text-2xl font-extrabold text-white shadow-lg">
-					Nowa tabliczka: {newFactors.map(f => `×${f}`).join(", ")}! 🎊
+			{round.unlockedThisRound && (
+				<div className="anim-pop rounded-3xl bg-gradient-to-r from-amber-300 to-orange-400 px-6 py-3 text-center text-2xl font-extrabold text-white shadow-lg">
+					Nowa brama się otwiera! 🎉
 				</div>
 			)}
 
 			<div className="flex w-full max-w-sm flex-col gap-3 pt-2">
+				{round.unlockedThisRound && (
+					<BigButton onClick={() => goTo("map")} className="w-full py-5 text-2xl">
+						Zobacz, jak otwiera się brama! 🗺️
+					</BigButton>
+				)}
 				{pendingEggs.length > 0 && (
 					<BigButton onClick={() => goTo("hatch")} className="w-full py-5 text-3xl">
 						Wykluj jajko! 🥚

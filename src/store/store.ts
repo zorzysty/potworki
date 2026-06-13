@@ -24,7 +24,7 @@ import { FIRST_MONSTER_ID, IDS_BY_RARITY, rarityOf } from "../monsters/catalog"
 import type { SaveState } from "./schema"
 import { INITIAL_SAVE, migrateSave, SAVE_KEYS, SAVE_VERSION } from "./schema"
 
-export type Screen = "home" | "round" | "hatch" | "collection" | "debug"
+export type Screen = "home" | "round" | "hatch" | "collection" | "map" | "debug"
 export type RoundPhase = "answering" | "correct" | "wrong" | "summary"
 
 export interface RoundQuestion {
@@ -75,11 +75,13 @@ interface GameState extends SaveState {
 	setDreamMonster: (id: number | null) => void
 	buyWishEgg: () => void
 	applyDecay: () => void
+	markGatesCelebrated: () => void
 
 	debugSetAllMastery: (value: number) => void
 	debugOwnRarity: (rarity: Rarity) => void
 	debugAddIskierki: (amount: number) => void
 	debugAddEgg: (quality: EggQuality) => void
+	debugOpenGate: () => void
 	debugReset: () => void
 }
 
@@ -383,6 +385,9 @@ export const useGame = create<GameState>()(
 				set({ facts })
 			},
 
+			// mapa pokazała animację otwarcia bramy aż do bieżącego etapu
+			markGatesCelebrated: () => set(s => ({ celebratedStage: s.unlockedStage })),
+
 			debugSetAllMastery: value => {
 				const facts = { ...get().facts }
 				for (const fact of FACTS_BY_KEY.values()) {
@@ -409,6 +414,10 @@ export const useGame = create<GameState>()(
 				set(s => ({ iskierki: Math.min(ISKIERKI_CAP, s.iskierki + amount) })),
 
 			debugAddEgg: quality => set(s => ({ pendingEggs: [...s.pendingEggs, { quality }] })),
+
+			// otwiera kolejną bramę bez ruszania celebratedStage → wejście na mapę odpala animację
+			debugOpenGate: () =>
+				set(s => (isMaxStage(s.unlockedStage) ? {} : { unlockedStage: s.unlockedStage + 1 })),
 
 			debugReset: () => set({ ...INITIAL_SAVE, round: null, lastHatch: null, screen: "home" }),
 		}),

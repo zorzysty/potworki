@@ -11,7 +11,8 @@ Pojedynczy store zustand: koordynacja przepływu gry (runda, wyklucie, nawigacja
 
 ## Local Contracts
 
-- Klucz zapisu: `potworki-save`. **Każda zmiana kształtu `SaveState` = podbicie `SAVE_VERSION` + wpis w `MIGRATIONS`** (wzorzec w komentarzu w `schema.ts`). Zapis dziecka nie może przepaść po deployu.
+- Klucz zapisu: `potworki-save`. **Każda zmiana kształtu `SaveState` = podbicie `SAVE_VERSION` + wpis w `MIGRATIONS`** (wzorzec w komentarzu w `schema.ts`). Zapis dziecka nie może przepaść po deployu. Aktualnie `SAVE_VERSION = 3`.
+- `celebratedStage` (persystowany): najwyższy etap, którego animację otwarcia bramy pokazała mapa. `markGatesCelebrated()` ustawia go na `unlockedStage`; mapa odpala jednorazową animację, gdy `unlockedStage > celebratedStage`. Migracja v2→v3 ustawia `celebratedStage = unlockedStage`, by obecni gracze nie dostali animacji dla już otwartych bram. Debug `debugOpenGate` zwiększa `unlockedStage` (clamp `isMaxStage`) bez ruszania `celebratedStage` — do testu animacji.
 - Persystowane są wyłącznie pola `SaveState` (lista `SAVE_KEYS` napędza `partialize`); `screen`, `round`, `lastHatch` są efemeryczne. `goTo()` czyści `round` przy nawigacji poza ekran rundy.
 - **Commit per odpowiedź**: `pressConfirm` zapisuje statystyki działania, fragmenty i licznik `eggsEarned` natychmiast; koniec rundy tylko finalizuje jakość jajek z tej rundy, odblokowania i `totalRounds`. Wyjście w trakcie rundy (pauza → „Koniec na dziś", zamknięcie karty) niczego nie cofa — jajka zachowują prowizoryczną jakość, runda nie liczy się do `totalRounds`.
 - Próg fragmentów na jajko jest dynamiczny: nowe jajko powstaje gdy `eggFragments ≥ fragmentsForEgg(eggsEarned)`; po utworzeniu `eggsEarned++` (rośnie tylko za jajka z fragmentów, nie za Jajka Życzeń). Próg liczy `src/game/`, store tylko go wywołuje i prowadzi licznik.

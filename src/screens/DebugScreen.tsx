@@ -8,6 +8,7 @@ export function DebugScreen() {
 	const facts = useGame(s => s.facts)
 	const iskierki = useGame(s => s.iskierki)
 	const unlockedStage = useGame(s => s.unlockedStage)
+	const celebratedStage = useGame(s => s.celebratedStage)
 	const totalRounds = useGame(s => s.totalRounds)
 	const eggsEarned = useGame(s => s.eggsEarned)
 	const goTo = useGame(s => s.goTo)
@@ -15,6 +16,7 @@ export function DebugScreen() {
 	const debugOwnRarity = useGame(s => s.debugOwnRarity)
 	const debugAddIskierki = useGame(s => s.debugAddIskierki)
 	const debugAddEgg = useGame(s => s.debugAddEgg)
+	const debugOpenGate = useGame(s => s.debugOpenGate)
 	const debugReset = useGame(s => s.debugReset)
 
 	const btn = "rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-slate-700 shadow active:scale-95"
@@ -25,7 +27,8 @@ export function DebugScreen() {
 				← Home
 			</button>
 			<div className="my-2 font-bold">
-				etap: {unlockedStage} | rundy: {totalRounds} | iskierki: {iskierki} | jajka: {eggsEarned}
+				etap: {unlockedStage} | uczczony: {celebratedStage} | rundy: {totalRounds} | iskierki:{" "}
+				{iskierki} | jajka: {eggsEarned}
 			</div>
 			<div className="flex flex-wrap gap-2 pb-4">
 				<button type="button" className={btn} onPointerDown={() => debugSetAllMastery(0.7)}>
@@ -45,6 +48,9 @@ export function DebugScreen() {
 				</button>
 				<button type="button" className={btn} onPointerDown={() => debugAddEgg("rainbow")}>
 					+jajko tęczowe
+				</button>
+				<button type="button" className={btn} onPointerDown={debugOpenGate}>
+					otwórz bramę
 				</button>
 				<button
 					type="button"

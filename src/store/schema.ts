@@ -2,11 +2,12 @@ import type { FactStats } from "../game/adaptive"
 import type { FactKey } from "../game/facts"
 import type { PendingEgg } from "../game/rewards"
 
-export const SAVE_VERSION = 2
+export const SAVE_VERSION = 3
 
 export interface SaveState {
 	facts: Partial<Record<FactKey, FactStats>>
 	unlockedStage: number
+	celebratedStage: number // najwyższy etap, którego animację otwarcia bramy już pokazano (mapa)
 	ownedMonsters: Record<number, { hatchedAt: number }>
 	iskierki: number
 	eggFragments: number // 0–(próg−1), resztki przenoszone między rundami
@@ -19,6 +20,7 @@ export interface SaveState {
 export const INITIAL_SAVE: SaveState = {
 	facts: {},
 	unlockedStage: 0,
+	celebratedStage: 0,
 	ownedMonsters: {},
 	iskierki: 0,
 	eggFragments: 0,
@@ -41,6 +43,12 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 		const owned = s.ownedMonsters && typeof s.ownedMonsters === "object" ? Object.keys(s.ownedMonsters).length : 0
 		const pending = Array.isArray(s.pendingEggs) ? s.pendingEggs.length : 0
 		return { ...s, eggsEarned: owned + pending }
+	},
+	// v2→v3: dodano celebratedStage (mapa „Kraina Potworków"). Ustawiamy na bieżący
+	// unlockedStage, żeby obecni gracze nie dostali animacji dla już otwartych bram.
+	2: state => {
+		const s = state as Record<string, unknown>
+		return { ...s, celebratedStage: typeof s.unlockedStage === "number" ? s.unlockedStage : 0 }
 	},
 }
 
