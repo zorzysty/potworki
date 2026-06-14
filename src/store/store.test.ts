@@ -269,10 +269,66 @@ describe("eggStarBank", () => {
 })
 
 // ---------------------------------------------------------------------------
+// eggStarBank — akumulacja między rundami
+// ---------------------------------------------------------------------------
+
+describe("eggStarBank — akumulacja między rundami", () => {
+	// gra pełną rundę 10 poprawnych odpowiedzi (każda szybka → 3★)
+	const playCleanRound = () => {
+		game().startRound()
+		for (let i = 0; i < 10; i++) {
+			answer(true)
+			game().nextQuestion()
+		}
+	}
+
+	test("drugie jajko (próg 14) zbiera gwiazdki przez granicę rund; bank nie zeruje się przedwcześnie", () => {
+		// runda 1: 10 fragmentów = pierwsze jajko (fragmentsForEgg(0) = 10)
+		playCleanRound()
+		expect(game().eggsEarned).toBe(1)
+		expect(game().eggFragments).toBe(0)
+		expect(game().eggStarBank).toBe(0)
+		expect(game().pendingEggs.length).toBe(1)
+
+		// runda 2: 10 kolejnych fragmentów, ale próg drugiego jajka to
+		// fragmentsForEgg(1) = 14 → żadne jajko się nie domyka; bank ROŚNIE
+		// i przeżywa koniec rundy
+		playCleanRound()
+		expect(game().eggsEarned).toBe(1) // wciąż 1 — brak przedwczesnego jajka
+		expect(game().eggFragments).toBe(10)
+		expect(game().eggStarBank).toBe(30) // 10×3★ z rundy 2, nie wyzerowane
+
+		// runda 3: 4 poprawne odpowiedzi domykają drugie jajko (10 + 4 = 14)
+		game().startRound()
+		for (let i = 0; i < 4; i++) {
+			answer(true)
+			game().nextQuestion()
+		}
+		expect(game().eggsEarned).toBe(2)
+		expect(game().eggFragments).toBe(0)
+		expect(game().eggStarBank).toBe(0) // wyzerowany przy domknięciu
+		expect(game().pendingEggs.length).toBe(2)
+	})
+})
+
+// ---------------------------------------------------------------------------
 // Krok 4: Gwarancje wyklucia, ekonomia życzeń, nawigacja
 // ---------------------------------------------------------------------------
 
 describe("hatchEgg — gwarancje", () => {
+	test("hatchEgg(index) wykluwa i usuwa właściwe jajko z gniazda", () => {
+		game().debugAddEgg("normal")
+		game().debugAddEgg("silver")
+		game().debugAddEgg("gold")
+		expect(game().pendingEggs.map((e) => e.quality)).toEqual([
+			"normal",
+			"silver",
+			"gold",
+		])
+		game().hatchEgg(1) // wykluj środkowe (silver)
+		expect(game().pendingEggs.map((e) => e.quality)).toEqual(["normal", "gold"])
+	})
+
 	test("pierwsza inkubacja zawsze daje FIRST_MONSTER_ID", () => {
 		game().debugAddEgg("normal")
 		game().hatchEgg()
@@ -456,6 +512,35 @@ describe("tryb dzielenia", () => {
 			const id = game().lastHatch?.monsterId
 			if (id !== undefined) expect(DIVISION_ONLY_IDS.has(id)).toBe(false)
 		}
+	})
+
+	test("jajko z dzielenia MOŻE wykluć legendarnego tylko-dzielenie (osiągalność nagrody)", () => {
+		// posiadamy wszystko OPRÓCZ 4 legendarnych tylko-dzielenie (72–75):
+		// common+rare+epic + oryginalne legendarne 45,46,47,71. Każde NOWE
+		// wyklucie z jajka div musi więc być jednym z tylko-dzielenie.
+		game().debugOwnRarity("common")
+		game().debugOwnRarity("rare")
+		game().debugOwnRarity("epic")
+		const owned = { ...game().ownedMonsters }
+		for (const id of [45, 46, 47, 71]) owned[id] = { hatchedAt: 0 }
+		useGame.setState({ ownedMonsters: owned })
+
+		game().setMode("div") // debugAddEgg ostempluje jajka mode = "div"
+
+		let newCount = 0
+		for (let i = 0; i < 300; i++) {
+			game().debugAddEgg("rainbow") // 15% szans na legendarnego
+			game().hatchEgg()
+			const lh = game().lastHatch
+			if (lh?.isNew) {
+				newCount++
+				expect(DIVISION_ONLY_IDS.has(lh.monsterId)).toBe(true)
+			}
+		}
+		// invariant powyżej trzyma się zawsze; ten assert potwierdza osiągalność.
+		// 300 tęczowych jajek × 15% legendary ⇒ trafienie praktycznie pewne
+		// (P(0) ≈ 0.85^300 ≈ 10⁻²¹).
+		expect(newCount).toBeGreaterThan(0)
 	})
 })
 
