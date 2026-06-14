@@ -11,19 +11,22 @@ import {
 	shouldUnlockNextStage,
 } from "../game/adaptive"
 import { simulateRoundOutcome } from "../game/debug"
-import type { Fact, FactKey, GameMode } from "../game/facts"
+import type { Fact, FactKey, GameMode, RoundQuestion } from "../game/facts"
+
+export type { RoundQuestion } from "../game/facts"
+
 import {
+	expectedAnswer,
 	FACTS_BY_KEY,
-	fragmentsForEgg,
 	isMaxStage,
 	MAX_QUESTIONS_PER_ROUND,
+	makeQuestion,
 	QUESTIONS_PER_ROUND,
 	starsFor,
 } from "../game/facts"
 import type { EggQuality, Rarity } from "../game/rewards"
 import {
-	eggQuality,
-	eggQualityScore,
+	addEggFragment,
 	ISKIERKI_CAP,
 	ISKIERKI_FOR_DUP,
 	rollMonster,
@@ -43,15 +46,6 @@ import { INITIAL_SAVE, migrateSave, SAVE_KEYS, SAVE_VERSION } from "./schema"
 
 export type Screen = "home" | "round" | "hatch" | "collection" | "map" | "debug"
 export type RoundPhase = "answering" | "correct" | "wrong" | "summary"
-
-export interface RoundQuestion {
-	key: FactKey
-	// w kolejności wyświetlania. Mnożenie: losowa orientacja czynników (a×b).
-	// Dzielenie: a = dzielna (iloczyn), b = dzielnik; oczekiwany wynik = a/b.
-	a: number
-	b: number
-	isRequeue: boolean
-}
 
 export interface RoundState {
 	mode: GameMode
@@ -113,38 +107,6 @@ interface GameState extends SaveState {
 	debugAddEgg: (quality: EggQuality) => void
 	debugOpenGate: () => void
 	debugReset: () => void
-}
-
-function makeQuestion(
-	fact: Fact,
-	isRequeue: boolean,
-	mode: GameMode,
-	introFactor: number | null,
-): RoundQuestion {
-	if (mode === "div") {
-		// dzielenie: (a*b) ÷ dzielnik = iloraz. Po odblokowaniu czynnika ma on być
-		// w działaniu (dzielnik), nie w wyniku → 72÷8, nie 72÷9. Poza tym dzielnik losowy.
-		const introIsOperand =
-			introFactor !== null && (fact.a === introFactor || fact.b === introFactor)
-		const divisor = introIsOperand
-			? (introFactor as number)
-			: Math.random() < 0.5
-				? fact.a
-				: fact.b
-		return { key: fact.key, a: fact.a * fact.b, b: divisor, isRequeue }
-	}
-	const flip = Math.random() < 0.5
-	return {
-		key: fact.key,
-		a: flip ? fact.b : fact.a,
-		b: flip ? fact.a : fact.b,
-		isRequeue,
-	}
-}
-
-// Oczekiwany wynik pytania zależnie od trybu (mnożenie: a×b, dzielenie: a÷b).
-function expectedAnswer(q: RoundQuestion, mode: GameMode): number {
-	return mode === "div" ? q.a / q.b : q.a * q.b
 }
 
 // Pula losowania potworków zależna od trybu jajka: jajko z dzielenia widzi pełny
@@ -255,7 +217,13 @@ export const useGame = create<GameState>()(
 						planPos: 1,
 						index: 0,
 						total: QUESTIONS_PER_ROUND,
-						question: makeQuestion(firstFact, false, mode, introFactor),
+						question: makeQuestion(
+							firstFact,
+							false,
+							mode,
+							introFactor,
+							Math.random,
+						),
 						phase: "answering",
 						answer: "",
 						stars: 0,
@@ -334,30 +302,25 @@ export const useGame = create<GameState>()(
 				const gained = q.isRequeue ? Math.min(1, earned) : earned
 				const stars = round.stars + gained
 
-				// fragment + gwiazdki przyznane niezależnie od wyniku — postęp nigdy nie przepada.
-				// eggStarBank zbiera gwiazdki tego jajka; przy domknięciu decyduje o jego kolorze.
-				let eggFragments = state.eggFragments + 1
-				let eggStarBank = state.eggStarBank + gained
+				// fragment + gwiazdki niezależnie od wyniku — postęp nigdy nie przepada.
+				// addEggFragment domyka jajko po przekroczeniu progu (finalny kolor z banku).
+				const { bank, created } = addEggFragment(
+					{
+						eggFragments: state.eggFragments,
+						eggStarBank: state.eggStarBank,
+						eggsEarned: state.eggsEarned,
+						iskierki: state.iskierki,
+					},
+					gained,
+					round.mode,
+					Math.random,
+				)
+				const { eggFragments, eggStarBank, eggsEarned, iskierki } = bank
 				let pendingEggs = state.pendingEggs
-				let eggsEarned = state.eggsEarned
-				let iskierki = state.iskierki
 				const eggsCreated = [...round.eggsCreated]
-				const threshold = fragmentsForEgg(eggsEarned)
-				if (eggFragments >= threshold) {
-					// kolor jest FINALNY już teraz: średnia gwiazdek włożonych w to jajko
-					// (eggStarBank/próg → skala 0–30). tryb jajka = tryb rundy (pula przy wykluciu)
-					const quality = eggQuality(
-						eggQualityScore(eggStarBank, threshold),
-						Math.random,
-					)
-					eggFragments = 0
-					eggStarBank = 0
-					eggsEarned++
-					pendingEggs = [...pendingEggs, { quality, mode: round.mode }]
+				if (created) {
+					pendingEggs = [...pendingEggs, created]
 					eggsCreated.push(pendingEggs.length - 1)
-					// tęczowe jajko nagradza iskierką — przyznawaną przy domknięciu jajka
-					if (quality === "rainbow")
-						iskierki = Math.min(ISKIERKI_CAP, iskierki + 1)
 				}
 
 				if (correct) {
@@ -471,6 +434,7 @@ export const useGame = create<GameState>()(
 							requeuedFact !== undefined,
 							round.mode,
 							round.introFactor,
+							Math.random,
 						),
 						phase: "answering",
 						answer: "",

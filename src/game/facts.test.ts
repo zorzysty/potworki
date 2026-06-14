@@ -3,9 +3,11 @@ import { describe, expect, test } from "bun:test"
 import {
 	ALL_FACTS,
 	budgetMs,
+	expectedAnswer,
 	FACTS_BY_KEY,
 	fragmentsForEgg,
 	isMaxStage,
+	makeQuestion,
 	STAGES,
 	starsFor,
 	unlockedFacts,
@@ -115,5 +117,90 @@ describe("fragmentsForEgg", () => {
 
 	test("21st egg costs 22 fragments", () => {
 		expect(fragmentsForEgg(20)).toBe(22)
+	})
+})
+
+describe("makeQuestion", () => {
+	const fact = { a: 4, b: 9, key: "4x9" as const }
+
+	describe("mult mode", () => {
+		test("rand=0.9 → nie odwraca (a===fact.a, b===fact.b)", () => {
+			const q = makeQuestion(fact, false, "mult", null, () => 0.9)
+			expect(q.a).toBe(4)
+			expect(q.b).toBe(9)
+			expect(q.key).toBe("4x9")
+			expect(q.isRequeue).toBe(false)
+		})
+
+		test("rand=0 → odwraca czynniki (a===fact.b, b===fact.a)", () => {
+			const q = makeQuestion(fact, false, "mult", null, () => 0)
+			expect(q.a).toBe(9)
+			expect(q.b).toBe(4)
+		})
+
+		test("isRequeue jest przekazywane poprawnie", () => {
+			const q = makeQuestion(fact, true, "mult", null, () => 0.9)
+			expect(q.isRequeue).toBe(true)
+		})
+	})
+
+	describe("div mode", () => {
+		test("dzielna to iloczyn czynników", () => {
+			const q = makeQuestion(fact, false, "div", null, () => 0)
+			expect(q.a).toBe(36) // 4*9
+		})
+
+		test("rand=0 → dzielnik to fact.a", () => {
+			const q = makeQuestion(fact, false, "div", null, () => 0)
+			expect(q.b).toBe(4)
+		})
+
+		test("rand=0.9 → dzielnik to fact.b", () => {
+			const q = makeQuestion(fact, false, "div", null, () => 0.9)
+			expect(q.b).toBe(9)
+		})
+
+		test("iloraz jest liczbą całkowitą w 1..10", () => {
+			for (const r of [0, 0.9]) {
+				const q = makeQuestion(fact, false, "div", null, () => r)
+				const quotient = q.a / q.b
+				expect(Number.isInteger(quotient)).toBe(true)
+				expect(quotient).toBeGreaterThanOrEqual(1)
+				expect(quotient).toBeLessThanOrEqual(10)
+			}
+		})
+
+		test("intro: nowy czynnik wymuszony na pozycji dzielnika (rand ignorowany)", () => {
+			// introFactor = 8, fact = {a:8, b:9} → dzielnik = 8, niezależnie od rand
+			const fact89 = { a: 8, b: 9, key: "8x9" as const }
+			const q = makeQuestion(fact89, false, "div", 8, () => 0.9)
+			expect(q.a).toBe(72)
+			expect(q.b).toBe(8)
+			expect(expectedAnswer(q, "div")).toBe(9)
+		})
+
+		test("intro: introFactor jest fact.b → dzielnik = introFactor", () => {
+			const fact89 = { a: 8, b: 9, key: "8x9" as const }
+			const q = makeQuestion(fact89, false, "div", 9, () => 0)
+			expect(q.b).toBe(9)
+		})
+
+		test("intro: introFactor nie należy do fact → dzielnik losowy (rand=0 → fact.a)", () => {
+			const fact89 = { a: 8, b: 9, key: "8x9" as const }
+			const q = makeQuestion(fact89, false, "div", 7, () => 0)
+			expect(q.b).toBe(8) // rand=0 < 0.5 → fact.a
+		})
+	})
+})
+
+describe("expectedAnswer", () => {
+	test("mult: zwraca a*b", () => {
+		const q = { key: "4x9" as const, a: 4, b: 9, isRequeue: false }
+		expect(expectedAnswer(q, "mult")).toBe(36)
+	})
+
+	test("div: zwraca a/b", () => {
+		const q = { key: "4x9" as const, a: 36, b: 4, isRequeue: false }
+		expect(expectedAnswer(q, "div")).toBe(9)
 	})
 })

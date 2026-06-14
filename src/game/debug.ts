@@ -6,13 +6,8 @@ import {
 	shouldUnlockNextStage,
 } from "./adaptive"
 import type { Fact, FactKey, GameMode } from "./facts"
-import {
-	budgetMs,
-	fragmentsForEgg,
-	isMaxStage,
-	QUESTIONS_PER_ROUND,
-} from "./facts"
-import { eggQuality, eggQualityScore, ISKIERKI_CAP } from "./rewards"
+import { budgetMs, isMaxStage, QUESTIONS_PER_ROUND } from "./facts"
+import { addEggFragment } from "./rewards"
 
 // Rozkłada sumę gwiazdek na n pytań (każde 0..3): jak najwięcej trójek (szybkie
 // odpowiedzi → większy przyrost mastery), reszta wolniej. Dla debug-symulacji rundy.
@@ -66,18 +61,20 @@ export function simulateRoundOutcome(
 		)
 		asked.push(fact.key)
 		// fragment + gwiazdki za każdą odpowiedź; jajko po przekroczeniu progu dostaje
-		// finalny kolor z banku gwiazdek włożonych w jego budowę (eggStarBank/próg)
-		eggFragments++
-		eggStarBank += stars
-		const threshold = fragmentsForEgg(eggsEarned)
-		if (eggFragments >= threshold) {
-			const quality = eggQuality(eggQualityScore(eggStarBank, threshold), rand)
-			eggFragments = 0
-			eggStarBank = 0
-			eggsEarned++
-			pendingEggs.push({ quality, mode })
+		// finalny kolor z banku (ta sama czysta logika co w store — addEggFragment)
+		const r = addEggFragment(
+			{ eggFragments, eggStarBank, eggsEarned, iskierki },
+			stars,
+			mode,
+			rand,
+		)
+		eggFragments = r.bank.eggFragments
+		eggStarBank = r.bank.eggStarBank
+		eggsEarned = r.bank.eggsEarned
+		iskierki = r.bank.iskierki
+		if (r.created) {
+			pendingEggs.push(r.created)
 			createdIndices.push(pendingEggs.length - 1)
-			if (quality === "rainbow") iskierki = Math.min(ISKIERKI_CAP, iskierki + 1)
 		}
 	}
 

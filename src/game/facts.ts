@@ -76,3 +76,46 @@ export function fragmentsForEgg(eggsEarned: number): number {
 	if (eggsEarned <= 0) return 10
 	return 14 + 4 * Math.floor(eggsEarned / 10)
 }
+
+export interface RoundQuestion {
+	key: FactKey
+	// w kolejności wyświetlania. Mnożenie: losowa orientacja czynników (a×b).
+	// Dzielenie: a = dzielna (iloczyn), b = dzielnik; oczekiwany wynik = a/b.
+	a: number
+	b: number
+	isRequeue: boolean
+}
+
+// Buduje pytanie do wyświetlenia z faktu wg trybu. Mnożenie: losowa orientacja
+// czynników. Dzielenie: (a*b) ÷ dzielnik = iloraz; w intro-rundzie nowy czynnik
+// wymuszany na pozycji dzielnika (72÷8, nie 72÷9). rand wstrzykiwany — testowalność.
+export function makeQuestion(
+	fact: Fact,
+	isRequeue: boolean,
+	mode: GameMode,
+	introFactor: number | null,
+	rand: () => number,
+): RoundQuestion {
+	if (mode === "div") {
+		const introIsOperand =
+			introFactor !== null && (fact.a === introFactor || fact.b === introFactor)
+		const divisor = introIsOperand
+			? (introFactor as number)
+			: rand() < 0.5
+				? fact.a
+				: fact.b
+		return { key: fact.key, a: fact.a * fact.b, b: divisor, isRequeue }
+	}
+	const flip = rand() < 0.5
+	return {
+		key: fact.key,
+		a: flip ? fact.b : fact.a,
+		b: flip ? fact.a : fact.b,
+		isRequeue,
+	}
+}
+
+// Oczekiwany wynik pytania wg trybu (mnożenie a×b, dzielenie a÷b).
+export function expectedAnswer(q: RoundQuestion, mode: GameMode): number {
+	return mode === "div" ? q.a / q.b : q.a * q.b
+}

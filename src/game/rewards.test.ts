@@ -2,8 +2,10 @@
 import { describe, expect, test } from "bun:test"
 import { mulberry32 } from "../monsters/catalog"
 import {
+	addEggFragment,
 	eggQuality,
 	eggQualityScore,
+	ISKIERKI_CAP,
 	QUALITY_ORDER,
 	qualityOdds,
 	RARITY_ODDS,
@@ -70,6 +72,97 @@ describe("eggQualityScore", () => {
 		// próg 22 (jajka 21+): komplet 3★ = bank 66 → 30; jedna 2★ = bank 65 → 29
 		expect(eggQualityScore(66, 22)).toBe(30)
 		expect(eggQualityScore(65, 22)).toBe(29)
+	})
+})
+
+describe("addEggFragment", () => {
+	const emptyBank = {
+		eggFragments: 0,
+		eggStarBank: 0,
+		eggsEarned: 0,
+		iskierki: 0,
+	}
+
+	test("poniżej progu: akumuluje fragment i gwiazdki, created === null", () => {
+		const { bank, created } = addEggFragment(emptyBank, 3, "mult", () => 0)
+		expect(created).toBeNull()
+		expect(bank.eggFragments).toBe(1)
+		expect(bank.eggStarBank).toBe(3)
+		expect(bank.eggsEarned).toBe(0)
+		expect(bank.iskierki).toBe(0)
+	})
+
+	test("na progu (jajko #1, próg=10): domyka jajko i resetuje bank", () => {
+		const bank9 = {
+			eggFragments: 9,
+			eggStarBank: 20,
+			eggsEarned: 0,
+			iskierki: 0,
+		}
+		const { bank, created } = addEggFragment(bank9, 3, "mult", () => 0)
+		expect(created).not.toBeNull()
+		expect(bank.eggFragments).toBe(0)
+		expect(bank.eggStarBank).toBe(0)
+		expect(bank.eggsEarned).toBe(1)
+		expect(created?.mode).toBe("mult")
+	})
+
+	test("eggsEarned zwiększa się o 1 przy domknięciu", () => {
+		const bank9 = {
+			eggFragments: 9,
+			eggStarBank: 0,
+			eggsEarned: 0,
+			iskierki: 0,
+		}
+		const { bank } = addEggFragment(bank9, 0, "div", () => 0)
+		expect(bank.eggsEarned).toBe(1)
+	})
+
+	test("tryb jajka zachowany w created.mode", () => {
+		const bank9 = {
+			eggFragments: 9,
+			eggStarBank: 0,
+			eggsEarned: 0,
+			iskierki: 0,
+		}
+		const { created } = addEggFragment(bank9, 0, "div", () => 0)
+		expect(created?.mode).toBe("div")
+	})
+
+	test("tęczowe: iskierki rośnie o 1", () => {
+		// próg=10, bank=27+3=30, threshold=10 → score=30 → rand=0.999 → rainbow
+		const bank9 = {
+			eggFragments: 9,
+			eggStarBank: 27,
+			eggsEarned: 0,
+			iskierki: 5,
+		}
+		const { bank, created } = addEggFragment(bank9, 3, "mult", () => 0.999)
+		expect(created?.quality).toBe("rainbow")
+		expect(bank.iskierki).toBe(6)
+	})
+
+	test("tęczowe przy ISKIERKI_CAP: iskierki zatrzymuje się na capie", () => {
+		const bank9 = {
+			eggFragments: 9,
+			eggStarBank: 27,
+			eggsEarned: 0,
+			iskierki: ISKIERKI_CAP,
+		}
+		const { bank } = addEggFragment(bank9, 3, "mult", () => 0.999)
+		expect(bank.iskierki).toBe(ISKIERKI_CAP)
+	})
+
+	test("non-rainbow: iskierki się nie zmienia", () => {
+		// rand=0 → normal quality (roll=0 → 0-10<0 → normal)
+		const bank9 = {
+			eggFragments: 9,
+			eggStarBank: 0,
+			eggsEarned: 0,
+			iskierki: 7,
+		}
+		const { bank } = addEggFragment(bank9, 0, "mult", () => 0)
+		expect(bank.iskierki).toBe(7)
 	})
 })
 

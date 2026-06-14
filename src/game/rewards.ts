@@ -1,4 +1,4 @@
-import type { GameMode } from "./facts"
+import { fragmentsForEgg, type GameMode } from "./facts"
 
 export type EggQuality = "normal" | "silver" | "gold" | "rainbow"
 export type Rarity = "common" | "rare" | "epic" | "legendary"
@@ -75,6 +75,46 @@ export const ISKIERKI_FOR_DUP: Record<Rarity, number> = {
 }
 
 export const ISKIERKI_CAP = 99
+
+// Stan ekonomii jajek niesiony między odpowiedziami (commit per odpowiedź).
+export interface EggBankState {
+	eggFragments: number
+	eggStarBank: number
+	eggsEarned: number
+	iskierki: number
+}
+
+// Dokłada jeden fragment + `gained` gwiazdek do bieżącego jajka. Gdy fragmenty
+// osiągną próg `fragmentsForEgg(eggsEarned)`, domyka jajko: finalny kolor losowany
+// z banku gwiazdek włożonych w jego budowę, reset banku i fragmentów, eggsEarned++,
+// iskierka za tęczowe (cap). Czysta: zwraca nowy stan + utworzone jajko (lub null).
+export function addEggFragment(
+	bank: EggBankState,
+	gained: number,
+	mode: GameMode,
+	rand: () => number,
+): { bank: EggBankState; created: PendingEgg | null } {
+	const eggFragments = bank.eggFragments + 1
+	const eggStarBank = bank.eggStarBank + gained
+	const threshold = fragmentsForEgg(bank.eggsEarned)
+	if (eggFragments < threshold) {
+		return { bank: { ...bank, eggFragments, eggStarBank }, created: null }
+	}
+	const quality = eggQuality(eggQualityScore(eggStarBank, threshold), rand)
+	const iskierki =
+		quality === "rainbow"
+			? Math.min(ISKIERKI_CAP, bank.iskierki + 1)
+			: bank.iskierki
+	return {
+		bank: {
+			eggFragments: 0,
+			eggStarBank: 0,
+			eggsEarned: bank.eggsEarned + 1,
+			iskierki,
+		},
+		created: { quality, mode },
+	}
+}
 export const WISH_COST: Record<Rarity, number> = {
 	common: 10,
 	rare: 10,
