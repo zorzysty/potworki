@@ -22,12 +22,18 @@ interface Props {
 	className?: string
 }
 
-export function MonsterSvg({ id, size = 160, animate = true, className }: Props) {
+export function MonsterSvg({
+	id,
+	size = 160,
+	animate = true,
+	className,
+}: Props) {
 	const uid = useId()
 	const monster = MONSTERS[id]
 	if (!monster) return null
 	const { dna } = monster
-	const pal = PALETTES[dna.palette] ?? (PALETTES[0] as NonNullable<(typeof PALETTES)[0]>)
+	const pal =
+		PALETTES[dna.palette] ?? (PALETTES[0] as NonNullable<(typeof PALETTES)[0]>)
 	const rainbow = dna.palette === 7
 	const bodyFill = rainbow ? `url(#rb-${uid})` : pal.base
 	const path = bodyPath(dna.body)
@@ -56,17 +62,29 @@ export function MonsterSvg({ id, size = 160, animate = true, className }: Props)
 			</defs>
 			<g className={animate ? "monster-bob" : undefined}>
 				{/* legendarne mają koronę I aurę */}
-				{(dna.accessory === "aura" || dna.accessory === "crown") && <Aura palette={pal} />}
+				{(dna.accessory === "aura" || dna.accessory === "crown") && (
+					<Aura palette={pal} />
+				)}
 				{dna.accessory === "wings" && <Wings palette={pal} />}
 				<Feet palette={pal} fill={rainbow ? "#C7CEEA" : pal.base} />
-				<path d={path} fill={bodyFill} stroke={pal.outline} strokeWidth={5} strokeLinejoin="round" />
+				<path
+					d={path}
+					fill={bodyFill}
+					stroke={pal.outline}
+					strokeWidth={5}
+					strokeLinejoin="round"
+				/>
 				<g clipPath={`url(#clip-${uid})`}>
 					<Belly palette={pal} />
 					<PatternLayer variant={dna.pattern} palette={pal} />
 					{dna.palette === 6 && <GalaxyStars />}
 				</g>
 				{/* korona zastępuje topper, żeby nie kolidowały na czubku głowy */}
-				{dna.accessory === "crown" ? <Crown /> : <Topper variant={dna.topper} palette={pal} />}
+				{dna.accessory === "crown" ? (
+					<Crown />
+				) : (
+					<Topper variant={dna.topper} palette={pal} />
+				)}
 				<g className={animate ? "monster-eyes" : undefined}>
 					<Eyes variant={dna.eyes} palette={pal} />
 				</g>

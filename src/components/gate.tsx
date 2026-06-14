@@ -6,7 +6,9 @@ export const CRYSTALS = 8
 
 // liczba zapalonych kryształów; komplet (8/8) tylko gdy brama naprawdę gotowa
 export function litCrystals(progress: number): number {
-	return progress >= 1 ? CRYSTALS : Math.min(CRYSTALS - 1, Math.floor(progress * CRYSTALS))
+	return progress >= 1
+		? CRYSTALS
+		: Math.min(CRYSTALS - 1, Math.floor(progress * CRYSTALS))
 }
 
 // czynnik (cyfra) ukryty za bramą danego etapu (etapy 1+ mają jeden czynnik)
@@ -22,7 +24,10 @@ export function Crystal({ lit, index }: { lit: boolean; index: number }) {
 	if (!lit) {
 		// zgaszony — przygaszone „gniazdo" klejnotu
 		return (
-			<span className="inline-block" style={{ transform: `translateY(${dy}px)` }}>
+			<span
+				className="inline-block"
+				style={{ transform: `translateY(${dy}px)` }}
+			>
 				<svg viewBox="0 0 32 34" width={22} height={24} aria-hidden="true">
 					<path
 						d={GEM}
@@ -33,7 +38,11 @@ export function Crystal({ lit, index }: { lit: boolean; index: number }) {
 						strokeWidth={1.5}
 						strokeLinejoin="round"
 					/>
-					<polygon points="9,5 23,5 21,13 11,13" fill="#94a3b8" opacity={0.18} />
+					<polygon
+						points="9,5 23,5 21,13 11,13"
+						fill="#94a3b8"
+						opacity={0.18}
+					/>
 				</svg>
 			</span>
 		)
@@ -41,7 +50,10 @@ export function Crystal({ lit, index }: { lit: boolean; index: number }) {
 	return (
 		<span
 			className="inline-block"
-			style={{ transform: `translateY(${dy}px)`, filter: "drop-shadow(0 0 5px rgb(255 200 70 / 0.85))" }}
+			style={{
+				transform: `translateY(${dy}px)`,
+				filter: "drop-shadow(0 0 5px rgb(255 200 70 / 0.85))",
+			}}
 		>
 			<svg viewBox="0 0 32 34" width={22} height={24} aria-hidden="true">
 				<defs>
@@ -51,7 +63,13 @@ export function Crystal({ lit, index }: { lit: boolean; index: number }) {
 						<stop offset="100%" stopColor="#f0950e" />
 					</linearGradient>
 				</defs>
-				<path d={GEM} fill={`url(#gem-${uid})`} stroke="#b9770a" strokeWidth={1.2} strokeLinejoin="round" />
+				<path
+					d={GEM}
+					fill={`url(#gem-${uid})`}
+					stroke="#b9770a"
+					strokeWidth={1.2}
+					strokeLinejoin="round"
+				/>
 				{/* fasety: stolik jasny, pawilon ciemniejszy → głębia */}
 				<polygon points="9,5 23,5 21,13 11,13" fill="#fff6cf" opacity={0.95} />
 				<polygon points="11,13 21,13 16,32" fill="#f5b21f" opacity={0.5} />
@@ -83,7 +101,13 @@ export function Crystal({ lit, index }: { lit: boolean; index: number }) {
 // pełnoekranowy splash otwarcia bramy: dwie fazy (otwieranie → odsłona czynnika).
 // Caller decyduje, kiedy go pokazać i co zrobić po tapnięciu (onDone); uczczenie
 // (markGatesCelebrated) należy do callera, by komponent był reużywalny.
-export function GateReveal({ stage, onDone }: { stage: number; onDone: () => void }) {
+export function GateReveal({
+	stage,
+	onDone,
+}: {
+	stage: number
+	onDone: () => void
+}) {
 	const [revealed, setRevealed] = useState(false)
 
 	useEffect(() => {
@@ -114,7 +138,9 @@ export function GateReveal({ stage, onDone }: { stage: number; onDone: () => voi
 				<div className="relative -mt-1 rounded-t-[3rem] rounded-b-2xl bg-gradient-to-b from-violet-400 to-fuchsia-500 p-2.5 shadow-2xl">
 					<div className="relative flex h-48 w-44 items-center justify-center overflow-hidden rounded-t-[2.6rem] rounded-b-xl bg-gradient-to-b from-indigo-900 via-purple-900 to-indigo-950">
 						{revealed ? (
-							<div className="anim-pop-in text-6xl font-extrabold text-sunny">×{gateFactor(stage)}</div>
+							<div className="anim-pop-in text-6xl font-extrabold text-sunny">
+								×{gateFactor(stage)}
+							</div>
 						) : (
 							<div className="text-5xl font-extrabold text-white/80">? ?</div>
 						)}

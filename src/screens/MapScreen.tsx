@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { EggView } from "../components/EggView"
-import { Crystal, CRYSTALS, GateReveal, gateFactor, litCrystals } from "../components/gate"
+import {
+	CRYSTALS,
+	Crystal,
+	GateReveal,
+	gateFactor,
+	litCrystals,
+} from "../components/gate"
 import { HelpTip } from "../components/HelpTip"
 import { needsMaintenance, stageProgress } from "../game/adaptive"
 import { isMaxStage, STAGES } from "../game/facts"
@@ -10,15 +16,17 @@ import { useGame } from "../store/store"
 
 // łącznik ścieżki między węzłami
 function Trail() {
-	return <div className="mx-auto h-8 w-1 rounded-full border-l-4 border-dashed border-white/60" />
+	return (
+		<div className="mx-auto h-8 w-1 rounded-full border-l-4 border-dashed border-white/60" />
+	)
 }
 
 export function MapScreen() {
-	const unlockedStage = useGame(s => s.unlockedStage)
-	const facts = useGame(s => s.facts)
-	const ownedMonsters = useGame(s => s.ownedMonsters)
-	const startRound = useGame(s => s.startRound)
-	const goTo = useGame(s => s.goTo)
+	const unlockedStage = useGame((s) => s.unlockedStage)
+	const facts = useGame((s) => s.facts)
+	const ownedMonsters = useGame((s) => s.ownedMonsters)
+	const startRound = useGame((s) => s.startRound)
+	const goTo = useGame((s) => s.goTo)
 
 	// świeżo otwarta brama do uczczenia — decyzja podjęta przy pierwszym renderze,
 	// PRZED mutacją store, więc stabilna mimo podwójnego montażu StrictMode.
@@ -26,7 +34,9 @@ export function MapScreen() {
 	// zapas dla ścieżki debug (debugOpenGate / debugSimulateRound).
 	const [reveal, setReveal] = useState<{ stage: number } | null>(() => {
 		const s = useGame.getState()
-		return s.unlockedStage > s.celebratedStage ? { stage: s.unlockedStage } : null
+		return s.unlockedStage > s.celebratedStage
+			? { stage: s.unlockedStage }
+			: null
 	})
 
 	useEffect(() => {
@@ -40,7 +50,8 @@ export function MapScreen() {
 
 	const ownedIds = Object.keys(ownedMonsters).map(Number)
 	const traveler = ownedIds.sort(
-		(a, b) => (ownedMonsters[b]?.hatchedAt ?? 0) - (ownedMonsters[a]?.hatchedAt ?? 0),
+		(a, b) =>
+			(ownedMonsters[b]?.hatchedAt ?? 0) - (ownedMonsters[a]?.hatchedAt ?? 0),
 	)[0]
 
 	// zdobyte krainy: etapy unlockedStage..1 (od najnowszej), etap 0 = wioska
@@ -58,7 +69,9 @@ export function MapScreen() {
 				>
 					←
 				</button>
-				<div className="text-2xl font-extrabold text-grape-dark">Kraina Potworków 🗺️</div>
+				<div className="text-2xl font-extrabold text-grape-dark">
+					Kraina Potworków 🗺️
+				</div>
 				<HelpTip
 					placement="bottom"
 					align="right"
@@ -70,7 +83,7 @@ export function MapScreen() {
 			{!maxStage && gatesLeft > 1 && (
 				<div className="flex flex-col items-center gap-1 pt-1 opacity-70">
 					<div className="flex items-end gap-3">
-						{[0, 1].map(i => (
+						{[0, 1].map((i) => (
 							<div
 								key={i}
 								className="h-12 w-10 rounded-t-2xl bg-gradient-to-b from-slate-300 to-slate-400 shadow-inner"
@@ -79,7 +92,8 @@ export function MapScreen() {
 						))}
 					</div>
 					<div className="text-sm font-bold text-slate-400">
-						dalej śpią kolejne krainy… (jeszcze {gatesLeft} {gatesLeft === 1 ? "brama" : "bram"})
+						dalej śpią kolejne krainy… (jeszcze {gatesLeft}{" "}
+						{gatesLeft === 1 ? "brama" : "bram"})
 					</div>
 					<Trail />
 				</div>
@@ -89,9 +103,16 @@ export function MapScreen() {
 			{maxStage ? (
 				<div className="anim-pop flex flex-col items-center gap-3 rounded-[2rem] bg-gradient-to-b from-amber-300 to-orange-400 p-6 text-center shadow-xl">
 					<div className="text-6xl">👑</div>
-					<div className="text-2xl font-extrabold text-white">Cała Kraina zdobyta!</div>
-					<div className="text-lg font-bold text-white/90">Wszystkie tabliczki są Twoje 🎉</div>
-					<BigButton onClick={startRound} className="mt-1 w-full max-w-xs py-4 text-2xl">
+					<div className="text-2xl font-extrabold text-white">
+						Cała Kraina zdobyta!
+					</div>
+					<div className="text-lg font-bold text-white/90">
+						Wszystkie tabliczki są Twoje 🎉
+					</div>
+					<BigButton
+						onClick={startRound}
+						className="mt-1 w-full max-w-xs py-4 text-2xl"
+					>
 						Graj dalej! 🚀
 					</BigButton>
 				</div>
@@ -108,7 +129,9 @@ export function MapScreen() {
 					<div className="relative -mt-1">
 						<div className="rounded-t-[3rem] rounded-b-2xl bg-gradient-to-b from-violet-400 to-fuchsia-500 p-2.5 shadow-xl">
 							<div className="relative flex h-44 w-40 items-center justify-center overflow-hidden rounded-t-[2.6rem] rounded-b-xl bg-gradient-to-b from-indigo-900 via-purple-900 to-indigo-950">
-								<div className="anim-float text-5xl font-extrabold text-white/80">? ?</div>
+								<div className="anim-float text-5xl font-extrabold text-white/80">
+									? ?
+								</div>
 								{/* szron/mgła zakrywająca tajemnicę */}
 								<div className="pointer-events-none absolute inset-0 bg-white/15 backdrop-blur-[2px]" />
 							</div>
@@ -135,7 +158,10 @@ export function MapScreen() {
 								? "Zagraj rundę, żeby zacząć zbierać kryształy!"
 								: "Każda runda dokłada kryształów. Komplet otworzy bramę!"}
 					</div>
-					<BigButton onClick={startRound} className="mt-3 w-full max-w-xs py-4 text-2xl">
+					<BigButton
+						onClick={startRound}
+						className="mt-3 w-full max-w-xs py-4 text-2xl"
+					>
 						Graj, by ją otworzyć! 🚀
 					</BigButton>
 				</div>
@@ -151,7 +177,9 @@ export function MapScreen() {
 						<div key={st} className="flex flex-col items-center">
 							{i > 0 && <Trail />}
 							<div className="flex items-center gap-3 rounded-3xl border-b-4 border-emerald-300 bg-white/90 px-5 py-3 shadow-md">
-								<div className="text-3xl font-extrabold text-grape-dark">×{f}</div>
+								<div className="text-3xl font-extrabold text-grape-dark">
+									×{f}
+								</div>
 								<div className="rounded-full bg-emerald-100 px-3 py-0.5 text-sm font-extrabold text-emerald-600">
 									zdobyta ✓
 								</div>
@@ -163,9 +191,11 @@ export function MapScreen() {
 				{/* wioska startowa */}
 				{conquered.length > 0 && <Trail />}
 				<div className="flex flex-col items-center gap-1 rounded-3xl border-b-4 border-violet-200 bg-white/90 px-5 py-3 shadow-md">
-					<div className="text-lg font-extrabold text-grape-dark">🏡 Wioska startowa</div>
+					<div className="text-lg font-extrabold text-grape-dark">
+						🏡 Wioska startowa
+					</div>
 					<div className="flex gap-1.5">
-						{STAGES[0]?.map(f => (
+						{STAGES[0]?.map((f) => (
 							<div
 								key={f}
 								className="rounded-lg bg-violet-100 px-2 py-0.5 text-base font-extrabold text-grape-dark"
@@ -178,7 +208,9 @@ export function MapScreen() {
 			</div>
 
 			{/* animacja otwarcia bramy (zapas dla ścieżki debug — w grze gra w podsumowaniu) */}
-			{reveal && <GateReveal stage={reveal.stage} onDone={() => setReveal(null)} />}
+			{reveal && (
+				<GateReveal stage={reveal.stage} onDone={() => setReveal(null)} />
+			)}
 		</div>
 	)
 }

@@ -14,12 +14,21 @@ interface Props {
 // Dotykowy znaczek „?" z dymkiem wyjaśniającym. Stuknięcie otwiera/zamyka,
 // stuknięcie obok zamyka (przezroczysta warstwa). Sam znaczek zatrzymuje
 // propagację, żeby nie odpalać akcji przycisku, nad którym leży.
-export function HelpTip({ text, label = "Co to znaczy?", placement = "bottom", align = "center" }: Props) {
+export function HelpTip({
+	text,
+	label = "Co to znaczy?",
+	placement = "bottom",
+	align = "center",
+}: Props) {
 	const [open, setOpen] = useState(false)
 
 	const placeClass = placement === "top" ? "bottom-full mb-2" : "top-full mt-2"
 	const alignClass =
-		align === "left" ? "left-0" : align === "right" ? "right-0" : "left-1/2 -ml-28"
+		align === "left"
+			? "left-0"
+			: align === "right"
+				? "right-0"
+				: "left-1/2 -ml-28"
 
 	return (
 		<span className="relative inline-flex">
@@ -27,9 +36,9 @@ export function HelpTip({ text, label = "Co to znaczy?", placement = "bottom", a
 				type="button"
 				aria-label={label}
 				aria-expanded={open}
-				onClick={e => {
+				onClick={(e) => {
 					e.stopPropagation()
-					setOpen(o => !o)
+					setOpen((o) => !o)
 				}}
 				className="touch-manipulation flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-lg font-extrabold text-grape shadow ring-2 ring-grape/30 active:scale-90"
 			>
@@ -39,14 +48,14 @@ export function HelpTip({ text, label = "Co to znaczy?", placement = "bottom", a
 				<>
 					<div
 						className="fixed inset-0 z-40"
-						onClick={e => {
+						onClick={(e) => {
 							e.stopPropagation()
 							setOpen(false)
 						}}
 					/>
 					<div
 						className={`anim-pop absolute z-50 w-56 rounded-2xl bg-grape-dark px-4 py-3 text-left text-sm font-bold leading-snug text-white shadow-xl ${placeClass} ${alignClass}`}
-						onClick={e => e.stopPropagation()}
+						onClick={(e) => e.stopPropagation()}
 					>
 						{text}
 					</div>

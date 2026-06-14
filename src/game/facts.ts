@@ -20,7 +20,7 @@ for (let a = 1; a <= 10; a++) {
 	}
 }
 
-export const FACTS_BY_KEY = new Map(ALL_FACTS.map(f => [f.key, f]))
+export const FACTS_BY_KEY = new Map(ALL_FACTS.map((f) => [f.key, f]))
 
 // Etapy odblokowań: etap n = suma czynników z STAGES[0..n]
 export const STAGES: readonly (readonly number[])[] = [
@@ -43,7 +43,7 @@ export function unlockedFactors(stage: number): Set<number> {
 
 export function unlockedFacts(stage: number): Fact[] {
 	const factors = unlockedFactors(stage)
-	return ALL_FACTS.filter(f => factors.has(f.a) && factors.has(f.b))
+	return ALL_FACTS.filter((f) => factors.has(f.a) && factors.has(f.b))
 }
 
 export function isMaxStage(stage: number): boolean {

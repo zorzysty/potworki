@@ -18,7 +18,13 @@ const STYLES = {
 // Aktywacja na `click` (jeden, kanoniczny event). Wrażenie natychmiastowości daje CSS
 // `:active` + `touch-manipulation` (reagują już na dotknięcie palcem), więc nie potrzebujemy
 // `pointerdown` — patrz model wejścia w src/CLAUDE.md.
-export function BigButton({ onClick, children, variant = "primary", className = "", disabled }: Props) {
+export function BigButton({
+	onClick,
+	children,
+	variant = "primary",
+	className = "",
+	disabled,
+}: Props) {
 	return (
 		<button
 			type="button"

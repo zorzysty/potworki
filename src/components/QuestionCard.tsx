@@ -1,7 +1,7 @@
 import { useGame } from "../store/store"
 
 export function QuestionCard() {
-	const round = useGame(s => s.round)
+	const round = useGame((s) => s.round)
 	if (!round) return null
 	const { question, phase, answer, lastStars, shakeNonce } = round
 	const product = question.a * question.b
@@ -17,9 +17,13 @@ export function QuestionCard() {
 				<>
 					<div className="text-4xl font-extrabold text-slate-700">
 						{question.a} × {question.b} ={" "}
-						<span className="rounded-xl bg-amber-100 px-3 text-amber-600">{product}</span>
+						<span className="rounded-xl bg-amber-100 px-3 text-amber-600">
+							{product}
+						</span>
 					</div>
-					<div className="text-lg font-bold text-slate-400">Przepisz wynik:</div>
+					<div className="text-lg font-bold text-slate-400">
+						Przepisz wynik:
+					</div>
 				</>
 			) : (
 				<div className="text-5xl font-extrabold tracking-wide text-slate-700">

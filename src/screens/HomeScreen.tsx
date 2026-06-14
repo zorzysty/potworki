@@ -9,21 +9,22 @@ import { useGame } from "../store/store"
 const ALL_TABLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
-	const ownedMonsters = useGame(s => s.ownedMonsters)
-	const pendingEggs = useGame(s => s.pendingEggs)
-	const eggFragments = useGame(s => s.eggFragments)
-	const eggsEarned = useGame(s => s.eggsEarned)
-	const dreamMonsterId = useGame(s => s.dreamMonsterId)
-	const unlockedStage = useGame(s => s.unlockedStage)
-	const celebratedStage = useGame(s => s.celebratedStage)
-	const startRound = useGame(s => s.startRound)
-	const goTo = useGame(s => s.goTo)
+	const ownedMonsters = useGame((s) => s.ownedMonsters)
+	const pendingEggs = useGame((s) => s.pendingEggs)
+	const eggFragments = useGame((s) => s.eggFragments)
+	const eggsEarned = useGame((s) => s.eggsEarned)
+	const dreamMonsterId = useGame((s) => s.dreamMonsterId)
+	const unlockedStage = useGame((s) => s.unlockedStage)
+	const celebratedStage = useGame((s) => s.celebratedStage)
+	const startRound = useGame((s) => s.startRound)
+	const goTo = useGame((s) => s.goTo)
 
 	const ownedIds = Object.keys(ownedMonsters).map(Number)
 	const ownedCount = ownedIds.length
 	const factors = unlockedFactors(unlockedStage)
 	const newestOwned = ownedIds.sort(
-		(x, y) => (ownedMonsters[y]?.hatchedAt ?? 0) - (ownedMonsters[x]?.hatchedAt ?? 0),
+		(x, y) =>
+			(ownedMonsters[y]?.hatchedAt ?? 0) - (ownedMonsters[x]?.hatchedAt ?? 0),
 	)[0]
 	const firstEgg = pendingEggs[0]
 	const eggThreshold = fragmentsForEgg(eggsEarned)
@@ -65,7 +66,9 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 									className="monster-silhouette"
 								/>
 							</div>
-							<div className="mt-1 text-sm font-extrabold text-amber-500">Wymarzony ✨</div>
+							<div className="mt-1 text-sm font-extrabold text-amber-500">
+								Wymarzony ✨
+							</div>
 						</button>
 						<div className="absolute -right-2 -top-2">
 							<HelpTip
@@ -88,35 +91,43 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 			</BigButton>
 
 			<div className="relative w-full max-w-xs">
-			<button
-				type="button"
-				onClick={() => pendingEggs.length > 0 && goTo("hatch")}
-				className="touch-manipulation flex w-full items-center justify-between rounded-3xl bg-white/80 px-5 py-3 shadow-md active:scale-95"
-			>
-				<div className="text-xl font-extrabold text-slate-600">🪺 Gniazdo</div>
-				{firstEgg ? (
-					<div className="flex items-center gap-2">
-						<div className="anim-wobble" style={{ animationIterationCount: "infinite", animationDuration: "1.4s" }}>
-							<EggView quality={firstEgg.quality} size={36} />
-						</div>
-						<div className="rounded-full bg-bubblegum px-3 py-0.5 text-lg font-extrabold text-white">
-							{pendingEggs.length}
-						</div>
+				<button
+					type="button"
+					onClick={() => pendingEggs.length > 0 && goTo("hatch")}
+					className="touch-manipulation flex w-full items-center justify-between rounded-3xl bg-white/80 px-5 py-3 shadow-md active:scale-95"
+				>
+					<div className="text-xl font-extrabold text-slate-600">
+						🪺 Gniazdo
 					</div>
-				) : (
-					<div className="flex items-center gap-2">
-						<div className="h-3 w-24 overflow-hidden rounded-full bg-slate-200">
+					{firstEgg ? (
+						<div className="flex items-center gap-2">
 							<div
-								className="h-full rounded-full bg-amber-400 transition-[width]"
-								style={{ width: `${(eggFragments / eggThreshold) * 100}%` }}
-							/>
+								className="anim-wobble"
+								style={{
+									animationIterationCount: "infinite",
+									animationDuration: "1.4s",
+								}}
+							>
+								<EggView quality={firstEgg.quality} size={36} />
+							</div>
+							<div className="rounded-full bg-bubblegum px-3 py-0.5 text-lg font-extrabold text-white">
+								{pendingEggs.length}
+							</div>
 						</div>
-						<span className="text-sm font-bold text-slate-400">
-							{eggFragments}/{eggThreshold}
-						</span>
-					</div>
-				)}
-			</button>
+					) : (
+						<div className="flex items-center gap-2">
+							<div className="h-3 w-24 overflow-hidden rounded-full bg-slate-200">
+								<div
+									className="h-full rounded-full bg-amber-400 transition-[width]"
+									style={{ width: `${(eggFragments / eggThreshold) * 100}%` }}
+								/>
+							</div>
+							<span className="text-sm font-bold text-slate-400">
+								{eggFragments}/{eggThreshold}
+							</span>
+						</div>
+					)}
+				</button>
 				<div className="absolute -right-2 -top-2">
 					<HelpTip
 						placement="bottom"
@@ -135,7 +146,11 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 			</BigButton>
 
 			<div className="relative w-full max-w-xs">
-				<BigButton onClick={() => goTo("map")} variant="secondary" className="w-full">
+				<BigButton
+					onClick={() => goTo("map")}
+					variant="secondary"
+					className="w-full"
+				>
 					Kraina Potworków {allGatesOpen ? "👑" : "🗺️"}
 				</BigButton>
 				{hasNewGate && (
@@ -151,11 +166,13 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					align="left"
 					text="To tabliczki mnożenia. Te z kłódką 🔒 jeszcze śpią. Kiedy dobrze opanujesz odblokowane liczby, kłódka pęknie i pojawi się nowa!"
 				/>
-				{ALL_TABLES.map(n => (
+				{ALL_TABLES.map((n) => (
 					<div
 						key={n}
 						className={`rounded-xl px-3 py-1 text-lg font-extrabold shadow-sm ${
-							factors.has(n) ? "bg-white/90 text-grape-dark" : "bg-white/40 text-slate-300"
+							factors.has(n)
+								? "bg-white/90 text-grape-dark"
+								: "bg-white/40 text-slate-300"
 						}`}
 					>
 						{factors.has(n) ? `×${n}` : "🔒"}

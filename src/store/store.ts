@@ -1,6 +1,12 @@
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
-import { applyAnswer, decayStats, emptyStats, pickNextFact, shouldUnlockNextStage } from "../game/adaptive"
+import {
+	applyAnswer,
+	decayStats,
+	emptyStats,
+	pickNextFact,
+	shouldUnlockNextStage,
+} from "../game/adaptive"
 import type { Fact, FactKey } from "../game/facts"
 import {
 	budgetMs,
@@ -90,7 +96,12 @@ interface GameState extends SaveState {
 
 function makeQuestion(fact: Fact, isRequeue: boolean): RoundQuestion {
 	const flip = Math.random() < 0.5
-	return { key: fact.key, a: flip ? fact.b : fact.a, b: flip ? fact.a : fact.b, isRequeue }
+	return {
+		key: fact.key,
+		a: flip ? fact.b : fact.a,
+		b: flip ? fact.a : fact.b,
+		isRequeue,
+	}
 }
 
 // Rozkłada sumę gwiazdek na n pytań (każde 0..3): jak najwięcej trójek (szybkie
@@ -110,7 +121,11 @@ function distributeStars(total: number, n: number): number[] {
 // `totalStars` gwiazdek — tak jak prawdziwa runda (commit per odpowiedź + finalizacja).
 // `firstFact` to pierwsze pytanie (na ekranie rundy: aktualnie wyświetlane); reszta
 // losowana selekcją jak w grze. Czysta funkcja: niczego nie zapisuje, zwraca deltę.
-function simulateRoundOutcome(state: SaveState, totalStars: number, firstFact?: Fact) {
+function simulateRoundOutcome(
+	state: SaveState,
+	totalStars: number,
+	firstFact?: Fact,
+) {
 	const now = Date.now()
 	const facts = { ...state.facts }
 	let eggFragments = state.eggFragments
@@ -128,7 +143,13 @@ function simulateRoundOutcome(state: SaveState, totalStars: number, firstFact?: 
 				: pickNextFact(facts, state.unlockedStage, asked.slice(-3), Math.random)
 		// szybka odpowiedź ⇔ 3 gwiazdki (ten sam próg co budżet 3⭐); wolniej = mniejszy przyrost
 		const elapsed = perQuestion[i] === 3 ? 0 : budgetMs(fact) * 2
-		facts[fact.key] = applyAnswer(facts[fact.key] ?? emptyStats(), fact, true, elapsed, now)
+		facts[fact.key] = applyAnswer(
+			facts[fact.key] ?? emptyStats(),
+			fact,
+			true,
+			elapsed,
+			now,
+		)
 		asked.push(fact.key)
 		// fragment za każdą odpowiedź; jajko po przekroczeniu progu — finalna jakość od razu
 		eggFragments++
@@ -141,10 +162,15 @@ function simulateRoundOutcome(state: SaveState, totalStars: number, firstFact?: 
 	}
 
 	const iskierki =
-		finalQuality === "rainbow" ? Math.min(ISKIERKI_CAP, state.iskierki + 1) : state.iskierki
+		finalQuality === "rainbow"
+			? Math.min(ISKIERKI_CAP, state.iskierki + 1)
+			: state.iskierki
 	let unlockedStage = state.unlockedStage
 	let unlockedThisRound = false
-	if (!isMaxStage(unlockedStage) && shouldUnlockNextStage(facts, unlockedStage)) {
+	if (
+		!isMaxStage(unlockedStage) &&
+		shouldUnlockNextStage(facts, unlockedStage)
+	) {
 		unlockedStage++
 		unlockedThisRound = true
 	}
@@ -173,7 +199,9 @@ function rollContext(state: SaveState) {
 	}
 }
 
-export function wishEggCost(state: Pick<SaveState, "dreamMonsterId" | "ownedMonsters">): number {
+export function wishEggCost(
+	state: Pick<SaveState, "dreamMonsterId" | "ownedMonsters">,
+): number {
 	const dream = state.dreamMonsterId
 	if (dream === null || dream in state.ownedMonsters) return WISH_COST_NO_DREAM
 	return WISH_COST[rarityOf(dream)]
@@ -222,11 +250,17 @@ export const useGame = create<GameState>()(
 			lastHatch: null,
 
 			// stan rundy żyje tylko na ekranie rundy
-			goTo: screen => set(s => ({ screen, round: screen === "round" ? s.round : null })),
+			goTo: (screen) =>
+				set((s) => ({ screen, round: screen === "round" ? s.round : null })),
 
 			startRound: () => {
 				const state = get()
-				const fact = pickNextFact(state.facts, state.unlockedStage, [], Math.random)
+				const fact = pickNextFact(
+					state.facts,
+					state.unlockedStage,
+					[],
+					Math.random,
+				)
 				set({
 					screen: "round",
 					round: {
@@ -248,9 +282,10 @@ export const useGame = create<GameState>()(
 				})
 			},
 
-			pressDigit: digit => {
+			pressDigit: (digit) => {
 				const { round } = get()
-				if (!round || (round.phase !== "answering" && round.phase !== "wrong")) return
+				if (!round || (round.phase !== "answering" && round.phase !== "wrong"))
+					return
 				if (round.answer.length >= 3) return
 				const answer = round.answer + String(digit)
 				set({ round: { ...round, answer } })
@@ -261,7 +296,8 @@ export const useGame = create<GameState>()(
 
 			pressBackspace: () => {
 				const { round } = get()
-				if (!round || (round.phase !== "answering" && round.phase !== "wrong")) return
+				if (!round || (round.phase !== "answering" && round.phase !== "wrong"))
+					return
 				set({ round: { ...round, answer: round.answer.slice(0, -1) } })
 			},
 
@@ -276,9 +312,18 @@ export const useGame = create<GameState>()(
 				if (round.phase === "wrong") {
 					// przepisywanie poprawnego wyniku — czysty rytuał utrwalający
 					if (correct) {
-						set({ round: { ...round, phase: "correct", lastStars: 0, answer: round.answer } })
+						set({
+							round: {
+								...round,
+								phase: "correct",
+								lastStars: 0,
+								answer: round.answer,
+							},
+						})
 					} else {
-						set({ round: { ...round, answer: "", shakeNonce: round.shakeNonce + 1 } })
+						set({
+							round: { ...round, answer: "", shakeNonce: round.shakeNonce + 1 },
+						})
 					}
 					return
 				}
@@ -291,7 +336,10 @@ export const useGame = create<GameState>()(
 				const fact = FACTS_BY_KEY.get(q.key)
 				if (!fact) return
 				const stats = state.facts[q.key] ?? emptyStats()
-				const facts = { ...state.facts, [q.key]: applyAnswer(stats, fact, correct, elapsed, now) }
+				const facts = {
+					...state.facts,
+					[q.key]: applyAnswer(stats, fact, correct, elapsed, now),
+				}
 
 				// błędne działanie (powtórka) daje maks. 1 gwiazdkę, nawet jeśli poprawka jest szybka
 				const earned = correct ? starsFor(elapsed, fact) : 0
@@ -307,7 +355,10 @@ export const useGame = create<GameState>()(
 					eggFragments = 0
 					eggsEarned++
 					// prowizoryczna jakość z gwiazdek-dotąd; finalna nadawana na końcu rundy
-					pendingEggs = [...pendingEggs, { quality: eggQuality(stars, Math.random) }]
+					pendingEggs = [
+						...pendingEggs,
+						{ quality: eggQuality(stars, Math.random) },
+					]
 					eggsCreated.push(pendingEggs.length - 1)
 				}
 
@@ -317,7 +368,13 @@ export const useGame = create<GameState>()(
 						eggFragments,
 						eggsEarned,
 						pendingEggs,
-						round: { ...round, phase: "correct", stars, lastStars: gained, eggsCreated },
+						round: {
+							...round,
+							phase: "correct",
+							stars,
+							lastStars: gained,
+							eggsCreated,
+						},
 					})
 				} else {
 					// powtórka błędnego działania za 3 pytania (max 12 pytań w rundzie)
@@ -351,7 +408,7 @@ export const useGame = create<GameState>()(
 			nextQuestion: () => {
 				const state = get()
 				const { round } = state
-				if (!round || round.phase !== "correct") return
+				if (round?.phase !== "correct") return
 				const asked = [...round.asked, round.question.key]
 				const nextIndex = round.index + 1
 
@@ -359,13 +416,20 @@ export const useGame = create<GameState>()(
 					// koniec rundy: finalna jakość dla jajek z tej rundy + check odblokowania
 					const finalQuality = eggQuality(round.stars, Math.random)
 					const pendingEggs = state.pendingEggs.map((egg, i) =>
-						round.eggsCreated.includes(i) ? { ...egg, quality: finalQuality } : egg,
+						round.eggsCreated.includes(i)
+							? { ...egg, quality: finalQuality }
+							: egg,
 					)
 					const iskierki =
-						finalQuality === "rainbow" ? Math.min(ISKIERKI_CAP, state.iskierki + 1) : state.iskierki
+						finalQuality === "rainbow"
+							? Math.min(ISKIERKI_CAP, state.iskierki + 1)
+							: state.iskierki
 					let unlockedStage = state.unlockedStage
 					let unlockedThisRound = false
-					if (!isMaxStage(unlockedStage) && shouldUnlockNextStage(state.facts, unlockedStage)) {
+					if (
+						!isMaxStage(unlockedStage) &&
+						shouldUnlockNextStage(state.facts, unlockedStage)
+					) {
 						unlockedStage++
 						unlockedThisRound = true
 					}
@@ -374,15 +438,29 @@ export const useGame = create<GameState>()(
 						iskierki,
 						unlockedStage,
 						totalRounds: state.totalRounds + 1,
-						round: { ...round, phase: "summary", asked, finalQuality, unlockedThisRound },
+						round: {
+							...round,
+							phase: "summary",
+							asked,
+							finalQuality,
+							unlockedThisRound,
+						},
 					})
 					return
 				}
 
 				const requeuedKey = round.requeues[nextIndex]
-				const requeuedFact = requeuedKey ? FACTS_BY_KEY.get(requeuedKey) : undefined
+				const requeuedFact = requeuedKey
+					? FACTS_BY_KEY.get(requeuedKey)
+					: undefined
 				const fact =
-					requeuedFact ?? pickNextFact(state.facts, state.unlockedStage, asked.slice(-3), Math.random)
+					requeuedFact ??
+					pickNextFact(
+						state.facts,
+						state.unlockedStage,
+						asked.slice(-3),
+						Math.random,
+					)
 				set({
 					round: {
 						...round,
@@ -408,9 +486,11 @@ export const useGame = create<GameState>()(
 				if (!egg) return
 				const ctx = rollContext(state)
 				const monsterId =
-					egg.quality === "wish" ? rollWish(ctx)
-					: ctx.owned.size === 0 ? FIRST_MONSTER_ID
-					: rollMonster(egg.quality, ctx)
+					egg.quality === "wish"
+						? rollWish(ctx)
+						: ctx.owned.size === 0
+							? FIRST_MONSTER_ID
+							: rollMonster(egg.quality, ctx)
 				const pendingEggs = state.pendingEggs.filter((_, i) => i !== index)
 				if (monsterId === null) {
 					set({ pendingEggs })
@@ -421,13 +501,21 @@ export const useGame = create<GameState>()(
 					set({
 						pendingEggs,
 						iskierki: Math.min(ISKIERKI_CAP, state.iskierki + gained),
-						lastHatch: { monsterId, isNew: false, isDream: false, iskierkiGained: gained },
+						lastHatch: {
+							monsterId,
+							isNew: false,
+							isDream: false,
+							iskierkiGained: gained,
+						},
 					})
 				} else {
 					const isDream = state.dreamMonsterId === monsterId
 					set({
 						pendingEggs,
-						ownedMonsters: { ...state.ownedMonsters, [monsterId]: { hatchedAt: Date.now() } },
+						ownedMonsters: {
+							...state.ownedMonsters,
+							[monsterId]: { hatchedAt: Date.now() },
+						},
 						dreamMonsterId: isDream ? null : state.dreamMonsterId,
 						lastHatch: { monsterId, isNew: true, isDream, iskierkiGained: 0 },
 					})
@@ -436,7 +524,7 @@ export const useGame = create<GameState>()(
 
 			clearLastHatch: () => set({ lastHatch: null }),
 
-			setDreamMonster: id => set({ dreamMonsterId: id }),
+			setDreamMonster: (id) => set({ dreamMonsterId: id }),
 
 			buyWishEgg: () => {
 				const state = get()
@@ -460,9 +548,10 @@ export const useGame = create<GameState>()(
 			},
 
 			// mapa pokazała animację otwarcia bramy aż do bieżącego etapu
-			markGatesCelebrated: () => set(s => ({ celebratedStage: s.unlockedStage })),
+			markGatesCelebrated: () =>
+				set((s) => ({ celebratedStage: s.unlockedStage })),
 
-			debugSetAllMastery: value => {
+			debugSetAllMastery: (value) => {
 				const facts = { ...get().facts }
 				for (const fact of FACTS_BY_KEY.values()) {
 					const prev = facts[fact.key] ?? emptyStats()
@@ -477,7 +566,7 @@ export const useGame = create<GameState>()(
 			},
 
 			// ekran debug: cicho dopisuje efekt jednej rundy do zapisu (bez wchodzenia w rundę)
-			debugSimulateRound: totalStars => {
+			debugSimulateRound: (totalStars) => {
 				const state = get()
 				const o = simulateRoundOutcome(state, totalStars)
 				set({
@@ -494,11 +583,15 @@ export const useGame = create<GameState>()(
 			// ekran rundy: kończy trwającą rundę z sumą `totalStars` gwiazdek i przechodzi
 			// w fazę summary — odpala te same eventy końca rundy co prawdziwe odpowiedzi
 			// (jajka tej rundy, ewentualna animacja bramy, CTA wyklucia)
-			debugFinishRound: totalStars => {
+			debugFinishRound: (totalStars) => {
 				const state = get()
 				const { round } = state
 				if (!round) return
-				const o = simulateRoundOutcome(state, totalStars, FACTS_BY_KEY.get(round.question.key))
+				const o = simulateRoundOutcome(
+					state,
+					totalStars,
+					FACTS_BY_KEY.get(round.question.key),
+				)
 				set({
 					facts: o.facts,
 					eggFragments: o.eggFragments,
@@ -521,7 +614,7 @@ export const useGame = create<GameState>()(
 				})
 			},
 
-			debugOwnRarity: rarity => {
+			debugOwnRarity: (rarity) => {
 				const owned = { ...get().ownedMonsters }
 				for (const id of IDS_BY_RARITY[rarity]) {
 					owned[id] ??= { hatchedAt: Date.now() }
@@ -529,24 +622,33 @@ export const useGame = create<GameState>()(
 				set({ ownedMonsters: owned })
 			},
 
-			debugAddIskierki: amount =>
-				set(s => ({ iskierki: Math.min(ISKIERKI_CAP, s.iskierki + amount) })),
+			debugAddIskierki: (amount) =>
+				set((s) => ({ iskierki: Math.min(ISKIERKI_CAP, s.iskierki + amount) })),
 
-			debugAddEgg: quality => set(s => ({ pendingEggs: [...s.pendingEggs, { quality }] })),
+			debugAddEgg: (quality) =>
+				set((s) => ({ pendingEggs: [...s.pendingEggs, { quality }] })),
 
 			// otwiera kolejną bramę bez ruszania celebratedStage → wejście na mapę odpala animację
 			debugOpenGate: () =>
-				set(s => (isMaxStage(s.unlockedStage) ? {} : { unlockedStage: s.unlockedStage + 1 })),
+				set((s) =>
+					isMaxStage(s.unlockedStage)
+						? {}
+						: { unlockedStage: s.unlockedStage + 1 },
+				),
 
-			debugReset: () => set({ ...INITIAL_SAVE, round: null, lastHatch: null, screen: "home" }),
+			debugReset: () =>
+				set({ ...INITIAL_SAVE, round: null, lastHatch: null, screen: "home" }),
 		}),
 		{
 			name: "potworki-save",
 			version: SAVE_VERSION,
 			storage: createJSONStorage(safeStorage),
-			partialize: state =>
-				Object.fromEntries(SAVE_KEYS.map(key => [key, state[key]])) as unknown as GameState,
-			migrate: (persisted, fromVersion) => migrateSave(persisted, fromVersion) as GameState,
+			partialize: (state) =>
+				Object.fromEntries(
+					SAVE_KEYS.map((key) => [key, state[key]]),
+				) as unknown as GameState,
+			migrate: (persisted, fromVersion) =>
+				migrateSave(persisted, fromVersion) as GameState,
 		},
 	),
 )

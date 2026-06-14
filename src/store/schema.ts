@@ -38,17 +38,24 @@ export const SAVE_KEYS = Object.keys(INITIAL_SAVE) as (keyof SaveState)[]
 export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 	// v1→v2: dodano eggsEarned. Estymujemy z dotychczasowego postępu (posiadane + w gnieździe),
 	// żeby próg fragmentów nie zresetował się do najtańszego — dziecko już sporo wykluło.
-	1: state => {
+	1: (state) => {
 		const s = state as Record<string, unknown>
-		const owned = s.ownedMonsters && typeof s.ownedMonsters === "object" ? Object.keys(s.ownedMonsters).length : 0
+		const owned =
+			s.ownedMonsters && typeof s.ownedMonsters === "object"
+				? Object.keys(s.ownedMonsters).length
+				: 0
 		const pending = Array.isArray(s.pendingEggs) ? s.pendingEggs.length : 0
 		return { ...s, eggsEarned: owned + pending }
 	},
 	// v2→v3: dodano celebratedStage (mapa „Kraina Potworków"). Ustawiamy na bieżący
 	// unlockedStage, żeby obecni gracze nie dostali animacji dla już otwartych bram.
-	2: state => {
+	2: (state) => {
 		const s = state as Record<string, unknown>
-		return { ...s, celebratedStage: typeof s.unlockedStage === "number" ? s.unlockedStage : 0 }
+		return {
+			...s,
+			celebratedStage:
+				typeof s.unlockedStage === "number" ? s.unlockedStage : 0,
+		}
 	},
 }
 

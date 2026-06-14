@@ -6,20 +6,24 @@ import { StarMeter } from "../components/StarMeter"
 import { useGame } from "../store/store"
 import { RoundSummary } from "./RoundSummary"
 
-export function RoundScreen({ debugEnabled = false }: { debugEnabled?: boolean }) {
-	const round = useGame(s => s.round)
-	const nextQuestion = useGame(s => s.nextQuestion)
-	const exitRoundEarly = useGame(s => s.exitRoundEarly)
-	const debugFinishRound = useGame(s => s.debugFinishRound)
+export function RoundScreen({
+	debugEnabled = false,
+}: {
+	debugEnabled?: boolean
+}) {
+	const round = useGame((s) => s.round)
+	const nextQuestion = useGame((s) => s.nextQuestion)
+	const exitRoundEarly = useGame((s) => s.exitRoundEarly)
+	const debugFinishRound = useGame((s) => s.debugFinishRound)
 	const [paused, setPaused] = useState(false)
 
 	const phase = round?.phase
-	const index = round?.index
+	const _index = round?.index
 	useEffect(() => {
 		if (phase !== "correct") return
 		const timer = setTimeout(nextQuestion, 900)
 		return () => clearTimeout(timer)
-	}, [phase, index, nextQuestion])
+	}, [phase, nextQuestion])
 
 	if (!round) return null
 	if (round.phase === "summary") return <RoundSummary />
@@ -51,9 +55,11 @@ export function RoundScreen({ debugEnabled = false }: { debugEnabled?: boolean }
 
 			{debugEnabled && round.phase === "answering" && round.index === 0 && (
 				<div className="fixed right-2 bottom-2 z-40 flex flex-col items-end gap-1">
-					<span className="text-[10px] font-bold text-grape-dark/60">debug: zakończ rundę</span>
+					<span className="text-[10px] font-bold text-grape-dark/60">
+						debug: zakończ rundę
+					</span>
 					<div className="flex gap-1">
-						{[20, 26, 28, 30].map(stars => (
+						{[20, 26, 28, 30].map((stars) => (
 							<button
 								key={stars}
 								type="button"
@@ -70,7 +76,10 @@ export function RoundScreen({ debugEnabled = false }: { debugEnabled?: boolean }
 			{paused && (
 				<div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-slate-900/70 p-6 backdrop-blur-sm">
 					<div className="text-4xl font-extrabold text-white">Przerwa ⏸</div>
-					<BigButton onClick={() => setPaused(false)} className="w-full max-w-xs py-6 text-3xl">
+					<BigButton
+						onClick={() => setPaused(false)}
+						className="w-full max-w-xs py-6 text-3xl"
+					>
 						Gram dalej! 🚀
 					</BigButton>
 					<button

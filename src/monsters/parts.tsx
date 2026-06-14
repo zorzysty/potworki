@@ -46,10 +46,25 @@ export function Feet({ palette, fill }: { palette: Palette; fill: string }) {
 }
 
 export function Belly({ palette }: { palette: Palette }) {
-	return <ellipse cx={100} cy={146} rx={40} ry={30} fill={palette.belly} opacity={0.9} />
+	return (
+		<ellipse
+			cx={100}
+			cy={146}
+			rx={40}
+			ry={30}
+			fill={palette.belly}
+			opacity={0.9}
+		/>
+	)
 }
 
-export function PatternLayer({ variant, palette }: { variant: number; palette: Palette }) {
+export function PatternLayer({
+	variant,
+	palette,
+}: {
+	variant: number
+	palette: Palette
+}) {
 	if (variant === 1) {
 		const dots: [number, number][] = [
 			[62, 80],
@@ -116,9 +131,16 @@ function EyePair({
 	const eyes = [78, 122]
 	return (
 		<g>
-			{eyes.map(cx => (
+			{eyes.map((cx) => (
 				<g key={cx}>
-					<circle cx={cx} cy={cy} r={r} fill="#fff" stroke={palette.outline} strokeWidth={3.5} />
+					<circle
+						cx={cx}
+						cy={cy}
+						r={r}
+						fill="#fff"
+						stroke={palette.outline}
+						strokeWidth={3.5}
+					/>
 					<circle
 						cx={cx + 2}
 						cy={sleepy ? cy + 5 : cy + 2}
@@ -126,7 +148,9 @@ function EyePair({
 						fill="#2A2140"
 					/>
 					<circle cx={cx - 1.5} cy={cy - 2} r={r * 0.16} fill="#fff" />
-					{sparkly && <circle cx={cx + 5} cy={cy + 5.5} r={r * 0.12} fill="#fff" />}
+					{sparkly && (
+						<circle cx={cx + 5} cy={cy + 5.5} r={r * 0.12} fill="#fff" />
+					)}
 					{sleepy && (
 						<path
 							d={`M${cx - r} ${cy - 3} A${r} ${r} 0 0 1 ${cx + r} ${cy - 3} L${cx + r} ${cy - r - 2} L${cx - r} ${cy - r - 2} Z`}
@@ -141,12 +165,25 @@ function EyePair({
 	)
 }
 
-export function Eyes({ variant, palette }: { variant: number; palette: Palette }) {
+export function Eyes({
+	variant,
+	palette,
+}: {
+	variant: number
+	palette: Palette
+}) {
 	switch (variant) {
 		case 1:
 			return (
 				<g>
-					<circle cx={100} cy={86} r={22} fill="#fff" stroke={palette.outline} strokeWidth={4} />
+					<circle
+						cx={100}
+						cy={86}
+						r={22}
+						fill="#fff"
+						stroke={palette.outline}
+						strokeWidth={4}
+					/>
 					<circle cx={102} cy={89} r={10} fill="#2A2140" />
 					<circle cx={98} cy={83} r={3.5} fill="#fff" />
 				</g>
@@ -159,7 +196,14 @@ export function Eyes({ variant, palette }: { variant: number; palette: Palette }
 			return (
 				<g>
 					<EyePair cy={92} r={12} palette={palette} />
-					<circle cx={100} cy={68} r={9} fill="#fff" stroke={palette.outline} strokeWidth={3} />
+					<circle
+						cx={100}
+						cy={68}
+						r={9}
+						fill="#fff"
+						stroke={palette.outline}
+						strokeWidth={3}
+					/>
 					<circle cx={101} cy={69} r={4} fill="#2A2140" />
 				</g>
 			)
@@ -168,13 +212,30 @@ export function Eyes({ variant, palette }: { variant: number; palette: Palette }
 	}
 }
 
-export function Mouth({ variant, palette }: { variant: number; palette: Palette }) {
-	const stroke = { stroke: palette.outline, strokeWidth: 5, strokeLinecap: "round" as const, fill: "none" }
+export function Mouth({
+	variant,
+	palette,
+}: {
+	variant: number
+	palette: Palette
+}) {
+	const stroke = {
+		stroke: palette.outline,
+		strokeWidth: 5,
+		strokeLinecap: "round" as const,
+		fill: "none",
+	}
 	switch (variant) {
 		case 1:
 			return (
 				<g>
-					<path d="M78 118 Q100 148 122 118 Q100 126 78 118 Z" fill="#5A3A4E" stroke={palette.outline} strokeWidth={4} strokeLinejoin="round" />
+					<path
+						d="M78 118 Q100 148 122 118 Q100 126 78 118 Z"
+						fill="#5A3A4E"
+						stroke={palette.outline}
+						strokeWidth={4}
+						strokeLinejoin="round"
+					/>
 					<ellipse cx={100} cy={133} rx={11} ry={6} fill="#FF8FAE" />
 				</g>
 			)
@@ -182,15 +243,33 @@ export function Mouth({ variant, palette }: { variant: number; palette: Palette 
 			return (
 				<g>
 					<path d="M78 120 Q100 136 122 120" {...stroke} />
-					<path d="M85 122 L89 132 L93 123 Z" fill="#fff" stroke={palette.outline} strokeWidth={2} strokeLinejoin="round" />
-					<path d="M107 123 L111 132 L115 122 Z" fill="#fff" stroke={palette.outline} strokeWidth={2} strokeLinejoin="round" />
+					<path
+						d="M85 122 L89 132 L93 123 Z"
+						fill="#fff"
+						stroke={palette.outline}
+						strokeWidth={2}
+						strokeLinejoin="round"
+					/>
+					<path
+						d="M107 123 L111 132 L115 122 Z"
+						fill="#fff"
+						stroke={palette.outline}
+						strokeWidth={2}
+						strokeLinejoin="round"
+					/>
 				</g>
 			)
 		case 3:
 			return (
 				<g>
 					<path d="M80 119 Q100 133 120 119" {...stroke} />
-					<path d="M98 126 Q100 124 110 126 Q112 140 104 141 Q97 142 98 126 Z" fill="#FF8FAE" stroke={palette.outline} strokeWidth={3} strokeLinejoin="round" />
+					<path
+						d="M98 126 Q100 124 110 126 Q112 140 104 141 Q97 142 98 126 Z"
+						fill="#FF8FAE"
+						stroke={palette.outline}
+						strokeWidth={3}
+						strokeLinejoin="round"
+					/>
 				</g>
 			)
 		default:
@@ -198,11 +277,22 @@ export function Mouth({ variant, palette }: { variant: number; palette: Palette 
 	}
 }
 
-export function Topper({ variant, palette }: { variant: number; palette: Palette }) {
+export function Topper({
+	variant,
+	palette,
+}: {
+	variant: number
+	palette: Palette
+}) {
 	switch (variant) {
 		case 1:
 			return (
-				<g fill={palette.accent} stroke={palette.outline} strokeWidth={3.5} strokeLinejoin="round">
+				<g
+					fill={palette.accent}
+					stroke={palette.outline}
+					strokeWidth={3.5}
+					strokeLinejoin="round"
+				>
 					<path d="M66 54 C60 40 60 32 68 24 C74 34 76 42 76 51 Z" />
 					<path d="M134 54 C140 40 140 32 132 24 C126 34 124 42 124 51 Z" />
 				</g>
@@ -210,8 +300,18 @@ export function Topper({ variant, palette }: { variant: number; palette: Palette
 		case 2:
 			return (
 				<g strokeLinejoin="round">
-					<path d="M58 62 L50 26 L86 48 Z" fill={palette.base === "#FFFFFF" ? palette.belly : palette.base} stroke={palette.outline} strokeWidth={4} />
-					<path d="M142 62 L150 26 L114 48 Z" fill={palette.base === "#FFFFFF" ? palette.belly : palette.base} stroke={palette.outline} strokeWidth={4} />
+					<path
+						d="M58 62 L50 26 L86 48 Z"
+						fill={palette.base === "#FFFFFF" ? palette.belly : palette.base}
+						stroke={palette.outline}
+						strokeWidth={4}
+					/>
+					<path
+						d="M142 62 L150 26 L114 48 Z"
+						fill={palette.base === "#FFFFFF" ? palette.belly : palette.base}
+						stroke={palette.outline}
+						strokeWidth={4}
+					/>
 					<path d="M60 54 L56 36 L74 47 Z" fill="#FF9FC2" />
 					<path d="M140 54 L144 36 L126 47 Z" fill="#FF9FC2" />
 				</g>
@@ -219,15 +319,40 @@ export function Topper({ variant, palette }: { variant: number; palette: Palette
 		case 3:
 			return (
 				<g>
-					<path d="M100 46 Q102 32 96 22" stroke={palette.outline} strokeWidth={4} fill="none" strokeLinecap="round" />
-					<circle cx={95} cy={18} r={7} fill={palette.accent} stroke={palette.outline} strokeWidth={3} />
+					<path
+						d="M100 46 Q102 32 96 22"
+						stroke={palette.outline}
+						strokeWidth={4}
+						fill="none"
+						strokeLinecap="round"
+					/>
+					<circle
+						cx={95}
+						cy={18}
+						r={7}
+						fill={palette.accent}
+						stroke={palette.outline}
+						strokeWidth={3}
+					/>
 				</g>
 			)
 		case 4:
 			return (
 				<g>
-					<path d="M100 45 Q99 34 102 26" stroke="#2F7A4C" strokeWidth={4} fill="none" strokeLinecap="round" />
-					<path d="M102 26 C96 14 82 12 74 18 C80 30 94 34 102 26 Z" fill="#8FD9A8" stroke="#2F7A4C" strokeWidth={3} strokeLinejoin="round" />
+					<path
+						d="M100 45 Q99 34 102 26"
+						stroke="#2F7A4C"
+						strokeWidth={4}
+						fill="none"
+						strokeLinecap="round"
+					/>
+					<path
+						d="M102 26 C96 14 82 12 74 18 C80 30 94 34 102 26 Z"
+						fill="#8FD9A8"
+						stroke="#2F7A4C"
+						strokeWidth={3}
+						strokeLinejoin="round"
+					/>
 				</g>
 			)
 		default:
@@ -237,7 +362,12 @@ export function Topper({ variant, palette }: { variant: number; palette: Palette
 
 export function Wings({ palette }: { palette: Palette }) {
 	return (
-		<g fill={palette.belly} stroke={palette.outline} strokeWidth={4} strokeLinejoin="round">
+		<g
+			fill={palette.belly}
+			stroke={palette.outline}
+			strokeWidth={4}
+			strokeLinejoin="round"
+		>
 			<path d="M44 95 C20 78 12 96 20 112 C26 124 38 128 50 124 Z" />
 			<path d="M156 95 C180 78 188 96 180 112 C174 124 162 128 150 124 Z" />
 		</g>
@@ -253,7 +383,14 @@ export function Aura({ palette }: { palette: Palette }) {
 	]
 	return (
 		<g>
-			<circle cx={100} cy={112} r={88} fill={palette.accent} opacity={0.16} className="monster-aura" />
+			<circle
+				cx={100}
+				cy={112}
+				r={88}
+				fill={palette.accent}
+				opacity={0.16}
+				className="monster-aura"
+			/>
 			<g fill={palette.accent}>
 				{sparks.map(([x, y]) => (
 					<path
@@ -269,7 +406,10 @@ export function Aura({ palette }: { palette: Palette }) {
 export function Crown() {
 	return (
 		<g stroke="#A87F0E" strokeWidth={3.5} strokeLinejoin="round">
-			<path d="M72 44 L76 18 L88 32 L100 12 L112 32 L124 18 L128 44 Q100 52 72 44 Z" fill="#FFD95E" />
+			<path
+				d="M72 44 L76 18 L88 32 L100 12 L112 32 L124 18 L128 44 Q100 52 72 44 Z"
+				fill="#FFD95E"
+			/>
 			<circle cx={100} cy={38} r={4.5} fill="#FF5E8A" stroke="none" />
 		</g>
 	)

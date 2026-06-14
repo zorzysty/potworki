@@ -57,7 +57,12 @@ export function rarityOf(id: number): Rarity {
 // Wyprowadzone z rarityOf — grupuje wszystkie id po rzadkości (niezbędnie
 // niesąsiadujące zakresy po dodaniu nowych potworków).
 export const IDS_BY_RARITY: Record<Rarity, readonly number[]> = (() => {
-	const map: Record<Rarity, number[]> = { common: [], rare: [], epic: [], legendary: [] }
+	const map: Record<Rarity, number[]> = {
+		common: [],
+		rare: [],
+		epic: [],
+		legendary: [],
+	}
 	for (let id = 0; id < MONSTER_COUNT; id++) map[rarityOf(id)].push(id)
 	return map
 })()
@@ -65,13 +70,19 @@ export const IDS_BY_RARITY: Record<Rarity, readonly number[]> = (() => {
 function rollDna(rand: () => number, rarity: Rarity, id: number): Dna {
 	// paleta przydzielana po id (przekątna), nie losowo — równy rozkład kolorów
 	const palette =
-		rarity === "legendary" ? 7
-		: rarity === "epic" ? 6
-		: (id + Math.floor(id / 6)) % 6
+		rarity === "legendary"
+			? 7
+			: rarity === "epic"
+				? 6
+				: (id + Math.floor(id / 6)) % 6
 	const accessory: Dna["accessory"] =
-		rarity === "legendary" ? "crown"
-		: rarity === "epic" ? (rand() < 0.5 ? "wings" : "aura")
-		: "none"
+		rarity === "legendary"
+			? "crown"
+			: rarity === "epic"
+				? rand() < 0.5
+					? "wings"
+					: "aura"
+				: "none"
 	return {
 		body: Math.floor(rand() * 6),
 		palette,
@@ -96,7 +107,9 @@ function buildCatalog(): Monster[] {
 		let salt = 0
 		let dna: Dna
 		do {
-			const rng = mulberry32(GLOBAL_SEED ^ Math.imul(id + salt * SALT_STRIDE, 0x9e3779b9))
+			const rng = mulberry32(
+				GLOBAL_SEED ^ Math.imul(id + salt * SALT_STRIDE, 0x9e3779b9),
+			)
 			dna = rollDna(rng, rarity, id)
 			salt++
 		} while (usedDna.has(dnaSignature(dna)))

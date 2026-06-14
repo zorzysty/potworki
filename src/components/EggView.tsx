@@ -24,7 +24,12 @@ export const EGG_LABELS: Record<PendingEgg["quality"], string> = {
 	wish: "Jajko Życzeń",
 }
 
-export function EggView({ quality, cracks = 0, size = 120, className = "" }: Props) {
+export function EggView({
+	quality,
+	cracks = 0,
+	size = 120,
+	className = "",
+}: Props) {
 	const uid = useId()
 	const [top, bottom] = GRADIENTS[quality]
 	return (
@@ -65,7 +70,11 @@ export function EggView({ quality, cracks = 0, size = 120, className = "" }: Pro
 				/>
 			)}
 			{quality === "wish" && (
-				<g fill="#A678F0" className="anim-sparkle" style={{ transformOrigin: "center" }}>
+				<g
+					fill="#A678F0"
+					className="anim-sparkle"
+					style={{ transformOrigin: "center" }}
+				>
 					<path d="M60 52 L64 64 L76 68 L64 72 L60 84 L56 72 L44 68 L56 64 Z" />
 					<circle cx={40} cy={96} r={4} />
 					<circle cx={82} cy={102} r={4} />

@@ -5,20 +5,20 @@ import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
 
 export function DebugScreen() {
-	const facts = useGame(s => s.facts)
-	const iskierki = useGame(s => s.iskierki)
-	const unlockedStage = useGame(s => s.unlockedStage)
-	const celebratedStage = useGame(s => s.celebratedStage)
-	const totalRounds = useGame(s => s.totalRounds)
-	const eggsEarned = useGame(s => s.eggsEarned)
-	const goTo = useGame(s => s.goTo)
-	const debugSetAllMastery = useGame(s => s.debugSetAllMastery)
-	const debugSimulateRound = useGame(s => s.debugSimulateRound)
-	const debugOwnRarity = useGame(s => s.debugOwnRarity)
-	const debugAddIskierki = useGame(s => s.debugAddIskierki)
-	const debugAddEgg = useGame(s => s.debugAddEgg)
-	const debugOpenGate = useGame(s => s.debugOpenGate)
-	const debugReset = useGame(s => s.debugReset)
+	const facts = useGame((s) => s.facts)
+	const iskierki = useGame((s) => s.iskierki)
+	const unlockedStage = useGame((s) => s.unlockedStage)
+	const celebratedStage = useGame((s) => s.celebratedStage)
+	const totalRounds = useGame((s) => s.totalRounds)
+	const eggsEarned = useGame((s) => s.eggsEarned)
+	const goTo = useGame((s) => s.goTo)
+	const debugSetAllMastery = useGame((s) => s.debugSetAllMastery)
+	const debugSimulateRound = useGame((s) => s.debugSimulateRound)
+	const debugOwnRarity = useGame((s) => s.debugOwnRarity)
+	const debugAddIskierki = useGame((s) => s.debugAddIskierki)
+	const debugAddEgg = useGame((s) => s.debugAddEgg)
+	const debugOpenGate = useGame((s) => s.debugOpenGate)
+	const debugReset = useGame((s) => s.debugReset)
 
 	const btn =
 		"touch-manipulation rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-slate-700 shadow active:scale-95"
@@ -29,12 +29,14 @@ export function DebugScreen() {
 				← Home
 			</button>
 			<div className="my-2 font-bold">
-				etap: {unlockedStage} | uczczony: {celebratedStage} | rundy: {totalRounds} | iskierki:{" "}
-				{iskierki} | jajka: {eggsEarned}
+				etap: {unlockedStage} | uczczony: {celebratedStage} | rundy:{" "}
+				{totalRounds} | iskierki: {iskierki} | jajka: {eggsEarned}
 			</div>
-			<div className="mb-1 font-bold text-slate-500">symuluj rundę (10 pytań, suma gwiazdek):</div>
+			<div className="mb-1 font-bold text-slate-500">
+				symuluj rundę (10 pytań, suma gwiazdek):
+			</div>
 			<div className="flex flex-wrap gap-2 pb-3">
-				{[20, 22, 24, 26, 28, 30].map(stars => (
+				{[20, 22, 24, 26, 28, 30].map((stars) => (
 					<button
 						key={stars}
 						type="button"
@@ -46,22 +48,46 @@ export function DebugScreen() {
 				))}
 			</div>
 			<div className="flex flex-wrap gap-2 pb-4">
-				<button type="button" className={btn} onClick={() => debugSetAllMastery(0.7)}>
+				<button
+					type="button"
+					className={btn}
+					onClick={() => debugSetAllMastery(0.7)}
+				>
 					mastery 0.7
 				</button>
-				<button type="button" className={btn} onClick={() => debugSetAllMastery(0)}>
+				<button
+					type="button"
+					className={btn}
+					onClick={() => debugSetAllMastery(0)}
+				>
 					mastery 0
 				</button>
-				<button type="button" className={btn} onClick={() => debugOwnRarity("common")}>
+				<button
+					type="button"
+					className={btn}
+					onClick={() => debugOwnRarity("common")}
+				>
 					own commons
 				</button>
-				<button type="button" className={btn} onClick={() => debugAddIskierki(10)}>
+				<button
+					type="button"
+					className={btn}
+					onClick={() => debugAddIskierki(10)}
+				>
 					+10 ✨
 				</button>
-				<button type="button" className={btn} onClick={() => debugAddEgg("normal")}>
+				<button
+					type="button"
+					className={btn}
+					onClick={() => debugAddEgg("normal")}
+				>
 					+jajko zwykłe
 				</button>
-				<button type="button" className={btn} onClick={() => debugAddEgg("rainbow")}>
+				<button
+					type="button"
+					className={btn}
+					onClick={() => debugAddEgg("rainbow")}
+				>
 					+jajko tęczowe
 				</button>
 				<button type="button" className={btn} onClick={debugOpenGate}>
@@ -79,7 +105,9 @@ export function DebugScreen() {
 			</div>
 
 			<details open>
-				<summary className="cursor-pointer text-lg font-extrabold">Mastery (55 działań)</summary>
+				<summary className="cursor-pointer text-lg font-extrabold">
+					Mastery (55 działań)
+				</summary>
 				<table className="mt-2 w-full max-w-md">
 					<thead>
 						<tr className="text-left font-bold text-slate-500">
@@ -91,7 +119,7 @@ export function DebugScreen() {
 						</tr>
 					</thead>
 					<tbody>
-						{ALL_FACTS.map(fact => {
+						{ALL_FACTS.map((fact) => {
 							const stats = facts[fact.key]
 							return (
 								<tr key={fact.key} className="border-t border-white/50">
@@ -110,9 +138,11 @@ export function DebugScreen() {
 			</details>
 
 			<details open className="mt-4">
-				<summary className="cursor-pointer text-lg font-extrabold">Galeria ({MONSTERS.length})</summary>
+				<summary className="cursor-pointer text-lg font-extrabold">
+					Galeria ({MONSTERS.length})
+				</summary>
 				<div className="mt-2 grid grid-cols-4 gap-2 md:grid-cols-6">
-					{MONSTERS.map(monster => (
+					{MONSTERS.map((monster) => (
 						<div
 							key={monster.id}
 							className={`flex flex-col items-center rounded-xl border-2 bg-white/70 p-1 ${RARITY_META[monster.rarity].border}`}

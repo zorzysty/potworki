@@ -14,9 +14,14 @@ bun run dev       # dev server (z base /potworki/)
 bun run build     # tsc -b && vite build
 bun run preview   # serwuje dist/
 bun run typecheck # sam typecheck
+bun run check     # biome: format + lint + organizacja importów (--write --unsafe)
+bun run format    # biome: tylko formatowanie (--write)
+bun run lint      # biome: tylko lint (--write)
 ```
 
-Brak test runnera i lintera — weryfikacja przez typecheck, ekran debug (`?debug` w URL → link „debug" na ekranie głównym: tabela mastery, galeria 72 potworków, przyciski oszukiwania) oraz ręczny click-through. Logikę z `src/game/` i `src/monsters/` można testować skryptem uruchamianym bezpośrednio przez `bun` (czyste moduły TS bez zależności od DOM).
+Linter i formatter: **biome** (konfiguracja w `biome.json` — wcięcia tabami, podwójne cudzysłowy, średniki tylko gdy potrzebne, preset recommended + reguły React, a11y wyłączone). **Po każdej zakończonej zmianie w kodzie uruchom `bun run check` i napraw wszystko, co zgłosi** — to obowiązkowy krok przed uznaniem zadania za skończone.
+
+Brak test runnera — weryfikacja przez typecheck, `bun run check`, ekran debug (`?debug` w URL → link „debug" na ekranie głównym: tabela mastery, galeria 72 potworków, przyciski oszukiwania) oraz ręczny click-through. Logikę z `src/game/` i `src/monsters/` można testować skryptem uruchamianym bezpośrednio przez `bun` (czyste moduły TS bez zależności od DOM).
 
 Deploy: push do `main` → GitHub Actions buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`.
 

@@ -12,23 +12,25 @@ import { useGame, wishEggCost } from "../store/store"
 // sortujemy jawnie zamiast polegać na kolejności id.
 const SORTED_MONSTERS = [...MONSTERS].sort(
 	(a, b) =>
-		RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity) || a.id - b.id,
+		RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity) ||
+		a.id - b.id,
 )
 
 export function CollectionScreen() {
-	const ownedMonsters = useGame(s => s.ownedMonsters)
-	const dreamMonsterId = useGame(s => s.dreamMonsterId)
-	const iskierki = useGame(s => s.iskierki)
-	const setDreamMonster = useGame(s => s.setDreamMonster)
-	const buyWishEgg = useGame(s => s.buyWishEgg)
-	const goTo = useGame(s => s.goTo)
+	const ownedMonsters = useGame((s) => s.ownedMonsters)
+	const dreamMonsterId = useGame((s) => s.dreamMonsterId)
+	const iskierki = useGame((s) => s.iskierki)
+	const setDreamMonster = useGame((s) => s.setDreamMonster)
+	const buyWishEgg = useGame((s) => s.buyWishEgg)
+	const goTo = useGame((s) => s.goTo)
 	const [selectedId, setSelectedId] = useState<number | null>(null)
 
 	const ownedCount = Object.keys(ownedMonsters).length
 	const allOwned = ownedCount === MONSTER_COUNT
 	const cost = wishEggCost({ dreamMonsterId, ownedMonsters })
 	const selected = selectedId !== null ? MONSTERS[selectedId] : undefined
-	const selectedOwned = selectedId !== null ? ownedMonsters[selectedId] : undefined
+	const selectedOwned =
+		selectedId !== null ? ownedMonsters[selectedId] : undefined
 
 	return (
 		<div className="flex min-h-dvh flex-col gap-4 p-4">
@@ -65,7 +67,9 @@ export function CollectionScreen() {
 						className="flex-1 py-3 text-xl"
 					>
 						Jajko Życzeń 🌟 — {cost} ✨
-						{dreamMonsterId !== null && !(dreamMonsterId in ownedMonsters) && " (wymarzony!)"}
+						{dreamMonsterId !== null &&
+							!(dreamMonsterId in ownedMonsters) &&
+							" (wymarzony!)"}
 					</BigButton>
 					<HelpTip
 						placement="bottom"
@@ -76,7 +80,7 @@ export function CollectionScreen() {
 			)}
 
 			<div className="grid grid-cols-3 gap-3 pb-6 min-[420px]:grid-cols-4">
-				{SORTED_MONSTERS.map(monster => {
+				{SORTED_MONSTERS.map((monster) => {
 					const owned = monster.id in ownedMonsters
 					const isDream = monster.id === dreamMonsterId
 					return (
@@ -97,7 +101,9 @@ export function CollectionScreen() {
 								{owned ? monster.name : "???"}
 							</div>
 							{isDream && (
-								<div className="anim-sparkle absolute -right-1.5 -top-1.5 text-xl">✨</div>
+								<div className="anim-sparkle absolute -right-1.5 -top-1.5 text-xl">
+									✨
+								</div>
 							)}
 						</button>
 					)
@@ -111,7 +117,7 @@ export function CollectionScreen() {
 				>
 					<div
 						className="anim-pop flex w-full max-w-sm flex-col items-center gap-3 rounded-[2rem] bg-white p-6 shadow-2xl"
-						onClick={e => e.stopPropagation()}
+						onClick={(e) => e.stopPropagation()}
 					>
 						<MonsterSvg
 							id={selected.id}
@@ -129,7 +135,8 @@ export function CollectionScreen() {
 						</div>
 						{selectedOwned ? (
 							<div className="text-sm font-bold text-slate-400">
-								Wykluty: {new Date(selectedOwned.hatchedAt).toLocaleDateString("pl-PL")}
+								Wykluty:{" "}
+								{new Date(selectedOwned.hatchedAt).toLocaleDateString("pl-PL")}
 							</div>
 						) : selected.id === dreamMonsterId ? (
 							<BigButton

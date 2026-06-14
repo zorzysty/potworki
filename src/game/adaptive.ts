@@ -59,9 +59,9 @@ export function pickNextFact(
 ): Fact {
 	const pool = unlockedFacts(stage)
 	const excluded = new Set(exclude)
-	let candidates = pool.filter(f => !excluded.has(f.key))
+	let candidates = pool.filter((f) => !excluded.has(f.key))
 	if (candidates.length === 0) candidates = pool
-	const weights = candidates.map(f => weightOf(facts[f.key] ?? emptyStats()))
+	const weights = candidates.map((f) => weightOf(facts[f.key] ?? emptyStats()))
 	const total = weights.reduce((s, w) => s + w, 0)
 	let roll = rand() * total
 	for (let i = 0; i < candidates.length; i++) {
@@ -85,10 +85,13 @@ export function stageFacts(stage: number): Fact[] {
 	const factor = STAGES[stage]?.[0]
 	if (factor === undefined) return []
 	// działania z tym czynnikiem, dostępne dopiero od tego etapu (czynnik jest tu nowy)
-	return unlockedFacts(stage).filter(f => f.a === factor || f.b === factor)
+	return unlockedFacts(stage).filter((f) => f.a === factor || f.b === factor)
 }
 
-function meanMastery(facts: Partial<Record<FactKey, FactStats>>, pool: Fact[]): number {
+function meanMastery(
+	facts: Partial<Record<FactKey, FactStats>>,
+	pool: Fact[],
+): number {
 	if (pool.length === 0) return 0
 	let sum = 0
 	for (const f of pool) sum += facts[f.key]?.mastery ?? 0
@@ -145,9 +148,12 @@ export function stageProgress(
 	const pool = stageFacts(stage)
 	if (pool.length === 0) return 1
 	const base = Math.min(1, averageMastery(facts, stage) / UNLOCK_THRESHOLD)
-	const allAttempted = pool.every(f => (facts[f.key]?.attempts ?? 0) > 0)
+	const allAttempted = pool.every((f) => (facts[f.key]?.attempts ?? 0) > 0)
 	const newProgress = allAttempted ? base : Math.min(base, 0.95)
 	const old = olderFacts(stage)
-	const maint = old.length === 0 ? 1 : Math.min(1, meanMastery(facts, old) / MAINTAIN_THRESHOLD)
+	const maint =
+		old.length === 0
+			? 1
+			: Math.min(1, meanMastery(facts, old) / MAINTAIN_THRESHOLD)
 	return Math.min(newProgress, maint)
 }

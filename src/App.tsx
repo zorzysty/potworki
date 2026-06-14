@@ -10,7 +10,7 @@ import { useGame } from "./store/store"
 const DEBUG_ENABLED = new URLSearchParams(window.location.search).has("debug")
 
 export function App() {
-	const screen = useGame(s => s.screen)
+	const screen = useGame((s) => s.screen)
 
 	// fizyczna klawiatura → te same akcje store co keypad dotykowy
 	useEffect(() => {
