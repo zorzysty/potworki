@@ -143,7 +143,7 @@ export function HatchScreen() {
 											key={i}
 											type="button"
 											onClick={() => selectEgg(i)}
-											className={`shrink-0 touch-manipulation rounded-2xl p-1.5 transition active:scale-90 ${
+											className={`relative shrink-0 touch-manipulation rounded-2xl p-1.5 transition active:scale-90 ${
 												i === safeIndex
 													? "bg-white/30 ring-4 ring-white"
 													: "bg-white/5"
@@ -151,6 +151,11 @@ export function HatchScreen() {
 											aria-label={`Wybierz: ${EGG_LABELS[e.quality]}`}
 										>
 											<EggView quality={e.quality} size={56} />
+											{e.mode === "div" && (
+												<div className="absolute right-0 top-0 rounded-full bg-violet-500 px-1.5 text-xs font-extrabold text-white">
+													÷
+												</div>
+											)}
 										</button>
 									))}
 								</div>

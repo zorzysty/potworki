@@ -1,7 +1,12 @@
 /// <reference types="bun-types" />
 import { beforeEach, describe, expect, test } from "bun:test"
 import { ISKIERKI_FOR_DUP } from "../game/rewards"
-import { FIRST_MONSTER_ID, IDS_BY_RARITY, rarityOf } from "../monsters/catalog"
+import {
+	DIVISION_ONLY_IDS,
+	FIRST_MONSTER_ID,
+	IDS_BY_RARITY,
+	rarityOf,
+} from "../monsters/catalog"
 import { useGame } from "./store"
 
 const game = () => useGame.getState()
@@ -20,6 +25,19 @@ function requireRound() {
 	const r = game().round
 	if (!r) throw new Error("brak rundy")
 	return r
+}
+
+// odpowiada na bieżące pytanie zgodnie z trybem rundy (mnożenie a×b / dzielenie a÷b)
+function answerByMode(correct: boolean) {
+	const round = game().round
+	if (!round) throw new Error("brak rundy")
+	const expected =
+		round.mode === "div"
+			? round.question.a / round.question.b
+			: round.question.a * round.question.b
+	const value = correct ? expected : expected + 1
+	for (const digit of String(value)) game().pressDigit(Number(digit))
+	game().pressConfirm()
 }
 
 beforeEach(() => game().debugReset())
@@ -304,6 +322,108 @@ describe("buyWishEgg — ekonomia", () => {
 		game().buyWishEgg()
 		game().hatchEgg()
 		expect(game().lastHatch?.monsterId).toBe(legendaryId)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Tryb dzielenia
+// ---------------------------------------------------------------------------
+
+describe("tryb dzielenia", () => {
+	test("startRound w trybie div: runda.mode === div, pytanie to (a*b)÷dzielnik", () => {
+		game().setMode("div")
+		game().startRound()
+		const r = requireRound()
+		expect(r.mode).toBe("div")
+		// dzielna = iloczyn faktu, dzielnik dzieli ją bez reszty, iloraz 1..10
+		const fact = r.question.key.split("x").map(Number)
+		const product = (fact[0] as number) * (fact[1] as number)
+		expect(r.question.a).toBe(product)
+		expect([fact[0], fact[1]]).toContain(r.question.b)
+		const quotient = r.question.a / r.question.b
+		expect(Number.isInteger(quotient)).toBe(true)
+		expect(quotient).toBeGreaterThanOrEqual(1)
+		expect(quotient).toBeLessThanOrEqual(10)
+	})
+
+	test("poprawna odpowiedź dzielenia: faza correct, fragment, mastery rośnie", () => {
+		game().setMode("div")
+		game().startRound()
+		const key = requireRound().question.key
+		answerByMode(true)
+		const s = game()
+		expect(s.round?.phase).toBe("correct")
+		expect(s.eggFragments).toBe(1)
+		expect(s.facts[key]?.attempts).toBe(1)
+		expect((s.facts[key]?.mastery ?? 0) > 0).toBe(true)
+	})
+
+	test("jajko zdobyte w dzieleniu ma mode 'div'", () => {
+		game().setMode("div")
+		game().startRound()
+		// 10 poprawnych = pierwsze jajko (próg fragmentsForEgg(0)=10)
+		for (let i = 0; i < 10; i++) {
+			answerByMode(true)
+			game().nextQuestion()
+		}
+		const s = game()
+		expect(s.pendingEggs.length).toBe(1)
+		expect(s.pendingEggs[0]?.mode).toBe("div")
+	})
+
+	test("debugReset wraca do trybu mnożenia", () => {
+		game().setMode("div")
+		game().debugReset()
+		expect(game().mode).toBe("mult")
+	})
+
+	test("pierwsza runda po odblokowaniu: 5/10 działań z nową cyfrą, w dzieleniu cyfra jest dzielnikiem", () => {
+		game().debugOpenGate() // unlockedStage 0→1, nowa cyfra = 3, wszystkie 3-działania attempts 0
+		expect(game().unlockedStage).toBe(1)
+		game().setMode("div")
+		game().startRound()
+		expect(game().round?.introFactor).toBe(3)
+
+		const keys: string[] = []
+		for (let i = 0; i < 10; i++) {
+			const q = requireRound().question
+			keys.push(q.key)
+			// w dzieleniu: pytanie z cyfrą 3 musi mieć 3 jako dzielnik (3 w działaniu, nie w wyniku)
+			if (q.key.split("x").map(Number).includes(3)) {
+				expect(q.b).toBe(3)
+				// iloraz to drugi czynnik (nie 3), poza kwadratem 3×3 gdzie 9÷3=3
+				if (q.key !== "3x3") expect(q.a / q.b).not.toBe(3)
+			}
+			answerByMode(true)
+			game().nextQuestion()
+		}
+		const withThree = keys.filter((k) => k.split("x").map(Number).includes(3))
+		expect(withThree.length).toBe(5)
+		expect(keys.length).toBe(10)
+		// wszystkie 10 pytań bazowych różne (plan bez powtórzeń)
+		expect(new Set(keys).size).toBe(10)
+	})
+
+	test("zwykła runda (nie pierwsza po odblokowaniu) nie ma planu ani introFactor", () => {
+		game().startRound() // stage 0 → nie intro
+		expect(game().round?.introFactor).toBeNull()
+		expect(game().round?.plan).toBeNull()
+	})
+
+	test("jajko mnożeniowe nigdy nie wykluwa legendarnego tylko-dzielenie", () => {
+		// posiadamy wszystko oprócz legendarnych → losowanie legendarnego tieru
+		// w trybie mnożenia musi trafić tylko w oryginalne (45,46,47,71)
+		game().debugOwnRarity("common")
+		game().debugOwnRarity("rare")
+		game().debugOwnRarity("epic")
+		// wymarzony = legendarny tylko-dzielenie (id 72) — w trybie mult nie ma priorytetu
+		game().setDreamMonster(72)
+		for (let i = 0; i < 200; i++) {
+			game().debugAddEgg("rainbow") // mode = mult (domyślny)
+			game().hatchEgg()
+			const id = game().lastHatch?.monsterId
+			if (id !== undefined) expect(DIVISION_ONLY_IDS.has(id)).toBe(false)
+		}
 	})
 })
 

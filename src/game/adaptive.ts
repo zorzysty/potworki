@@ -71,6 +71,83 @@ export function pickNextFact(
 	return candidates[candidates.length - 1] as Fact
 }
 
+// Czynnik świeżo wprowadzony na danym etapie (null dla etapu bazowego 0).
+export function newlyUnlockedFactor(stage: number): number | null {
+	return stage >= 1 ? (STAGES[stage]?.[0] ?? null) : null
+}
+
+// Pierwsza runda po odblokowaniu czynnika = żadne działanie najnowszej tabliczki
+// nie ma jeszcze próby. Wtedy mieszamy mocno (introRoundPlan), zamiast zalewać rundę
+// nowym czynnikiem (który przez wagę attempts==0 ×2.5 normalnie zdominowałby pulę).
+export function isIntroRound(
+	facts: Partial<Record<FactKey, FactStats>>,
+	stage: number,
+): boolean {
+	if (stage < 1) return false
+	const pool = stageFacts(stage)
+	if (pool.length === 0) return false
+	return pool.every((f) => (facts[f.key]?.attempts ?? 0) === 0)
+}
+
+// Losowanie ważone BEZ powtórzeń: `count` różnych działań z puli.
+function sampleDistinct(
+	candidates: Fact[],
+	facts: Partial<Record<FactKey, FactStats>>,
+	count: number,
+	rand: () => number,
+): Fact[] {
+	const remaining = [...candidates]
+	const out: Fact[] = []
+	while (out.length < count && remaining.length > 0) {
+		const weights = remaining.map((f) => weightOf(facts[f.key] ?? emptyStats()))
+		const total = weights.reduce((s, w) => s + w, 0)
+		let roll = rand() * total
+		let idx = remaining.length - 1
+		for (let i = 0; i < remaining.length; i++) {
+			roll -= weights[i] ?? 0
+			if (roll <= 0) {
+				idx = i
+				break
+			}
+		}
+		out.push(remaining[idx] as Fact)
+		remaining.splice(idx, 1)
+	}
+	return out
+}
+
+function shuffle<T>(arr: T[], rand: () => number): T[] {
+	const a = [...arr]
+	for (let i = a.length - 1; i > 0; i--) {
+		const j = Math.floor(rand() * (i + 1))
+		const tmp = a[i] as T
+		a[i] = a[j] as T
+		a[j] = tmp
+	}
+	return a
+}
+
+// Plan działań pierwszej rundy po odblokowaniu: połowa (zaokrąglona w górę) z nowym
+// czynnikiem, reszta ze starszej puli (rozłącznej z nowym czynnikiem) — mocne mieszanie.
+// Zwraca `total` różnych działań w losowej kolejności; w obrębie każdej grupy słabe
+// działania mają większą szansę (ta sama waga co selekcja).
+export function introRoundPlan(
+	facts: Partial<Record<FactKey, FactStats>>,
+	stage: number,
+	total: number,
+	rand: () => number,
+): Fact[] {
+	const newCount = Math.ceil(total / 2)
+	const newFacts = sampleDistinct(stageFacts(stage), facts, newCount, rand)
+	const older = sampleDistinct(
+		olderFacts(stage),
+		facts,
+		total - newFacts.length,
+		rand,
+	)
+	return shuffle([...newFacts, ...older], rand)
+}
+
 // Próg opanowania najnowszej tabliczki (warunek główny bramy)
 export const UNLOCK_THRESHOLD = 0.65
 // Próg utrzymania starszych tabliczek — nie mogą spaść poniżej, inaczej brama czeka

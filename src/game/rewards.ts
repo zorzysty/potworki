@@ -1,8 +1,13 @@
+import type { GameMode } from "./facts"
+
 export type EggQuality = "normal" | "silver" | "gold" | "rainbow"
 export type Rarity = "common" | "rare" | "epic" | "legendary"
 
 export interface PendingEgg {
 	quality: EggQuality | "wish"
+	// Tryb, w którym jajko powstało — decyduje o puli potworków przy wykluciu
+	// (jajko z dzielenia może dać legendarne tylko-dzielenie; mnożeniowe/życzeń nie).
+	mode: GameMode
 }
 
 export const QUALITY_ORDER: readonly EggQuality[] = [

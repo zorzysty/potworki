@@ -2,7 +2,7 @@ import type { FactStats } from "../game/adaptive"
 import type { FactKey } from "../game/facts"
 import type { PendingEgg } from "../game/rewards"
 
-export const SAVE_VERSION = 3
+export const SAVE_VERSION = 4
 
 export interface SaveState {
 	facts: Partial<Record<FactKey, FactStats>>
@@ -56,6 +56,19 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 			celebratedStage:
 				typeof s.unlockedStage === "number" ? s.unlockedStage : 0,
 		}
+	},
+	// v3→v4: PendingEgg zyskał `mode` (tryb, w którym jajko powstało). Istniejące
+	// jajka traktujemy jak mnożeniowe — nie dawały dotąd legendarnych tylko-dzielenie.
+	3: (state) => {
+		const s = state as Record<string, unknown>
+		const pendingEggs = Array.isArray(s.pendingEggs)
+			? s.pendingEggs.map((egg) =>
+					egg && typeof egg === "object" && !("mode" in egg)
+						? { ...egg, mode: "mult" }
+						: egg,
+				)
+			: s.pendingEggs
+		return { ...s, pendingEggs }
 	},
 }
 

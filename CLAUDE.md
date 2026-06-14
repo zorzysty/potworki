@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Czym jest ten projekt
 
-Gra przeglądarkowa do nauki tabliczki mnożenia (do 10×10) dla 9-letniego dziecka. Motyw: kolekcjonowanie potworków — matma jest walutą, nie tematem. Cel: tablet (dotyk) + laptop (klawiatura), UI wyłącznie po polsku (bez i18n). Brak backendu — postęp w localStorage, osobno na każdym urządzeniu.
+Gra przeglądarkowa do nauki tabliczki mnożenia i dzielenia (do 10×10) dla 9-letniego dziecka. Dziecko wybiera tryb (mnożenie/dzielenie) przed każdą rundą; dzielenie to inny widok tych samych faktów, ze wspólnym postępem. Motyw: kolekcjonowanie potworków — matma jest walutą, nie tematem; kilka legendarnych potworków zdobywa się wyłącznie przez dzielenie. Cel: tablet (dotyk) + laptop (klawiatura), UI wyłącznie po polsku (bez i18n). Brak backendu — postęp w localStorage, osobno na każdym urządzeniu.
 
 ## Komendy
 
@@ -22,7 +22,7 @@ bun test          # testy jednostkowe (src/game/*.test.ts, src/monsters/*.test.t
 
 Linter i formatter: **biome** (konfiguracja w `biome.json` — wcięcia tabami, podwójne cudzysłowy, średniki tylko gdy potrzebne, preset recommended + reguły React, a11y wyłączone). **Po każdej zakończonej zmianie w kodzie uruchom `bun run check` i napraw wszystko, co zgłosi** — to obowiązkowy krok przed uznaniem zadania za skończone.
 
-Weryfikacja: `bun test` (testy jednostkowe logiki gry i katalogu potworków), `bun run typecheck`, `bun run check`, ekran debug (`?debug` w URL → link „debug" na ekranie głównym: tabela mastery, galeria 72 potworków, przyciski oszukiwania) oraz ręczny click-through.
+Weryfikacja: `bun test` (testy jednostkowe logiki gry i katalogu potworków), `bun run typecheck`, `bun run check`, ekran debug (`?debug` w URL → link „debug" na ekranie głównym: tabela mastery, galeria 76 potworków, przełącznik trybu, przyciski oszukiwania) oraz ręczny click-through.
 
 Deploy: push do `main` → GitHub Actions uruchamia `bun test` (blokuje deploy przy błędzie), buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`.
 

@@ -3,7 +3,7 @@ import { BigButton } from "../components/BigButton"
 import { HelpTip } from "../components/HelpTip"
 import { RARITY_META } from "../components/rarity"
 import { RARITY_ORDER } from "../game/rewards"
-import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
+import { isDivisionOnly, MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame, wishEggCost } from "../store/store"
 
@@ -69,6 +69,7 @@ export function CollectionScreen() {
 						Jajko Życzeń 🌟 — {cost} ✨
 						{dreamMonsterId !== null &&
 							!(dreamMonsterId in ownedMonsters) &&
+							!isDivisionOnly(dreamMonsterId) &&
 							" (wymarzony!)"}
 					</BigButton>
 					<HelpTip
@@ -105,6 +106,11 @@ export function CollectionScreen() {
 									✨
 								</div>
 							)}
+							{isDivisionOnly(monster.id) && (
+								<div className="absolute -left-1.5 -top-1.5 rounded-full bg-violet-500 px-2 py-0.5 text-sm font-extrabold text-white shadow">
+									÷
+								</div>
+							)}
 						</button>
 					)
 				})}
@@ -133,6 +139,11 @@ export function CollectionScreen() {
 						>
 							{RARITY_META[selected.rarity].label}
 						</div>
+						{isDivisionOnly(selected.id) && (
+							<div className="rounded-full bg-violet-100 px-4 py-1 text-sm font-extrabold text-violet-600">
+								➗ Tylko za dzielenie
+							</div>
+						)}
 						{selectedOwned ? (
 							<div className="text-sm font-bold text-slate-400">
 								Wykluty:{" "}

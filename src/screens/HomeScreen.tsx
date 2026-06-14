@@ -16,6 +16,8 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const dreamMonsterId = useGame((s) => s.dreamMonsterId)
 	const unlockedStage = useGame((s) => s.unlockedStage)
 	const celebratedStage = useGame((s) => s.celebratedStage)
+	const mode = useGame((s) => s.mode)
+	const setMode = useGame((s) => s.setMode)
 	const startRound = useGame((s) => s.startRound)
 	const goTo = useGame((s) => s.goTo)
 
@@ -85,6 +87,37 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					{MONSTERS[newestOwned]?.name}
 				</div>
 			)}
+
+			<div className="relative w-full max-w-xs">
+				<div className="flex gap-2 rounded-3xl bg-white/50 p-1.5">
+					{(
+						[
+							["mult", "× Mnożenie"],
+							["div", "÷ Dzielenie"],
+						] as const
+					).map(([value, label]) => (
+						<button
+							key={value}
+							type="button"
+							onClick={() => setMode(value)}
+							className={`flex-1 touch-manipulation rounded-2xl py-3 text-lg font-extrabold transition-transform active:scale-95 ${
+								mode === value
+									? "bg-gradient-to-b from-grape to-grape-dark text-white shadow-md"
+									: "text-grape-dark"
+							}`}
+						>
+							{label}
+						</button>
+					))}
+				</div>
+				<div className="absolute -right-2 -top-2">
+					<HelpTip
+						placement="bottom"
+						align="right"
+						text="Wybierz, czego chcesz ćwiczyć: mnożenie albo dzielenie. Niektóre wyjątkowe potworki wykluwają się tylko z jajek zdobytych przez dzielenie!"
+					/>
+				</div>
+			</div>
 
 			<BigButton onClick={startRound} className="w-full max-w-xs py-6 text-4xl">
 				Graj! 🚀

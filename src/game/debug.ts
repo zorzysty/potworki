@@ -5,7 +5,7 @@ import {
 	pickNextFact,
 	shouldUnlockNextStage,
 } from "./adaptive"
-import type { Fact, FactKey } from "./facts"
+import type { Fact, FactKey, GameMode } from "./facts"
 import {
 	budgetMs,
 	fragmentsForEgg,
@@ -37,6 +37,7 @@ export function simulateRoundOutcome(
 	rand: () => number,
 	now: number,
 	firstFact?: Fact,
+	mode: GameMode = "mult",
 ) {
 	const facts = { ...state.facts }
 	let eggFragments = state.eggFragments
@@ -67,7 +68,7 @@ export function simulateRoundOutcome(
 		if (eggFragments >= fragmentsForEgg(eggsEarned)) {
 			eggFragments = 0
 			eggsEarned++
-			pendingEggs.push({ quality: finalQuality })
+			pendingEggs.push({ quality: finalQuality, mode })
 			createdIndices.push(pendingEggs.length - 1)
 		}
 	}

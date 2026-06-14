@@ -11,6 +11,8 @@ export function DebugScreen() {
 	const celebratedStage = useGame((s) => s.celebratedStage)
 	const totalRounds = useGame((s) => s.totalRounds)
 	const eggsEarned = useGame((s) => s.eggsEarned)
+	const mode = useGame((s) => s.mode)
+	const setMode = useGame((s) => s.setMode)
 	const goTo = useGame((s) => s.goTo)
 	const debugSetAllMastery = useGame((s) => s.debugSetAllMastery)
 	const debugSimulateRound = useGame((s) => s.debugSimulateRound)
@@ -31,6 +33,25 @@ export function DebugScreen() {
 			<div className="my-2 font-bold">
 				etap: {unlockedStage} | uczczony: {celebratedStage} | rundy:{" "}
 				{totalRounds} | iskierki: {iskierki} | jajka: {eggsEarned}
+			</div>
+			<div className="mb-3 flex items-center gap-2">
+				<span className="font-bold text-slate-500">
+					tryb (dla symulacji/jajek):
+				</span>
+				<button
+					type="button"
+					className={`${btn} ${mode === "mult" ? "bg-grape text-white" : ""}`}
+					onClick={() => setMode("mult")}
+				>
+					× mnożenie
+				</button>
+				<button
+					type="button"
+					className={`${btn} ${mode === "div" ? "bg-grape text-white" : ""}`}
+					onClick={() => setMode("div")}
+				>
+					÷ dzielenie
+				</button>
 			</div>
 			<div className="mb-1 font-bold text-slate-500">
 				symuluj rundę (10 pytań, suma gwiazdek):

@@ -3,8 +3,10 @@ import { useGame } from "../store/store"
 export function QuestionCard() {
 	const round = useGame((s) => s.round)
 	if (!round) return null
-	const { question, phase, answer, lastStars, shakeNonce } = round
-	const product = question.a * question.b
+	const { question, phase, answer, lastStars, shakeNonce, mode } = round
+	const op = mode === "div" ? "÷" : "×"
+	const result =
+		mode === "div" ? question.a / question.b : question.a * question.b
 
 	return (
 		<div
@@ -16,9 +18,9 @@ export function QuestionCard() {
 			{phase === "wrong" ? (
 				<>
 					<div className="text-4xl font-extrabold text-slate-700">
-						{question.a} × {question.b} ={" "}
+						{question.a} {op} {question.b} ={" "}
 						<span className="rounded-xl bg-amber-100 px-3 text-amber-600">
-							{product}
+							{result}
 						</span>
 					</div>
 					<div className="text-lg font-bold text-slate-400">
@@ -27,7 +29,7 @@ export function QuestionCard() {
 				</>
 			) : (
 				<div className="text-5xl font-extrabold tracking-wide text-slate-700">
-					{question.a} × {question.b} = ?
+					{question.a} {op} {question.b} = ?
 				</div>
 			)}
 

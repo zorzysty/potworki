@@ -6,7 +6,10 @@ import {
 	applyAnswer,
 	decayStats,
 	emptyStats,
+	introRoundPlan,
+	isIntroRound,
 	needsMaintenance,
+	newlyUnlockedFactor,
 	pickNextFact,
 	shouldUnlockNextStage,
 	stageFacts,
@@ -205,6 +208,52 @@ describe("needsMaintenance", () => {
 			facts[f.key] = { ...emptyStats(), attempts: 1, mastery: 0.9 }
 		}
 		expect(needsMaintenance(facts, 1)).toBe(false)
+	})
+})
+
+describe("intro round (pierwsza runda po odblokowaniu)", () => {
+	test("newlyUnlockedFactor: null na etapie 0, 3 na etapie 1, 8 na ostatnim", () => {
+		expect(newlyUnlockedFactor(0)).toBeNull()
+		expect(newlyUnlockedFactor(1)).toBe(3)
+		expect(newlyUnlockedFactor(6)).toBe(8)
+	})
+
+	test("isIntroRound: true gdy żadne działanie nowej tabliczki nie ma próby", () => {
+		// stage 1, pusty zapis → wszystkie działania z 3 mają attempts 0
+		expect(isIntroRound({}, 1)).toBe(true)
+		// po jednej próbie któregoś działania z 3 → już nie intro
+		const oneAttempted: Partial<Record<FactKey, FactStats>> = {
+			[stageFacts(1)[0]?.key as FactKey]: {
+				...emptyStats(),
+				attempts: 1,
+			},
+		}
+		expect(isIntroRound(oneAttempted, 1)).toBe(false)
+		// etap 0 nigdy nie jest intro (brak pojedynczej nowej cyfry)
+		expect(isIntroRound({}, 0)).toBe(false)
+	})
+
+	test("introRoundPlan: 10 różnych działań, dokładnie 5 z nową cyfrą, 5 bez", () => {
+		const factor = newlyUnlockedFactor(6) as number // 8
+		const plan = introRoundPlan({}, 6, 10, mulberry32(7))
+		expect(plan.length).toBe(10)
+		// wszystkie różne
+		expect(new Set(plan.map((f) => f.key)).size).toBe(10)
+		const withFactor = plan.filter((f) => f.a === factor || f.b === factor)
+		const without = plan.filter((f) => f.a !== factor && f.b !== factor)
+		expect(withFactor.length).toBe(5)
+		expect(without.length).toBe(5)
+	})
+
+	test("introRoundPlan na etapie 1: 5 działań z 3 (cała tabliczka) + 5 starszych", () => {
+		const plan = introRoundPlan({}, 1, 10, mulberry32(3))
+		const withThree = plan.filter((f) => f.a === 3 || f.b === 3)
+		expect(withThree.length).toBe(5)
+		// starsze działania nie zawierają 3 (rozłączna pula)
+		for (const f of plan.filter((x) => x.a !== 3 && x.b !== 3)) {
+			expect(f.a).not.toBe(3)
+			expect(f.b).not.toBe(3)
+		}
 	})
 })
 

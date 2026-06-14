@@ -1,5 +1,8 @@
 export type FactKey = `${number}x${number}`
 
+// Tryb rundy: mnożenie albo dzielenie. Dzielenie to inny widok tego samego faktu.
+export type GameMode = "mult" | "div"
+
 export interface Fact {
 	a: number // zawsze a <= b
 	b: number
