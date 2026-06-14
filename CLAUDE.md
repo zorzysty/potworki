@@ -24,7 +24,7 @@ Linter i formatter: **biome** (konfiguracja w `biome.json` — wcięcia tabami, 
 
 Weryfikacja: `bun test` (testy jednostkowe logiki gry i katalogu potworków), `bun run typecheck`, `bun run check`, ekran debug (`?debug` w URL → link „debug" na ekranie głównym: tabela mastery, galeria 72 potworków, przyciski oszukiwania) oraz ręczny click-through.
 
-Deploy: push do `main` → GitHub Actions buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`.
+Deploy: push do `main` → GitHub Actions uruchamia `bun test` (blokuje deploy przy błędzie), buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`.
 
 ## Architektura (przegląd)
 
