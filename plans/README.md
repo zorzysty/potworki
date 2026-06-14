@@ -14,11 +14,11 @@ a contract — the affected plans call out exactly which docs to update.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 001  | Restore a green build (remove dead `_index`) | P1 | S | — | TODO |
-| 002  | Correct README monster count 48 → 72 | P3 | S | — | TODO |
-| 003  | `bun test` baseline + game/catalog characterization & frozen-seed guard | P1 | M | 001 | TODO |
-| 004  | Move debug round-sim helpers to `src/game/debug.ts` | P2 | M | 001, 003 | TODO |
-| 005  | Extract shared `useGateReveal` hook | P3 | S | 001 | TODO |
+| 001  | Restore a green build (remove dead `_index`) | P1 | S | — | DONE — branch `advisor/001-fix-broken-build` |
+| 002  | Correct README monster count 48 → 72 | P3 | S | — | DONE — branch `advisor/002-readme-monster-count` |
+| 003  | `bun test` baseline + game/catalog characterization & frozen-seed guard | P1 | M | 001 | DONE — branch `advisor/003-test-baseline` (57 tests) |
+| 004  | Move debug round-sim helpers to `src/game/debug.ts` | P2 | M | 001, 003 | DONE — branch `advisor/004-extract-debug-logic` (64 tests) |
+| 005  | Extract shared `useGateReveal` hook | P3 | S | 001 | DONE — branch `advisor/005-gate-reveal-hook` |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale).
 
@@ -79,6 +79,54 @@ written then removed in `3398a0d` — re-confirmed still rejected):
   typecheck is gated. (The missing *test* gate is real and addressed by plan 003.)
 - **"Division-by-zero in `shouldUnlockNextStage`."** Guarded — `stageFacts`/pool
   emptiness is handled before any division.
+
+## Execution log (2026-06-14)
+
+All five plans were implemented by `sonnet` executor subagents in isolated git
+worktrees and reviewed by the advisor (done-criteria re-run in the worktree,
+scope check, full diff read, test-assertion audit). Each lives on its own
+`advisor/*` branch; **integration into `main` is the user's call — the advisor
+never merges, pushes, or commits to `main`.**
+
+Branch graph (each stacked on its dependency so done-criteria could pass):
+
+    main (8b571d9)
+    ├── advisor/002-readme-monster-count         (002)
+    └── advisor/001-fix-broken-build             (001)
+        ├── advisor/005-gate-reveal-hook         (001 + 005)
+        └── advisor/003-test-baseline            (001 + 003)
+            └── advisor/004-extract-debug-logic  (001 + 003 + 004)
+
+Worktrees on disk: `/home/zorza/projects/potworki-worktrees/{001,002,003,004,005}`.
+
+Recommended merge (file sets are disjoint and the shared 001 change is identical
+across branches → expected conflict-free; `bun install` reconciles `bun.lock`):
+
+    # first commit or stash plans/README.md (it carries uncommitted DONE edits)
+    git checkout main
+    git merge advisor/004-extract-debug-logic    # brings 001 + 003 + 004
+    git merge advisor/005-gate-reveal-hook        # brings 005
+    git merge advisor/002-readme-monster-count    # brings 002
+    bun install && bun run check && bun test && bun run build
+
+**Integration verified (2026-06-14):** all three leaf branches merged
+conflict-free into `advisor/integration` (worktree
+`/home/zorza/projects/potworki-worktrees/integration`). Full suite on the merged
+result is green: `bun run typecheck` exit 0, `biome check` exit 0, `bun test`
+**64 pass / 0 fail**, `bun run build` exit 0 (vite 8). Since the merges were
+conflict-free, the simplest integration is a single fast-forward of this branch:
+
+    # commit or stash plans/README.md first (uncommitted DONE edits)
+    git checkout main && git merge advisor/integration
+
+Clean up afterwards with `git worktree remove <path>` (removing a worktree keeps
+its branch).
+
+Discovery during execution: the repo is on **TypeScript 6.0.3** (from the "bump
+deps" commit), which no longer auto-includes `@types/bun`. Test files therefore
+begin with `/// <reference types="bun-types" />`. Plan 003 had assumed TS 5.9 +
+`skipLibCheck` would suffice; the executor adapted correctly and the pattern is
+now established for any new test file.
 
 ## Direction findings (not planned — maintainer's call)
 
