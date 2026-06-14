@@ -175,7 +175,7 @@ export function MapScreen() {
 					<div className="text-6xl">👑</div>
 					<div className="text-2xl font-extrabold text-white">Cała Kraina zdobyta!</div>
 					<div className="text-lg font-bold text-white/90">Wszystkie tabliczki są Twoje 🎉</div>
-					<BigButton onClick={startRound} trigger="tap" className="mt-1 w-full max-w-xs py-4 text-2xl">
+					<BigButton onClick={startRound} className="mt-1 w-full max-w-xs py-4 text-2xl">
 						Graj dalej! 🚀
 					</BigButton>
 				</div>
@@ -219,7 +219,7 @@ export function MapScreen() {
 								? "Zagraj rundę, żeby zacząć zbierać kryształy!"
 								: "Każda runda dokłada kryształów. Komplet otworzy bramę!"}
 					</div>
-					<BigButton onClick={startRound} trigger="tap" className="mt-3 w-full max-w-xs py-4 text-2xl">
+					<BigButton onClick={startRound} className="mt-3 w-full max-w-xs py-4 text-2xl">
 						Graj, by ją otworzyć! 🚀
 					</BigButton>
 				</div>

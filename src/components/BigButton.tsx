@@ -1,4 +1,4 @@
-import type { PointerEvent, ReactNode } from "react"
+import type { ReactNode } from "react"
 
 interface Props {
 	onClick: () => void
@@ -6,8 +6,6 @@ interface Props {
 	variant?: "primary" | "secondary" | "ghost"
 	className?: string
 	disabled?: boolean
-	/** "press" = pointerdown (domyślne, ekrany bez scrolla); "tap" = click, na powierzchniach przewijalnych nie odpala się przy starcie przewijania */
-	trigger?: "press" | "tap"
 }
 
 const STYLES = {
@@ -17,28 +15,15 @@ const STYLES = {
 	ghost: "bg-white/50 text-grape-dark",
 }
 
-export function BigButton({
-	onClick,
-	children,
-	variant = "primary",
-	className = "",
-	disabled,
-	trigger = "press",
-}: Props) {
-	const triggerProps =
-		trigger === "tap"
-			? { onClick }
-			: {
-					onPointerDown: (e: PointerEvent<HTMLButtonElement>) => {
-						if (e.button !== 0 && e.pointerType === "mouse") return
-						onClick()
-					},
-				}
+// Aktywacja na `click` (jeden, kanoniczny event). Wrażenie natychmiastowości daje CSS
+// `:active` + `touch-manipulation` (reagują już na dotknięcie palcem), więc nie potrzebujemy
+// `pointerdown` — patrz model wejścia w src/CLAUDE.md.
+export function BigButton({ onClick, children, variant = "primary", className = "", disabled }: Props) {
 	return (
 		<button
 			type="button"
 			disabled={disabled}
-			{...triggerProps}
+			onClick={onClick}
 			className={`touch-manipulation select-none rounded-3xl px-7 py-4 text-2xl font-extrabold transition-transform active:scale-95 disabled:opacity-40 ${STYLES[variant]} ${className}`}
 		>
 			{children}

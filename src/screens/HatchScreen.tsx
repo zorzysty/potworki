@@ -54,7 +54,7 @@ export function HatchScreen() {
 			<div className="flex w-full items-center justify-between">
 				<button
 					type="button"
-					onPointerDown={leave}
+					onClick={leave}
 					className="touch-manipulation rounded-full bg-white/20 px-5 py-2 text-2xl font-extrabold text-white active:scale-90"
 					aria-label="Wróć do domku"
 				>
@@ -116,7 +116,7 @@ export function HatchScreen() {
 						<div className="text-2xl font-extrabold text-white/90">{EGG_LABELS[egg.quality]}</div>
 						<button
 							type="button"
-							onPointerDown={tapEgg}
+							onClick={tapEgg}
 							className="touch-manipulation active:scale-95"
 							aria-label="Tapnij jajko"
 						>

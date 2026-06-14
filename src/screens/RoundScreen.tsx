@@ -32,7 +32,7 @@ export function RoundScreen() {
 					</div>
 					<button
 						type="button"
-						onPointerDown={() => setPaused(true)}
+						onClick={() => setPaused(true)}
 						className="touch-manipulation rounded-full bg-white/70 px-4 py-1 text-lg font-extrabold text-grape-dark active:scale-90"
 						aria-label="Pauza"
 					>
@@ -56,7 +56,7 @@ export function RoundScreen() {
 					</BigButton>
 					<button
 						type="button"
-						onPointerDown={exitRoundEarly}
+						onClick={exitRoundEarly}
 						className="touch-manipulation rounded-2xl px-5 py-2 text-lg font-bold text-white/70 active:scale-95"
 					>
 						Koniec na dziś

@@ -19,11 +19,12 @@ export function DebugScreen() {
 	const debugOpenGate = useGame(s => s.debugOpenGate)
 	const debugReset = useGame(s => s.debugReset)
 
-	const btn = "rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-slate-700 shadow active:scale-95"
+	const btn =
+		"touch-manipulation rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-slate-700 shadow active:scale-95"
 
 	return (
 		<div className="min-h-dvh select-text p-4 text-sm">
-			<button type="button" onPointerDown={() => goTo("home")} className={btn}>
+			<button type="button" onClick={() => goTo("home")} className={btn}>
 				← Home
 			</button>
 			<div className="my-2 font-bold">
@@ -31,31 +32,31 @@ export function DebugScreen() {
 				{iskierki} | jajka: {eggsEarned}
 			</div>
 			<div className="flex flex-wrap gap-2 pb-4">
-				<button type="button" className={btn} onPointerDown={() => debugSetAllMastery(0.7)}>
+				<button type="button" className={btn} onClick={() => debugSetAllMastery(0.7)}>
 					mastery 0.7
 				</button>
-				<button type="button" className={btn} onPointerDown={() => debugSetAllMastery(0)}>
+				<button type="button" className={btn} onClick={() => debugSetAllMastery(0)}>
 					mastery 0
 				</button>
-				<button type="button" className={btn} onPointerDown={() => debugOwnRarity("common")}>
+				<button type="button" className={btn} onClick={() => debugOwnRarity("common")}>
 					own commons
 				</button>
-				<button type="button" className={btn} onPointerDown={() => debugAddIskierki(10)}>
+				<button type="button" className={btn} onClick={() => debugAddIskierki(10)}>
 					+10 ✨
 				</button>
-				<button type="button" className={btn} onPointerDown={() => debugAddEgg("normal")}>
+				<button type="button" className={btn} onClick={() => debugAddEgg("normal")}>
 					+jajko zwykłe
 				</button>
-				<button type="button" className={btn} onPointerDown={() => debugAddEgg("rainbow")}>
+				<button type="button" className={btn} onClick={() => debugAddEgg("rainbow")}>
 					+jajko tęczowe
 				</button>
-				<button type="button" className={btn} onPointerDown={debugOpenGate}>
+				<button type="button" className={btn} onClick={debugOpenGate}>
 					otwórz bramę
 				</button>
 				<button
 					type="button"
 					className={`${btn} text-red-600`}
-					onPointerDown={() => {
+					onClick={() => {
 						if (window.confirm("Na pewno skasować cały zapis?")) debugReset()
 					}}
 				>

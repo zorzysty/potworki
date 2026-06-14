@@ -27,7 +27,7 @@ export function HelpTip({ text, label = "Co to znaczy?", placement = "bottom", a
 				type="button"
 				aria-label={label}
 				aria-expanded={open}
-				onPointerDown={e => {
+				onClick={e => {
 					e.stopPropagation()
 					setOpen(o => !o)
 				}}
@@ -39,14 +39,14 @@ export function HelpTip({ text, label = "Co to znaczy?", placement = "bottom", a
 				<>
 					<div
 						className="fixed inset-0 z-40"
-						onPointerDown={e => {
+						onClick={e => {
 							e.stopPropagation()
 							setOpen(false)
 						}}
 					/>
 					<div
 						className={`anim-pop absolute z-50 w-56 rounded-2xl bg-grape-dark px-4 py-3 text-left text-sm font-bold leading-snug text-white shadow-xl ${placeClass} ${alignClass}`}
-						onPointerDown={e => e.stopPropagation()}
+						onClick={e => e.stopPropagation()}
 					>
 						{text}
 					</div>

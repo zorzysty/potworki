@@ -54,7 +54,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					<div className="relative">
 						<button
 							type="button"
-							onPointerDown={() => goTo("collection")}
+							onClick={() => goTo("collection")}
 							className="touch-manipulation flex flex-col items-center active:scale-95"
 						>
 							<div className="anim-glow rounded-3xl border-4 border-amber-300 bg-white/60 p-2">
@@ -90,7 +90,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 			<div className="relative w-full max-w-xs">
 			<button
 				type="button"
-				onPointerDown={() => pendingEggs.length > 0 && goTo("hatch")}
+				onClick={() => pendingEggs.length > 0 && goTo("hatch")}
 				className="touch-manipulation flex w-full items-center justify-between rounded-3xl bg-white/80 px-5 py-3 shadow-md active:scale-95"
 			>
 				<div className="text-xl font-extrabold text-slate-600">🪺 Gniazdo</div>
@@ -166,7 +166,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 			{debugEnabled && (
 				<button
 					type="button"
-					onPointerDown={() => goTo("debug")}
+					onClick={() => goTo("debug")}
 					className="text-xs font-bold text-slate-400"
 				>
 					debug

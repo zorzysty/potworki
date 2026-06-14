@@ -19,7 +19,7 @@ export function Keypad() {
 					key={digit}
 					type="button"
 					className={keyClass}
-					onPointerDown={() => pressDigit(digit)}
+					onClick={() => pressDigit(digit)}
 				>
 					{digit}
 				</button>
@@ -27,12 +27,12 @@ export function Keypad() {
 			<button
 				type="button"
 				className={`${keyClass} text-2xl`}
-				onPointerDown={pressBackspace}
+				onClick={pressBackspace}
 				aria-label="Usuń cyfrę"
 			>
 				⌫
 			</button>
-			<button type="button" className={keyClass} onPointerDown={() => pressDigit(0)}>
+			<button type="button" className={keyClass} onClick={() => pressDigit(0)}>
 				0
 			</button>
 			<button
@@ -40,7 +40,7 @@ export function Keypad() {
 				className={`touch-manipulation select-none rounded-2xl text-3xl font-extrabold text-white
 					shadow-md border-b-4 min-h-16 transition-transform active:scale-90 active:border-b-2
 					${hasAnswer ? "bg-gradient-to-b from-emerald-400 to-emerald-600 border-emerald-700" : "bg-emerald-200 border-emerald-300"}`}
-				onPointerDown={pressConfirm}
+				onClick={pressConfirm}
 				aria-label="Zatwierdź"
 			>
 				✓

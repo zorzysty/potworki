@@ -60,7 +60,6 @@ export function CollectionScreen() {
 				<div className="mx-auto flex w-full max-w-sm items-center gap-2">
 					<BigButton
 						onClick={buyWishEgg}
-						trigger="tap"
 						variant="secondary"
 						disabled={iskierki < cost}
 						className="flex-1 py-3 text-xl"
@@ -138,7 +137,6 @@ export function CollectionScreen() {
 									setDreamMonster(null)
 									setSelectedId(null)
 								}}
-								trigger="tap"
 								variant="secondary"
 								className="w-full py-3 text-lg"
 							>
@@ -151,7 +149,6 @@ export function CollectionScreen() {
 										setDreamMonster(selected.id)
 										setSelectedId(null)
 									}}
-									trigger="tap"
 									className="flex-1 py-3 text-lg"
 								>
 									To mój wymarzony potworek! 💖
