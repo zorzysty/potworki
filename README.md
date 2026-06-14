@@ -1,7 +1,7 @@
 # Potworki 👾
 
 Gra przeglądarkowa do nauki tabliczki mnożenia (do 10×10) dla dzieci. Poprawne
-odpowiedzi dają jajka, z których wykluwają się kolekcjonowane potworki (48 sztuk,
+odpowiedzi dają jajka, z których wykluwają się kolekcjonowane potworki (72 sztuki,
 4 poziomy rzadkości). Gra adaptacyjnie częściej podsuwa działania, które idą
 dziecku gorzej, i stopniowo odblokowuje kolejne tabliczki (start: ×1, ×2, ×5, ×10).
 
@@ -32,7 +32,7 @@ Jeśli zmienisz nazwę repo, popraw `base` w `vite.config.ts`.
 
 Otwórz grę z `?debug` w adresie (np. `http://localhost:5100/potworki/?debug`) —
 na dole ekranu głównego pojawi się link **debug**: tabela mastery wszystkich 55
-działań, galeria 48 potworków, przyciski do testowania (ustawianie mastery,
+działań, galeria 72 potworków, przyciski do testowania (ustawianie mastery,
 dodawanie jajek/iskierek, reset zapisu).
 
 ## Ważne dla utrzymania
