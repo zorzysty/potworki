@@ -118,7 +118,7 @@ function simulateRoundOutcome(state: SaveState, totalStars: number, firstFact?: 
 	const pendingEggs = [...state.pendingEggs]
 	const createdIndices: number[] = []
 	const asked: FactKey[] = []
-	const finalQuality = eggQuality(totalStars)
+	const finalQuality = eggQuality(totalStars, Math.random)
 	const perQuestion = distributeStars(totalStars, QUESTIONS_PER_ROUND)
 
 	for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
@@ -307,7 +307,7 @@ export const useGame = create<GameState>()(
 					eggFragments = 0
 					eggsEarned++
 					// prowizoryczna jakość z gwiazdek-dotąd; finalna nadawana na końcu rundy
-					pendingEggs = [...pendingEggs, { quality: eggQuality(stars) }]
+					pendingEggs = [...pendingEggs, { quality: eggQuality(stars, Math.random) }]
 					eggsCreated.push(pendingEggs.length - 1)
 				}
 
@@ -357,7 +357,7 @@ export const useGame = create<GameState>()(
 
 				if (nextIndex >= round.total) {
 					// koniec rundy: finalna jakość dla jajek z tej rundy + check odblokowania
-					const finalQuality = eggQuality(round.stars)
+					const finalQuality = eggQuality(round.stars, Math.random)
 					const pendingEggs = state.pendingEggs.map((egg, i) =>
 						round.eggsCreated.includes(i) ? { ...egg, quality: finalQuality } : egg,
 					)
