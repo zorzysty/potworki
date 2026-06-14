@@ -12,6 +12,7 @@ export function RoundSummary() {
 	const eggFragments = useGame((s) => s.eggFragments)
 	const eggsEarned = useGame((s) => s.eggsEarned)
 	const goTo = useGame((s) => s.goTo)
+	const startRound = useGame((s) => s.startRound)
 
 	// brama odblokowana w tej rundzie → splash gra od razu, bez klikania.
 	// Decyzja w inicjalizatorze useState (PRZED markGatesCelebrated), więc stabilna
@@ -71,6 +72,13 @@ export function RoundSummary() {
 						Wykluj jajko! 🥚
 					</BigButton>
 				)}
+				<BigButton
+					onClick={startRound}
+					variant={pendingEggs.length > 0 ? "secondary" : "primary"}
+					className="w-full"
+				>
+					Zagraj kolejną rundę 🚀
+				</BigButton>
 				<BigButton
 					onClick={() => goTo("home")}
 					variant="secondary"
