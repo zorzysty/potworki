@@ -1,6 +1,7 @@
 import confetti from "canvas-confetti"
 import { useEffect, useId, useState } from "react"
 import { STAGES } from "../game/facts"
+import { REGIONS } from "../monsters/world"
 
 export const CRYSTALS = 8
 
@@ -160,6 +161,11 @@ export function GateReveal({
 
 			{revealed && (
 				<>
+					{REGIONS[stage] && (
+						<div className="anim-pop text-2xl font-extrabold text-white">
+							{REGIONS[stage].emoji} {REGIONS[stage].name}
+						</div>
+					)}
 					<div className="anim-pop rounded-3xl bg-gradient-to-r from-amber-300 to-orange-400 px-6 py-3 text-2xl font-extrabold text-white shadow-lg">
 						Nowa tabliczka: ×{gateFactor(stage)}! 🎊
 					</div>

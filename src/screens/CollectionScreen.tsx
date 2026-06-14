@@ -4,7 +4,9 @@ import { HelpTip } from "../components/HelpTip"
 import { RARITY_META } from "../components/rarity"
 import { RARITY_ORDER } from "../game/rewards"
 import { isDivisionOnly, MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
+import { loreFor } from "../monsters/lore"
 import { MonsterSvg } from "../monsters/MonsterSvg"
+import { originOf } from "../monsters/world"
 import { useGame, wishEggCost } from "../store/store"
 
 // Wyświetlanie po rzadkości (common→legendary), w obrębie rzadkości po id.
@@ -23,6 +25,7 @@ export function CollectionScreen() {
 	const setDreamMonster = useGame((s) => s.setDreamMonster)
 	const buyWishEgg = useGame((s) => s.buyWishEgg)
 	const goTo = useGame((s) => s.goTo)
+	const unlockedStage = useGame((s) => s.unlockedStage)
 	const [selectedId, setSelectedId] = useState<number | null>(null)
 
 	const ownedCount = Object.keys(ownedMonsters).length
@@ -31,6 +34,15 @@ export function CollectionScreen() {
 	const selected = selectedId !== null ? MONSTERS[selectedId] : undefined
 	const selectedOwned =
 		selectedId !== null ? ownedMonsters[selectedId] : undefined
+	// Paszport liczony tylko dla wybranego potworka; krainę nazywamy wyłącznie gdy
+	// odblokowana (inaczej zdradziłaby przyszłą tabliczkę → „tajemnica tabliczki").
+	const selectedLore = selected ? loreFor(selected.id) : null
+	const selectedOrigin = selected ? originOf(selected.id) : null
+	const originKnown =
+		selectedOrigin !== null &&
+		(selectedOrigin.kind === "region"
+			? selectedOrigin.stage <= unlockedStage
+			: true)
 
 	return (
 		<div className="flex min-h-dvh flex-col gap-4 p-4">
@@ -122,7 +134,7 @@ export function CollectionScreen() {
 					onClick={() => setSelectedId(null)}
 				>
 					<div
-						className="anim-pop flex w-full max-w-sm flex-col items-center gap-3 rounded-[2rem] bg-white p-6 shadow-2xl"
+						className="anim-pop flex max-h-[88vh] w-full max-w-sm flex-col items-center gap-3 overflow-y-auto rounded-[2rem] bg-white p-6 shadow-2xl"
 						onClick={(e) => e.stopPropagation()}
 					>
 						<MonsterSvg
@@ -145,10 +157,47 @@ export function CollectionScreen() {
 							</div>
 						)}
 						{selectedOwned ? (
-							<div className="text-sm font-bold text-slate-400">
-								Wykluty:{" "}
-								{new Date(selectedOwned.hatchedAt).toLocaleDateString("pl-PL")}
-							</div>
+							<>
+								{selectedLore && (
+									<div className="-mt-1 text-lg font-extrabold text-grape-dark">
+										{selectedLore.species}
+									</div>
+								)}
+								{selectedLore && (
+									<p className="rounded-2xl bg-slate-50 px-4 py-3 text-center text-sm font-bold leading-snug text-slate-600">
+										{selectedLore.blurb}
+									</p>
+								)}
+								{selectedOrigin && (
+									<div className="flex flex-col items-center gap-1">
+										<span className="text-xs font-bold uppercase tracking-wide text-slate-400">
+											Pochodzi z
+										</span>
+										{originKnown ? (
+											<span
+												className={`max-w-full rounded-full px-4 py-1 text-center text-sm font-extrabold leading-snug ${selectedOrigin.color}`}
+											>
+												{selectedOrigin.emoji} {selectedOrigin.name}
+											</span>
+										) : (
+											<span className="max-w-full rounded-full bg-slate-100 px-4 py-1 text-center text-sm font-extrabold leading-snug text-slate-400">
+												🌫️ Z nieodkrytej krainy…
+											</span>
+										)}
+									</div>
+								)}
+								{selectedLore && (
+									<div className="text-center text-sm font-bold text-amber-500">
+										💡 {selectedLore.funFact}
+									</div>
+								)}
+								<div className="text-sm font-bold text-slate-400">
+									Poznany:{" "}
+									{new Date(selectedOwned.hatchedAt).toLocaleDateString(
+										"pl-PL",
+									)}
+								</div>
+							</>
 						) : selected.id === dreamMonsterId ? (
 							<BigButton
 								onClick={() => {

@@ -1,23 +1,30 @@
 import { BigButton } from "../components/BigButton"
 import { EggView } from "../components/EggView"
-import {
-	CRYSTALS,
-	Crystal,
-	GateReveal,
-	gateFactor,
-	litCrystals,
-} from "../components/gate"
+import { CRYSTALS, Crystal, GateReveal, litCrystals } from "../components/gate"
 import { HelpTip } from "../components/HelpTip"
 import { useGateReveal } from "../components/useGateReveal"
 import { needsMaintenance, stageProgress } from "../game/adaptive"
 import { isMaxStage, STAGES } from "../game/facts"
 import { MonsterSvg } from "../monsters/MonsterSvg"
+import { BRIDGE_GUARDIAN_IDS, REGIONS } from "../monsters/world"
 import { useGame } from "../store/store"
 
 // łącznik ścieżki między węzłami
 function Trail() {
 	return (
 		<div className="mx-auto h-8 w-1 rounded-full border-l-4 border-dashed border-white/60" />
+	)
+}
+
+// zasłonka niezdobytego strażnika — „tajemniczy do odkrycia", nie szara sylwetka
+function MysteryGuardian({ size }: { size: number }) {
+	return (
+		<div
+			className="flex shrink-0 items-center justify-center rounded-full bg-slate-100 font-extrabold text-slate-300"
+			style={{ width: size, height: size, fontSize: size * 0.5 }}
+		>
+			?
+		</div>
 	)
 }
 
@@ -49,6 +56,9 @@ export function MapScreen() {
 		(a, b) =>
 			(ownedMonsters[b]?.hatchedAt ?? 0) - (ownedMonsters[a]?.hatchedAt ?? 0),
 	)[0]
+	const bridgeOwned = BRIDGE_GUARDIAN_IDS.filter(
+		(id) => id in ownedMonsters,
+	).length
 
 	// zdobyte krainy: etapy unlockedStage..1 (od najnowszej), etap 0 = wioska
 	const conquered: number[] = []
@@ -165,19 +175,40 @@ export function MapScreen() {
 
 			<Trail />
 
-			{/* zdobyte krainy */}
+			{/* zdobyte krainy — z nazwami i strażnikami */}
 			<div className="flex flex-col items-center gap-0">
 				{conquered.map((st, i) => {
-					const f = gateFactor(st)
+					const region = REGIONS[st]
+					if (!region) return null
+					const guardianOwned = region.guardianId in ownedMonsters
 					return (
-						<div key={st} className="flex flex-col items-center">
+						<div
+							key={st}
+							className="flex w-full max-w-xs flex-col items-center"
+						>
 							{i > 0 && <Trail />}
-							<div className="flex items-center gap-3 rounded-3xl border-b-4 border-emerald-300 bg-white/90 px-5 py-3 shadow-md">
-								<div className="text-3xl font-extrabold text-grape-dark">
-									×{f}
-								</div>
-								<div className="rounded-full bg-emerald-100 px-3 py-0.5 text-sm font-extrabold text-emerald-600">
-									zdobyta ✓
+							<div className="flex w-full items-center gap-3 rounded-3xl border-b-4 border-emerald-300 bg-white/90 px-4 py-3 shadow-md">
+								{guardianOwned ? (
+									<MonsterSvg
+										id={region.guardianId}
+										size={52}
+										animate={false}
+									/>
+								) : (
+									<MysteryGuardian size={52} />
+								)}
+								<div className="flex flex-1 flex-col gap-1">
+									<div className="flex items-center gap-1.5">
+										<span className="text-xl">{region.emoji}</span>
+										<span className="text-sm font-extrabold leading-tight text-grape-dark">
+											{region.name}
+										</span>
+									</div>
+									<span
+										className={`w-fit rounded-full px-2.5 py-0.5 text-xs font-extrabold ${region.color}`}
+									>
+										×{region.factor} zdobyta ✓
+									</span>
 								</div>
 							</div>
 						</div>
@@ -186,19 +217,58 @@ export function MapScreen() {
 
 				{/* wioska startowa */}
 				{conquered.length > 0 && <Trail />}
-				<div className="flex flex-col items-center gap-1 rounded-3xl border-b-4 border-violet-200 bg-white/90 px-5 py-3 shadow-md">
-					<div className="text-lg font-extrabold text-grape-dark">
-						🏡 Wioska startowa
+				<div className="flex w-full max-w-xs items-center gap-3 rounded-3xl border-b-4 border-violet-200 bg-white/90 px-4 py-3 shadow-md">
+					<MonsterSvg
+						id={REGIONS[0]?.guardianId ?? 0}
+						size={52}
+						animate={false}
+					/>
+					<div className="flex flex-1 flex-col gap-1">
+						<div className="flex items-center gap-1.5">
+							<span className="text-xl">{REGIONS[0]?.emoji}</span>
+							<span className="text-sm font-extrabold leading-tight text-grape-dark">
+								{REGIONS[0]?.name}
+							</span>
+						</div>
+						<div className="flex flex-wrap gap-1">
+							{STAGES[0]?.map((f) => (
+								<span
+									key={f}
+									className="rounded-lg bg-violet-100 px-2 py-0.5 text-sm font-extrabold text-grape-dark"
+								>
+									×{f}
+								</span>
+							))}
+						</div>
 					</div>
-					<div className="flex gap-1.5">
-						{STAGES[0]?.map((f) => (
-							<div
-								key={f}
-								className="rounded-lg bg-violet-100 px-2 py-0.5 text-base font-extrabold text-grape-dark"
-							>
-								×{f}
+				</div>
+
+				{/* Most Strażników — 4 legendarne tylko-dzielenie (id 72–75) */}
+				<Trail />
+				<div className="flex w-full max-w-xs flex-col items-center gap-2 rounded-3xl border-b-4 border-fuchsia-300 bg-white/90 px-4 py-3 shadow-md">
+					<div className="flex items-center gap-1.5">
+						<span className="text-lg font-extrabold text-grape-dark">
+							🌉 Most Strażników
+						</span>
+						<HelpTip
+							placement="top"
+							align="right"
+							text="Te cztery potworki strzegą Mostu. Zdobędziesz je tylko grając w dzielenie ➗!"
+						/>
+					</div>
+					<div className="flex gap-2">
+						{BRIDGE_GUARDIAN_IDS.map((id) => (
+							<div key={id} className="rounded-2xl bg-fuchsia-50 p-1">
+								{id in ownedMonsters ? (
+									<MonsterSvg id={id} size={48} animate={false} />
+								) : (
+									<MysteryGuardian size={48} />
+								)}
 							</div>
 						))}
+					</div>
+					<div className="rounded-full bg-fuchsia-100 px-3 py-0.5 text-sm font-extrabold text-fuchsia-600">
+						{bridgeOwned}/4 ✨
 					</div>
 				</div>
 			</div>
