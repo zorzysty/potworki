@@ -55,7 +55,7 @@ export function App() {
 		<div className={`min-h-dvh ${background}`}>
 			<div className="mx-auto min-h-dvh max-w-lg land:max-w-none">
 				{screen === "home" && <HomeScreen debugEnabled={DEBUG_ENABLED} />}
-				{screen === "round" && <RoundScreen />}
+				{screen === "round" && <RoundScreen debugEnabled={DEBUG_ENABLED} />}
 				{screen === "hatch" && <HatchScreen />}
 				{screen === "collection" && <CollectionScreen />}
 				{screen === "map" && <MapScreen />}

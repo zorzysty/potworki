@@ -13,6 +13,7 @@ export function DebugScreen() {
 	const eggsEarned = useGame(s => s.eggsEarned)
 	const goTo = useGame(s => s.goTo)
 	const debugSetAllMastery = useGame(s => s.debugSetAllMastery)
+	const debugSimulateRound = useGame(s => s.debugSimulateRound)
 	const debugOwnRarity = useGame(s => s.debugOwnRarity)
 	const debugAddIskierki = useGame(s => s.debugAddIskierki)
 	const debugAddEgg = useGame(s => s.debugAddEgg)
@@ -30,6 +31,19 @@ export function DebugScreen() {
 			<div className="my-2 font-bold">
 				etap: {unlockedStage} | uczczony: {celebratedStage} | rundy: {totalRounds} | iskierki:{" "}
 				{iskierki} | jajka: {eggsEarned}
+			</div>
+			<div className="mb-1 font-bold text-slate-500">symuluj rundę (10 pytań, suma gwiazdek):</div>
+			<div className="flex flex-wrap gap-2 pb-3">
+				{[20, 22, 24, 26, 28, 30].map(stars => (
+					<button
+						key={stars}
+						type="button"
+						className={btn}
+						onClick={() => debugSimulateRound(stars)}
+					>
+						+{stars} ⭐
+					</button>
+				))}
 			</div>
 			<div className="flex flex-wrap gap-2 pb-4">
 				<button type="button" className={btn} onClick={() => debugSetAllMastery(0.7)}>

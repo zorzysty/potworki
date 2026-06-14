@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from "zustand/middleware"
 import { applyAnswer, decayStats, emptyStats, pickNextFact, shouldUnlockNextStage } from "../game/adaptive"
 import type { Fact, FactKey } from "../game/facts"
 import {
+	budgetMs,
 	FACTS_BY_KEY,
 	fragmentsForEgg,
 	isMaxStage,
@@ -78,6 +79,8 @@ interface GameState extends SaveState {
 	markGatesCelebrated: () => void
 
 	debugSetAllMastery: (value: number) => void
+	debugSimulateRound: (totalStars: number) => void
+	debugFinishRound: (totalStars: number) => void
 	debugOwnRarity: (rarity: Rarity) => void
 	debugAddIskierki: (amount: number) => void
 	debugAddEgg: (quality: EggQuality) => void
@@ -88,6 +91,76 @@ interface GameState extends SaveState {
 function makeQuestion(fact: Fact, isRequeue: boolean): RoundQuestion {
 	const flip = Math.random() < 0.5
 	return { key: fact.key, a: flip ? fact.b : fact.a, b: flip ? fact.a : fact.b, isRequeue }
+}
+
+// Rozkłada sumę gwiazdek na n pytań (każde 0..3): jak najwięcej trójek (szybkie
+// odpowiedzi → większy przyrost mastery), reszta wolniej. Dla debug-symulacji rundy.
+function distributeStars(total: number, n: number): number[] {
+	const q = new Array<number>(n).fill(3)
+	let excess = n * 3 - total
+	for (let i = 0; i < n && excess > 0; i++) {
+		const cut = Math.min(3, excess)
+		q[i] = 3 - cut
+		excess -= cut
+	}
+	return q
+}
+
+// Debug: liczy efekt pełnej rundy QUESTIONS_PER_ROUND pytań kończącej się sumą
+// `totalStars` gwiazdek — tak jak prawdziwa runda (commit per odpowiedź + finalizacja).
+// `firstFact` to pierwsze pytanie (na ekranie rundy: aktualnie wyświetlane); reszta
+// losowana selekcją jak w grze. Czysta funkcja: niczego nie zapisuje, zwraca deltę.
+function simulateRoundOutcome(state: SaveState, totalStars: number, firstFact?: Fact) {
+	const now = Date.now()
+	const facts = { ...state.facts }
+	let eggFragments = state.eggFragments
+	let eggsEarned = state.eggsEarned
+	const pendingEggs = [...state.pendingEggs]
+	const createdIndices: number[] = []
+	const asked: FactKey[] = []
+	const finalQuality = eggQuality(totalStars)
+	const perQuestion = distributeStars(totalStars, QUESTIONS_PER_ROUND)
+
+	for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
+		const fact =
+			i === 0 && firstFact
+				? firstFact
+				: pickNextFact(facts, state.unlockedStage, asked.slice(-3), Math.random)
+		// szybka odpowiedź ⇔ 3 gwiazdki (ten sam próg co budżet 3⭐); wolniej = mniejszy przyrost
+		const elapsed = perQuestion[i] === 3 ? 0 : budgetMs(fact) * 2
+		facts[fact.key] = applyAnswer(facts[fact.key] ?? emptyStats(), fact, true, elapsed, now)
+		asked.push(fact.key)
+		// fragment za każdą odpowiedź; jajko po przekroczeniu progu — finalna jakość od razu
+		eggFragments++
+		if (eggFragments >= fragmentsForEgg(eggsEarned)) {
+			eggFragments = 0
+			eggsEarned++
+			pendingEggs.push({ quality: finalQuality })
+			createdIndices.push(pendingEggs.length - 1)
+		}
+	}
+
+	const iskierki =
+		finalQuality === "rainbow" ? Math.min(ISKIERKI_CAP, state.iskierki + 1) : state.iskierki
+	let unlockedStage = state.unlockedStage
+	let unlockedThisRound = false
+	if (!isMaxStage(unlockedStage) && shouldUnlockNextStage(facts, unlockedStage)) {
+		unlockedStage++
+		unlockedThisRound = true
+	}
+
+	return {
+		facts,
+		eggFragments,
+		eggsEarned,
+		pendingEggs,
+		createdIndices,
+		asked,
+		iskierki,
+		unlockedStage,
+		unlockedThisRound,
+		finalQuality,
+	}
 }
 
 function rollContext(state: SaveState) {
@@ -401,6 +474,51 @@ export const useGame = create<GameState>()(
 					}
 				}
 				set({ facts })
+			},
+
+			// ekran debug: cicho dopisuje efekt jednej rundy do zapisu (bez wchodzenia w rundę)
+			debugSimulateRound: totalStars => {
+				const state = get()
+				const o = simulateRoundOutcome(state, totalStars)
+				set({
+					facts: o.facts,
+					eggFragments: o.eggFragments,
+					eggsEarned: o.eggsEarned,
+					pendingEggs: o.pendingEggs,
+					iskierki: o.iskierki,
+					unlockedStage: o.unlockedStage,
+					totalRounds: state.totalRounds + 1,
+				})
+			},
+
+			// ekran rundy: kończy trwającą rundę z sumą `totalStars` gwiazdek i przechodzi
+			// w fazę summary — odpala te same eventy końca rundy co prawdziwe odpowiedzi
+			// (jajka tej rundy, ewentualna animacja bramy, CTA wyklucia)
+			debugFinishRound: totalStars => {
+				const state = get()
+				const { round } = state
+				if (!round) return
+				const o = simulateRoundOutcome(state, totalStars, FACTS_BY_KEY.get(round.question.key))
+				set({
+					facts: o.facts,
+					eggFragments: o.eggFragments,
+					eggsEarned: o.eggsEarned,
+					pendingEggs: o.pendingEggs,
+					iskierki: o.iskierki,
+					unlockedStage: o.unlockedStage,
+					totalRounds: state.totalRounds + 1,
+					round: {
+						...round,
+						index: QUESTIONS_PER_ROUND,
+						phase: "summary",
+						answer: "",
+						stars: totalStars,
+						asked: o.asked,
+						eggsCreated: o.createdIndices,
+						finalQuality: o.finalQuality,
+						unlockedThisRound: o.unlockedThisRound,
+					},
+				})
 			},
 
 			debugOwnRarity: rarity => {
