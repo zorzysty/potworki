@@ -83,8 +83,10 @@ describe("szczęśliwa ścieżka — 10 poprawnych odpowiedzi", () => {
 		// jakość jest jedną z czterech dozwolonych
 		const q = s.pendingEggs[0]?.quality
 		expect(["normal", "silver", "gold", "rainbow"]).toContain(q as string)
-		// iskierki = 1 iff finalQuality === "rainbow"
-		expect(s.iskierki).toBe(s.round?.finalQuality === "rainbow" ? 1 : 0)
+		// iskierka za tęczowe jajko — teraz właściwość jajka, nie rundy
+		expect(s.iskierki).toBe(s.pendingEggs[0]?.quality === "rainbow" ? 1 : 0)
+		// bank gwiazdek zeruje się przy domknięciu jajka
+		expect(s.eggStarBank).toBe(0)
 	})
 
 	test("po jednej poprawnej odpowiedzi eggFragments === 1, stats.attempts === 1", () => {
@@ -92,6 +94,8 @@ describe("szczęśliwa ścieżka — 10 poprawnych odpowiedzi", () => {
 		answer(true)
 		const s = game()
 		expect(s.eggFragments).toBe(1)
+		// bank == round.stars dopóki pierwsze jajko się buduje (oba zbierają `gained`)
+		expect(s.eggStarBank).toBe(s.round?.stars ?? -1)
 		// sprawdzamy statystyki pytanego działania
 		const key = s.round?.question.key
 		if (!key) throw new Error("brak pytania")
@@ -233,6 +237,34 @@ describe("błędna odpowiedź", () => {
 		answer(true)
 		expect(game().round?.lastStars).toBe(0)
 		expect(game().eggFragments).toBe(1)
+		expect(game().eggStarBank).toBe(0) // wolna odpowiedź: fragment tak, gwiazdki nie
+	})
+})
+
+// ---------------------------------------------------------------------------
+// eggStarBank — gwiazdki budujące kolor jajka
+// ---------------------------------------------------------------------------
+
+describe("eggStarBank", () => {
+	test("rośnie o zdobyte gwiazdki, równe round.stars dopóki jajko się nie domknie", () => {
+		game().startRound()
+		answer(true) // szybka → 3★
+		expect(game().eggStarBank).toBeGreaterThan(0)
+		expect(game().eggStarBank).toBe(game().round?.stars ?? -1)
+		game().nextQuestion()
+		answer(true)
+		expect(game().eggStarBank).toBe(game().round?.stars ?? -1)
+	})
+
+	test("zeruje się przy domknięciu jajka (round.stars rośnie dalej)", () => {
+		game().startRound()
+		for (let i = 0; i < 10; i++) {
+			answer(true)
+			game().nextQuestion()
+		}
+		expect(game().eggsEarned).toBe(1)
+		expect(game().eggStarBank).toBe(0)
+		expect(game().round?.stars).toBe(30)
 	})
 })
 

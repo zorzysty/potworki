@@ -13,7 +13,7 @@ describe("migrateSave", () => {
 		expect(migrateSave(x, SAVE_VERSION)).toEqual(x)
 	})
 
-	test("pełny łańcuch v1→v4: eggsEarned, celebratedStage, mode jajek, dane zachowane", () => {
+	test("pełny łańcuch v1→v5: eggsEarned, celebratedStage, mode jajek, eggStarBank, dane zachowane", () => {
 		const v1 = {
 			ownedMonsters: {
 				0: { hatchedAt: 0 },
@@ -30,12 +30,14 @@ describe("migrateSave", () => {
 		expect(result.celebratedStage).toBe(2)
 		// v3→v4: jajko dostaje mode "mult"
 		expect(result.pendingEggs).toEqual([{ quality: "normal", mode: "mult" }])
+		// v4→v5: brak eggFragments w v1 → eggStarBank 0
+		expect(result.eggStarBank).toBe(0)
 		// dane oryginalne zachowane
 		expect(result.iskierki).toBe(7)
 		expect(result.unlockedStage).toBe(2)
 	})
 
-	test("częściowy łańcuch v2→v4: celebratedStage dodane + jajka dostają mode, eggsEarned nie", () => {
+	test("częściowy łańcuch v2→v5: celebratedStage + mode jajek + eggStarBank, eggsEarned nie", () => {
 		const v2 = {
 			unlockedStage: 1,
 			foo: "bar",
@@ -48,6 +50,21 @@ describe("migrateSave", () => {
 		expect("eggsEarned" in result).toBe(false)
 		// v3→v4: istniejące jajka dostają mode "mult"
 		expect(result.pendingEggs).toEqual([{ quality: "gold", mode: "mult" }])
+		// v4→v5: eggStarBank dodane (brak eggFragments → 0)
+		expect(result.eggStarBank).toBe(0)
+	})
+
+	test("v4→v5: eggStarBank z dotychczasowych fragmentów (×2)", () => {
+		const v4 = { eggFragments: 5, iskierki: 2 }
+		const result = migrateSave(v4, 4) as Record<string, unknown>
+		expect(result.eggStarBank).toBe(10)
+		expect(result.iskierki).toBe(2)
+		expect(result.eggFragments).toBe(5)
+	})
+
+	test("v4→v5: brak eggFragments → eggStarBank 0", () => {
+		const result = migrateSave({ foo: 1 }, 4) as Record<string, unknown>
+		expect(result.eggStarBank).toBe(0)
 	})
 
 	test("v3→v4: każde jajko bez mode dostaje 'mult', istniejące mode zachowane", () => {
@@ -89,6 +106,7 @@ describe("INITIAL_SAVE shape-lock", () => {
 			"celebratedStage",
 			"dreamMonsterId",
 			"eggFragments",
+			"eggStarBank",
 			"eggsEarned",
 			"facts",
 			"iskierki",

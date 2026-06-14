@@ -259,6 +259,52 @@ body {
 	}
 }
 
+/* ---------- koniec rundy: gwiazdki wlatują w jajko ---------- */
+
+/* gwiazdka spada z paska wyniku w jajko (--sx = boczny rozrzut startowy) */
+.anim-star-fall {
+	animation: star-fall 0.7s cubic-bezier(0.55, 0, 0.45, 1) forwards;
+}
+
+@keyframes star-fall {
+	0% {
+		transform: translate(var(--sx, 0), -150px) scale(0.5) rotate(-20deg);
+		opacity: 0;
+	}
+	20% {
+		opacity: 1;
+	}
+	85% {
+		opacity: 1;
+	}
+	100% {
+		transform: translate(0, 0) scale(0.7) rotate(10deg);
+		opacity: 0;
+	}
+}
+
+/* odsłona gotowego jajka w jego finalnym kolorze */
+.anim-egg-reveal {
+	animation: egg-reveal 0.7s cubic-bezier(0.34, 1.7, 0.64, 1) both;
+}
+
+@keyframes egg-reveal {
+	0% {
+		transform: scale(0.4);
+		opacity: 0;
+		filter: brightness(2.2);
+	}
+	60% {
+		transform: scale(1.15);
+		filter: brightness(1.4);
+	}
+	100% {
+		transform: scale(1);
+		opacity: 1;
+		filter: brightness(1);
+	}
+}
+
 /* sylwetka nieodkrytego potworka */
 .monster-silhouette {
 	filter: brightness(0);

@@ -12,7 +12,7 @@ import {
 	isMaxStage,
 	QUESTIONS_PER_ROUND,
 } from "./facts"
-import { eggQuality, ISKIERKI_CAP } from "./rewards"
+import { eggQuality, eggQualityScore, ISKIERKI_CAP } from "./rewards"
 
 // Rozkłada sumę gwiazdek na n pytań (każde 0..3): jak najwięcej trójek (szybkie
 // odpowiedzi → większy przyrost mastery), reszta wolniej. Dla debug-symulacji rundy.
@@ -41,11 +41,12 @@ export function simulateRoundOutcome(
 ) {
 	const facts = { ...state.facts }
 	let eggFragments = state.eggFragments
+	let eggStarBank = state.eggStarBank
 	let eggsEarned = state.eggsEarned
+	let iskierki = state.iskierki
 	const pendingEggs = [...state.pendingEggs]
 	const createdIndices: number[] = []
 	const asked: FactKey[] = []
-	const finalQuality = eggQuality(totalStars, rand)
 	const perQuestion = distributeStars(totalStars, QUESTIONS_PER_ROUND)
 
 	for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
@@ -53,8 +54,9 @@ export function simulateRoundOutcome(
 			i === 0 && firstFact
 				? firstFact
 				: pickNextFact(facts, state.unlockedStage, asked.slice(-3), rand)
+		const stars = perQuestion[i] ?? 0
 		// szybka odpowiedź ⇔ 3 gwiazdki (ten sam próg co budżet 3⭐); wolniej = mniejszy przyrost
-		const elapsed = perQuestion[i] === 3 ? 0 : budgetMs(fact) * 2
+		const elapsed = stars === 3 ? 0 : budgetMs(fact) * 2
 		facts[fact.key] = applyAnswer(
 			facts[fact.key] ?? emptyStats(),
 			fact,
@@ -63,20 +65,22 @@ export function simulateRoundOutcome(
 			now,
 		)
 		asked.push(fact.key)
-		// fragment za każdą odpowiedź; jajko po przekroczeniu progu — finalna jakość od razu
+		// fragment + gwiazdki za każdą odpowiedź; jajko po przekroczeniu progu dostaje
+		// finalny kolor z banku gwiazdek włożonych w jego budowę (eggStarBank/próg)
 		eggFragments++
-		if (eggFragments >= fragmentsForEgg(eggsEarned)) {
+		eggStarBank += stars
+		const threshold = fragmentsForEgg(eggsEarned)
+		if (eggFragments >= threshold) {
+			const quality = eggQuality(eggQualityScore(eggStarBank, threshold), rand)
 			eggFragments = 0
+			eggStarBank = 0
 			eggsEarned++
-			pendingEggs.push({ quality: finalQuality, mode })
+			pendingEggs.push({ quality, mode })
 			createdIndices.push(pendingEggs.length - 1)
+			if (quality === "rainbow") iskierki = Math.min(ISKIERKI_CAP, iskierki + 1)
 		}
 	}
 
-	const iskierki =
-		finalQuality === "rainbow"
-			? Math.min(ISKIERKI_CAP, state.iskierki + 1)
-			: state.iskierki
 	let unlockedStage = state.unlockedStage
 	let unlockedThisRound = false
 	if (
@@ -90,6 +94,7 @@ export function simulateRoundOutcome(
 	return {
 		facts,
 		eggFragments,
+		eggStarBank,
 		eggsEarned,
 		pendingEggs,
 		createdIndices,
@@ -97,6 +102,5 @@ export function simulateRoundOutcome(
 		iskierki,
 		unlockedStage,
 		unlockedThisRound,
-		finalQuality,
 	}
 }

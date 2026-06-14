@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test"
 import { mulberry32 } from "../monsters/catalog"
 import {
 	eggQuality,
+	eggQualityScore,
 	QUALITY_ORDER,
 	qualityOdds,
 	RARITY_ODDS,
@@ -46,6 +47,29 @@ describe("eggQuality", () => {
 	})
 	test("normal at 30 with zero roll (lowest bucket)", () => {
 		expect(eggQuality(30, () => 0)).toBe("normal")
+	})
+})
+
+describe("eggQualityScore", () => {
+	test("komplet 3★ → 30 niezależnie od progu (tęczowe = bezbłędnie)", () => {
+		expect(eggQualityScore(30, 10)).toBe(30)
+		expect(eggQualityScore(42, 14)).toBe(30)
+	})
+	test("średnia gwiazdek/fragment skalowana do osi 0–30", () => {
+		expect(eggQualityScore(20, 10)).toBe(20) // 2★ średnio
+		expect(eggQualityScore(21, 14)).toBe(15) // 1.5★ średnio
+		expect(eggQualityScore(14, 14)).toBe(10) // 1★ średnio
+		expect(eggQualityScore(0, 14)).toBe(0)
+	})
+	test("clamp do 0..30 i ochrona przed fragments <= 0", () => {
+		expect(eggQualityScore(100, 10)).toBe(30)
+		expect(eggQualityScore(-5, 10)).toBe(0)
+		expect(eggQualityScore(5, 0)).toBe(0)
+	})
+	test("duże jajko: jedna skaza nie daje score 30 (tęczowe = bezbłędnie)", () => {
+		// próg 22 (jajka 21+): komplet 3★ = bank 66 → 30; jedna 2★ = bank 65 → 29
+		expect(eggQualityScore(66, 22)).toBe(30)
+		expect(eggQualityScore(65, 22)).toBe(29)
 	})
 })
 

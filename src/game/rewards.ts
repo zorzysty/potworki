@@ -17,25 +17,36 @@ export const QUALITY_ORDER: readonly EggQuality[] = [
 	"rainbow",
 ]
 
-// Rozkład jakości jajka wg sumy gwiazdek rundy [normal, silver, gold, rainbow] w %.
-// Tęczowe tylko z szansą i tylko za komplet 30/30; każdy wiersz sumuje się do 100.
+// Rozkład jakości jajka wg score 0–30 (eggQualityScore — średnia gwiazdek z całej
+// budowy jajka, nie z jednej rundy) [normal, silver, gold, rainbow] w %.
+// Tęczowe tylko z szansą i tylko przy score 30; każdy wiersz sumuje się do 100.
 export function qualityOdds(
-	roundStars: number,
+	score: number,
 ): readonly [number, number, number, number] {
-	if (roundStars >= 30) return [10, 20, 30, 40]
-	if (roundStars >= 28) return [20, 30, 50, 0]
-	if (roundStars >= 26) return [40, 60, 0, 0]
+	if (score >= 30) return [10, 20, 30, 40]
+	if (score >= 28) return [20, 30, 50, 0]
+	if (score >= 26) return [40, 60, 0, 0]
 	return [100, 0, 0, 0]
 }
 
-export function eggQuality(roundStars: number, rand: () => number): EggQuality {
-	const odds = qualityOdds(roundStars)
+export function eggQuality(score: number, rand: () => number): EggQuality {
+	const odds = qualityOdds(score)
 	let roll = rand() * 100
 	for (let i = 0; i < QUALITY_ORDER.length; i++) {
 		roll -= odds[i] ?? 0
 		if (roll <= 0) return QUALITY_ORDER[i] as EggQuality
 	}
 	return "normal"
+}
+
+// Kolor jajka zależy od gwiazdek zebranych przy JEGO budowie, nie od jednej rundy:
+// `starBank` to suma gwiazdek włożonych w `fragments` (= próg) tworzących to jajko.
+// Średnia gwiazdek/fragment (0..3) skalujemy do 0..30 — tej samej osi co `eggQuality`.
+// floor (nie round): score 30 wymaga banku == fragments×3, więc tęczowe naprawdę tylko
+// za komplet 3★ także przy dużych jajkach (round zaokrąglał 29,5 w górę dla progów ≥20).
+export function eggQualityScore(starBank: number, fragments: number): number {
+	if (fragments <= 0) return 0
+	return Math.max(0, Math.min(30, Math.floor((starBank / fragments) * 10)))
 }
 
 export const RARITY_ORDER: readonly Rarity[] = [

@@ -1,5 +1,5 @@
 import { BigButton } from "../components/BigButton"
-import { EGG_LABELS, EggView } from "../components/EggView"
+import { EggReward } from "../components/EggReward"
 import { GateReveal } from "../components/gate"
 import { StarMeter } from "../components/StarMeter"
 import { useGateReveal } from "../components/useGateReveal"
@@ -24,7 +24,11 @@ export function RoundSummary() {
 	if (round?.phase !== "summary") return null
 
 	const eggsThisRound = round.eggsCreated.length
-	const quality = round.finalQuality ?? "normal"
+	const lastCreatedIndex = round.eggsCreated[eggsThisRound - 1]
+	const completedEgg =
+		lastCreatedIndex !== undefined
+			? (pendingEggs[lastCreatedIndex] ?? null)
+			: null
 
 	return (
 		<div className="flex min-h-dvh flex-col items-center justify-center gap-5 p-6">
@@ -39,31 +43,17 @@ export function RoundSummary() {
 				<StarMeter stars={round.stars} />
 			</div>
 
-			{eggsThisRound > 0 ? (
-				<div className="anim-fade-up flex flex-col items-center gap-2">
-					<div className="flex gap-4">
-						{Array.from({ length: eggsThisRound }, (_, i) => (
-							<div
-								key={i}
-								className="anim-float"
-								style={{ animationDelay: `${i * 0.4}s` }}
-							>
-								<EggView quality={quality} size={90} />
-							</div>
-						))}
-					</div>
-					<div className="text-xl font-extrabold text-slate-600">
-						{eggsThisRound === 1
-							? EGG_LABELS[quality]
-							: `${eggsThisRound} × ${EGG_LABELS[quality]}`}
-						!
-					</div>
-				</div>
-			) : (
-				<div className="text-lg font-bold text-slate-500">
-					Fragmenty jajka: {eggFragments} / {fragmentsForEgg(eggsEarned)} — tak
-					trzymaj!
-				</div>
+			{/* gdy brama otwiera się w tej rundzie, GateReveal (z-50) zasłania całość —
+			    odpalamy animację jajka dopiero po jej zamknięciu, by dziecko ją zobaczyło */}
+			{!reveal && (
+				<EggReward
+					roundStars={round.stars}
+					completedEgg={completedEgg}
+					threshold={fragmentsForEgg(eggsEarned)}
+					fragmentsNow={eggFragments}
+					fragmentsAdded={round.total}
+					mode={round.mode}
+				/>
 			)}
 
 			{round.unlockedThisRound && (

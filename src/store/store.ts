@@ -23,6 +23,7 @@ import {
 import type { EggQuality, Rarity } from "../game/rewards"
 import {
 	eggQuality,
+	eggQualityScore,
 	ISKIERKI_CAP,
 	ISKIERKI_FOR_DUP,
 	rollMonster,
@@ -72,8 +73,7 @@ export interface RoundState {
 	asked: FactKey[]
 	requeues: Record<number, FactKey>
 	shakeNonce: number
-	eggsCreated: number[] // indeksy w pendingEggs utworzone w tej rundzie
-	finalQuality: EggQuality | null
+	eggsCreated: number[] // indeksy w pendingEggs utworzone w tej rundzie (kolor jajka jest finalny już od utworzenia)
 	unlockedThisRound: boolean
 }
 
@@ -265,7 +265,6 @@ export const useGame = create<GameState>()(
 						requeues: {},
 						shakeNonce: 0,
 						eggsCreated: [],
-						finalQuality: null,
 						unlockedThisRound: false,
 					},
 				})
@@ -335,29 +334,40 @@ export const useGame = create<GameState>()(
 				const gained = q.isRequeue ? Math.min(1, earned) : earned
 				const stars = round.stars + gained
 
-				// fragment przyznany niezależnie od wyniku — postęp nigdy nie przepada
+				// fragment + gwiazdki przyznane niezależnie od wyniku — postęp nigdy nie przepada.
+				// eggStarBank zbiera gwiazdki tego jajka; przy domknięciu decyduje o jego kolorze.
 				let eggFragments = state.eggFragments + 1
+				let eggStarBank = state.eggStarBank + gained
 				let pendingEggs = state.pendingEggs
 				let eggsEarned = state.eggsEarned
+				let iskierki = state.iskierki
 				const eggsCreated = [...round.eggsCreated]
-				if (eggFragments >= fragmentsForEgg(eggsEarned)) {
+				const threshold = fragmentsForEgg(eggsEarned)
+				if (eggFragments >= threshold) {
+					// kolor jest FINALNY już teraz: średnia gwiazdek włożonych w to jajko
+					// (eggStarBank/próg → skala 0–30). tryb jajka = tryb rundy (pula przy wykluciu)
+					const quality = eggQuality(
+						eggQualityScore(eggStarBank, threshold),
+						Math.random,
+					)
 					eggFragments = 0
+					eggStarBank = 0
 					eggsEarned++
-					// prowizoryczna jakość z gwiazdek-dotąd; finalna nadawana na końcu rundy.
-					// tryb jajka = tryb rundy → decyduje o puli przy wykluciu
-					pendingEggs = [
-						...pendingEggs,
-						{ quality: eggQuality(stars, Math.random), mode: round.mode },
-					]
+					pendingEggs = [...pendingEggs, { quality, mode: round.mode }]
 					eggsCreated.push(pendingEggs.length - 1)
+					// tęczowe jajko nagradza iskierką — przyznawaną przy domknięciu jajka
+					if (quality === "rainbow")
+						iskierki = Math.min(ISKIERKI_CAP, iskierki + 1)
 				}
 
 				if (correct) {
 					set({
 						facts,
 						eggFragments,
+						eggStarBank,
 						eggsEarned,
 						pendingEggs,
+						iskierki,
 						round: {
 							...round,
 							phase: "correct",
@@ -378,8 +388,10 @@ export const useGame = create<GameState>()(
 					set({
 						facts,
 						eggFragments,
+						eggStarBank,
 						eggsEarned,
 						pendingEggs,
+						iskierki,
 						round: {
 							...round,
 							phase: "wrong",
@@ -403,17 +415,9 @@ export const useGame = create<GameState>()(
 				const nextIndex = round.index + 1
 
 				if (nextIndex >= round.total) {
-					// koniec rundy: finalna jakość dla jajek z tej rundy + check odblokowania
-					const finalQuality = eggQuality(round.stars, Math.random)
-					const pendingEggs = state.pendingEggs.map((egg, i) =>
-						round.eggsCreated.includes(i)
-							? { ...egg, quality: finalQuality }
-							: egg,
-					)
-					const iskierki =
-						finalQuality === "rainbow"
-							? Math.min(ISKIERKI_CAP, state.iskierki + 1)
-							: state.iskierki
+					// koniec rundy: jajka mają już finalny kolor z chwili domknięcia
+					// (eggStarBank), iskierka za tęczowe też już przyznana — zostaje tylko
+					// sprawdzenie odblokowania i policzenie rundy
 					let unlockedStage = state.unlockedStage
 					let unlockedThisRound = false
 					if (
@@ -424,15 +428,12 @@ export const useGame = create<GameState>()(
 						unlockedThisRound = true
 					}
 					set({
-						pendingEggs,
-						iskierki,
 						unlockedStage,
 						totalRounds: state.totalRounds + 1,
 						round: {
 							...round,
 							phase: "summary",
 							asked,
-							finalQuality,
 							unlockedThisRound,
 						},
 					})
@@ -480,8 +481,8 @@ export const useGame = create<GameState>()(
 				})
 			},
 
-			// „Koniec na dziś": fragmenty i mastery już zapisane; jajka zachowują
-			// prowizoryczną jakość; runda się nie liczy do totalRounds
+			// „Koniec na dziś": fragmenty, mastery i eggStarBank już zapisane (commit
+			// per odpowiedź), jajka mają już finalny kolor; runda nie liczy się do totalRounds
 			exitRoundEarly: () => set({ round: null, screen: "home" }),
 
 			// wykluwa wybrane jajko (gracz wybiera kolejność w gnieździe); domyślnie pierwsze
@@ -588,6 +589,7 @@ export const useGame = create<GameState>()(
 				set({
 					facts: o.facts,
 					eggFragments: o.eggFragments,
+					eggStarBank: o.eggStarBank,
 					eggsEarned: o.eggsEarned,
 					pendingEggs: o.pendingEggs,
 					iskierki: o.iskierki,
@@ -614,6 +616,7 @@ export const useGame = create<GameState>()(
 				set({
 					facts: o.facts,
 					eggFragments: o.eggFragments,
+					eggStarBank: o.eggStarBank,
 					eggsEarned: o.eggsEarned,
 					pendingEggs: o.pendingEggs,
 					iskierki: o.iskierki,
@@ -627,7 +630,6 @@ export const useGame = create<GameState>()(
 						stars: totalStars,
 						asked: o.asked,
 						eggsCreated: o.createdIndices,
-						finalQuality: o.finalQuality,
 						unlockedThisRound: o.unlockedThisRound,
 					},
 				})
