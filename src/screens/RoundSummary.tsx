@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { EGG_LABELS, EggView } from "../components/EggView"
+import { GateReveal } from "../components/gate"
 import { StarMeter } from "../components/StarMeter"
 import { fragmentsForEgg } from "../game/facts"
 import { useGame } from "../store/store"
@@ -10,6 +12,18 @@ export function RoundSummary() {
 	const eggFragments = useGame(s => s.eggFragments)
 	const eggsEarned = useGame(s => s.eggsEarned)
 	const goTo = useGame(s => s.goTo)
+
+	// brama odblokowana w tej rundzie → splash gra od razu, bez klikania.
+	// Decyzja w inicjalizatorze useState (PRZED markGatesCelebrated), więc stabilna
+	// mimo podwójnego montażu StrictMode; uczczenie zdejmuje plakietkę/animację z mapy.
+	const [reveal, setReveal] = useState<{ stage: number } | null>(() => {
+		const s = useGame.getState()
+		return s.round?.unlockedThisRound ? { stage: s.unlockedStage } : null
+	})
+	useEffect(() => {
+		if (reveal) useGame.getState().markGatesCelebrated()
+	}, [reveal])
+
 	if (!round || round.phase !== "summary") return null
 
 	const eggsThisRound = round.eggsCreated.length
@@ -47,16 +61,11 @@ export function RoundSummary() {
 
 			{round.unlockedThisRound && (
 				<div className="anim-pop rounded-3xl bg-gradient-to-r from-amber-300 to-orange-400 px-6 py-3 text-center text-2xl font-extrabold text-white shadow-lg">
-					Nowa brama się otwiera! 🎉
+					Nowa brama otwarta! 🎉
 				</div>
 			)}
 
 			<div className="flex w-full max-w-sm flex-col gap-3 pt-2">
-				{round.unlockedThisRound && (
-					<BigButton onClick={() => goTo("map")} className="w-full py-5 text-2xl">
-						Zobacz, jak otwiera się brama! 🗺️
-					</BigButton>
-				)}
 				{pendingEggs.length > 0 && (
 					<BigButton onClick={() => goTo("hatch")} className="w-full py-5 text-3xl">
 						Wykluj jajko! 🥚
@@ -66,6 +75,9 @@ export function RoundSummary() {
 					Do domku 🏠
 				</BigButton>
 			</div>
+
+			{/* splash otwarcia bramy gra automatycznie nad podsumowaniem */}
+			{reveal && <GateReveal stage={reveal.stage} onDone={() => setReveal(null)} />}
 		</div>
 	)
 }
