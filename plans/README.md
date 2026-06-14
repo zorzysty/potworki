@@ -19,6 +19,15 @@ a contract — the affected plans call out exactly which docs to update.
 | 003  | `bun test` baseline + game/catalog characterization & frozen-seed guard | P1 | M | 001 | DONE — branch `advisor/003-test-baseline` (57 tests) |
 | 004  | Move debug round-sim helpers to `src/game/debug.ts` | P2 | M | 001, 003 | DONE — branch `advisor/004-extract-debug-logic` (64 tests) |
 | 005  | Extract shared `useGateReveal` hook | P3 | S | 001 | DONE — branch `advisor/005-gate-reveal-hook` |
+| 006  | Gate the deploy on `bun test` (CI) | P2 | S | 003 | TODO |
+| 007  | Characterize store round-machine, hatch, migrations | P2 | M | 003 | TODO |
+
+> Plans 001–005 are merged into `main` (commit `cb2c336`). Plans 006–007 cover
+> the two follow-ups identified when reviewing the removed `89bc634` plans: the
+> CI test gate (old 001's Step 7, never done) and a refreshed store/migration
+> test suite (old 002, rewritten for `SAVE_VERSION = 3` and the dynamic
+> fragment threshold). 006 and 007 are independent (disjoint files) and both
+> only need the test harness already on `main`.
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale).
 
