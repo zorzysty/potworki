@@ -25,6 +25,6 @@ Nowe części SVG: viewBox 200×200, twarz w okolicy (100, 88–130), kontur `pa
 
 ## Verification
 
+- `bun test src/monsters/catalog.test.ts` — testy pokrywają: rozkład 36/21/11/4 per rzadkość, unikalność DNA i imion, legendary→korona+paleta 7, epic→paleta 6.
+- **Zamrożona sygnatura katalogu** (`frozen catalog signature is unchanged`): konkatenacja `id:imię:DNA` wszystkich 72 potworków zablokowana jako literał w `catalog.test.ts`. Zmiana `GLOBAL_SEED`, `mulberry32`, `SALT_STRIDE`, `rollDna`, stratyfikacji palet lub `generateName` powali ten test — to jest cel.
 - Galeria `?debug` — 72 sztuki, różnorodne i identyczne po hard-refresh.
-- Determinizm: hash katalogu (id+imię+DNA) identyczny między osobnymi procesami `bun`; potworki 0–47 bit-w-bit niezmienione po każdym dodaniu nowych.
-- Statyczne gwarancje w smoke-teście: 36/21/11/4 per rzadkość, unikalne DNA i imiona, legendary→korona+paleta 7, epic→paleta 6.
