@@ -9,6 +9,7 @@ Logika pedagogiczna i ekonomia nagród jako czyste funkcje — bez Reacta, DOM-u
 - `facts.ts` — 55 działań komutatywnych, etapy odblokowań (STAGES), budżety czasowe i gwiazdki, stałe rundy, próg fragmentów na jajko (`fragmentsForEgg`)
 - `adaptive.ts` — mastery, decay, selekcja pytań, hybrydowe kryterium odblokowania (`UNLOCK_THRESHOLD`, `MAINTAIN_THRESHOLD`, `shouldUnlockNextStage`, `needsMaintenance`), działania bramy/postęp mapy (`stageFacts`, `averageMastery`, `stageProgress`)
 - `rewards.ts` — jakość jajek, szanse rzadkości, priorytet wymarzonego, Jajko Życzeń, iskierki
+- `debug.ts` — symulacja rundy debug (`distributeStars`, `simulateRoundOutcome`), czysta dzięki wstrzykiwanym `rand`/`now`
 
 ## Local Contracts
 
@@ -28,4 +29,4 @@ Moduły muszą pozostać czyste i deterministyczne poza wstrzykiwanym `rand: () 
 
 ## Verification
 
-Smoke-test skryptem `bun` importującym moduły wprost: progi gwiazdek, rozkład jakości jajka (`qualityOdds` — każdy wiersz sumuje się do 100, jakość rośnie z gwiazdkami; tęczowe tylko przy 30), sumy tabel szans, dominacja słabego działania w ~2000 losowań selekcji, gwarancje wish/dream, `null` przy komplecie. Brama/postęp mapy: `stageFacts(stage)` = tylko najnowsza tabliczka (etap 0 = baza, partycja 55 działań); po „otwarciu" bramy (stare wysokie, nowa = 0) `stageProgress === 0`; `stageProgress` ∈ [0,1], rośnie z mastery najnowszej tabliczki, `=== 1` ⇔ `shouldUnlockNextStage`, `≤ 0.95` gdy któreś działanie nowej tabliczki ma `attempts == 0`. Hybryda: nowa tabliczka opanowana, ale stare poniżej `MAINTAIN_THRESHOLD` → `needsMaintenance === true`, `shouldUnlockNextStage === false`, `stageProgress < 1` (kryształy < 8/8).
+`bun test src/game/facts.test.ts src/game/adaptive.test.ts src/game/rewards.test.ts` — lub `bun test` dla całego suite. Testy charakteryzacyjne pokrywają: progi gwiazdek, `fragmentsForEgg`, `qualityOdds` (każdy wiersz sumuje się do 100, tęczowe tylko przy 30), `RARITY_ODDS`, `eggQuality`, `rollWish` (dream/no-dream/null); mastery/decay/applyAnswer; `stageFacts`/`stageProgress`/`shouldUnlockNextStage` (ekwiwalencja `progress===1` ⟺ `shouldUnlock===true`, cap ≤0.95, maintenance); selekcję `pickNextFact` (dominacja słabego działania >50% w 2000 losowaniach).

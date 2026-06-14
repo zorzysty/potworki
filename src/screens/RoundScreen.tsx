@@ -18,7 +18,6 @@ export function RoundScreen({
 	const [paused, setPaused] = useState(false)
 
 	const phase = round?.phase
-	const _index = round?.index
 	useEffect(() => {
 		if (phase !== "correct") return
 		const timer = setTimeout(nextQuestion, 900)

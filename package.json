@@ -10,7 +10,8 @@
 		"typecheck": "tsc -b --noEmit",
 		"format": "bunx --bun @biomejs/biome format --write",
 		"lint": "bunx --bun @biomejs/biome lint --write",
-		"check": "bunx --bun @biomejs/biome check --write --unsafe"
+		"check": "bunx --bun @biomejs/biome check --write --unsafe",
+		"test": "bun test"
 	},
 	"dependencies": {
 		"canvas-confetti": "^1.9.4",
@@ -21,6 +22,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.5.0",
 		"@tailwindcss/vite": "^4.3.1",
+		"@types/bun": "^1.3.14",
 		"@types/canvas-confetti": "^1.9.0",
 		"@types/react": "^19.2.17",
 		"@types/react-dom": "^19.2.3",

@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { EGG_LABELS, EggView } from "../components/EggView"
 import { GateReveal } from "../components/gate"
 import { StarMeter } from "../components/StarMeter"
+import { useGateReveal } from "../components/useGateReveal"
 import { fragmentsForEgg } from "../game/facts"
 import { useGame } from "../store/store"
 
@@ -16,13 +16,10 @@ export function RoundSummary() {
 	// brama odblokowana w tej rundzie → splash gra od razu, bez klikania.
 	// Decyzja w inicjalizatorze useState (PRZED markGatesCelebrated), więc stabilna
 	// mimo podwójnego montażu StrictMode; uczczenie zdejmuje plakietkę/animację z mapy.
-	const [reveal, setReveal] = useState<{ stage: number } | null>(() => {
+	const { reveal, dismiss } = useGateReveal(() => {
 		const s = useGame.getState()
 		return s.round?.unlockedThisRound ? { stage: s.unlockedStage } : null
 	})
-	useEffect(() => {
-		if (reveal) useGame.getState().markGatesCelebrated()
-	}, [reveal])
 
 	if (round?.phase !== "summary") return null
 
@@ -94,9 +91,7 @@ export function RoundSummary() {
 			</div>
 
 			{/* splash otwarcia bramy gra automatycznie nad podsumowaniem */}
-			{reveal && (
-				<GateReveal stage={reveal.stage} onDone={() => setReveal(null)} />
-			)}
+			{reveal && <GateReveal stage={reveal.stage} onDone={dismiss} />}
 		</div>
 	)
 }
