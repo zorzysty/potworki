@@ -1,5 +1,6 @@
 /// <reference types="bun-types" />
 import { beforeEach, describe, expect, test } from "bun:test"
+import { ACHIEVEMENTS } from "../achievements/catalog"
 import { ISKIERKI_FOR_DUP } from "../game/rewards"
 import {
 	DIVISION_ONLY_IDS,
@@ -42,6 +43,15 @@ function answerByMode(correct: boolean) {
 
 beforeEach(() => game().debugReset())
 
+// Testy ekonomii (iskierki za duplikaty/Jajko Życzeń) izolujemy od nagród za
+// osiągnięcia — pre-odblokowanie wszystkich sprawia, że checkAchievements nic nie
+// dosypuje. Osiągnięcia mają własne testy w sekcji „osiągnięcia".
+function suppressAchievements() {
+	const all: Record<string, { unlockedAt: number; seen: boolean }> = {}
+	for (const a of ACHIEVEMENTS) all[a.id] = { unlockedAt: 0, seen: true }
+	useGame.setState({ achievements: all })
+}
+
 // ---------------------------------------------------------------------------
 // Krok 2: Szczęśliwa ścieżka rundy
 // ---------------------------------------------------------------------------
@@ -59,6 +69,7 @@ describe("startRound", () => {
 
 describe("szczęśliwa ścieżka — 10 poprawnych odpowiedzi", () => {
 	test("po 10 poprawnych: faza summary, 1 jajko, zera fragmentów", () => {
+		suppressAchievements()
 		game().startRound()
 		for (let i = 0; i < 9; i++) {
 			answer(true)
@@ -340,6 +351,7 @@ describe("hatchEgg — gwarancje", () => {
 	})
 
 	test("duplikat — iskierki rosną o właściwą wartość, owned count bez zmian", () => {
+		suppressAchievements()
 		// posiadamy wszystkie cztery rzadkości
 		game().debugOwnRarity("common")
 		game().debugOwnRarity("rare")
@@ -356,15 +368,16 @@ describe("hatchEgg — gwarancje", () => {
 		expect(Object.keys(game().ownedMonsters).length).toBe(ownedBefore)
 	})
 
-	test("iskierki nie przekraczają 99 przy duplikacie", () => {
+	test("iskierki nie przekraczają 999 przy duplikacie", () => {
+		suppressAchievements()
 		game().debugOwnRarity("common")
 		game().debugOwnRarity("rare")
 		game().debugOwnRarity("epic")
 		game().debugOwnRarity("legendary")
-		game().debugAddIskierki(99)
+		game().debugAddIskierki(999)
 		game().debugAddEgg("normal")
 		game().hatchEgg()
-		expect(game().iskierki).toBe(99)
+		expect(game().iskierki).toBe(999)
 	})
 
 	test("wyklucie wymarzonego czyści dreamMonsterId", () => {
@@ -391,6 +404,7 @@ describe("buyWishEgg — ekonomia", () => {
 	})
 
 	test("dokładna kwota — odejmuje koszt, pcha jajko wish, screen hatch", () => {
+		suppressAchievements()
 		const legendaryId = IDS_BY_RARITY.legendary[0]
 		if (legendaryId === undefined) throw new Error("brak legendarnych")
 		game().setDreamMonster(legendaryId)
@@ -560,5 +574,80 @@ describe("nawigacja", () => {
 		game().startRound()
 		game().goTo("collection")
 		expect(game().round).toBeNull()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Osiągnięcia
+// ---------------------------------------------------------------------------
+
+describe("osiągnięcia", () => {
+	test("perfekcyjna runda 30/30 → perfectRounds++ i 'bez-pomylki' zdobyte + iskierki", () => {
+		game().startRound()
+		for (let i = 0; i < 9; i++) {
+			answer(true)
+			game().nextQuestion()
+		}
+		answer(true)
+		game().nextQuestion()
+
+		const s = game()
+		expect(s.round?.stars).toBe(30)
+		expect(s.achievementStats.perfectRounds).toBe(1)
+		expect(s.achievements["bez-pomylki"]).toBeDefined()
+		expect(s.achievements["bez-pomylki"]?.seen).toBe(false)
+		// zdobyte zawsze: pierwsza-runda(5) + pierwsze-jajko(5) + bez-pomylki(15) = 25
+		// (+1 tylko jeśli wylosowane jajko jest tęczowe)
+		expect(s.achievements["pierwsza-runda"]).toBeDefined()
+		expect(s.iskierki).toBeGreaterThanOrEqual(25)
+	})
+
+	test("poprawna odpowiedź w dzieleniu → divCorrect++ i 'pierwsze-dzielenie'", () => {
+		game().setMode("div")
+		game().startRound()
+		answerByMode(true)
+		const s = game()
+		expect(s.achievementStats.divCorrect).toBe(1)
+		expect(s.achievements["pierwsze-dzielenie"]).toBeDefined()
+	})
+
+	test("wyklucie tęczowego jajka → rainbowEggsHatched++ i 'teczowe-jajko'", () => {
+		game().debugAddEgg("rainbow")
+		game().hatchEgg(0)
+		const s = game()
+		expect(s.achievementStats.rainbowEggsHatched).toBe(1)
+		expect(s.achievements["teczowe-jajko"]).toBeDefined()
+	})
+
+	test("checkAchievements jest idempotentne (brak podwójnej nagrody)", () => {
+		game().startRound()
+		for (let i = 0; i < 9; i++) {
+			answer(true)
+			game().nextQuestion()
+		}
+		answer(true)
+		game().nextQuestion()
+		const iskierki = game().iskierki
+		const count = Object.keys(game().achievements).length
+		game().checkAchievements()
+		expect(game().iskierki).toBe(iskierki)
+		expect(Object.keys(game().achievements).length).toBe(count)
+	})
+
+	test("reconcileAchievements: odblokowuje zasłużone po cichu (seen:true) + iskierki", () => {
+		// ustawiamy stan z pominięciem checkAchievements (bezpośredni setState)
+		useGame.setState({ totalRounds: 1, achievements: {} })
+		game().reconcileAchievements()
+		const s = game()
+		expect(s.achievements["pierwsza-runda"]).toBeDefined()
+		expect(s.achievements["pierwsza-runda"]?.seen).toBe(true)
+		expect(s.iskierki).toBeGreaterThanOrEqual(5)
+	})
+
+	test("markAchievementsSeen czyści flagę 'nowe'", () => {
+		game().debugOwnRarity("common") // odblokowuje kolekcja-5 itd. z seen:false
+		expect(Object.values(game().achievements).some((a) => !a.seen)).toBe(true)
+		game().markAchievementsSeen()
+		expect(Object.values(game().achievements).every((a) => a.seen)).toBe(true)
 	})
 })

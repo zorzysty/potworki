@@ -2,7 +2,24 @@ import type { FactStats } from "../game/adaptive"
 import type { FactKey } from "../game/facts"
 import type { PendingEgg } from "../game/rewards"
 
-export const SAVE_VERSION = 5
+export const SAVE_VERSION = 6
+
+// Wpis ledgera osiągnięć. `seen` jak celebratedStage: false → badge „nowe!" na Home,
+// czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen).
+export interface AchievementEntry {
+	unlockedAt: number
+	seen: boolean
+}
+
+// Liczniki zdarzeniowe dla osiągnięć, których nie da się odtworzyć z reszty zapisu
+// (zdarzenia ulotne: perfekcyjna runda, poprawne dzielenie, wyklute tęczowe itp.).
+export interface AchievementCounters {
+	perfectRounds: number
+	divCorrect: number
+	totalStars: number
+	rainbowEggsHatched: number
+	wishEggsBought: number
+}
 
 export interface SaveState {
 	facts: Partial<Record<FactKey, FactStats>>
@@ -16,6 +33,8 @@ export interface SaveState {
 	pendingEggs: PendingEgg[]
 	dreamMonsterId: number | null
 	totalRounds: number
+	achievements: Record<string, AchievementEntry> // zdobyte osiągnięcia (klucz = stabilne id z achievements/catalog)
+	achievementStats: AchievementCounters // liczniki zdarzeniowe (patrz wyżej)
 }
 
 export const INITIAL_SAVE: SaveState = {
@@ -30,6 +49,14 @@ export const INITIAL_SAVE: SaveState = {
 	pendingEggs: [],
 	dreamMonsterId: null,
 	totalRounds: 0,
+	achievements: {},
+	achievementStats: {
+		perfectRounds: 0,
+		divCorrect: 0,
+		totalStars: 0,
+		rainbowEggsHatched: 0,
+		wishEggsBought: 0,
+	},
 }
 
 export const SAVE_KEYS = Object.keys(INITIAL_SAVE) as (keyof SaveState)[]
@@ -80,6 +107,20 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 		const frags = typeof s.eggFragments === "number" ? s.eggFragments : 0
 		return { ...s, eggStarBank: frags * 2 }
 	},
+	// v5→v6: dodano osiągnięcia. Ledger startuje pusty, liczniki zdarzeniowe od zera.
+	// Zasłużone osiągnięcia liczone z istniejącego zapisu odblokowuje po cichu (+ iskierki)
+	// reconcileAchievements() w store przy starcie — nie tutaj (migracja widzi surowy stan).
+	5: (state) => ({
+		...(state as Record<string, unknown>),
+		achievements: {},
+		achievementStats: {
+			perfectRounds: 0,
+			divCorrect: 0,
+			totalStars: 0,
+			rainbowEggsHatched: 0,
+			wishEggsBought: 0,
+		},
+	}),
 }
 
 export function migrateSave(state: unknown, fromVersion: number): unknown {

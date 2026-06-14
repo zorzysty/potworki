@@ -28,7 +28,7 @@ Deploy: push do `main` → GitHub Actions uruchamia `bun test` (blokuje deploy p
 
 ## Architektura (przegląd)
 
-Jeden store zustand (`src/store/store.ts`) koordynuje całość: ekrany to maszyna stanów bez routera, logika gry to czyste funkcje w `src/game/` i `src/monsters/`, persystencja jest wersjonowana. Szczegółowe kontrakty każdej domeny są w child docs — patrz Child DOX Index; przed edycją przeczytaj łańcuch DOX dla ścieżki, którą zmieniasz.
+Jeden store zustand (`src/store/store.ts`) koordynuje całość: ekrany to maszyna stanów bez routera, logika gry to czyste funkcje w `src/game/`, `src/monsters/` i `src/achievements/`, persystencja jest wersjonowana. Szczegółowe kontrakty każdej domeny są w child docs — patrz Child DOX Index; przed edycją przeczytaj łańcuch DOX dla ścieżki, którą zmieniasz.
 
 ## Zasady projektowe (project-wide)
 
@@ -123,6 +123,6 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Child DOX Index
 
-- [src/CLAUDE.md](src/CLAUDE.md) — cały kod aplikacji: warstwa UI (ekrany, komponenty, wejście, animacje) oraz indeks domen `game/` (logika adaptacyjna i nagrody), `monsters/` (zamrożony katalog potworków), `store/` (persystencja i przepływ gry). Root zachowuje: komendy, deploy, zasady projektowe, testowanie w WSL.
+- [src/CLAUDE.md](src/CLAUDE.md) — cały kod aplikacji: warstwa UI (ekrany, komponenty, wejście, animacje) oraz indeks domen `game/` (logika adaptacyjna i nagrody), `monsters/` (zamrożony katalog potworków), `store/` (persystencja i przepływ gry), `achievements/` (katalog i ocena osiągnięć). Root zachowuje: komendy, deploy, zasady projektowe, testowanie w WSL.
 
-Poza `src/` nie ma child docs: `.github/workflows/` (jeden plik deployu), `public/` (favicon) i pliki konfiguracyjne w rocie są opisane sekcją „Komendy" powyżej.
+Poza `src/` nie ma child docs: `.github/workflows/` (jeden plik deployu), `public/` (favicon), `ROADMAP.md` (pomysły na przyszłość: sklepik za iskierki, interaktywna wioska) i pliki konfiguracyjne w rocie są opisane sekcją „Komendy" powyżej.

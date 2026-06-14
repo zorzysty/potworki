@@ -74,7 +74,7 @@ export const ISKIERKI_FOR_DUP: Record<Rarity, number> = {
 	legendary: 5,
 }
 
-export const ISKIERKI_CAP = 99
+export const ISKIERKI_CAP = 999
 
 // Stan ekonomii jajek niesiony między odpowiedziami (commit per odpowiedź).
 export interface EggBankState {

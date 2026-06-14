@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import { AchievementsScreen } from "./screens/AchievementsScreen"
 import { CollectionScreen } from "./screens/CollectionScreen"
 import { DebugScreen } from "./screens/DebugScreen"
 import { HatchScreen } from "./screens/HatchScreen"
@@ -49,7 +50,9 @@ export function App() {
 			? "bg-gradient-to-b from-indigo-950 via-purple-900 to-indigo-900"
 			: screen === "map"
 				? "bg-gradient-to-b from-sky-200 via-violet-100 to-emerald-50"
-				: "bg-gradient-to-b from-violet-200 via-fuchsia-100 to-amber-50"
+				: screen === "achievements"
+					? "bg-gradient-to-b from-amber-100 via-orange-50 to-violet-100"
+					: "bg-gradient-to-b from-violet-200 via-fuchsia-100 to-amber-50"
 
 	return (
 		<div className={`min-h-dvh ${background}`}>
@@ -58,6 +61,7 @@ export function App() {
 				{screen === "round" && <RoundScreen debugEnabled={DEBUG_ENABLED} />}
 				{screen === "hatch" && <HatchScreen />}
 				{screen === "collection" && <CollectionScreen />}
+				{screen === "achievements" && <AchievementsScreen />}
 				{screen === "map" && <MapScreen />}
 				{screen === "debug" && DEBUG_ENABLED && <DebugScreen />}
 			</div>

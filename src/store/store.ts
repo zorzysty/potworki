@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
+import { evaluateAchievements } from "../achievements/evaluate"
 import {
 	applyAnswer,
 	decayStats,
@@ -20,6 +21,7 @@ import {
 	FACTS_BY_KEY,
 	isMaxStage,
 	MAX_QUESTIONS_PER_ROUND,
+	MAX_STARS_PER_ROUND,
 	makeQuestion,
 	QUESTIONS_PER_ROUND,
 	starsFor,
@@ -41,10 +43,17 @@ import {
 	isDivisionOnly,
 	rarityOf,
 } from "../monsters/catalog"
-import type { SaveState } from "./schema"
+import type { AchievementEntry, SaveState } from "./schema"
 import { INITIAL_SAVE, migrateSave, SAVE_KEYS, SAVE_VERSION } from "./schema"
 
-export type Screen = "home" | "round" | "hatch" | "collection" | "map" | "debug"
+export type Screen =
+	| "home"
+	| "round"
+	| "hatch"
+	| "collection"
+	| "achievements"
+	| "map"
+	| "debug"
 export type RoundPhase = "answering" | "correct" | "wrong" | "summary"
 
 export interface RoundState {
@@ -98,6 +107,9 @@ interface GameState extends SaveState {
 	buyWishEgg: () => void
 	applyDecay: () => void
 	markGatesCelebrated: () => void
+	checkAchievements: () => void
+	markAchievementsSeen: () => void
+	reconcileAchievements: () => void
 
 	debugSetAllMastery: (value: number) => void
 	debugSimulateRound: (totalStars: number) => void
@@ -302,6 +314,16 @@ export const useGame = create<GameState>()(
 				const gained = q.isRequeue ? Math.min(1, earned) : earned
 				const stars = round.stars + gained
 
+				// liczniki osiągnięć: kariera gwiazdek rośnie zawsze (gained=0 nieszkodliwe),
+				// poprawne pierwsze próby w dzieleniu liczymy osobno
+				const achievementStats = {
+					...state.achievementStats,
+					totalStars: state.achievementStats.totalStars + gained,
+					divCorrect:
+						state.achievementStats.divCorrect +
+						(correct && round.mode === "div" ? 1 : 0),
+				}
+
 				// fragment + gwiazdki niezależnie od wyniku — postęp nigdy nie przepada.
 				// addEggFragment domyka jajko po przekroczeniu progu (finalny kolor z banku).
 				const { bank, created } = addEggFragment(
@@ -331,6 +353,7 @@ export const useGame = create<GameState>()(
 						eggsEarned,
 						pendingEggs,
 						iskierki,
+						achievementStats,
 						round: {
 							...round,
 							phase: "correct",
@@ -355,6 +378,7 @@ export const useGame = create<GameState>()(
 						eggsEarned,
 						pendingEggs,
 						iskierki,
+						achievementStats,
 						round: {
 							...round,
 							phase: "wrong",
@@ -368,6 +392,7 @@ export const useGame = create<GameState>()(
 						},
 					})
 				}
+				get().checkAchievements()
 			},
 
 			nextQuestion: () => {
@@ -390,9 +415,16 @@ export const useGame = create<GameState>()(
 						unlockedStage++
 						unlockedThisRound = true
 					}
+					const achievementStats = {
+						...state.achievementStats,
+						perfectRounds:
+							state.achievementStats.perfectRounds +
+							(round.stars === MAX_STARS_PER_ROUND ? 1 : 0),
+					}
 					set({
 						unlockedStage,
 						totalRounds: state.totalRounds + 1,
+						achievementStats,
 						round: {
 							...round,
 							phase: "summary",
@@ -400,6 +432,7 @@ export const useGame = create<GameState>()(
 							unlockedThisRound,
 						},
 					})
+					get().checkAchievements()
 					return
 				}
 
@@ -454,6 +487,15 @@ export const useGame = create<GameState>()(
 				const state = get()
 				const egg = state.pendingEggs[index]
 				if (!egg) return
+				// osiągnięcie „tęczowe jajko" — liczone w chwili wyklucia
+				const achievementStats =
+					egg.quality === "rainbow"
+						? {
+								...state.achievementStats,
+								rainbowEggsHatched:
+									state.achievementStats.rainbowEggsHatched + 1,
+							}
+						: state.achievementStats
 				const ctx = rollContext(state, egg.mode)
 				const monsterId =
 					egg.quality === "wish"
@@ -471,6 +513,7 @@ export const useGame = create<GameState>()(
 					set({
 						pendingEggs,
 						iskierki: Math.min(ISKIERKI_CAP, state.iskierki + gained),
+						achievementStats,
 						lastHatch: {
 							monsterId,
 							isNew: false,
@@ -487,9 +530,11 @@ export const useGame = create<GameState>()(
 							[monsterId]: { hatchedAt: Date.now() },
 						},
 						dreamMonsterId: isDream ? null : state.dreamMonsterId,
+						achievementStats,
 						lastHatch: { monsterId, isNew: true, isDream, iskierkiGained: 0 },
 					})
 				}
+				get().checkAchievements()
 			},
 
 			clearLastHatch: () => set({ lastHatch: null }),
@@ -507,8 +552,13 @@ export const useGame = create<GameState>()(
 						...state.pendingEggs,
 						{ quality: "wish", mode: "mult" },
 					],
+					achievementStats: {
+						...state.achievementStats,
+						wishEggsBought: state.achievementStats.wishEggsBought + 1,
+					},
 					screen: "hatch",
 				})
+				get().checkAchievements()
 			},
 
 			applyDecay: () => {
@@ -524,6 +574,57 @@ export const useGame = create<GameState>()(
 			// mapa pokazała animację otwarcia bramy aż do bieżącego etapu
 			markGatesCelebrated: () =>
 				set((s) => ({ celebratedStage: s.unlockedStage })),
+
+			// Sprawdza i odblokowuje świeżo spełnione osiągnięcia (badge „nowe!" → seen:false)
+			// + dolicza iskierki (cap). Wołane na końcu akcji zmieniających stan. Idempotentne:
+			// te już w ledgerze są pomijane (alreadyUnlocked).
+			checkAchievements: () => {
+				const s = get()
+				const { newlyUnlocked, iskierkiReward } = evaluateAchievements(
+					{ save: s, counters: s.achievementStats },
+					new Set(Object.keys(s.achievements)),
+				)
+				if (newlyUnlocked.length === 0) return
+				const now = Date.now()
+				const achievements = { ...s.achievements }
+				for (const id of newlyUnlocked)
+					achievements[id] = { unlockedAt: now, seen: false }
+				set({
+					achievements,
+					iskierki: Math.min(ISKIERKI_CAP, s.iskierki + iskierkiReward),
+				})
+			},
+
+			// Czyści badge „nowe osiągnięcie!" na Home (wejście na ekran osiągnięć).
+			// Idempotentne — bezpieczne na podwójny montaż StrictMode.
+			markAchievementsSeen: () => {
+				const current = get().achievements
+				if (!Object.values(current).some((a) => !a.seen)) return
+				const achievements: Record<string, AchievementEntry> = {}
+				for (const [id, e] of Object.entries(current))
+					achievements[id] = e.seen ? e : { ...e, seen: true }
+				set({ achievements })
+			},
+
+			// Jak checkAchievements, ale po cichu (seen:true) — przy starcie sesji odblokowuje
+			// osiągnięcia, które dziecko już spełnia (po wdrożeniu funkcji / migracji v5→v6),
+			// bez lawiny powiadomień, a iskierki za nie dolicza (postęp dziecka jest święty).
+			reconcileAchievements: () => {
+				const s = get()
+				const { newlyUnlocked, iskierkiReward } = evaluateAchievements(
+					{ save: s, counters: s.achievementStats },
+					new Set(Object.keys(s.achievements)),
+				)
+				if (newlyUnlocked.length === 0) return
+				const now = Date.now()
+				const achievements = { ...s.achievements }
+				for (const id of newlyUnlocked)
+					achievements[id] = { unlockedAt: now, seen: true }
+				set({
+					achievements,
+					iskierki: Math.min(ISKIERKI_CAP, s.iskierki + iskierkiReward),
+				})
+			},
 
 			debugSetAllMastery: (value) => {
 				const facts = { ...get().facts }
@@ -560,6 +661,7 @@ export const useGame = create<GameState>()(
 					unlockedStage: o.unlockedStage,
 					totalRounds: state.totalRounds + 1,
 				})
+				get().checkAchievements()
 			},
 
 			// ekran rundy: kończy trwającą rundę z sumą `totalStars` gwiazdek i przechodzi
@@ -586,6 +688,15 @@ export const useGame = create<GameState>()(
 					iskierki: o.iskierki,
 					unlockedStage: o.unlockedStage,
 					totalRounds: state.totalRounds + 1,
+					// symulacja nie przechodzi przez pressConfirm/nextQuestion, więc liczniki
+					// zdarzeniowe ustawiamy tu wprost — by dało się przetestować z ekranu debug
+					achievementStats: {
+						...state.achievementStats,
+						totalStars: state.achievementStats.totalStars + totalStars,
+						perfectRounds:
+							state.achievementStats.perfectRounds +
+							(totalStars === MAX_STARS_PER_ROUND ? 1 : 0),
+					},
 					round: {
 						...round,
 						index: QUESTIONS_PER_ROUND,
@@ -597,6 +708,7 @@ export const useGame = create<GameState>()(
 						unlockedThisRound: o.unlockedThisRound,
 					},
 				})
+				get().checkAchievements()
 			},
 
 			debugOwnRarity: (rarity) => {
@@ -605,6 +717,7 @@ export const useGame = create<GameState>()(
 					owned[id] ??= { hatchedAt: Date.now() }
 				}
 				set({ ownedMonsters: owned })
+				get().checkAchievements()
 			},
 
 			debugAddIskierki: (amount) =>
@@ -648,3 +761,5 @@ export const useGame = create<GameState>()(
 
 // decay raz na załadowanie strony (sesję)
 useGame.getState().applyDecay()
+// po cichu odblokuj osiągnięcia już zasłużone (po wdrożeniu funkcji / migracji v5→v6)
+useGame.getState().reconcileAchievements()
