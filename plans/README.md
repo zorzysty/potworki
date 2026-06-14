@@ -28,7 +28,7 @@ a contract — the affected plans call out exactly which docs to update.
 | 007  | Characterize store round-machine, hatch, migrations | P2 | M | 003 | DONE — merged to `main` (89 tests total) |
 | 008  | Correct README monster count 72 → 76 | P3 | S | — | DONE — cherry-picked to `main` (`4e1de64`) |
 | 009  | Characterization tests for division/egg-bank/multi-egg-hatch | P2 | S | — | DONE — cherry-picked to `main` (`1e9438b`, 115 tests) |
-| 010  | Move `makeQuestion` + egg-close logic into `src/game/` | P3 | M | 009 | TODO |
+| 010  | Move `makeQuestion` + egg-close logic into `src/game/` | P3 | M | 009 | DONE — cherry-picked to `main` (`6288765`, 134 tests) |
 
 > All plans 001–007 are merged into `main` (001–005 at `cb2c336`, 006–007 at
 > `df7d601`); the test suite is 89 tests and the deploy now runs them. Plans
