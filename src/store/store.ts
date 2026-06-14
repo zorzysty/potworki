@@ -70,7 +70,7 @@ interface GameState extends SaveState {
 	pressConfirm: () => void
 	nextQuestion: () => void
 	exitRoundEarly: () => void
-	hatchEgg: () => void
+	hatchEgg: (index?: number) => void
 	clearLastHatch: () => void
 	setDreamMonster: (id: number | null) => void
 	buyWishEgg: () => void
@@ -328,16 +328,17 @@ export const useGame = create<GameState>()(
 			// prowizoryczną jakość; runda się nie liczy do totalRounds
 			exitRoundEarly: () => set({ round: null, screen: "home" }),
 
-			hatchEgg: () => {
+			// wykluwa wybrane jajko (gracz wybiera kolejność w gnieździe); domyślnie pierwsze
+			hatchEgg: (index = 0) => {
 				const state = get()
-				const egg = state.pendingEggs[0]
+				const egg = state.pendingEggs[index]
 				if (!egg) return
 				const ctx = rollContext(state)
 				const monsterId =
 					egg.quality === "wish" ? rollWish(ctx)
 					: ctx.owned.size === 0 ? FIRST_MONSTER_ID
 					: rollMonster(egg.quality, ctx)
-				const pendingEggs = state.pendingEggs.slice(1)
+				const pendingEggs = state.pendingEggs.filter((_, i) => i !== index)
 				if (monsterId === null) {
 					set({ pendingEggs })
 					return
