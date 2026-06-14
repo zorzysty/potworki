@@ -9,6 +9,7 @@ Logika pedagogiczna i ekonomia nagród jako czyste funkcje — bez Reacta, DOM-u
 - `facts.ts` — 55 działań komutatywnych, etapy odblokowań (STAGES), budżety czasowe i gwiazdki, stałe rundy, próg fragmentów na jajko (`fragmentsForEgg`)
 - `adaptive.ts` — mastery, decay, selekcja pytań, hybrydowe kryterium odblokowania (`UNLOCK_THRESHOLD`, `MAINTAIN_THRESHOLD`, `shouldUnlockNextStage`, `needsMaintenance`), działania bramy/postęp mapy (`stageFacts`, `averageMastery`, `stageProgress`)
 - `rewards.ts` — jakość jajek, szanse rzadkości, priorytet wymarzonego, Jajko Życzeń, iskierki
+- `debug.ts` — symulacja rundy debug (`distributeStars`, `simulateRoundOutcome`), czysta dzięki wstrzykiwanym `rand`/`now`
 
 ## Local Contracts
 
