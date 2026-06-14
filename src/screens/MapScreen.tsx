@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { EggView } from "../components/EggView"
 import {
@@ -9,6 +8,7 @@ import {
 	litCrystals,
 } from "../components/gate"
 import { HelpTip } from "../components/HelpTip"
+import { useGateReveal } from "../components/useGateReveal"
 import { needsMaintenance, stageProgress } from "../game/adaptive"
 import { isMaxStage, STAGES } from "../game/facts"
 import { MonsterSvg } from "../monsters/MonsterSvg"
@@ -32,16 +32,12 @@ export function MapScreen() {
 	// PRZED mutacją store, więc stabilna mimo podwójnego montażu StrictMode.
 	// Po odblokowaniu w rundzie splash gra już w podsumowaniu; tu zostaje jako
 	// zapas dla ścieżki debug (debugOpenGate / debugSimulateRound).
-	const [reveal, setReveal] = useState<{ stage: number } | null>(() => {
+	const { reveal, dismiss } = useGateReveal(() => {
 		const s = useGame.getState()
 		return s.unlockedStage > s.celebratedStage
 			? { stage: s.unlockedStage }
 			: null
 	})
-
-	useEffect(() => {
-		if (reveal) useGame.getState().markGatesCelebrated() // od razu — animacja nie powtórzy się po wyjściu
-	}, [reveal])
 
 	const maxStage = isMaxStage(unlockedStage)
 	const lit = litCrystals(stageProgress(facts, unlockedStage))
@@ -208,9 +204,7 @@ export function MapScreen() {
 			</div>
 
 			{/* animacja otwarcia bramy (zapas dla ścieżki debug — w grze gra w podsumowaniu) */}
-			{reveal && (
-				<GateReveal stage={reveal.stage} onDone={() => setReveal(null)} />
-			)}
+			{reveal && <GateReveal stage={reveal.stage} onDone={dismiss} />}
 		</div>
 	)
 }
