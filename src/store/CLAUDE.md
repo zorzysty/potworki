@@ -24,4 +24,6 @@ Pojedynczy store zustand: koordynacja przepływu gry (runda, wyklucie, nawigacja
 
 ## Verification
 
-W konsoli przeglądarki: ustaw `version: 0` w `localStorage['potworki-save']` → reload → migracja przechodzi bez utraty kolekcji; podmień zapis na uszkodzony string → reload → świeży stan bez crasha; reload w trakcie rundy → fragmenty/mastery/pendingEggs zachowane.
+`bun test src/store` — pokrywa maszyną stanów rundy (starty, szczęśliwa ścieżka 10 pytań z jednym jajkiem, błędna odpowiedź z fragmentem, rytuał przepisania, kolejka na `index+3`, cap gwiazdek na powtórcze pytanie, max 12 pytań, wolna odpowiedź), gwarancje wyklucia (pierwsza sesja → `FIRST_MONSTER_ID`, duplikat → iskierki z capem 99, wyklucie wymarzonego czyści `dreamMonsterId`), ekonomię Jajka Życzeń (`buyWishEgg`) oraz łańcuch migracji `migrateSave` v1→v2→v3 wraz z tripwirem kształtu `INITIAL_SAVE`.
+
+Opcjonalny krok end-to-end (weryfikuje też okablowanie `migrate` w zustand persist, którego unit-testy nie dotykają): w konsoli przeglądarki ustaw `version: 0` w `localStorage['potworki-save']` → reload → migracja przechodzi bez utraty kolekcji; podmień zapis na uszkodzony string → reload → świeży stan bez crasha; reload w trakcie rundy → fragmenty/mastery/pendingEggs zachowane.
