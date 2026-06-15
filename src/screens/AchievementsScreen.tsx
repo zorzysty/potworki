@@ -22,8 +22,10 @@ interface AchievementRow {
 
 export function AchievementsScreen() {
 	const state = useGame((s) => s)
-	const { achievements, iskierki, goTo, markAchievementsSeen } = state
+	const { achievements, iskierki, goTo, markAchievementsSeen, debugReset } =
+		state
 	const [selectedId, setSelectedId] = useState<string | null>(null)
+	const [confirmReset, setConfirmReset] = useState(false)
 
 	// wejście na ekran = osiągnięcia „zobaczone" → znika badge na Home (idempotentne)
 	useEffect(() => {
@@ -132,9 +134,70 @@ export function AchievementsScreen() {
 				})}
 			</div>
 
+			<button
+				type="button"
+				onClick={() => setConfirmReset(true)}
+				className="mx-auto mb-2 touch-manipulation rounded-full border-2 border-red-300 bg-white/70 px-6 py-3 text-base font-extrabold text-red-500 shadow-sm transition-transform active:scale-95"
+			>
+				Zacznij od nowa
+			</button>
+
 			{selected && (
 				<AchievementModal row={selected} onClose={() => setSelectedId(null)} />
 			)}
+
+			{confirmReset && (
+				<ResetModal
+					onConfirm={debugReset}
+					onCancel={() => setConfirmReset(false)}
+				/>
+			)}
+		</div>
+	)
+}
+
+// Potwierdzenie skasowania całego postępu. Destrukcyjne i nieodwracalne — duże,
+// rozdzielone cele dotykowe (anuluj domyślnie wyróżniony), żeby dziecko nie
+// wyzerowało gry przypadkiem. Po potwierdzeniu `debugReset` wraca na ekran domku.
+function ResetModal({
+	onConfirm,
+	onCancel,
+}: {
+	onConfirm: () => void
+	onCancel: () => void
+}) {
+	return (
+		<div
+			className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-5 backdrop-blur-sm"
+			onClick={onCancel}
+		>
+			<div
+				className="anim-pop flex w-full max-w-sm flex-col gap-4 rounded-[2rem] border-4 border-red-300 bg-white p-6 text-center shadow-2xl"
+				onClick={(e) => e.stopPropagation()}
+			>
+				<div className="text-6xl">⚠️</div>
+				<div className="text-2xl font-extrabold leading-tight text-slate-700">
+					Zacznij od nowa?
+				</div>
+				<p className="rounded-2xl bg-red-50 px-4 py-3 text-base font-bold leading-snug text-slate-600">
+					Skasujesz cały postęp: potworki, jajka, iskierki i osiągnięcia. Tego
+					nie da się cofnąć!
+				</p>
+				<button
+					type="button"
+					onClick={onConfirm}
+					className="touch-manipulation rounded-2xl bg-red-500 px-6 py-4 text-xl font-extrabold text-white shadow active:scale-95"
+				>
+					Tak, kasuj wszystko
+				</button>
+				<button
+					type="button"
+					onClick={onCancel}
+					className="touch-manipulation text-lg font-extrabold text-slate-500 active:scale-95"
+				>
+					Nie, zostaw
+				</button>
+			</div>
 		</div>
 	)
 }
