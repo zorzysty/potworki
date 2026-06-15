@@ -118,7 +118,7 @@ export function AchievementsScreen() {
 								<div className="flex items-center gap-2">
 									<div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-200">
 										<div
-											className={`h-full rounded-full transition-[width] ${unlocked ? `bg-gradient-to-r ${tier.bar}` : "bg-slate-300"}`}
+											className={`h-full rounded-full transition-[width] ${unlocked ? `bg-gradient-to-r ${tier.bar}` : "bg-slate-600"}`}
 											style={{ width: `${progress.ratio * 100}%` }}
 										/>
 									</div>
