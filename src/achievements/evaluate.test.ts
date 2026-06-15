@@ -52,11 +52,12 @@ describe("evaluateAchievements", () => {
 		expect(r.iskierkiReward).toBe(0)
 	})
 
-	test("maksymalny zapis → wszystkie 25 + pełna nagroda (255)", () => {
+	test("maksymalny zapis → wszystkie 25 + pełna nagroda (245)", () => {
 		const r = evaluateAchievements(maxCtx, new Set())
 		expect(r.newlyUnlocked.length).toBe(ACHIEVEMENTS.length)
 		expect(r.iskierkiReward).toBe(TOTAL_REWARD)
-		expect(r.iskierkiReward).toBe(255)
+		// 8×easy(5) + 10×medium(10) + 7×hard(15) = 245
+		expect(r.iskierkiReward).toBe(245)
 	})
 
 	test("idempotencja: już zdobyte nie wpadają ponownie ani nie naliczają iskierek", () => {

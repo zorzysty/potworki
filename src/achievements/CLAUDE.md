@@ -23,4 +23,4 @@ Deklaratywny katalog osiągnięć i ich ocena jako czyste funkcje — bez Reacta
 
 ## Verification
 
-`bun test src/achievements/catalog.test.ts src/achievements/evaluate.test.ts` — pokrywa: dokładnie 25 osiągnięć, unikalność i zamrożoną listę `id`, poprawną trudność/teksty, `progress` na czystym zapisie (nic zdobyte, target>0) i na maksymalnym (wszystkie zdobyte, ratio∈[0,1]); `evaluateAchievements` (pusto na czystym, 25 + 255 iskierek na maks, idempotencja względem `alreadyUnlocked`, częściowy postęp). Integracja ze store (liczniki, retroaktywne odblokowania) — w `src/store/store.test.ts`.
+`bun test src/achievements/catalog.test.ts src/achievements/evaluate.test.ts` — pokrywa: dokładnie 25 osiągnięć, unikalność i zamrożoną listę `id`, poprawną trudność/teksty, `progress` na czystym zapisie (nic zdobyte, target>0) i na maksymalnym (wszystkie zdobyte, ratio∈[0,1]); `evaluateAchievements` (pusto na czystym, 25 + 245 iskierek na maks, idempotencja względem `alreadyUnlocked`, częściowy postęp). Integracja ze store (liczniki, retroaktywne odblokowania) — w `src/store/store.test.ts`.

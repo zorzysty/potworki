@@ -596,10 +596,10 @@ describe("osiągnięcia", () => {
 		expect(s.achievementStats.perfectRounds).toBe(1)
 		expect(s.achievements["bez-pomylki"]).toBeDefined()
 		expect(s.achievements["bez-pomylki"]?.seen).toBe(false)
-		// zdobyte zawsze: pierwsza-runda(5) + pierwsze-jajko(5) + bez-pomylki(15) = 25
+		// zdobyte zawsze: pierwsza-runda(5) + pierwsze-jajko(5) + bez-pomylki(5) = 15
 		// (+1 tylko jeśli wylosowane jajko jest tęczowe)
 		expect(s.achievements["pierwsza-runda"]).toBeDefined()
-		expect(s.iskierki).toBeGreaterThanOrEqual(25)
+		expect(s.iskierki).toBeGreaterThanOrEqual(15)
 	})
 
 	test("poprawna odpowiedź w dzieleniu → divCorrect++ i 'pierwsze-dzielenie'", () => {
