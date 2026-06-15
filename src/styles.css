@@ -367,3 +367,116 @@ body {
 		opacity: 1;
 	}
 }
+
+/* ---------- warstwa opiekuńcza: przyjaciel + wioska ---------- */
+
+/* radosny podskok (reakcja na dotyk, drobna bezczynność na Home) */
+.anim-companion-hop {
+	animation: companion-hop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes companion-hop {
+	0% {
+		transform: translateY(0) scaleY(1);
+	}
+	20% {
+		transform: translateY(0) scaleY(0.88);
+	}
+	55% {
+		transform: translateY(-18px) scaleY(1.06);
+	}
+	100% {
+		transform: translateY(0) scaleY(1);
+	}
+}
+
+/* większy skok radości — kibicowanie przy poprawnej odpowiedzi */
+.anim-cheer-jump {
+	animation: cheer-jump 0.55s cubic-bezier(0.34, 1.6, 0.64, 1);
+}
+
+@keyframes cheer-jump {
+	0% {
+		transform: translateY(0) rotate(0);
+	}
+	30% {
+		transform: translateY(-28px) rotate(-7deg);
+	}
+	60% {
+		transform: translateY(-28px) rotate(7deg);
+	}
+	100% {
+		transform: translateY(0) rotate(0);
+	}
+}
+
+/* łagodne kołysanie wsparcia — przy błędnej odpowiedzi (nigdy smutek) */
+.anim-nod {
+	animation: nod 0.7s ease-in-out;
+}
+
+@keyframes nod {
+	0%,
+	100% {
+		transform: rotate(0);
+	}
+	30% {
+		transform: rotate(-5deg);
+	}
+	70% {
+		transform: rotate(5deg);
+	}
+}
+
+/* serca/iskry wystrzeliwują na zewnątrz (--bx/--by = kierunek, jak --sx) */
+.anim-heart-burst {
+	animation: heart-burst 0.85s ease-out forwards;
+}
+
+@keyframes heart-burst {
+	0% {
+		transform: translate(0, 0) scale(0.4);
+		opacity: 0;
+	}
+	25% {
+		opacity: 1;
+	}
+	100% {
+		transform: translate(var(--bx, 0), var(--by, -42px)) scale(1);
+		opacity: 0;
+	}
+}
+
+/* pojedyncze serduszko unosi się i znika (drobna bezczynność) */
+.anim-heart-float {
+	animation: heart-float 1.2s ease-out forwards;
+}
+
+@keyframes heart-float {
+	0% {
+		transform: translateY(0) scale(0.6);
+		opacity: 0;
+	}
+	20% {
+		opacity: 1;
+	}
+	100% {
+		transform: translateY(-46px) scale(1);
+		opacity: 0;
+	}
+}
+
+/* wędrówka potworka po wiosce — przesuw w poziomie (--wander-x), tam i z powrotem.
+   Czas trwania per-potworek przez --stroll-dur; faza przez animation-delay (inline). */
+.anim-stroll {
+	animation: stroll var(--stroll-dur, 8s) ease-in-out infinite alternate;
+}
+
+@keyframes stroll {
+	0% {
+		transform: translateX(0);
+	}
+	100% {
+		transform: translateX(var(--wander-x, 60px));
+	}
+}

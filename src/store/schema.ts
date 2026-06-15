@@ -2,7 +2,7 @@ import type { FactStats } from "../game/adaptive"
 import type { FactKey } from "../game/facts"
 import type { PendingEgg } from "../game/rewards"
 
-export const SAVE_VERSION = 7
+export const SAVE_VERSION = 8
 
 // Wpis ledgera osiągnięć. `seen` jak celebratedStage: false → badge „nowe!" na Home,
 // czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen).
@@ -37,6 +37,7 @@ export interface SaveState {
 	eggsEarned: number // ile jajek z fragmentów już powstało — steruje progiem (fragmentsForEgg)
 	pendingEggs: PendingEgg[]
 	dreamMonsterId: number | null
+	companionId: number | null // ulubiony przyjaciel (siedzi na ekranie głównym, kibicuje); osobny od dreamMonsterId
 	totalRounds: number
 	achievements: Record<string, AchievementEntry> // zdobyte osiągnięcia (klucz = stabilne id z achievements/catalog)
 	achievementStats: AchievementCounters // liczniki zdarzeniowe (patrz wyżej)
@@ -53,6 +54,7 @@ export const INITIAL_SAVE: SaveState = {
 	eggsEarned: 0,
 	pendingEggs: [],
 	dreamMonsterId: null,
+	companionId: null,
 	totalRounds: 0,
 	achievements: {},
 	achievementStats: {
@@ -142,6 +144,13 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 			achievementStats: { ...stats, daysPlayed: 0, lastPlayedDay: "" },
 		}
 	},
+	// v7→v8: dodano companionId (ulubiony przyjaciel na ekranie głównym). Start: null —
+	// Home renderuje wtedy najnowszego potworka jak dotąd, więc brak przyjaciela niczego
+	// nie psuje (zero regresji). Dziecko wybiera przyjaciela w „Moich Potworkach".
+	7: (state) => ({
+		...(state as Record<string, unknown>),
+		companionId: null,
+	}),
 }
 
 export function migrateSave(state: unknown, fromVersion: number): unknown {

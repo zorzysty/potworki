@@ -13,7 +13,7 @@ describe("migrateSave", () => {
 		expect(migrateSave(x, SAVE_VERSION)).toEqual(x)
 	})
 
-	test("pełny łańcuch v1→v7: eggsEarned, celebratedStage, mode jajek, eggStarBank, osiągnięcia, dane zachowane", () => {
+	test("pełny łańcuch v1→v8: eggsEarned, celebratedStage, mode jajek, eggStarBank, osiągnięcia, companionId, dane zachowane", () => {
 		const v1 = {
 			ownedMonsters: {
 				0: { hatchedAt: 0 },
@@ -43,12 +43,14 @@ describe("migrateSave", () => {
 			daysPlayed: 0,
 			lastPlayedDay: "",
 		})
+		// v7→v8: companionId startuje null (brak przyjaciela)
+		expect(result.companionId).toBeNull()
 		// dane oryginalne zachowane
 		expect(result.iskierki).toBe(7)
 		expect(result.unlockedStage).toBe(2)
 	})
 
-	test("v5→v7: dodaje pusty ledger osiągnięć i zerowe liczniki, reszta zachowana", () => {
+	test("v5→v8: dodaje pusty ledger osiągnięć, zerowe liczniki i companionId, reszta zachowana", () => {
 		const v5 = {
 			iskierki: 4,
 			totalRounds: 9,
@@ -65,6 +67,7 @@ describe("migrateSave", () => {
 			daysPlayed: 0,
 			lastPlayedDay: "",
 		})
+		expect(result.companionId).toBeNull()
 		expect(result.iskierki).toBe(4)
 		expect(result.totalRounds).toBe(9)
 	})
@@ -100,6 +103,16 @@ describe("migrateSave", () => {
 			lastPlayedDay: "",
 		})
 		expect(result.iskierki).toBe(9)
+	})
+
+	test("v7→v8: dodaje companionId null, reszta zachowana", () => {
+		const v7 = { iskierki: 5, dreamMonsterId: 3, totalRounds: 12 }
+		const result = migrateSave(v7, 7) as Record<string, unknown>
+		expect(result.companionId).toBeNull()
+		// nie myli się z dreamMonsterId (osobne pola)
+		expect(result.dreamMonsterId).toBe(3)
+		expect(result.iskierki).toBe(5)
+		expect(result.totalRounds).toBe(12)
 	})
 
 	test("częściowy łańcuch v2→v5: celebratedStage + mode jajek + eggStarBank, eggsEarned nie", () => {
@@ -171,6 +184,7 @@ describe("INITIAL_SAVE shape-lock", () => {
 			"achievementStats",
 			"achievements",
 			"celebratedStage",
+			"companionId",
 			"dreamMonsterId",
 			"eggFragments",
 			"eggStarBank",

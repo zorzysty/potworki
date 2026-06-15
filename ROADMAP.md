@@ -7,6 +7,8 @@ Dziś iskierki powstają tylko z duplikatów i idą tylko na Jajko Życzeń. To 
 
 2. Warstwa „opiekuńcza" (tamagotchi) — powód do powrotu inny niż matma
 
+✅ ZREALIZOWANE (v1): ekran „Wioska 🏡" (potworki chodzą i reagują na dotyk), ulubiony „przyjaciel" na ekranie głównym + kibicowanie w rundzie, ciepłe powitania bez poczucia winy. Fast-follow (jeszcze nie): pasek „więzi" (rośnie przy graniu/głaskaniu, odblokowuje serduszka i kosmetyczne kamienie milowe).
+
 Masz już wioskę na mapie, ale statyczną. Najmocniejszy hak emocjonalny dla 9-latki:
 
 - Interaktywna wioska/zagroda: posiadane potworki chodzą, reagują na dotyk, bawią się. Dotyk = mała animacja. Matma zostaje walutą (więcej potworków = żywsza wioska), ale wioska sama w sobie zachęca do otwierania gry.

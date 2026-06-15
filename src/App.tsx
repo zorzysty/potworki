@@ -7,6 +7,7 @@ import { HatchScreen } from "./screens/HatchScreen"
 import { HomeScreen } from "./screens/HomeScreen"
 import { MapScreen } from "./screens/MapScreen"
 import { RoundScreen } from "./screens/RoundScreen"
+import { VillageScreen } from "./screens/VillageScreen"
 import { useGame } from "./store/store"
 
 const DEBUG_ENABLED = new URLSearchParams(window.location.search).has("debug")
@@ -51,9 +52,11 @@ export function App() {
 			? "bg-gradient-to-b from-indigo-950 via-purple-900 to-indigo-900"
 			: screen === "map"
 				? "bg-gradient-to-b from-sky-200 via-violet-100 to-emerald-50"
-				: screen === "achievements"
-					? "bg-gradient-to-b from-amber-100 via-orange-50 to-violet-100"
-					: "bg-gradient-to-b from-violet-200 via-fuchsia-100 to-amber-50"
+				: screen === "village"
+					? "bg-gradient-to-b from-sky-200 via-emerald-100 to-emerald-200"
+					: screen === "achievements"
+						? "bg-gradient-to-b from-amber-100 via-orange-50 to-violet-100"
+						: "bg-gradient-to-b from-violet-200 via-fuchsia-100 to-amber-50"
 
 	return (
 		<div className={`min-h-dvh ${background}`}>
@@ -64,6 +67,7 @@ export function App() {
 				{screen === "collection" && <CollectionScreen />}
 				{screen === "achievements" && <AchievementsScreen />}
 				{screen === "map" && <MapScreen />}
+				{screen === "village" && <VillageScreen />}
 				{screen === "debug" && DEBUG_ENABLED && <DebugScreen />}
 			</div>
 			<AchievementToast />

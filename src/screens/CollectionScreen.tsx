@@ -21,8 +21,10 @@ const SORTED_MONSTERS = [...MONSTERS].sort(
 export function CollectionScreen() {
 	const ownedMonsters = useGame((s) => s.ownedMonsters)
 	const dreamMonsterId = useGame((s) => s.dreamMonsterId)
+	const companionId = useGame((s) => s.companionId)
 	const iskierki = useGame((s) => s.iskierki)
 	const setDreamMonster = useGame((s) => s.setDreamMonster)
+	const setCompanion = useGame((s) => s.setCompanion)
 	const buyWishEgg = useGame((s) => s.buyWishEgg)
 	const goTo = useGame((s) => s.goTo)
 	const unlockedStage = useGame((s) => s.unlockedStage)
@@ -240,6 +242,31 @@ export function CollectionScreen() {
 										className={`-rotate-1 w-full rounded-2xl border-2 px-4 py-2 text-center text-sm font-bold leading-snug ${cardTheme.funFact}`}
 									>
 										💡 {selectedLore.funFact}
+									</div>
+								)}
+
+								{/* ===== PRZYJACIEL: wybór ulubieńca ===== */}
+								{selected.id === companionId ? (
+									<div className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-rose-50 px-4 py-3 text-lg font-extrabold text-rose-500">
+										💛 To Twój przyjaciel
+									</div>
+								) : (
+									<div className="flex w-full items-center gap-2">
+										<BigButton
+											onClick={() => {
+												setCompanion(selected.id)
+												setSelectedId(null)
+											}}
+											variant="secondary"
+											className="flex-1 py-3 text-lg"
+										>
+											Zostań moim przyjacielem! 💛
+										</BigButton>
+										<HelpTip
+											placement="top"
+											align="right"
+											text="Przyjaciel zamieszka na ekranie głównym i będzie Ci kibicował przy dobrych odpowiedziach. Możesz go zmienić, kiedy tylko chcesz."
+										/>
 									</div>
 								)}
 							</>

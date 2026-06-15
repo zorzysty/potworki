@@ -34,12 +34,12 @@ Jeden store zustand (`src/store/store.ts`) koordynuje całość: ekrany to maszy
 
 1. **Szybkość tylko nagradza, nigdy nie karze**: brak widocznego stopera, błędna odpowiedź i tak daje fragment jajka, wolna poprawna odpowiedź daje pełny postęp przy 0 gwiazdek. Każda nowa mechanika musi respektować tę zasadę. (Odpowiedź zatwierdza się automatycznie po wpisaniu właściwej liczby cyfr — literówka liczy się jako pomyłka, świadoma decyzja na rzecz tempa.)
 2. Postęp dziecka jest święty: zamrożony seed katalogu potworków (szczegóły w `src/monsters/CLAUDE.md`) i obowiązkowe migracje zapisu (szczegóły w `src/store/CLAUDE.md`).
-3. UI wyłącznie po polsku; tablet-first (duże cele dotykowe, zdarzenia pointer, żadnych natywnych `<input>` — szczegóły w `src/CLAUDE.md`).
+3. UI wyłącznie po polsku; tablet-first (duże cele dotykowe, aktywacja na `click`, żadnych natywnych `<input>` — szczegóły w `src/CLAUDE.md`).
 
 ## Testowanie w przeglądarce (WSL)
 
 Playwright zawiesza się w tym środowisku. Działa **puppeteer-core** wskazany na headless shell Playwrighta:
-`~/.cache/ms-playwright/chromium_headless_shell-1223/chrome-headless-shell-linux64/chrome-headless-shell` z argami `--no-sandbox --disable-gpu`. Kliknięcia puppeteera odpalają `onPointerDown` (przyciski gry nie używają `onClick`). Brak fontów emoji w WSL = puste kwadraty na zrzutach (to nie bug).
+`~/.cache/ms-playwright/chromium_headless_shell-1223/chrome-headless-shell-linux64/chrome-headless-shell` z argami `--no-sandbox --disable-gpu`. Przyciski i potworki gry aktywują się na `click` (model wejścia w `src/CLAUDE.md`); `.click()` puppeteera odpala pełną sekwencję pointer+click, więc działa. Brak fontów emoji w WSL = puste kwadraty na zrzutach (to nie bug).
 
 # DOX framework
 
@@ -125,4 +125,4 @@ When the user requests a durable behavior change, record it here or in the relev
 
 - [src/CLAUDE.md](src/CLAUDE.md) — cały kod aplikacji: warstwa UI (ekrany, komponenty, wejście, animacje) oraz indeks domen `game/` (logika adaptacyjna i nagrody), `monsters/` (zamrożony katalog potworków), `store/` (persystencja i przepływ gry), `achievements/` (katalog i ocena osiągnięć). Root zachowuje: komendy, deploy, zasady projektowe, testowanie w WSL.
 
-Poza `src/` nie ma child docs: `.github/workflows/` (jeden plik deployu), `public/` (favicon), `ROADMAP.md` (pomysły na przyszłość: sklepik za iskierki, interaktywna wioska) i pliki konfiguracyjne w rocie są opisane sekcją „Komendy" powyżej.
+Poza `src/` nie ma child docs: `.github/workflows/` (jeden plik deployu), `public/` (favicon), `ROADMAP.md` (pomysły na przyszłość: sklepik za iskierki; warstwa opiekuńcza/wioska zrealizowana w v1) i pliki konfiguracyjne w rocie są opisane sekcją „Komendy" powyżej.

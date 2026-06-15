@@ -1,5 +1,6 @@
 import { ACHIEVEMENTS } from "../achievements/catalog"
 import { BigButton } from "../components/BigButton"
+import { Companion } from "../components/Companion"
 import { EggView } from "../components/EggView"
 import { HelpTip } from "../components/HelpTip"
 import { fragmentsForEgg, isMaxStage, unlockedFactors } from "../game/facts"
@@ -15,6 +16,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const eggFragments = useGame((s) => s.eggFragments)
 	const eggsEarned = useGame((s) => s.eggsEarned)
 	const dreamMonsterId = useGame((s) => s.dreamMonsterId)
+	const companionId = useGame((s) => s.companionId)
 	const unlockedStage = useGame((s) => s.unlockedStage)
 	const celebratedStage = useGame((s) => s.celebratedStage)
 	const achievements = useGame((s) => s.achievements)
@@ -30,6 +32,9 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 		(x, y) =>
 			(ownedMonsters[y]?.hatchedAt ?? 0) - (ownedMonsters[x]?.hatchedAt ?? 0),
 	)[0]
+	// bohater Home = przyjaciel (jeśli wybrany i posiadany), inaczej najnowszy potworek
+	const companionPresent = companionId !== null && companionId in ownedMonsters
+	const heroId = companionPresent ? (companionId as number) : newestOwned
 	const firstEgg = pendingEggs[0]
 	const eggThreshold = fragmentsForEgg(eggsEarned)
 	const hasNewGate = unlockedStage > celebratedStage
@@ -50,7 +55,9 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 			)}
 
 			<div className="flex items-end justify-center gap-6">
-				{newestOwned !== undefined ? (
+				{companionPresent ? (
+					<Companion size={150} />
+				) : newestOwned !== undefined ? (
 					<MonsterSvg id={newestOwned} size={150} />
 				) : (
 					<div className="anim-float">
@@ -86,10 +93,19 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					</div>
 				)}
 			</div>
-			{newestOwned !== undefined && (
+			{heroId !== undefined && (
 				<div className="-mt-2 text-lg font-extrabold text-grape-dark">
-					{MONSTERS[newestOwned]?.name}
+					{MONSTERS[heroId]?.name}
 				</div>
+			)}
+			{companionId === null && ownedCount >= 3 && (
+				<button
+					type="button"
+					onClick={() => goTo("collection")}
+					className="anim-fade-up -mt-1 touch-manipulation rounded-full bg-white/70 px-4 py-1 text-sm font-extrabold text-grape-dark shadow active:scale-95"
+				>
+					Wybierz swojego przyjaciela 💛
+				</button>
 			)}
 
 			<div className="relative w-full max-w-xs">
@@ -180,6 +196,14 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 				className="w-full max-w-xs"
 			>
 				Moje Potworki 👾 {ownedCount}/{MONSTER_COUNT}
+			</BigButton>
+
+			<BigButton
+				onClick={() => goTo("village")}
+				variant="secondary"
+				className="w-full max-w-xs"
+			>
+				Wioska 🏡
 			</BigButton>
 
 			<div className="relative w-full max-w-xs">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { BigButton } from "../components/BigButton"
+import { CheerCompanion } from "../components/Companion"
 import { Keypad } from "../components/Keypad"
 import { QuestionCard } from "../components/QuestionCard"
 import { StarMeter } from "../components/StarMeter"
@@ -51,6 +52,9 @@ export function RoundScreen({
 			<div className="land:w-80">
 				<Keypad />
 			</div>
+
+			{/* przyjaciel kibicuje z rogu (gdy wybrany) — nigdy nie zasłania karty */}
+			<CheerCompanion phase={round.phase} lastStars={round.lastStars} />
 
 			{debugEnabled && round.phase === "answering" && round.index === 0 && (
 				<div className="fixed right-2 bottom-2 z-40 flex flex-col items-end gap-1">

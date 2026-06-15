@@ -53,6 +53,7 @@ export type Screen =
 	| "collection"
 	| "achievements"
 	| "map"
+	| "village"
 	| "debug"
 export type RoundPhase = "answering" | "correct" | "wrong" | "summary"
 
@@ -105,6 +106,7 @@ interface GameState extends SaveState {
 	hatchEgg: (index?: number) => void
 	clearLastHatch: () => void
 	setDreamMonster: (id: number | null) => void
+	setCompanion: (id: number | null) => void
 	buyWishEgg: () => void
 	applyDecay: () => void
 	markGatesCelebrated: () => void
@@ -123,8 +125,9 @@ interface GameState extends SaveState {
 	debugReset: () => void
 }
 
-// Lokalny znacznik dnia (YYYY-M-D) — baza dla osiągnięcia „w ilu różnych dni grano".
-function dayStamp(now: number): string {
+// Lokalny znacznik dnia (YYYY-M-D) — baza dla osiągnięcia „w ilu różnych dni grano"
+// oraz powitań przyjaciela na Home (poziom powitania z porównania z lastPlayedDay).
+export function dayStamp(now: number): string {
 	const d = new Date(now)
 	return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
 }
@@ -583,6 +586,11 @@ export const useGame = create<GameState>()(
 			clearLastHatch: () => set({ lastHatch: null }),
 
 			setDreamMonster: (id) => set({ dreamMonsterId: id }),
+
+			// ulubiony przyjaciel (Home + kibicowanie); czysto prezentacyjny, brak
+			// interakcji z pulą losowań — dlatego, w odróżnieniu od dreamMonsterId,
+			// bez guardów isDivisionOnly (każdy posiadany potworek może nim być).
+			setCompanion: (id) => set({ companionId: id }),
 
 			buyWishEgg: () => {
 				const state = get()

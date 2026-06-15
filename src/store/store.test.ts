@@ -578,6 +578,33 @@ describe("nawigacja", () => {
 })
 
 // ---------------------------------------------------------------------------
+// Przyjaciel (ulubiony kompan)
+// ---------------------------------------------------------------------------
+
+describe("przyjaciel", () => {
+	test("setCompanion ustawia i zeruje companionId", () => {
+		expect(game().companionId).toBeNull()
+		game().setCompanion(FIRST_MONSTER_ID)
+		expect(game().companionId).toBe(FIRST_MONSTER_ID)
+		game().setCompanion(null)
+		expect(game().companionId).toBeNull()
+	})
+
+	test("companionId jest niezależny od dreamMonsterId", () => {
+		game().setDreamMonster(5)
+		game().setCompanion(FIRST_MONSTER_ID)
+		expect(game().dreamMonsterId).toBe(5)
+		expect(game().companionId).toBe(FIRST_MONSTER_ID)
+	})
+
+	test("debugReset czyści companionId", () => {
+		game().setCompanion(FIRST_MONSTER_ID)
+		game().debugReset()
+		expect(game().companionId).toBeNull()
+	})
+})
+
+// ---------------------------------------------------------------------------
 // Osiągnięcia
 // ---------------------------------------------------------------------------
 
