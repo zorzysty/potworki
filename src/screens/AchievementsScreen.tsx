@@ -31,11 +31,14 @@ export function AchievementsScreen() {
 			unlockedAt: entry?.unlockedAt ?? 0,
 		}
 	})
-	// kolejność: zdobyte (najnowsze najpierw) → w toku (bliżej końca wyżej) → nierozpoczęte
+	// kolejność: najpierw zdobyte→niezdobyte, potem wg trudności (łatwe→trudne, przez
+	// rosnącą nagrodę 5/10/15); remisy zachowują kolejność z katalogu (stabilny sort)
 	rows.sort((a, b) => {
 		if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1
-		if (a.unlocked && b.unlocked) return b.unlockedAt - a.unlockedAt
-		return b.progress.ratio - a.progress.ratio
+		return (
+			REWARD_BY_DIFFICULTY[a.def.difficulty] -
+			REWARD_BY_DIFFICULTY[b.def.difficulty]
+		)
 	})
 
 	const unlockedCount = Object.keys(achievements).length
