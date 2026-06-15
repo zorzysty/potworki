@@ -92,6 +92,7 @@ interface GameState extends SaveState {
 	round: RoundState | null
 	lastHatch: HatchResult | null
 	mode: GameMode // efemeryczny przełącznik mnożenie/dzielenie (Home), reset do "mult"
+	achievementQueue: string[] // efemeryczna kolejka id osiągnięć do pokazania jako toast „zdobyte!"
 
 	goTo: (screen: Screen) => void
 	setMode: (mode: GameMode) => void
@@ -110,6 +111,7 @@ interface GameState extends SaveState {
 	checkAchievements: () => void
 	markAchievementsSeen: () => void
 	reconcileAchievements: () => void
+	shiftAchievementToast: () => void
 
 	debugSetAllMastery: (value: number) => void
 	debugSimulateRound: (totalStars: number) => void
@@ -194,6 +196,7 @@ export const useGame = create<GameState>()(
 			round: null,
 			lastHatch: null,
 			mode: "mult",
+			achievementQueue: [],
 
 			// stan rundy żyje tylko na ekranie rundy
 			goTo: (screen) =>
@@ -592,8 +595,15 @@ export const useGame = create<GameState>()(
 				set({
 					achievements,
 					iskierki: Math.min(ISKIERKI_CAP, s.iskierki + iskierkiReward),
+					// kolejka toastów „zdobyte!" (efemeryczna) — pokazuje je AchievementToast.
+					// reconcileAchievements NIE dokłada tu nic (odblokowania startowe są ciche).
+					achievementQueue: [...s.achievementQueue, ...newlyUnlocked],
 				})
 			},
+
+			// Zdejmuje pierwszy toast z kolejki (po wyświetleniu/auto-zniknięciu).
+			shiftAchievementToast: () =>
+				set((s) => ({ achievementQueue: s.achievementQueue.slice(1) })),
 
 			// Czyści badge „nowe osiągnięcie!" na Home (wejście na ekran osiągnięć).
 			// Idempotentne — bezpieczne na podwójny montaż StrictMode.
@@ -743,6 +753,7 @@ export const useGame = create<GameState>()(
 					lastHatch: null,
 					screen: "home",
 					mode: "mult",
+					achievementQueue: [],
 				}),
 		}),
 		{

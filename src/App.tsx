@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import { AchievementToast } from "./components/AchievementToast"
 import { AchievementsScreen } from "./screens/AchievementsScreen"
 import { CollectionScreen } from "./screens/CollectionScreen"
 import { DebugScreen } from "./screens/DebugScreen"
@@ -65,6 +66,7 @@ export function App() {
 				{screen === "map" && <MapScreen />}
 				{screen === "debug" && DEBUG_ENABLED && <DebugScreen />}
 			</div>
+			<AchievementToast />
 		</div>
 	)
 }

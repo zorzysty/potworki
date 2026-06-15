@@ -644,6 +644,23 @@ describe("osiągnięcia", () => {
 		expect(s.iskierki).toBeGreaterThanOrEqual(5)
 	})
 
+	test("checkAchievements wrzuca zdobyte do kolejki toastów; shift je zdejmuje", () => {
+		game().debugOwnRarity("common") // odblokowuje kilka osiągnięć (seen:false)
+		const q = game().achievementQueue
+		expect(q.length).toBeGreaterThan(0)
+		expect(q).toContain("pierwszy-potwor")
+		const len = q.length
+		game().shiftAchievementToast()
+		expect(game().achievementQueue.length).toBe(len - 1)
+	})
+
+	test("reconcileAchievements NIE wrzuca do kolejki toastów (ciche)", () => {
+		useGame.setState({ totalRounds: 1, achievements: {}, achievementQueue: [] })
+		game().reconcileAchievements()
+		expect(game().achievements["pierwsza-runda"]).toBeDefined()
+		expect(game().achievementQueue).toEqual([])
+	})
+
 	test("markAchievementsSeen czyści flagę 'nowe'", () => {
 		game().debugOwnRarity("common") // odblokowuje kolekcja-5 itd. z seen:false
 		expect(Object.values(game().achievements).some((a) => !a.seen)).toBe(true)
