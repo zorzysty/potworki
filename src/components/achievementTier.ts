@@ -5,24 +5,37 @@ import type { Difficulty } from "../achievements/catalog"
 // `achievements/` (REWARD_BY_DIFFICULTY) — tu są tylko style.
 export const TIER_META: Record<
 	Difficulty,
-	{ label: string; border: string; badge: string; bar: string }
+	{
+		label: string
+		border: string
+		badge: string
+		bar: string
+		tint: string // gradient panelu-bohatera w modalu (jasny odcień trudności)
+		accent: string // kolor tekstu etykiety trudności
+	}
 > = {
 	easy: {
 		label: "Łatwe",
 		border: "border-emerald-300",
 		badge: "bg-emerald-100 text-emerald-600",
 		bar: "from-emerald-300 to-emerald-500",
+		tint: "from-emerald-100 to-emerald-200",
+		accent: "text-emerald-600",
 	},
 	medium: {
 		label: "Średnie",
 		border: "border-sky-300",
 		badge: "bg-sky-100 text-sky-600",
 		bar: "from-sky-300 to-sky-500",
+		tint: "from-sky-100 to-sky-200",
+		accent: "text-sky-600",
 	},
 	hard: {
 		label: "Trudne",
 		border: "border-amber-400",
 		badge: "bg-amber-100 text-amber-600",
 		bar: "from-amber-300 to-orange-400",
+		tint: "from-amber-100 via-yellow-100 to-orange-200",
+		accent: "text-amber-600",
 	},
 }

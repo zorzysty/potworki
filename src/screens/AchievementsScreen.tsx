@@ -2,12 +2,23 @@ import { useEffect, useState } from "react"
 import {
 	ACHIEVEMENTS,
 	type AchievementCtx,
+	type AchievementDef,
 	REWARD_BY_DIFFICULTY,
 } from "../achievements/catalog"
-import { achievementProgress } from "../achievements/evaluate"
+import {
+	type AchievementProgress,
+	achievementProgress,
+} from "../achievements/evaluate"
 import { TIER_META } from "../components/achievementTier"
 import { HelpTip } from "../components/HelpTip"
 import { useGame } from "../store/store"
+
+interface AchievementRow {
+	def: AchievementDef
+	progress: AchievementProgress
+	unlocked: boolean
+	unlockedAt: number
+}
 
 export function AchievementsScreen() {
 	const state = useGame((s) => s)
@@ -122,70 +133,115 @@ export function AchievementsScreen() {
 			</div>
 
 			{selected && (
+				<AchievementModal row={selected} onClose={() => setSelectedId(null)} />
+			)}
+		</div>
+	)
+}
+
+// Karta szczegółu osiągnięcia (modal). Układ w strefach zamiast pionowego „dumpu":
+// panel-bohater z ikoną + odznaką nagrody, nagłówek (tytuł + trudność), opis,
+// sekcja postępu, stopka ze statusem. Zdobyte = kolory trudności; niezdobyte = szaro.
+function AchievementModal({
+	row,
+	onClose,
+}: {
+	row: AchievementRow
+	onClose: () => void
+}) {
+	const { def, progress, unlocked, unlockedAt } = row
+	const tier = TIER_META[def.difficulty]
+	const shown = Math.min(progress.current, progress.target)
+
+	return (
+		<div
+			className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-5 backdrop-blur-sm"
+			onClick={onClose}
+		>
+			<div
+				className={`anim-pop flex w-full max-w-sm flex-col gap-4 rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${unlocked ? tier.border : "border-slate-300"}`}
+				onClick={(e) => e.stopPropagation()}
+			>
+				{/* ===== PANEL-BOHATER: ikona + odznaka nagrody w rogu ===== */}
 				<div
-					className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-5 backdrop-blur-sm"
-					onClick={() => setSelectedId(null)}
+					className={`relative flex items-center justify-center rounded-3xl bg-gradient-to-br py-9 ${unlocked ? tier.tint : "from-slate-100 to-slate-200"}`}
 				>
-					<div
-						className={`anim-pop flex w-full max-w-sm flex-col items-center gap-3 rounded-[2rem] border-4 bg-white p-6 shadow-2xl ${TIER_META[selected.def.difficulty].border}`}
-						onClick={(e) => e.stopPropagation()}
+					<span
+						className={`text-7xl ${unlocked ? "" : "opacity-40 grayscale"}`}
 					>
-						<div
-							className={`flex h-24 w-24 items-center justify-center rounded-3xl bg-slate-100 text-6xl ${selected.unlocked ? "" : "grayscale"}`}
-						>
-							{selected.def.icon}
+						{def.icon}
+					</span>
+					<div
+						className={`absolute top-3 right-3 rounded-full px-3 py-1 text-sm font-extrabold shadow ${tier.badge}`}
+					>
+						✨ {REWARD_BY_DIFFICULTY[def.difficulty]}
+					</div>
+					{unlocked ? (
+						<div className="absolute -bottom-3 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-emerald-500 text-lg font-extrabold text-white shadow-lg ring-4 ring-white">
+							✓
 						</div>
-						<div className="text-center text-3xl font-extrabold text-slate-700">
-							{selected.def.title}
-						</div>
-						<div
-							className={`rounded-full px-4 py-1 text-lg font-extrabold ${TIER_META[selected.def.difficulty].badge}`}
-						>
-							{TIER_META[selected.def.difficulty].label} · ✨{" "}
-							{REWARD_BY_DIFFICULTY[selected.def.difficulty]}
-						</div>
-						<p className="text-center text-base font-bold leading-snug text-slate-600">
-							{selected.def.description}
-						</p>
+					) : (
+						<div className="absolute top-3 left-3 text-2xl opacity-50">🔒</div>
+					)}
+				</div>
 
-						<div className="flex w-full items-center gap-2">
-							<div className="h-4 flex-1 overflow-hidden rounded-full bg-slate-200">
-								<div
-									className={`h-full rounded-full bg-gradient-to-r transition-[width] ${TIER_META[selected.def.difficulty].bar}`}
-									style={{ width: `${selected.progress.ratio * 100}%` }}
-								/>
-							</div>
-							<span className="shrink-0 text-base font-extrabold text-slate-500">
-								{Math.min(selected.progress.current, selected.progress.target)}/
-								{selected.progress.target}
-							</span>
-						</div>
-
-						{selected.unlocked ? (
-							<div className="flex flex-col items-center gap-1">
-								<span className="text-sm font-extrabold text-emerald-500">
-									✓ Zdobyte!
-								</span>
-								<span className="-rotate-3 rounded-lg border-2 border-bubblegum/40 px-2 py-0.5 text-xs font-extrabold tracking-wide text-bubblegum">
-									{new Date(selected.unlockedAt).toLocaleDateString("pl-PL")}
-								</span>
-							</div>
-						) : (
-							<span className="text-sm font-bold text-slate-400">
-								Jeszcze przed tobą — dasz radę! 💪
-							</span>
-						)}
-
-						<button
-							type="button"
-							onClick={() => setSelectedId(null)}
-							className="touch-manipulation pt-1 text-lg font-bold text-slate-400 active:scale-95"
-						>
-							Zamknij
-						</button>
+				{/* ===== NAGŁÓWEK: tytuł + trudność ===== */}
+				<div className="flex flex-col items-center gap-0.5 pt-1">
+					<div className="text-center text-3xl font-extrabold leading-tight text-slate-700">
+						{def.title}
+					</div>
+					<div
+						className={`text-sm font-extrabold uppercase tracking-wide ${tier.accent}`}
+					>
+						{tier.label}
 					</div>
 				</div>
-			)}
+
+				{/* ===== OPIS ===== */}
+				<p className="rounded-2xl bg-slate-50 px-4 py-3 text-center text-base font-bold leading-snug text-slate-600">
+					{def.description}
+				</p>
+
+				{/* ===== POSTĘP ===== */}
+				<div className="flex flex-col gap-1.5">
+					<div className="flex items-center justify-between">
+						<span className="text-xs font-bold uppercase tracking-wide text-slate-400">
+							Postęp
+						</span>
+						<span className="text-sm font-extrabold text-slate-500">
+							{shown}/{progress.target}
+						</span>
+					</div>
+					<div className="h-4 overflow-hidden rounded-full bg-slate-200">
+						<div
+							className={`h-full rounded-full transition-[width] ${unlocked ? `bg-gradient-to-r ${tier.bar}` : "bg-slate-300"}`}
+							style={{ width: `${progress.ratio * 100}%` }}
+						/>
+					</div>
+				</div>
+
+				{/* ===== STOPKA: data zdobycia albo zachęta ===== */}
+				{unlocked ? (
+					<div className="flex items-center justify-center gap-2 text-sm font-extrabold text-emerald-500">
+						Zdobyte
+						<span className="-rotate-3 rounded-lg border-2 border-bubblegum/40 px-2 py-0.5 text-xs tracking-wide text-bubblegum">
+							{new Date(unlockedAt).toLocaleDateString("pl-PL")}
+						</span>
+					</div>
+				) : (
+					<div className="text-center text-sm font-bold text-slate-400">
+						Jeszcze przed tobą — dasz radę! 💪
+					</div>
+				)}
+
+				<button
+					type="button"
+					onClick={onClose}
+					className="touch-manipulation text-lg font-bold text-slate-400 active:scale-95"
+				>
+					Zamknij
+				</button>
+			</div>
 		</div>
 	)
 }
