@@ -44,8 +44,8 @@ export function AchievementsScreen() {
 			unlockedAt: entry?.unlockedAt ?? 0,
 		}
 	})
-	// kolejność: najpierw zdobyte→niezdobyte, potem wg trudności (łatwe→trudne, przez
-	// rosnącą nagrodę 5/10/15); remisy zachowują kolejność z katalogu (stabilny sort)
+	// kolejność: najpierw zdobyte→niezdobyte, potem wg trudności (łatwe→legendarne, przez
+	// rosnącą nagrodę 5/10/15/25); remisy zachowują kolejność z katalogu (stabilny sort)
 	rows.sort((a, b) => {
 		if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1
 		return (

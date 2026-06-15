@@ -14,11 +14,13 @@ import { achievementProgress } from "./evaluate"
 // Zapis spełniający KAŻDE osiągnięcie: pełna kolekcja, maks etap, wszystkie działania
 // opanowane, duże liczniki zdarzeniowe.
 const maxCounters: AchievementCounters = {
-	perfectRounds: 5,
-	divCorrect: 100,
-	totalStars: 1000,
+	perfectRounds: 25,
+	divCorrect: 200,
+	totalStars: 1500,
 	rainbowEggsHatched: 3,
-	wishEggsBought: 2,
+	wishEggsBought: 5,
+	daysPlayed: 21,
+	lastPlayedDay: "2026-1-1",
 }
 const maxSave: SaveState = {
 	...INITIAL_SAVE,
@@ -34,6 +36,7 @@ const maxSave: SaveState = {
 	unlockedStage: STAGES.length - 1,
 	eggsEarned: 100,
 	totalRounds: 100,
+	iskierki: 1000,
 	achievementStats: maxCounters,
 }
 const maxCtx: AchievementCtx = { save: maxSave, counters: maxCounters }
@@ -43,8 +46,8 @@ const emptyCtx: AchievementCtx = {
 }
 
 describe("ACHIEVEMENTS catalog", () => {
-	test("jest dokładnie 25 osiągnięć", () => {
-		expect(ACHIEVEMENTS.length).toBe(25)
+	test("jest dokładnie 41 osiągnięć", () => {
+		expect(ACHIEVEMENTS.length).toBe(41)
 	})
 
 	test("id są unikalne", () => {
@@ -81,6 +84,22 @@ describe("ACHIEVEMENTS catalog", () => {
 			"wszystkie-bramy",
 			"straznik-mostu",
 			"bez-pomylki",
+			"mistrz-osemek",
+			"skarbnica-iskier",
+			"kolekcjoner-teczy",
+			"jajka-25",
+			"jajka-zyczen-5",
+			"dni-grania",
+			"komplet-rzadkich",
+			"komplet-legendarnych",
+			"straznicy-krain",
+			"wszyscy-straznicy-mostu",
+			"mistrz-dzielenia",
+			"perfekcyjne-25",
+			"rundy-100",
+			"gwiazdki-1500",
+			"dni-grania-14",
+			"dni-grania-21",
 		])
 	})
 

@@ -43,7 +43,7 @@ import {
 	isDivisionOnly,
 	rarityOf,
 } from "../monsters/catalog"
-import type { AchievementEntry, SaveState } from "./schema"
+import type { AchievementCounters, AchievementEntry, SaveState } from "./schema"
 import { INITIAL_SAVE, migrateSave, SAVE_KEYS, SAVE_VERSION } from "./schema"
 
 export type Screen =
@@ -123,6 +123,23 @@ interface GameState extends SaveState {
 	debugReset: () => void
 }
 
+// Lokalny znacznik dnia (YYYY-M-D) — baza dla osiągnięcia „w ilu różnych dni grano".
+function dayStamp(now: number): string {
+	const d = new Date(now)
+	return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+}
+
+// Podbija licznik dni gry przy PIERWSZEJ ukończonej rundzie danego dnia (kumulacyjnie,
+// nie streak — przerwa nie zeruje). Wołane wszędzie tam, gdzie rośnie totalRounds.
+function bumpDaysPlayed(
+	stats: AchievementCounters,
+	now: number,
+): AchievementCounters {
+	const today = dayStamp(now)
+	if (stats.lastPlayedDay === today) return stats
+	return { ...stats, daysPlayed: stats.daysPlayed + 1, lastPlayedDay: today }
+}
+
 // Pula losowania potworków zależna od trybu jajka: jajko z dzielenia widzi pełny
 // katalog (w tym legendarne tylko-dzielenie), jajko mnożeniowe/życzeń — bez nich.
 // Wymarzony potworek tylko-dzielenie nie ma priorytetu w trybie mnożenia (gdyby
@@ -185,6 +202,26 @@ function safeStorage(): Storage {
 		clear: () => {},
 		key: () => null,
 		length: 0,
+	}
+}
+
+// Domyślny merge zustand jest PŁYTKI: utrwalony `achievementStats` (cały obiekt)
+// nadpisałby świeży z INITIAL_SAVE, więc zapis bez nowego licznika (np. ostemplowany
+// nową SAVE_VERSION zanim doszła migracja — zdarza się przy dev-HMR) dałby `undefined`
+// → NaN na pasku osiągnięcia. Deep-merge tego jednego zagnieżdżonego rekordu backfilluje
+// braki z domyślnych liczników. Reszta pól (top-level) jak w domyślnym merge.
+export function mergePersisted(
+	persisted: unknown,
+	current: GameState,
+): GameState {
+	const p = (persisted ?? {}) as Partial<GameState>
+	return {
+		...current,
+		...p,
+		achievementStats: {
+			...current.achievementStats,
+			...(p.achievementStats ?? {}),
+		},
 	}
 }
 
@@ -418,12 +455,15 @@ export const useGame = create<GameState>()(
 						unlockedStage++
 						unlockedThisRound = true
 					}
-					const achievementStats = {
-						...state.achievementStats,
-						perfectRounds:
-							state.achievementStats.perfectRounds +
-							(round.stars === MAX_STARS_PER_ROUND ? 1 : 0),
-					}
+					const achievementStats = bumpDaysPlayed(
+						{
+							...state.achievementStats,
+							perfectRounds:
+								state.achievementStats.perfectRounds +
+								(round.stars === MAX_STARS_PER_ROUND ? 1 : 0),
+						},
+						Date.now(),
+					)
 					set({
 						unlockedStage,
 						totalRounds: state.totalRounds + 1,
@@ -670,6 +710,7 @@ export const useGame = create<GameState>()(
 					iskierki: o.iskierki,
 					unlockedStage: o.unlockedStage,
 					totalRounds: state.totalRounds + 1,
+					achievementStats: bumpDaysPlayed(state.achievementStats, Date.now()),
 				})
 				get().checkAchievements()
 			},
@@ -700,13 +741,16 @@ export const useGame = create<GameState>()(
 					totalRounds: state.totalRounds + 1,
 					// symulacja nie przechodzi przez pressConfirm/nextQuestion, więc liczniki
 					// zdarzeniowe ustawiamy tu wprost — by dało się przetestować z ekranu debug
-					achievementStats: {
-						...state.achievementStats,
-						totalStars: state.achievementStats.totalStars + totalStars,
-						perfectRounds:
-							state.achievementStats.perfectRounds +
-							(totalStars === MAX_STARS_PER_ROUND ? 1 : 0),
-					},
+					achievementStats: bumpDaysPlayed(
+						{
+							...state.achievementStats,
+							totalStars: state.achievementStats.totalStars + totalStars,
+							perfectRounds:
+								state.achievementStats.perfectRounds +
+								(totalStars === MAX_STARS_PER_ROUND ? 1 : 0),
+						},
+						Date.now(),
+					),
 					round: {
 						...round,
 						index: QUESTIONS_PER_ROUND,
@@ -766,6 +810,7 @@ export const useGame = create<GameState>()(
 				) as unknown as GameState,
 			migrate: (persisted, fromVersion) =>
 				migrateSave(persisted, fromVersion) as GameState,
+			merge: (persisted, current) => mergePersisted(persisted, current),
 		},
 	),
 )

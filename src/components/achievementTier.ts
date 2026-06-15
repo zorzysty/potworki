@@ -38,4 +38,14 @@ export const TIER_META: Record<
 		tint: "from-amber-100 via-yellow-100 to-orange-200",
 		accent: "text-amber-600",
 	},
+	// Najwyższy tier (25 iskierek) — premium fiolet/fuksja z anim-glow (jak karta
+	// legendarnego potworka), wizualnie ponad złotym „Trudne". Tylko endgame szczyty.
+	legendary: {
+		label: "Legendarne",
+		border: "anim-glow border-fuchsia-400",
+		badge: "bg-fuchsia-100 text-fuchsia-600",
+		bar: "from-fuchsia-400 via-violet-400 to-purple-500",
+		tint: "from-fuchsia-100 via-violet-100 to-purple-200",
+		accent: "text-fuchsia-600",
+	},
 }

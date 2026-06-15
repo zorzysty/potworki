@@ -8,7 +8,7 @@ import {
 	IDS_BY_RARITY,
 	rarityOf,
 } from "../monsters/catalog"
-import { useGame } from "./store"
+import { mergePersisted, useGame } from "./store"
 
 const game = () => useGame.getState()
 
@@ -666,5 +666,56 @@ describe("osiągnięcia", () => {
 		expect(Object.values(game().achievements).some((a) => !a.seen)).toBe(true)
 		game().markAchievementsSeen()
 		expect(Object.values(game().achievements).every((a) => a.seen)).toBe(true)
+	})
+
+	const playCleanRound = () => {
+		game().startRound()
+		for (let i = 0; i < 10; i++) {
+			answer(true)
+			game().nextQuestion()
+		}
+	}
+
+	test("daysPlayed: pierwsza runda dnia podbija licznik, druga tego samego dnia nie", () => {
+		playCleanRound()
+		expect(game().achievementStats.daysPlayed).toBe(1)
+		expect(game().achievementStats.lastPlayedDay).not.toBe("")
+		playCleanRound()
+		expect(game().achievementStats.daysPlayed).toBe(1) // ten sam dzień — bez zmian
+	})
+
+	test("'dni-grania' odblokowuje się przy 7. różnym dniu gry", () => {
+		// 6 dni zaliczonych w przeszłości (lastPlayedDay z innego dnia niż dziś)
+		useGame.setState({
+			achievementStats: {
+				...game().achievementStats,
+				daysPlayed: 6,
+				lastPlayedDay: "2000-1-1",
+			},
+		})
+		playCleanRound() // runda dziś = 7. różny dzień
+		expect(game().achievementStats.daysPlayed).toBe(7)
+		expect(game().achievements["dni-grania"]).toBeDefined()
+	})
+
+	test("merge backfilluje brakujące liczniki w achievementStats (anti-NaN)", () => {
+		const current = useGame.getState() // pełny achievementStats z INITIAL_SAVE
+		// zapis bez daysPlayed/lastPlayedDay (np. ostemplowany nową wersją w dev-HMR)
+		const persisted = {
+			iskierki: 5,
+			achievementStats: {
+				perfectRounds: 1,
+				divCorrect: 2,
+				totalStars: 3,
+				rainbowEggsHatched: 0,
+				wishEggsBought: 0,
+			},
+		}
+		const merged = mergePersisted(persisted, current)
+		expect(merged.iskierki).toBe(5) // top-level z utrwalonego
+		expect(merged.achievementStats.perfectRounds).toBe(1) // licznik utrwalony zachowany
+		expect(merged.achievementStats.daysPlayed).toBe(0) // brak → backfill z INITIAL, nie NaN
+		expect(merged.achievementStats.lastPlayedDay).toBe("")
+		expect(Number.isNaN(merged.achievementStats.daysPlayed)).toBe(false)
 	})
 })

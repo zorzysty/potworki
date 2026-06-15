@@ -12,11 +12,13 @@ import {
 import { evaluateAchievements } from "./evaluate"
 
 const maxCounters: AchievementCounters = {
-	perfectRounds: 5,
-	divCorrect: 100,
-	totalStars: 1000,
+	perfectRounds: 25,
+	divCorrect: 200,
+	totalStars: 1500,
 	rainbowEggsHatched: 3,
-	wishEggsBought: 2,
+	wishEggsBought: 5,
+	daysPlayed: 21,
+	lastPlayedDay: "2026-1-1",
 }
 const maxSave: SaveState = {
 	...INITIAL_SAVE,
@@ -32,6 +34,7 @@ const maxSave: SaveState = {
 	unlockedStage: STAGES.length - 1,
 	eggsEarned: 100,
 	totalRounds: 100,
+	iskierki: 1000,
 	achievementStats: maxCounters,
 }
 const maxCtx: AchievementCtx = { save: maxSave, counters: maxCounters }
@@ -52,12 +55,12 @@ describe("evaluateAchievements", () => {
 		expect(r.iskierkiReward).toBe(0)
 	})
 
-	test("maksymalny zapis → wszystkie 25 + pełna nagroda (245)", () => {
+	test("maksymalny zapis → wszystkie 41 + pełna nagroda (520)", () => {
 		const r = evaluateAchievements(maxCtx, new Set())
 		expect(r.newlyUnlocked.length).toBe(ACHIEVEMENTS.length)
 		expect(r.iskierkiReward).toBe(TOTAL_REWARD)
-		// 8×easy(5) + 10×medium(10) + 7×hard(15) = 245
-		expect(r.iskierkiReward).toBe(245)
+		// 7×easy(5) + 13×medium(10) + 17×hard(15) + 4×legendary(25) = 520
+		expect(r.iskierkiReward).toBe(520)
 	})
 
 	test("idempotencja: już zdobyte nie wpadają ponownie ani nie naliczają iskierek", () => {

@@ -13,7 +13,7 @@ describe("migrateSave", () => {
 		expect(migrateSave(x, SAVE_VERSION)).toEqual(x)
 	})
 
-	test("pełny łańcuch v1→v6: eggsEarned, celebratedStage, mode jajek, eggStarBank, osiągnięcia, dane zachowane", () => {
+	test("pełny łańcuch v1→v7: eggsEarned, celebratedStage, mode jajek, eggStarBank, osiągnięcia, dane zachowane", () => {
 		const v1 = {
 			ownedMonsters: {
 				0: { hatchedAt: 0 },
@@ -32,7 +32,7 @@ describe("migrateSave", () => {
 		expect(result.pendingEggs).toEqual([{ quality: "normal", mode: "mult" }])
 		// v4→v5: brak eggFragments w v1 → eggStarBank 0
 		expect(result.eggStarBank).toBe(0)
-		// v5→v6: osiągnięcia — pusty ledger + zerowe liczniki
+		// v5→v6 + v6→v7: osiągnięcia — pusty ledger + zerowe liczniki (z daysPlayed)
 		expect(result.achievements).toEqual({})
 		expect(result.achievementStats).toEqual({
 			perfectRounds: 0,
@@ -40,13 +40,15 @@ describe("migrateSave", () => {
 			totalStars: 0,
 			rainbowEggsHatched: 0,
 			wishEggsBought: 0,
+			daysPlayed: 0,
+			lastPlayedDay: "",
 		})
 		// dane oryginalne zachowane
 		expect(result.iskierki).toBe(7)
 		expect(result.unlockedStage).toBe(2)
 	})
 
-	test("v5→v6: dodaje pusty ledger osiągnięć i zerowe liczniki, reszta zachowana", () => {
+	test("v5→v7: dodaje pusty ledger osiągnięć i zerowe liczniki, reszta zachowana", () => {
 		const v5 = {
 			iskierki: 4,
 			totalRounds: 9,
@@ -60,9 +62,44 @@ describe("migrateSave", () => {
 			totalStars: 0,
 			rainbowEggsHatched: 0,
 			wishEggsBought: 0,
+			daysPlayed: 0,
+			lastPlayedDay: "",
 		})
 		expect(result.iskierki).toBe(4)
 		expect(result.totalRounds).toBe(9)
+	})
+
+	test("v6→v7: dopisuje daysPlayed + lastPlayedDay do istniejących liczników", () => {
+		const v6 = {
+			iskierki: 3,
+			achievementStats: {
+				perfectRounds: 2,
+				divCorrect: 4,
+				totalStars: 30,
+				rainbowEggsHatched: 1,
+				wishEggsBought: 0,
+			},
+		}
+		const result = migrateSave(v6, 6) as Record<string, unknown>
+		expect(result.achievementStats).toEqual({
+			perfectRounds: 2,
+			divCorrect: 4,
+			totalStars: 30,
+			rainbowEggsHatched: 1,
+			wishEggsBought: 0,
+			daysPlayed: 0,
+			lastPlayedDay: "",
+		})
+		expect(result.iskierki).toBe(3)
+	})
+
+	test("v6→v7: brak achievementStats nie wywraca migracji", () => {
+		const result = migrateSave({ iskierki: 9 }, 6) as Record<string, unknown>
+		expect(result.achievementStats).toEqual({
+			daysPlayed: 0,
+			lastPlayedDay: "",
+		})
+		expect(result.iskierki).toBe(9)
 	})
 
 	test("częściowy łańcuch v2→v5: celebratedStage + mode jajek + eggStarBank, eggsEarned nie", () => {

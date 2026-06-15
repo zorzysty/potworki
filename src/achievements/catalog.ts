@@ -4,15 +4,17 @@ import {
 	IDS_BY_RARITY,
 	MONSTER_COUNT,
 } from "../monsters/catalog"
+import { REGIONS } from "../monsters/world"
 import type { AchievementCounters, SaveState } from "../store/schema"
 
 // Trudność steruje nagrodą w iskierkach.
-export type Difficulty = "easy" | "medium" | "hard"
+export type Difficulty = "easy" | "medium" | "hard" | "legendary"
 
 export const REWARD_BY_DIFFICULTY: Record<Difficulty, number> = {
 	easy: 5,
 	medium: 10,
 	hard: 15,
+	legendary: 25,
 }
 
 // Próg „opanowanego" działania dla osiągnięć — wyżej niż UNLOCK_THRESHOLD (0.65),
@@ -76,11 +78,17 @@ function ownedDivisionOnly(save: SaveState): number {
 	return n
 }
 
+// Ilu strażników krain (po jednym na region) już posiadamy.
+function ownedGuardians(save: SaveState): number {
+	return REGIONS.filter((r) => r.guardianId in save.ownedMonsters).length
+}
+
 const MAX_STAGE = STAGES.length - 1
 
-// 25 osiągnięć. Tytuły/opisy są robocze (do dopracowania); id są stabilne.
+// 41 osiągnięć. Tytuły/opisy są robocze (do dopracowania); id są stabilne.
+// Trudność (easy/medium/hard/legendary → 5/10/15/25 iskierek) jest per-wpis w polu
+// `difficulty`; kolejność tablicy = tripwire persystencji, nie grupowanie wg trudności.
 export const ACHIEVEMENTS: readonly AchievementDef[] = [
-	// ===== ŁATWE (5 iskierek) =====
 	{
 		id: "pierwsza-runda",
 		title: "Pierwszy krok",
@@ -138,7 +146,6 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		progress: ({ save }) => ({ current: masteredCount(save), target: 5 }),
 	},
 
-	// ===== ŚREDNIE (10 iskierek) =====
 	{
 		id: "kolekcja-15",
 		title: "Kolekcjoner",
@@ -163,7 +170,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		title: "Komplet pospolitych",
 		description: "Zbierz wszystkie pospolite potworki.",
 		icon: "🤍",
-		difficulty: "medium",
+		difficulty: "hard",
 		progress: ({ save }) => ({
 			current: ownedOfRarity(save, "common"),
 			target: IDS_BY_RARITY.common.length,
@@ -232,7 +239,6 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		progress: ({ counters }) => ({ current: counters.totalStars, target: 500 }),
 	},
 
-	// ===== TRUDNE (15 iskierek) =====
 	{
 		id: "kolekcja-40",
 		title: "Wielki łowca",
@@ -246,7 +252,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		title: "Mistrz Kolekcji",
 		description: "Zbierz wszystkie potworki.",
 		icon: "🏆",
-		difficulty: "hard",
+		difficulty: "legendary",
 		progress: ({ save }) => ({
 			current: ownedCount(save),
 			target: MONSTER_COUNT,
@@ -268,7 +274,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		title: "Tęczowa niespodzianka",
 		description: "Wykluj tęczowe jajko.",
 		icon: "🌈",
-		difficulty: "hard",
+		difficulty: "medium",
 		progress: ({ counters }) => ({
 			current: counters.rainbowEggsHatched,
 			target: 1,
@@ -279,7 +285,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		title: "Mistrz tabliczki",
 		description: "Opanuj wszystkie działania.",
 		icon: "🧠",
-		difficulty: "hard",
+		difficulty: "legendary",
 		progress: ({ save }) => ({
 			current: masteredCount(save),
 			target: ALL_FACTS.length,
@@ -309,10 +315,169 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		title: "Bez pomyłki!",
 		description: "Zakończ rundę z kompletem gwiazdek (30/30).",
 		icon: "💯",
-		difficulty: "easy",
+		difficulty: "medium",
 		progress: ({ counters }) => ({
 			current: counters.perfectRounds,
 			target: 1,
 		}),
+	},
+
+	{
+		id: "mistrz-osemek",
+		title: "Mistrz ósemek",
+		description: "Opanuj całą tabliczkę z ósemką.",
+		icon: "8️⃣",
+		difficulty: "hard",
+		progress: ({ save }) => ({
+			current: masteredForFactor(save, 8),
+			target: factsForFactor(8),
+		}),
+	},
+	{
+		id: "skarbnica-iskier",
+		title: "Skarbnica iskier",
+		description: "Uzbieraj 100 iskierek.",
+		icon: "💰",
+		difficulty: "medium",
+		progress: ({ save }) => ({ current: save.iskierki, target: 100 }),
+	},
+	{
+		id: "kolekcjoner-teczy",
+		title: "Kolekcjoner tęczy",
+		description: "Wykluj 3 tęczowe jajka.",
+		icon: "🦄",
+		difficulty: "hard",
+		progress: ({ counters }) => ({
+			current: counters.rainbowEggsHatched,
+			target: 3,
+		}),
+	},
+	{
+		id: "jajka-25",
+		title: "Pełne gniazdo",
+		description: "Uzbieraj 25 jajek.",
+		icon: "🐥",
+		difficulty: "hard",
+		progress: ({ save }) => ({ current: save.eggsEarned, target: 25 }),
+	},
+	{
+		id: "jajka-zyczen-5",
+		title: "Mistrz życzeń",
+		description: "Wyczaruj 5 Jajek Życzeń.",
+		icon: "🌠",
+		difficulty: "hard",
+		progress: ({ counters }) => ({
+			current: counters.wishEggsBought,
+			target: 5,
+		}),
+	},
+	{
+		id: "dni-grania",
+		title: "Codzienny trening",
+		description: "Zagraj w 7 różnych dni.",
+		icon: "📅",
+		difficulty: "medium",
+		progress: ({ counters }) => ({ current: counters.daysPlayed, target: 7 }),
+	},
+	{
+		id: "komplet-rzadkich",
+		title: "Komplet rzadkich",
+		description: "Zbierz wszystkie rzadkie potworki.",
+		icon: "💎",
+		difficulty: "hard",
+		progress: ({ save }) => ({
+			current: ownedOfRarity(save, "rare"),
+			target: IDS_BY_RARITY.rare.length,
+		}),
+	},
+	{
+		id: "komplet-legendarnych",
+		title: "Komplet legendarnych",
+		description: "Zbierz wszystkie legendarne potworki.",
+		icon: "💛",
+		difficulty: "legendary",
+		progress: ({ save }) => ({
+			current: ownedOfRarity(save, "legendary"),
+			target: IDS_BY_RARITY.legendary.length,
+		}),
+	},
+	{
+		id: "straznicy-krain",
+		title: "Strażnicy Krain",
+		description: "Zdobądź strażnika każdej krainy.",
+		icon: "🛡️",
+		difficulty: "hard",
+		progress: ({ save }) => ({
+			current: ownedGuardians(save),
+			target: REGIONS.length,
+		}),
+	},
+	{
+		id: "wszyscy-straznicy-mostu",
+		title: "Strażnicy Mostu",
+		description: "Zdobądź wszystkie legendarne potworki z dzielenia.",
+		icon: "🐉",
+		difficulty: "hard",
+		progress: ({ save }) => ({
+			current: ownedDivisionOnly(save),
+			target: DIVISION_ONLY_IDS.size,
+		}),
+	},
+	{
+		id: "mistrz-dzielenia",
+		title: "Mistrz dzielenia",
+		description: "Odpowiedz poprawnie 200 razy w trybie dzielenia.",
+		icon: "🎓",
+		difficulty: "hard",
+		progress: ({ counters }) => ({
+			current: counters.divCorrect,
+			target: 200,
+		}),
+	},
+	{
+		id: "perfekcyjne-25",
+		title: "Perfekcjonista",
+		description: "Zakończ 25 rund z kompletem gwiazdek (30/30).",
+		icon: "🎯",
+		difficulty: "hard",
+		progress: ({ counters }) => ({
+			current: counters.perfectRounds,
+			target: 25,
+		}),
+	},
+	{
+		id: "rundy-100",
+		title: "Niezłomny",
+		description: "Zagraj 100 rund.",
+		icon: "💪",
+		difficulty: "hard",
+		progress: ({ save }) => ({ current: save.totalRounds, target: 100 }),
+	},
+	{
+		id: "gwiazdki-1500",
+		title: "Łowca konstelacji",
+		description: "Zbierz łącznie 1500 gwiazdek.",
+		icon: "🌟",
+		difficulty: "hard",
+		progress: ({ counters }) => ({
+			current: counters.totalStars,
+			target: 1500,
+		}),
+	},
+	{
+		id: "dni-grania-14",
+		title: "Codzienny trening II",
+		description: "Zagraj w 14 różnych dni.",
+		icon: "📆",
+		difficulty: "hard",
+		progress: ({ counters }) => ({ current: counters.daysPlayed, target: 14 }),
+	},
+	{
+		id: "dni-grania-21",
+		title: "Codzienny trening III",
+		description: "Zagraj w 21 różnych dni.",
+		icon: "🗓️",
+		difficulty: "legendary",
+		progress: ({ counters }) => ({ current: counters.daysPlayed, target: 21 }),
 	},
 ]

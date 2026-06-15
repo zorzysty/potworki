@@ -6,13 +6,14 @@ Deklaratywny katalog osiągnięć i ich ocena jako czyste funkcje — bez Reacta
 
 ## Ownership
 
-- `catalog.ts` — typy (`Difficulty`, `AchievementDef`, `AchievementCtx`), `REWARD_BY_DIFFICULTY` (5/10/15), `MASTERY_GOAL`, tablica `ACHIEVEMENTS` (25 sztuk) z czystą funkcją `progress(ctx)` każdego osiągnięcia
+- `catalog.ts` — typy (`Difficulty` = easy/medium/hard/legendary, `AchievementDef`, `AchievementCtx`), `REWARD_BY_DIFFICULTY` (5/10/15/25), `MASTERY_GOAL`, tablica `ACHIEVEMENTS` (41 sztuk) z czystą funkcją `progress(ctx)` każdego osiągnięcia. Helper `ownedGuardians` czyta `REGIONS` z `monsters/world` (strażnicy krain) — import czysto prezentacyjny, bez cyklu
 - `evaluate.ts` — `achievementProgress` (postęp pojedynczego: current/target/unlocked/ratio) i `evaluateAchievements(ctx, alreadyUnlocked)` (jedyne wejście store: nowo spełnione + suma iskierek)
 
 ## Local Contracts
 
 - **`id` to stabilny klucz persystowany** w `SaveState.achievements` — **NIGDY nie zmieniać ani nie usuwać po wydaniu** (zapis dziecka odwołuje się do `id`). `catalog.test.ts` zamraża listę `id` jako tripwire. `title`/`description`/`icon` to tekst dla gracza (po polsku) i **wolno je dowolnie edytować** — nie wpływają na zapis.
-- `progress(ctx)` jest **czysta**: `ctx = { save: SaveState, counters: AchievementCounters }`. Zdobyte ⇔ `current >= target`; `ratio = min(1, current/target)` napędza pasek. Większość warunków liczy się wprost z `ctx.save` (`facts`, `ownedMonsters`, `unlockedStage`, `eggsEarned`, `totalRounds`); pięć liczników zdarzeniowych (`perfectRounds`, `divCorrect`, `totalStars`, `rainbowEggsHatched`, `wishEggsBought`) żyje w `SaveState.achievementStats` (definicja typu w `store/schema.ts`) i jest podbijane przez akcje store — **patrz `src/store/CLAUDE.md`**.
+- `progress(ctx)` jest **czysta**: `ctx = { save: SaveState, counters: AchievementCounters }`. Zdobyte ⇔ `current >= target`; `ratio = min(1, current/target)` napędza pasek. Większość warunków liczy się wprost z `ctx.save` (`facts`, `ownedMonsters`, `unlockedStage`, `eggsEarned`, `totalRounds`, `iskierki`); liczniki zdarzeniowe w `SaveState.achievementStats` (definicja typu w `store/schema.ts`) są podbijane przez akcje store — **patrz `src/store/CLAUDE.md`**: `perfectRounds`, `divCorrect`, `totalStars`, `rainbowEggsHatched`, `wishEggsBought` oraz `daysPlayed` (w ilu RÓŻNYCH dni grano — kumulacyjne, nie streak; `lastPlayedDay` to bookkeeping store, nieczytany przez `progress`).
+- Osiągnięcia czasowe (`dni-grania`) i bazujące na bieżącym stanie nieodtwarzalnym wstecz nie są nadrabiane przez `reconcileAchievements` (licznik startuje od zera po migracji) — to świadome: dni liczą się dopiero od wdrożenia.
 - „Opanowane działanie" = `mastery >= MASTERY_GOAL` (0.8, wyżej niż `UNLOCK_THRESHOLD`). Uwaga: pełna „tabliczka ×n" (`mistrz-siodemek`) zawiera `n×7`/`n×8`, więc jest osiągalna dopiero przy wysokim postępie (czynniki 7/8 odblokowują się na ostatnich etapach) — to świadomie późny kamień milowy.
 - Nagrody i odblokowania nadaje store (`checkAchievements`/`reconcileAchievements`), nigdy ten moduł — tu tylko czysta ocena. Typy `AchievementCounters`/`AchievementEntry` należą do `store/schema.ts` (część `SaveState`), by uniknąć cyklu importów; ten moduł importuje je jako typy.
 
@@ -23,4 +24,4 @@ Deklaratywny katalog osiągnięć i ich ocena jako czyste funkcje — bez Reacta
 
 ## Verification
 
-`bun test src/achievements/catalog.test.ts src/achievements/evaluate.test.ts` — pokrywa: dokładnie 25 osiągnięć, unikalność i zamrożoną listę `id`, poprawną trudność/teksty, `progress` na czystym zapisie (nic zdobyte, target>0) i na maksymalnym (wszystkie zdobyte, ratio∈[0,1]); `evaluateAchievements` (pusto na czystym, 25 + 245 iskierek na maks, idempotencja względem `alreadyUnlocked`, częściowy postęp). Integracja ze store (liczniki, retroaktywne odblokowania) — w `src/store/store.test.ts`.
+`bun test src/achievements/catalog.test.ts src/achievements/evaluate.test.ts` — pokrywa: dokładnie 41 osiągnięć, unikalność i zamrożoną listę `id`, poprawną trudność/teksty, `progress` na czystym zapisie (nic zdobyte, target>0) i na maksymalnym (wszystkie zdobyte, ratio∈[0,1]); `evaluateAchievements` (pusto na czystym, 41 + 520 iskierek na maks, idempotencja względem `alreadyUnlocked`, częściowy postęp). Integracja ze store (liczniki, retroaktywne odblokowania) — w `src/store/store.test.ts`.

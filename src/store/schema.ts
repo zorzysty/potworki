@@ -2,7 +2,7 @@ import type { FactStats } from "../game/adaptive"
 import type { FactKey } from "../game/facts"
 import type { PendingEgg } from "../game/rewards"
 
-export const SAVE_VERSION = 6
+export const SAVE_VERSION = 7
 
 // Wpis ledgera osiągnięć. `seen` jak celebratedStage: false → badge „nowe!" na Home,
 // czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen).
@@ -19,6 +19,11 @@ export interface AchievementCounters {
 	totalStars: number
 	rainbowEggsHatched: number
 	wishEggsBought: number
+	// regularność: ile RÓŻNYCH dni dziecko grało (kumulacyjne, nie streak — przerwa
+	// nie zeruje). `lastPlayedDay` to lokalny znacznik dnia (YYYY-M-D) ostatniej rundy;
+	// store podbija `daysPlayed` tylko gdy nowa runda wypada w innym dniu niż ostatnia.
+	daysPlayed: number
+	lastPlayedDay: string
 }
 
 export interface SaveState {
@@ -56,6 +61,8 @@ export const INITIAL_SAVE: SaveState = {
 		totalStars: 0,
 		rainbowEggsHatched: 0,
 		wishEggsBought: 0,
+		daysPlayed: 0,
+		lastPlayedDay: "",
 	},
 }
 
@@ -121,6 +128,20 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 			wishEggsBought: 0,
 		},
 	}),
+	// v6→v7: licznik regularności (daysPlayed + lastPlayedDay). Dopisujemy do istniejących
+	// achievementStats — historii dni nie da się odtworzyć, więc startujemy od zera (dni
+	// liczą się dopiero od teraz; uczciwe, nie karze). reconcile go nie odblokuje wstecz.
+	6: (state) => {
+		const s = state as Record<string, unknown>
+		const stats =
+			s.achievementStats && typeof s.achievementStats === "object"
+				? (s.achievementStats as Record<string, unknown>)
+				: {}
+		return {
+			...s,
+			achievementStats: { ...stats, daysPlayed: 0, lastPlayedDay: "" },
+		}
+	},
 }
 
 export function migrateSave(state: unknown, fromVersion: number): unknown {
