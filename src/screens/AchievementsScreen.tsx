@@ -78,7 +78,7 @@ export function AchievementsScreen() {
 							key={def.id}
 							type="button"
 							onClick={() => setSelectedId(def.id)}
-							className={`touch-manipulation flex items-center gap-3 rounded-2xl border-4 bg-white/80 p-3 text-left shadow-sm transition-transform active:scale-95 ${tier.border} ${unlocked ? "" : "opacity-70"}`}
+							className={`touch-manipulation flex items-center gap-3 rounded-2xl border-4 bg-white/80 p-3 text-left shadow-sm transition-transform active:scale-95 ${unlocked ? tier.border : "border-slate-300"} ${unlocked ? "" : "opacity-70"}`}
 						>
 							<div
 								className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-3xl ${unlocked ? "" : "grayscale"}`}
@@ -104,7 +104,7 @@ export function AchievementsScreen() {
 								<div className="flex items-center gap-2">
 									<div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-200">
 										<div
-											className={`h-full rounded-full bg-gradient-to-r transition-[width] ${tier.bar}`}
+											className={`h-full rounded-full transition-[width] ${unlocked ? `bg-gradient-to-r ${tier.bar}` : "bg-slate-300"}`}
 											style={{ width: `${progress.ratio * 100}%` }}
 										/>
 									</div>
