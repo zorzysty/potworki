@@ -34,14 +34,17 @@
 
 - **Priority**: P3 (feature — cosmetic sink, completes the sklepik arc)
 - **Effort**: S
-- **Risk**: LOW (additive catalog entries + one render seam; no new save
-  version, no new migration)
+- **Risk**: LOW (additive catalog entries + a one-line `CosmeticSlot` union
+  extension + one render seam; no new save version, no new migration)
 - **Depends on**: `plans/013-sklepik-kosmetyki.md` — **MUST be DONE first.**
   This plan reuses 013's cosmetics save shape (`owned` + per-monster
-  `equipped` slot map, including the reserved `"frame"` slot), its purchase
-  flow in the sklepik, and its equip-UI section in the owned-monster modal.
-  Frames are "just" more catalog items plus one renderer. Executing 014
-  before 013 means re-inventing all of that — do not.
+  `equipped` slot map typed `Partial<Record<CosmeticSlot, CosmeticId>>`),
+  its purchase flow in the sklepik, and its equip-UI (wardrobe) section in
+  the owned-monster modal. Note: 013 lands `CosmeticSlot = "hat" | "aura"`
+  and only *reserves* `"frame"` in a comment — **extending the union is THIS
+  plan's Step 1**, not something 013 ships. Frames are "just" more catalog
+  items plus one union member plus one renderer. Executing 014 before 013
+  means re-inventing all of that — do not.
 - **Category**: feature (kosmetyka / ekonomia iskierek)
 - **Planned at**: commit `2092dfc`, 2026-07-12
 
@@ -99,11 +102,18 @@ Verified at `2092dfc` (branch `feat/012-wioska-budowanie`, 217 tests green,
   (234). Prefer reusing these; at most ONE new keyframe if genuinely needed.
 - **From plan 013 (verify against its landed code, symbol names may
   differ)**: a cosmetics catalog module in `src/game/` with stable-id
-  entries carrying a `slot` field (the `"frame"` slot is reserved for this
-  plan), persisted `cosmetics.owned` + per-monster `equipped` slot map in
-  `SaveState` (already migrated by 013 — **this plan adds NO save version**),
-  a thin store equip action, the sklepik purchase UI (with its level-gating
-  mechanism), and an equip section in the owned-monster card modal.
+  entries carrying `slot` and `tier: 1 | 2 | 3` fields (tier = minimum
+  Sklepik level; there is NO "ungated" value), where
+  `CosmeticSlot = "hat" | "aura"` and `"frame"` exists only as a reserving
+  comment — this plan adds the third union member; persisted
+  `cosmetics.owned` + per-monster `equipped` slot map
+  (`Partial<Record<CosmeticSlot, CosmeticId>>`) in `SaveState` (already
+  migrated by 013 — **this plan adds NO save version**; a `Partial` record
+  accepts the new slot key with zero schema change), a thin store equip
+  action, the sklepik purchase UI (with tier gating), and a wardrobe equip
+  section in the owned-monster card modal. 013's catalog tests assert an
+  exact **item count (12)** and a **launch-total range** — both break when
+  frames are appended and are updated in Step 2.
 - Root conventions: bun, Biome via `bun run check` (mandatory closeout),
   Polish-only UI, touch targets ≥ 64px, `click` activation, `monsters/`
   frozen.
@@ -150,26 +160,44 @@ Verified at `2092dfc` (branch `feat/012-wioska-budowanie`, 217 tests green,
 
 ## Steps
 
-### Step 1: Append frame entries to the cosmetics catalog
+### Step 1: Extend `CosmeticSlot` and append frame entries to the catalog
 
-In 013's catalog module, append 5 entries with slot `"frame"` (ids stable,
+**1a — the union (this plan's one type change).** In 013's cosmetics module
+extend the slot union by one member:
+
+```ts
+export type CosmeticSlot = "hat" | "aura" | "frame"
+```
+
+013 only reserves `"frame"` in a comment — remove/adjust that comment. Then
+chase the typecheck fallout: any exhaustive `switch`/`Record<CosmeticSlot, …>`
+over slots (013's wardrobe section iterates slots) gains a frame arm. The
+persisted `equipped` map is `Partial<Record<CosmeticSlot, CosmeticId>>`, so
+the new key needs **no schema or migration change** — that is the whole
+point of the reserved-slot design.
+
+**1b — the entries.** Append 5 entries with slot `"frame"` (ids stable,
 never reused; names PROPOZYCJE — mark the bank
 `// PROPOZYCJE do dopracowania`):
 
-| id (stable)       | PROPOZYCJA name       | cost | gating (013's mechanism) | look (cardClasses intent) |
-|-------------------|-----------------------|------|--------------------------|---------------------------|
-| `rama-kwiatki`    | „Ramka w Kwiatki"     | 15   | none                     | `border-rose-300` + 🌸 corner accents |
-| `rama-serduszka`  | „Ramka z Serduszek"   | 20   | none                     | `border-pink-400` + 💖 corner accents |
-| `rama-zlota`      | „Złota Rama"          | 25   | none                     | `anim-glow border-amber-400` (the legendary treatment for anyone) |
-| `rama-gwiezdna`   | „Gwiezdna Rama"       | 30   | sklepik poziom 2         | `border-indigo-400` + ✨ corner accents |
-| `rama-teczowa`    | „Tęczowa Rama"        | 50   | sklepik poziom 3         | rainbow gradient edge (`anim-rainbow`) |
+| id (stable)       | PROPOZYCJA name       | cost | tier (min. poziom Sklepiku) | look (cardClasses intent) |
+|-------------------|-----------------------|------|-----------------------------|---------------------------|
+| `rama-kwiatki`    | „Ramka w Kwiatki"     | 15   | 1                           | `border-rose-300` + 🌸 corner accents |
+| `rama-serduszka`  | „Ramka z Serduszek"   | 20   | 1                           | `border-pink-400` + 💖 corner accents |
+| `rama-zlota`      | „Złota Rama"          | 25   | 1                           | `anim-glow border-amber-400` (the legendary treatment for anyone) |
+| `rama-gwiezdna`   | „Gwiezdna Rama"       | 30   | 2                           | `border-indigo-400` + ✨ corner accents |
+| `rama-teczowa`    | „Tęczowa Rama"        | 50   | 3                           | rainbow gradient edge (`anim-rainbow`) |
+
+(013's `CosmeticDef` requires `tier: 1 | 2 | 3` — there is no "ungated"
+value; tier 1 = buyable as soon as the Sklepik stands.)
 
 Frame entries carry whatever fields 013's `CosmeticDef` defines plus (if 013
 didn't already provide them) two frame-specific fields:
 - `cardClasses: string` — substitutes for `CARD_THEME[rarity].card` on the
   modal container;
-- `cornerEmoji?: string` — optional emoji rendered at the card's top-left /
-  bottom-right corners by the modal (cheap charm, no SVG).
+- `cornerEmoji?: string` — optional emoji rendered at the TOP corners of the
+  card's art-window zone (cheap charm, no SVG; see Step 3 for the anchoring
+  rule — never floating over scrollable text).
 
 For `rama-teczowa`: Tailwind cannot gradient a `border-color` — implement as
 `border-transparent` + a gradient wrapper (padding-box trick) or reuse the
@@ -178,15 +206,22 @@ but NO new dependency and at most one new keyframe.
 
 **Verify**: `bun run typecheck` → exit 0; catalog tests still green.
 
-### Step 2: Extend catalog tests
+### Step 2: Update and extend catalog tests
 
-In 013's catalog test file add (Polish test names, house pattern):
-- exactly 5 entries with slot `"frame"`, ids unique and present in the
-  frozen-id tripwire (append them — never reorder);
-- every frame: cost within `[10, 60]`, non-empty `cardClasses`;
-- gated frames reference an existing gating tier of 013's mechanism.
+Appending 5 frames **breaks two of 013's landed assertions by design** —
+update them consciously (do not weaken, restate):
+- the exact item-count assertion: **12 → 17**;
+- the launch-total range test: **[300, 450] → [430, 580]** (013 post-fix
+  catalog totals 346✨; the frames above add 15+20+25+30+50 = **140✨** →
+  **486✨** grand total, inside the new range).
 
-**Verify**: `bun test <catalog test file>` → all pass.
+Then add frame-specific assertions (Polish test names, house pattern):
+- exactly 5 entries with slot `"frame"`, ids unique across the whole catalog;
+- every frame: cost within `[10, 60]`, non-empty `cardClasses`,
+  `tier ∈ {1, 2, 3}`.
+
+**Verify**: `bun test <catalog test file>` → all pass (with the two updated
+assertions, no other test touched).
 
 ### Step 3: Render seam in `CollectionScreen.tsx`
 
@@ -196,23 +231,36 @@ In 013's catalog test file add (Polish test names, house pattern):
    `cardClasses` for `cardTheme.card`; otherwise keep `cardTheme.card`
    exactly as today (zero visual change without a frame — regression-free
    default).
-3. If the frame has `cornerEmoji`, render two small absolutely-positioned
-   spans at opposite card corners (`pointer-events-none`, outside the
-   scrollable content flow so they don't push layout).
+3. If the frame has `cornerEmoji`, render two small `pointer-events-none`
+   spans anchored to the TOP corners of the **art-window zone** (the card's
+   first section, inside its own `relative` wrapper) — NOT absolutely
+   positioned against the modal container. The container is the scroll
+   element (`overflow-y-auto`), so container-anchored corners would float
+   over the lore/description text as it scrolls beneath them; zone-anchored
+   corners scroll away with the art like normal content and never cover
+   text.
 4. The `RARITY_META.badge` ribbon and grid tiles remain untouched.
 
 **Verify**: `bun run typecheck` → exit 0; visually (Step 6) a card with no
 frame is pixel-identical to today.
 
-### Step 4: Frame picker in the equip section
+### Step 4: Frame picker inside 013's wardrobe section
 
-In the owned-monster modal, inside/beside 013's equip section, add a
-„Ramka" row (PROPOZYCJA label): horizontal chips — „Bez ramki" (default,
-restores rarity look) + one chip per OWNED frame; tapping equips via 013's
-equip action with slot `"frame"` (and `null` to unequip). Chips ≥ 64px touch
-targets, `click` activation, selected chip visibly pressed. Frames not yet
-owned do NOT appear here (they're discovered and bought in the sklepik —
-same rule as 013's other cosmetics).
+**Composition is governed** — see `plans/README.md`, sekcja
+„Shared-surface governance": the owned-monster modal keeps the fixed order
+*przycisk przyjaciela → sekcja „Ubierz 🎩" (ZWIJANA) → sekcja „Wyprawa 🎒"*.
+The frame picker is a row INSIDE 013's collapsible „Ubierz 🎩" section (a
+sibling of the hat/aura rows), never a new top-level section.
+
+Add a „Ramka" row (PROPOZYCJA label): horizontal chips — „Bez ramki"
+(default, restores rarity look) + one chip per OWNED frame; tapping equips
+via 013's equip action with slot `"frame"` (and `null` to unequip). Chips
+≥ 64px touch targets, `click` activation, selected chip visibly pressed
+(not color-only — add a ✓ or ring). Every chip carries the frame name as
+visible text; if a chip renders as a preview swatch only, it MUST get an
+`aria-label` with the frame name (biome's a11y rules are off — nothing else
+will catch it). Frames not yet owned do NOT appear here (they're discovered
+and bought in the sklepik — same rule as 013's other cosmetics).
 
 **Verify**: `bun run typecheck`; behavior via the store test if 013's equip
 action lacks coverage for the `"frame"` slot — add one characterization case
@@ -243,8 +291,9 @@ clearly shows „Legendarny".
 
 ## Test plan
 
-- Catalog: 5 frames, frozen ids, cost range, non-empty classes, valid
-  gating (Step 2).
+- Catalog: 5 frames, unique stable ids, cost range, non-empty classes,
+  `tier ∈ {1,2,3}`; count assertion 12→17 and total-range [300,450]→[430,580]
+  consciously updated (Step 2).
 - Store: `"frame"`-slot equip/unequip persistence per monster (Step 4, only
   if 013 didn't already cover the slot generically).
 - Visual: the six screenshots from Step 6; no-frame default pixel-identical.
@@ -256,7 +305,9 @@ clearly shows „Legendarny".
 Machine-checkable. ALL must hold:
 
 - [ ] `bun run typecheck`, `bun test`, `bun run build`, `bun run check` exit 0
-- [ ] Catalog contains exactly 5 slot-`"frame"` entries; tripwire updated
+- [ ] `CosmeticSlot` union includes `"frame"` (grep 013's cosmetics module)
+- [ ] Catalog contains exactly 5 slot-`"frame"` entries; count assertion
+      updated to 17 and total-range test to [430, 580] (Step 2)
 - [ ] `grep -n "cardTheme.card" src/screens/CollectionScreen.tsx` shows the
       default path still present (fallback intact)
 - [ ] `git diff <013-base>..HEAD -- src/store/schema.ts` → empty (no new
@@ -270,9 +321,11 @@ Machine-checkable. ALL must hold:
 
 Stop and report back (do not improvise) if:
 
-- Plan 013 is not DONE, or its landed save shape has no per-monster
-  `equipped` slot map / no reserved `"frame"` slot — report the actual shape
-  instead of inventing a parallel one.
+- Plan 013 is not DONE, or its landed per-monster `equipped` map is NOT the
+  slot-keyed shape `Partial<Record<CosmeticSlot, CosmeticId>>` (e.g. it
+  landed as a flat list or a single-cosmetic field) — report the actual
+  shape instead of inventing a parallel one. (The union missing `"frame"`
+  is NOT a stop — extending it is this plan's Step 1a.)
 - Implementing frames seems to require a `SAVE_VERSION` bump or a new
   migration — it must not; the design intent is "more catalog items only".
 - The frame render would cover or recolor the `RARITY_META.badge` ribbon, or
@@ -293,6 +346,7 @@ Stop and report back (do not improvise) if:
   together (the wallet is shared with wish eggs and village building; see
   the debug pacing panel from plan 012).
 - A reviewer should confirm: no-frame cards render exactly as before, ids
-  are append-only in the tripwire, and no schema/migration diff exists.
+  are new and never reuse a retired id, the count/total test updates match
+  Step 2's numbers exactly, and no schema/migration diff exists.
 - After landing, hand the user the PROPOZYCJE list (5 frame names + „Bez
   ramki" + „Ramka" label) for a wordsmithing pass; renames are free.

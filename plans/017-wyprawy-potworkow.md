@@ -13,7 +13,11 @@
 > treat it as a STOP condition. **Coordination**: plans 013/015/017 all add
 > `SaveState` fields — the migration number below is written as "next
 > available"; take the actual next `SAVE_VERSION` at implementation time and
-> update the shape-lock accordingly (order of landing decides).
+> update the shape-lock accordingly (order of landing decides). The same
+> applies to ACHIEVEMENTS: plans 013 (changes two targets/fixtures) and 015
+> Phase C (+2 ids) touch the tripwire and totals too — every achievement
+> count in this plan is RELATIVE (+2 ids / +15✨); compute absolutes against
+> whatever is on the branch when you land.
 >
 > **DOX (this repo)**: Binding `CLAUDE.md` hierarchy. Read the chain before
 > editing: root `CLAUDE.md`, `src/CLAUDE.md`, `src/game/CLAUDE.md`,
@@ -79,10 +83,12 @@ Catalog (all values PROPOZYCJE for names; numbers are the tuning surface):
 
 - Rates rise with commitment (longer journey = better ✨/runda) — teaches
   delayed gratification, the same lesson as the Zamek flywheel.
-- Against the wage (typical 2–4 ✨/round): an active expedition boosts income
-  by ~35–70%, and the one-at-a-time rule plus manual re-send friction keeps
-  the long-run average well below double. **Cut lever if too generous: halve
-  rewards** (one file, see Maintenance notes).
+- Against the wage: the real guard is the **test-locked invariant ≤ 2.5
+  ✨/runda for every type** (Step 2) — an active expedition can at most add
+  2.5 ✨ to each completed round, i.e. never more than the wage itself adds
+  at its typical 2–4 ✨. The one-at-a-time rule plus manual re-send friction
+  pushes the long-run average well below that ceiling. **Cut lever if too
+  generous: halve rewards** (one file, see Maintenance notes).
 - **Trop** (optional flavor, in scope): the expedition brings back a clue
   about a random UNOWNED monster — the summary offers "Ustaw jako
   wymarzonego?" wiring straight into the existing `dreamMonsterId` mechanic.
@@ -95,9 +101,13 @@ Catalog (all values PROPOZYCJE for names; numbers are the tuning surface):
   the Home screen and cheers during rounds; sending him away would silently
   break the game's warmest feature. UI shows a gentle line instead
   (PROPOZYCJA: „Przyjaciel woli zostać z Tobą 💛").
-- **The traveler is visibly absent from the village** (filtered out of the
-  wanderers) — absence makes the mechanic feel real; an optional 🏕️ marker at
-  the scene edge shows where they went.
+- **The traveler is visibly absent from the village, and the absence is
+  EXPLAINED in place.** Filtering the monster out of the wanderers is only
+  half the mechanic — a beloved monster silently vanishing reads as loss or
+  a bug to a child. A **required** 🏕️ marker (tent + the traveler's
+  mini-silhouette) stands at a fixed meadow-edge spot while someone is away;
+  tapping it shows the expedition progress (x/y rund). The child always
+  knows WHERE her monster is.
 - **Recall (`Zawróć`) is free and instant** — no reward, no cost, no guilt
   copy. Chosen over "waits forever only" because the child may want that
   monster back as companion, and misclicks must be reversible.
@@ -133,10 +143,12 @@ pass / 0 fail):
 - `src/screens/RoundSummary.tsx` — wage chip under the star meter (pattern
   for the return celebration; `EggReward` animation contract must not be
   disturbed).
-- `src/achievements/catalog.ts` — **44** achievements, tripwire list in
-  `catalog.test.ts` ends `"wielki-budowniczy"`; totals asserted in
-  `evaluate.test.ts` (44 + 550 ✨). `AchievementCounters`
-  (`store/schema.ts`) is where event counters live (pattern: `wishEggsBought`).
+- `src/achievements/catalog.ts` — **44** achievements AT `2092dfc`, tripwire
+  list in `catalog.test.ts` ends `"wielki-budowniczy"`; totals asserted in
+  `evaluate.test.ts` (44 + 550 ✨ at this anchor — plans 015-C/013 change
+  these before this plan lands; treat all achievement numbers as relative).
+  `AchievementCounters` (`store/schema.ts`) is where event counters live
+  (pattern: `wishEggsBought`).
 - Home shows dynamic counts (`ACHIEVEMENTS.length`) — no hardcoded numbers.
 
 ## Commands you will need
@@ -157,14 +169,15 @@ pass / 0 fail):
 - `src/game/expeditions.test.ts` (create)
 - `src/store/schema.ts` — `SaveState.expedition`, `SAVE_VERSION` bump,
   migration; `AchievementCounters.expeditionsCompleted`
-- `src/store/schema.test.ts` — migration test + shape-lock (16 keys)
+- `src/store/schema.test.ts` — migration test + shape-lock (+1 key:
+  `"expedition"`; absolute count depends on landing order — see Step 3)
 - `src/store/store.ts` — `sendExpedition`/`recallExpedition`, resolution in
   the finalize branch, `expeditionReturn` on ephemeral `RoundState`,
   counter bump, debug-path consistency
 - `src/store/store.test.ts` — characterization tests
 - `src/screens/CollectionScreen.tsx` — send UI in the owned-monster modal
-- `src/screens/VillageScreen.tsx` — traveler filtered from wanderers (+
-  optional 🏕️ marker)
+- `src/screens/VillageScreen.tsx` — traveler filtered from wanderers +
+  REQUIRED 🏕️ marker (tent + mini-silhouette, tap → progress)
 - `src/screens/HomeScreen.tsx` — status chip (progress x/y rund)
 - `src/screens/RoundSummary.tsx` — return celebration + trop CTA
 - `src/achievements/catalog.ts` + tests — 2 new achievements (append-only)
@@ -296,10 +309,13 @@ N: (state) => {
 },
 ```
 
-- `schema.test.ts`: shape-lock → **16 keys** (add `"expedition"` to the
-  sorted list); migration test (adds `expedition: null` +
-  `expeditionsCompleted: 0`, preserves other fields, tolerates missing
-  `achievementStats`); full-chain test ends with both present.
+- `schema.test.ts`: shape-lock → **+1 key** (add `"expedition"` to the
+  sorted list; the absolute count depends on which save-touching plans
+  landed first — 15 keys at `2092dfc`, 16 after plan 013's `cosmetics` —
+  so compute it from the list you actually edit, don't copy a number);
+  migration test (adds `expedition: null` + `expeditionsCompleted: 0`,
+  preserves other fields, tolerates missing `achievementStats`); full-chain
+  test ends with both present.
 - `mergePersisted` (`store.ts`) already backfills `achievementStats` deep —
   the new counter is covered automatically; `expedition` is top-level
   nullable, no backfill needed. Confirm, don't duplicate.
@@ -362,10 +378,17 @@ Follow file conventions (`game()`, `answer()`, `playCleanRound` pattern,
 - `sendExpedition`: sets state with `roundsAtStart === totalRounds`; no-op
   when one is active; no-op for `companionId`; no-op for unowned id.
 - `recallExpedition`: clears; no iskierki change.
-- resolution: send `zwiad` (3 rundy), play 2 clean rounds → still active,
-  wallet grew only by wages; 3rd round → `round.expeditionReturn` set with
-  reward, `expedition === null`, iskierki = wages + 4,
-  `expeditionsCompleted === 1`.
+- resolution: send `zwiad` (3 rundy), play 2 clean rounds → still active;
+  3rd round → `round.expeditionReturn` set with reward, `expedition ===
+  null`, `expeditionsCompleted === 1`. **Wallet assertions MUST carry a
+  `rainbowBonus` term**: the first clean round closes egg #1 at score 30,
+  which rolls rainbow ~40% of the time (+1 ✨) — asserting „wages only"
+  verbatim is a ~40%-flaky test. Copy the exact pattern from the existing
+  wage tests in `store.test.ts` (the happy-path test asserts
+  `4 + (pendingEggs[0]?.quality === "rainbow" ? 1 : 0)`, and the
+  „żołd…zamek dodaje poziom" test computes a `rainbow3` term for the
+  mid-round egg): here, wallet after round 3 =
+  `sumOfWages + 4 + rainbowBonus`.
 - cap: wallet 998 + return → 999.
 - recall then resend: works (no cooldown).
 - `debugFinishRound` resolves the same way.
@@ -377,7 +400,13 @@ Follow file conventions (`game()`, `answer()`, `playCleanRound` pattern,
 
 #### Step 6: Send UI in `CollectionScreen` owned-monster modal
 
-Below the "PRZYJACIEL" section (same `BigButton`+`HelpTip` idiom):
+Below the "PRZYJACIEL" section (same `BigButton`+`HelpTip` idiom).
+**Shared-surface governance** (binding — `plans/README.md`, sekcja
+„Shared-surface governance"): this is a COLLAPSIBLE „Wyprawa 🎒" section,
+collapsed by default, placed AFTER the wardrobe section if plan 013/014
+landed first (fixed order: przyjaciel → Ubierz 🎩 → Wyprawa 🎒) — the card
+modal is already long and scrollable; new sections must not unfold into it
+by default.
 
 - No expedition active AND monster ≠ companion → button
   „Wyślij na wyprawę 🎒" → expands an inline 3-option list (name, „x rund",
@@ -397,14 +426,26 @@ Below the "PRZYJACIEL" section (same `BigButton`+`HelpTip` idiom):
 - `VillageScreen`: filter the traveler out of the wanderer pool (one line
   before the `shown` slice at ~line 121: `sorted.filter(id => id !==
   expedition?.monsterId)`); residents derive from `shown`, so no other
-  change. Optional (S): a 🏕️ marker with a tiny signpost at a fixed meadow
-  edge spot while someone is away.
-- `HomeScreen`: small status chip (near the Gniazdo row):
+  change. **Required (not optional)**: a 🏕️ marker at a fixed meadow-edge
+  spot while someone is away — tent emoji + the traveler's mini-silhouette
+  (`MonsterSvg` size ~36, `monster-silhouette` class, the same convention
+  as unowned guardians on the map). The marker is a button (≥64 px target,
+  `aria-label`): tap → small bubble/chip with progress „x/y rund" (reuse
+  the SpeechBubble idiom). Without this, the monster's absence reads as
+  loss or a bug to the child — the marker answers „gdzie on jest?" inside
+  the very scene where she'd look for it.
+- `HomeScreen`: small status chip **BELOW the Gniazdo row**:
   „🎒 {imię}: x/y rund" with a thin progress bar; tap → `goTo("collection")`.
   Hidden when no expedition. Progress from
   `expeditionProgress(expedition, totalRounds)` — updates after every round.
+  **Shared-surface governance** (binding — see `plans/README.md`, sekcja
+  „Shared-surface governance"): Home follows the „maks jedna proaktywna
+  karta" rule — this chip is passive status, sits below the nest, and
+  YIELDS to plan 016's guardian-invitation card when both would show;
+  „Graj!" never moves down because of it.
 
-**Verify**: typecheck + visual: traveler absent from village, chip counts up
+**Verify**: typecheck + visual: traveler absent from village AND the 🏕️
+marker present (tap → progress bubble), chip counts up
 after a round.
 
 #### Step 8: Return celebration in `RoundSummary`
@@ -414,11 +455,15 @@ contract): an `anim-pop` card shown when `round.expeditionReturn`:
 
 - `MonsterSvg` of the returnee + „Wrócił(a) z wyprawy! +{reward} ✨"
   (PROPOZYCJA).
-- If `tropMonsterId !== null`: silhouette of the found monster + button
-  „Ustaw jako wymarzonego! ✨" → `setDreamMonster(tropMonsterId)` (existing
-  action; button hides if a dream is already set — do not silently
-  overwrite the child's chosen dream; show the silhouette + name teaser
-  only).
+- If `tropMonsterId !== null`: **silhouette + rarity badge ONLY — never the
+  name.** `CollectionScreen` masks every unowned monster as `???` until
+  hatched; leaking the name here would break the game-wide mystery
+  convention and spoil the hatch reveal. Card copy (PROPOZYCJA): „Ktoś
+  tajemniczy zostawił ślad!" + `monster-silhouette` art + `RARITY_META`
+  badge. Button „Ustaw jako wymarzonego! ✨" → `setDreamMonster(tropMonsterId)`
+  (existing action) — shown ONLY when the dream slot is empty (maintainer
+  decision: never overwrite the child's chosen dream); with a dream already
+  set, the card shows just the mysterious silhouette, no CTA.
 - Keep it a compact card, not a full-screen reveal — the payoff hierarchy
   (hatch > gate > BuildReveal > chips) reserves full-screen for rarer events.
 
@@ -437,10 +482,13 @@ Append (never reorder) with new stable ids, `progress` reading the counter:
 | `obiezyswiat`        | „Obieżyświat"      | medium (10)| `expeditionsCompleted ≥ 10` |
 
 Update the frozen-id tripwire in `catalog.test.ts` (append 2 ids), the count
-and totals in both test files (44→**46**, 550→**565**), and the max-save
-fixtures (`expeditionsCompleted: 10`). `reconcileAchievements` needs no
-change (counter starts at 0 post-migration — dni-grania precedent: the
-mechanic counts from deployment, deliberately).
+and totals in both test files (**+2 ids, +15✨** — compute the absolutes
+from whatever is on the branch when you land: 44/550 at `2092dfc`, but
+plan 015 Phase C adds +2 ids/+15✨ and plan 013 changes two building-target
+fixtures, and the recommended order lands both BEFORE this plan), and the
+max-save fixtures (`expeditionsCompleted: 10`). `reconcileAchievements`
+needs no change (counter starts at 0 post-migration — dni-grania precedent:
+the mechanic counts from deployment, deliberately).
 
 **Verify**: `bun test src/achievements` → all pass.
 
@@ -464,20 +512,22 @@ DOX pass:
 - `src/CLAUDE.md` — CollectionScreen modal (sekcja wyprawy pod przyjacielem),
   VillageScreen (podróżnik nieobecny wśród wędrowców), Home (chip postępu),
   RoundSummary (karta powrotu + trop→wymarzony, nie nadpisuje ustawionego).
-- `src/achievements/CLAUDE.md` — 46 osiągnięć; nowy licznik.
+- `src/achievements/CLAUDE.md` — nowa liczba osiągnięć (policz przy
+  lądowaniu); nowy licznik.
 - `plans/README.md` — status row 017.
 
 ## Test plan
 
 - `src/game/expeditions.test.ts` — catalog + economy invariants + progress
   boundary + resolve (trop never owned, null at full collection) (Step 2).
-- `src/store/schema.test.ts` — migration, 16-key shape-lock (Step 3).
+- `src/store/schema.test.ts` — migration, shape-lock +1 key (Step 3).
 - `src/store/store.test.ts` — send/recall guards (companion!, one-at-a-time),
   resolution timing (round 2 vs 3), reward+cap, counter, debugFinishRound
   parity (Step 5).
-- `src/achievements/*.test.ts` — 46 ids, 565 total (Step 9).
+- `src/achievements/*.test.ts` — +2 ids, +15✨ (absolutes at landing; Step 9).
 - Manual visual: send from collection → chip on Home counts → traveler gone
-  from village → return card in summary → trop sets dream (only when unset).
+  from village with the 🏕️ marker in its place (tap → progress) → return
+  card in summary → trop sets dream (only when unset, no name shown).
 
 ## Done criteria
 
@@ -485,7 +535,7 @@ Machine-checkable. ALL must hold:
 
 - [ ] `bun run typecheck`, `bun run build`, `bun run check` all exit 0
 - [ ] `bun test` exits 0; **zero previously-passing tests modified except**
-      the explicitly listed ones (shape-lock 16 keys, achievements
+      the explicitly listed ones (shape-lock +1 key, achievements
       tripwire/totals/fixtures)
 - [ ] `src/game/expeditions.ts` exists;
       `grep -n "Math.random\|Date.now" src/game/expeditions.ts` → no matches
@@ -494,7 +544,8 @@ Machine-checkable. ALL must hold:
 - [ ] `SAVE_VERSION` bumped by exactly 1 with a matching migration entry
 - [ ] `grep -c "sendExpedition\|recallExpedition" src/store/store.ts` ≥ 2
 - [ ] `git diff -- src/monsters/` → empty
-- [ ] Visual pass reported: send → absence → Home chip → return card → trop
+- [ ] Visual pass reported: send → absence + 🏕️ marker → Home chip →
+      return card (bez imienia znaleziska) → trop
 - [ ] String banks marked `// PROPOZYCJE do dopracowania`
 - [ ] DOX docs updated; `plans/README.md` row 017 updated
 

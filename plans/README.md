@@ -28,25 +28,43 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - **All of 013–018 assume plan 012 is on the branch/`main`** (drift checks anchor
   at `2092dfc`).
 - **`SAVE_VERSION` collision**: 013 (`cosmetics`), 017 (`expedition` +
-  counter) and 015 Phase C (`lukaCorrect` counter) each add `SaveState`
+  counter) and 015 Phase C (`gapCorrect` counter) each add `SaveState`
   fields. Each plan deliberately says "migration number = next available at
   implementation time" — **land them sequentially** (any order) and let each
   take the next version; never develop two save-touching plans in parallel
-  branches without rebasing the migration slot.
-- **Achievement-count collision**: 017 (+2) and 015 Phase C (+2) both update
-  the frozen-id tripwire and the absolute totals in `evaluate.test.ts`
-  (written against today's 44 / 550✨). Whichever lands second must recompute
-  the absolute numbers. 013 adds no achievements but changes the TARGET of
-  `wioska-w-rozkwicie`/`wielki-budowniczy` (7th building; 013 handles the
-  test fallout itself).
+  branches without rebasing the migration slot. In the recommended order:
+  015-C → v10, 013 → v11, 017 → v12.
+- **Achievement-count collision**: 015 Phase C (+2 ids) and 017 (+2 ids)
+  both append to the frozen-id tripwire and both plans state their numbers
+  RELATIVELY (+2 ids / +N✨; absolutes computed at landing). 013 adds no
+  achievements but changes the TARGET of `wioska-w-rozkwicie`/
+  `wielki-budowniczy` (7th building; 013 handles the test fallout itself).
 - **014 hard-depends on 013** (save shape `cosmetics.owned`/`equipped`, shop
-  UI, tier gating) and adds no save version of its own; its executor must
-  verify 013's landed symbols and STOP on mismatch.
-- **016 and 018 are fully independent** (zero save changes; 018 touches no
-  `src/` at runtime) — safe to do anytime, in parallel with anything.
-- Recommended sequence: **018 → 016 → 015 (fazy A–B) → 013 → 014 → 017 →
-  015 faza C** (infra first, then pedagogy, then the economy arc; the
-  save-touching trio lands one at a time).
+  UI, tier gating) and adds no save version of its own; 014 extends the
+  `CosmeticSlot` union with `"frame"` and bumps 013's catalog count/total
+  tests (12→17 items, range [300,450]→[430,580]) — its executor verifies
+  013's landed symbols and STOPs on mismatch.
+- **016 and 018 are fully independent** (zero save changes; 018's only
+  `src/` touch is a safe-area CSS block in `styles.css`) — safe to do
+  anytime, in parallel with anything.
+- Recommended sequence: **018 → 016 → 015 (całość, fazy A→B→C) → 013 →
+  014 → 017** (infra first, then pedagogy, then the economy arc; the
+  save-touching trio lands one at a time, wszystkie liczby względne).
+
+## Shared-surface governance (013–018 — binding for executors)
+
+Two surfaces are edited by multiple plans; whoever lands later must respect
+what's already there, in this fixed composition:
+
+- **Modal posiadanego potworka (CollectionScreen)** — kolejność sekcji:
+  przycisk przyjaciela → sekcja „Ubierz 🎩" (ZWIJANA; garderoba 013 +
+  wybór ramki 014) → sekcja „Wyprawa 🎒" (ZWIJANA; 017). Karta już dziś jest
+  długa (paszport + strefy) — nowe sekcje zawsze zwijane, nigdy rozwinięte
+  domyślnie.
+- **Home — zasada „maks jedna proaktywna karta"**: karta-zaproszenie
+  Strażnika (016) ma pierwszeństwo, gdy obecna; chip postępu wyprawy (017)
+  siedzi POD gniazdem i ustępuje zaproszeniu. Przycisk „Graj!" nigdy nie
+  spada niżej przez nowe elementy proaktywne.
 
 ## Design decisions (maintainer, 2026-07-12) — executors follow these
 

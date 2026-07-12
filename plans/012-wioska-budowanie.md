@@ -131,7 +131,8 @@ Rationale per component:
 | Pomnik Pierwszego Potworka (`pomnik`) | 10 |
 | Tęcza (`tecza`)          | 12   |
 
-Total sink: **970 (buildings) + 45 (decorations) = 1015**, plus the existing
+Total sink: **970 (buildings) + 46 (decorations) = 1016** (kwiatki repriced
+4→5 during execution so the auto-goal prefers a building), plus the existing
 wish-egg sink and the new-achievement rewards below.
 
 **Pricing decisions that matter (do not "fix" these):**
@@ -155,7 +156,7 @@ wish-egg sink and the new-achievement rewards below.
 wage (base + daily + a stars step). Zamek L1 by end of week one. Mid-game
 buildings at 30–90 are weekly-scale goals at wage 3–5/round. Lifetime income
 (wage ≈ 900–1400 over a 300-round collection arc + duplicates a few hundred +
-achievements 550) comfortably exceeds the 1015 sink, so the village is
+achievements 550) comfortably exceeds the 1016 sink, so the village is
 *finishable*, and the late-game spark flood (cap 999) has somewhere to go.
 
 **Known and accepted:** once village AND collection are both complete,

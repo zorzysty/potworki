@@ -55,7 +55,7 @@ than either bare form. The architecture cost is a fraction of what division
 paid, because division already generalized everything: `GameMode` flows from
 the Home switch through `RoundState`, `makeQuestion`/`expectedAnswer`,
 auto-submit, the egg stamp (`PendingEgg.mode`) and the hatch pool filter.
-This plan mirrors that recipe for mode `"gap"` and (optionally) gives it the
+This plan mirrors that recipe for mode `"gap"` and gives it the
 same reward hook that made division worth choosing: a small block of
 monsters obtainable **only** through this mode.
 
@@ -84,7 +84,7 @@ each of these and deciding third-branch vs. already-generic. Verified by
 | `facts.ts:119-121` `expectedAnswer` | ternary `div ? a/b : a*b` | 3-way (gap → `b / a`) |
 | `src/store/store.ts:106,113` ephemeral `mode`/`setMode` | typed `GameMode` | nothing (generic) |
 | `store.ts:71` `RoundState.mode` | frozen per round | nothing (generic) |
-| `store.ts:165-178` `rollContext` | zeroes a division-only dream when `mode === "mult"` | Phase C: generalize (dream must be in the mode's pool) |
+| `store.ts:165-178` `rollContext` | zeroes a division-only dream when `mode === "mult"` | **Phase B (Step 6): generalize NOW** — dream honored only if present in the mode's pool (see „The dream-priority leak" below) |
 | `store.ts:187` `wishEggCost` | `isDivisionOnly(dream)` → no-dream price | Phase C: also exclude gap-only |
 | `store.ts:395` `divCorrect` bump | `correct && round.mode === "div"` | Phase C: parallel `gapCorrect` |
 | `store.ts:644` `buyWishEgg` | stamps `{quality:"wish", mode:"mult"}` | nothing (wish = base pool by design) |
@@ -127,6 +127,20 @@ becomes the **known, visible factor** (`a`), so the child SEES the new digit
 in the operation and solves for the familiar one: `8 × _ = 72` after
 unlocking ×8. Same `introIsOperand` guard shape as div.
 
+### The dream-priority leak (Phase A/B correctness bug — fix in Step 6, verified)
+
+The dream guard does NOT wait for Phase C. `rollContext` (`store.ts:166-171`)
+zeroes a division-only dream **only** when `mode === "mult"` — for a fresh
+`"gap"` mode it passes the dream through untouched. Downstream, `pickInTier`
+(`rewards.ts:146-160`) returns a tier-matching, unowned dream **without
+checking that the dream is in the mode's pool** (`inTier` is computed but the
+dream branch short-circuits before it). Net effect in Phase A/B: a `"gap"`
+egg with a division-only dream set (rainbow → legendary tier 15%) hatches the
+div-only legendary, violating this plan's own "gap eggs = base pool"
+invariant — and Step 7's basic negative test won't catch it unless a dream is
+set. Fix belongs in Phase B (Step 6): generalize the guard to
+pool-membership, which also future-proofs Phase C for free.
+
 ### The `idsByRarityForMode` trap (Phase C blocker, verified)
 
 `catalog.ts:52`: `if (mode === "div") return IDS_BY_RARITY` — division sees
@@ -144,8 +158,12 @@ nowymi id powyżej dotychczasowego maksimum, bez wpływu na wyniki
 istniejących". Current state: `MONSTER_COUNT = 76`, rarity distribution
 36/21/11/8, ids 72–75 = `DIVISION_ONLY_IDS`. The signature test procedure is
 documented in its Verification section: "Dokładając potworki: uruchom test
-raz, odczytaj faktyczną sygnaturę z błędu, dopisz nowe wpisy (**pierwsze 76
-muszą zostać bit-w-bit**)". So gap-only ids 76–79 are legal; `rarityOf`
+raz, odczytaj faktyczną sygnaturę z błędu, dopisz nowe wpisy (pierwsze 72
+muszą zostać bit-w-bit)". **Note the doc's own staleness**: "72" dates from
+the 72-monster era — the signature literal today locks all **76** existing
+entries, and 76 is the number this plan's C1 verifies bit-for-bit (Step 12
+fixes the stale "72" in the doc while updating it). So gap-only ids 76–79
+are legal; `rarityOf`
 gets a new explicit block (76–79 → legendary), `SALT_STRIDE`/seed/PRNG are
 untouched, and the signature literal is extended, never rewritten.
 Also affected: `world.ts` `originOf` sends div-only to `BRIDGE_ORIGIN` and
@@ -274,21 +292,28 @@ gap the equation itself contains the blank; render (answering phase):
 ```
 
 where `▢` is a styled inline chip (same violet dashed idiom as the answer
-box — the child should read "the box in the equation IS the box I'm
-filling"). The existing answer box below stays (it's the input display).
+box) that **MIRRORS the typed digits live**: the blank IS the answer display
+(`round.answer` renders inside it as she types, keypad and physical keyboard
+alike — both feed the same `round.answer`, so parity is automatic). The
+separate answer box below is HIDDEN in gap mode (or visually merged into the
+blank) — a 9-year-old must never see two dashed boxes with different
+content; there is exactly one box, in the equation, and it fills as she
+types.
 Wrong-phase ritual: show the solved equation with the missing factor
 highlighted (`7 × [6] = 42`, amber like div's result highlight) over the
 „Przepisz wynik:" caption — `expectedAnswer` already returns the factor, so
 `pressConfirm`'s retype logic is untouched. Keep `op`/`result` computation a
 3-way derived from `mode`.
 
-**Verify**: typecheck; visual in Step 7.
+**Verify**: typecheck; visual in Step 8.
 
 #### Step 4: Egg markers
 
 - `EggReward.tsx:106` and `HatchScreen.tsx:154`: add the gap marker next to
-  the existing „÷" pattern. PROPOZYCJA: `?` in the same badge style (or `🧩`
-  — operator's pick; it must visually differ from „÷").
+  the existing „÷" pattern. PROPOZYCJA: `🧩` in the same badge style —
+  deliberately NOT `?`, which collides with the game-wide `???` =
+  "unknown monster" convention (a `?` egg reads as "mystery egg", not
+  "gap-mode egg").
 - Grep `mode === "div"` once more after editing — no remaining
   binary-assumption sites in components.
 
@@ -297,18 +322,45 @@ highlighted (`7 × [6] = 42`, amber like div's result highlight) over the
 `HomeScreen.tsx:120-131` — add `["gap", "? Zgadnij"]` (PROPOZYCJA; also on
 the table: „Luka", „Zgadnij czynnik"). Layout: the control is `max-w-xs`
 with `flex-1` buttons and `text-lg` labels — three Polish labels will NOT
-fit at `text-lg`; drop to `text-base` (or icon-first two-line labels) and
-**verify at 360 px width** (portrait phone) that nothing wraps or truncates.
+fit at `text-lg`; drop to `text-base` (or icon-first two-line labels) **and
+add `min-h-16` to the mode buttons** — today they are ~52 px tall (`py-3`),
+already under the 64 px touch-target contract, and smaller text would shrink
+them further. **Verify at 360 px width** (portrait phone) that nothing wraps
+or truncates and targets stay ≥ 64 px.
 Update the HelpTip text (PROPOZYCJA: „…albo zgadywanie brakującej liczby —
-niektóre potworki wykluwają się tylko z takich jajek!" — mention gap-only
-monsters ONLY if Phase C ships). `DebugScreen.tsx`: add the third toggle
-button (stamps simulated eggs).
+niektóre potworki wykluwają się tylko z takich jajek!"; the gap-only-monsters
+mention is accurate because Phase C ships in v1). `DebugScreen.tsx`: add the
+third toggle button (stamps simulated eggs).
 
 **Verify**: `bun run typecheck`; visual at 360 px and tablet widths.
 
 ### Phase B — store integration + characterization
 
-#### Step 6: Store tests (`src/store/store.test.ts`)
+#### Step 6: Generalize the dream guard in `rollContext` (leak fix — NOT deferred to C)
+
+Replace the mult-only special case (`store.ts:166-171`) with pool-membership
+— the dream is honored only if it exists in the mode's hatch pool:
+
+```ts
+// wymarzony ma priorytet tylko, gdy jest w puli trybu jajka (potworek
+// ekskluzywny innego trybu nie może się wykluć „na życzenie" z cudzego jajka)
+const pool = idsByRarityForMode(mode)
+const dreamId =
+	state.dreamMonsterId !== null &&
+	pool[rarityOf(state.dreamMonsterId)].includes(state.dreamMonsterId)
+		? state.dreamMonsterId
+		: null
+```
+
+Behavior is bit-identical for `"mult"` (div-only dream still zeroed) and
+`"div"` (full pool — nothing zeroed), fixes the Phase A/B `"gap"` leak, and
+makes Phase C's gap-only exclusivity work with NO further guard changes.
+Update the comment above `rollContext` accordingly.
+
+**Verify**: `bun run typecheck`; `bun test` → the existing div-mode dream
+tests still green (they characterize exactly this behavior).
+
+#### Step 7: Store tests (`src/store/store.test.ts`)
 
 New `describe("tryb luki", …)` mirroring `describe("tryb dzielenia", …)`
 (`store.test.ts:440-520`) and reusing `answerByMode` — which must learn the
@@ -325,21 +377,27 @@ third mode first (it computes the expected answer from `round.mode`; add
   the 5 new-factor questions (mirror of `:488`);
 - Phase A/B pool behavior: a `"gap"` egg NEVER hatches a division-only
   legendary (it uses the base pool until Phase C) — loop pattern from
-  `:521`.
+  `:521`;
+- **dream-set variant of the negative test** (the leak Step 6 fixes): own
+  everything except div-only, `setDreamMonster(72)`, `setMode("gap")`, loop
+  rainbow eggs → NEVER hatches ids 72–75. Without Step 6 this test FAILS —
+  it is the regression net for the guard.
 
 **Verify**: `bun test src/store` → all pass; `bun test` → full suite green.
 
-#### Step 7: Visual pass
+#### Step 8: Visual pass
 
 Dev server + puppeteer-core (root `CLAUDE.md` recipe): Home with 3-way
 switch (360 px + 1024 px), a gap round (`7 × ▢ = 42`, answer box, wrong-
 phase ritual with highlighted factor), summary, egg marker in nest.
 Screenshot each; report.
 
-### Phase C — gap-only monsters + counter (optional, severable)
+### Phase C — gap-only monsters + counter (IN SCOPE for v1; severable = rollback affordance)
 
-> Every C-step leaves the suite green on its own; the operator may stop
-> after any of them. Read `src/monsters/CLAUDE.md` in full again before C1.
+> Phase C is part of v1 (maintainer decision 2026-07-12) and runs
+> continuously after Phase B — do NOT pause between B and C. Each C-step
+> leaves the suite green on its own, but that is a ROLLBACK affordance, not
+> a menu. Read `src/monsters/CLAUDE.md` in full again before C1.
 
 #### Step C1: Append monsters 76–79 (`src/monsters/catalog.ts`)
 
@@ -367,10 +425,11 @@ const excluded = (id: number) =>
 
 applied to the legendary tier (both exclusive blocks are legendary). Update
 the catalog tests: div excludes gap-only, gap excludes div-only, mult
-excludes both, gap includes gap-only. Store side: `rollContext` dream guard
-generalizes (dream not in the mode's pool → `null` — covers div-only dream
-in gap mode and vice versa); `wishEggCost` treats a gap-only dream like a
-div-only one (no-dream price; wish eggs stay `"mult"`-pool). Reachability
+excludes both, gap includes gap-only. Store side: the `rollContext` dream
+guard is ALREADY pool-membership-based (Step 6) — it covers gap-only dreams
+automatically once the pools change; only `wishEggCost` needs work here
+(treat a gap-only dream like a div-only one: no-dream price; wish eggs stay
+`"mult"`-pool). Reachability
 tests mirror plan 009's pair: gap egg CAN hatch a gap-only legendary
 (300-rainbow loop), mult and DIV eggs never do.
 
@@ -430,17 +489,19 @@ tests mirror plan 009's pair: gap egg CAN hatch a gap-only legendary
 - `facts.test.ts` — gap `makeQuestion` (known-factor rand, intro forcing,
   product), `expectedAnswer` 3-way (Step 2).
 - `store.test.ts` — `describe("tryb luki")`: round shape, shared mastery,
-  egg stamp, reset, intro round, base-pool negative (Step 6); Phase C adds
+  egg stamp, reset, intro round, base-pool negatives incl. the dream-set
+  variant (Step 7); Phase C adds
   the reachability pair (C2) and `gapCorrect`/achievement flows (C4).
 - `catalog.test.ts` (C) — distribution 36/21/11/12, signature append with
   first-76-bit-identical check, per-mode pool matrix (C1–C2).
 - `world.test.ts` (C) — three-way `originOf` (C3).
 - `achievements` tests (C) — tripwire + totals (C4).
-- Manual visual pass per Step 7.
+- Manual visual pass per Step 8.
 
 ## Done criteria
 
-Machine-checkable. ALL must hold (Phase C items only if C shipped):
+Machine-checkable. ALL must hold (Phase C is in scope — (C) items are
+expected, conditional only under a rollback):
 
 - [ ] `bun run typecheck`, `bun run build`, `bun run check` all exit 0
 - [ ] `bun test` exits 0; no previously-passing test modified except the

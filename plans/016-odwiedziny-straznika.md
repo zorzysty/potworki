@@ -67,6 +67,12 @@ Design rules (binding):
    weighted-selection math (`weightOf`-style weakest-first) over the same
    fact pools; mastery/stars/eggs/wage all behave exactly as in a normal
    round. The only additions are presentation and a small thank-you bonus.
+4. **Visit rounds are pinned to `mode: "mult"`** — regardless of the Home
+   ×/÷ toggle. The invitation says „Odśwież starą tabliczkę ×{factor}"; if
+   the round inherited a ÷ toggle, the child would read „×5" and get
+   `45 ÷ 5` — a copy/experience mismatch she cannot reconcile. Pinning keeps
+   the invitation truthful (mode-aware copy was considered and rejected as
+   the more complex option).
 
 ## Current state
 
@@ -105,8 +111,9 @@ Verified at `2092dfc` on branch `feat/012-wioska-budowanie` (suite green:
   (Step 4) — today there is no way to render it for an arbitrary monster.
 - `src/screens/HomeScreen.tsx` — card/badge patterns established (gniazdo
   card, „✨ stać cię na budowę!" badge); imports from `game/facts` and
-  `game/village` already exist, `unlockedStage`/`facts` NOT currently
-  selected — the invitation card adds selectors.
+  `game/village` already exist. `unlockedStage` IS already selected
+  (`HomeScreen.tsx:20` — drives the factor chips and `hasNewGate`); only
+  `facts` is missing — the invitation card adds that one selector.
 - `src/screens/MapScreen.tsx` — shows the dry maintenance hint when
   `needsMaintenance` (kept as-is; the map remains the "why is my gate stuck"
   explainer).
@@ -261,7 +268,10 @@ existing helpers/patterns. Assert:
   but with `plan = visitRoundPlan(state.facts, visited, stage,
   QUESTIONS_PER_ROUND, Math.random).map(f => f.key)`, `planPos: 1`,
   `introFactor: null`, `visitStage: visited`, first question =
-  `plan[0]`. Requeues/mode/everything else identical to a normal round —
+  `plan[0]`, and **`mode: "mult"` pinned** (design rule 4 — ignore the
+  ephemeral Home toggle; the invitation promises „tabliczka ×N" and the
+  questions must match; the toggle itself is left untouched for later
+  normal rounds). Requeues/everything else identical to a normal round —
   the plan is consumed positionally by the existing `nextQuestion` logic
   (no changes needed there for selection).
 - Finalize branch of `nextQuestion`: after the wage,
@@ -324,15 +334,26 @@ card stays the focus.
 
 ### Step 6: Home invitation + summary thank-you
 
-- `HomeScreen.tsx`: select `facts`/`unlockedStage`, compute
-  `visited = visitStage(facts, unlockedStage)`. When non-null, render a
-  tappable invitation card (between „Graj!" and the gniazdo card; white/80
-  rounded-3xl like the gniazdo row): guardian mini-art (`MonsterSvg`
+- `HomeScreen.tsx`: select `facts` (`unlockedStage` is already selected),
+  compute `visited = visitStage(facts, unlockedStage)`. When non-null,
+  render a tappable invitation card (between „Graj!" and the gniazdo card;
+  white/80 rounded-3xl like the gniazdo row): guardian mini-art (`MonsterSvg`
   size ~44, silhouette if unowned) + PROPOZYCJA:
   „Strażnik {REGIONS[visited].name} zaprasza cię w odwiedziny! {emoji}" +
-  sub-line „Odśwież starą tabliczkę ×{factor}". Tap →
-  `startVisitRound()` (which already sets `screen: "round"`). No badge, no
-  counter — the card simply is or isn't there.
+  sub-line „Odśwież starą tabliczkę ×{factor}". **When the guardian is
+  unowned (silhouette)**, add a second sub-line explaining the mystery so
+  the shadow doesn't read as broken art (PROPOZYCJA: „Poznasz go, gdy go
+  wyklujesz!") — the map precedent exists, but this is a NEW context for the
+  silhouette convention. Tap → `startVisitRound()` (which already sets
+  `screen: "round"`). No badge, no counter — the card simply is or isn't
+  there.
+- **Shared-surface governance (Home)**: this invitation is a "proactive
+  card" under the rule recorded in `plans/README.md` (sekcja
+  „Shared-surface governance"): **max ONE proactive card on Home at a
+  time, and the guardian invitation WINS** when present (plan 017's
+  expedition chip yields/moves below the gniazdo row). If 017 landed
+  first, wire the precedence here; if not, this plan simply renders the
+  card and 017 must respect it.
 - `RoundSummary.tsx`: when `round.visitStage !== null`, render a banner in
   the „Nowa brama otwarta!" style above the buttons: guardian art +
   PROPOZYCJA „Strażnik dziękuje za odwiedziny! 💛 +{VISIT_BONUS} ✨". The
@@ -349,6 +370,9 @@ at low mastery and `unlockedStage: 2`):
 - `startVisitRound`: `round.visitStage` equals the weakest stage;
   `round.plan` has 10 keys; the first question's key is `plan[0]`;
   `introFactor === null`.
+- Mode pinning: `setMode("div")` then `startVisitRound()` →
+  `round.mode === "mult"` (design rule 4; the ephemeral toggle itself stays
+  `"div"` for later normal rounds).
 - Plain `startRound` → `round.visitStage === null`.
 - Finalize: full clean visit round pays `wage + VISIT_BONUS` (assert exact
   delta with achievements suppressed and the egg-rainbow caveat handled as
@@ -390,8 +414,8 @@ the thank-you banner. Screenshot Home + round + summary.
   `visitRoundPlan` (distinctness, focus share, pool membership, determinism),
   `VISIT_BONUS > 0` (Step 2).
 - `store.test.ts` — visit round lifecycle: plan consumption, `visitStage`
-  flag, wage+bonus payout vs normal round, healthy-facts fallback, cap
-  (Step 7).
+  flag, mode pinned to `"mult"` mimo przełącznika ÷, wage+bonus payout vs
+  normal round, healthy-facts fallback, cap (Step 7).
 - Manual visual: invitation card appears/disappears with mastery state;
   guardian cheers (color when owned, silhouette when not); summary banner.
 - Regression guard: all 217 existing tests unchanged and green — especially
@@ -405,8 +429,12 @@ Machine-checkable. ALL must hold:
 - [ ] `bun test` exits 0; count ≥ 225; zero previously-passing tests modified
 - [ ] `grep -n "export function visitStage\|export function visitRoundPlan\|VISIT_BONUS" src/game/adaptive.ts` → 3 matches
 - [ ] `grep -c "startVisitRound" src/store/store.ts` ≥ 2 (typ + akcja)
-- [ ] `git diff 2092dfc..HEAD -- src/store/schema.ts src/monsters/` → empty
-      (no save change, frozen catalog untouched)
+- [ ] THIS plan's branch introduces no changes to the save schema or the
+      frozen catalog: `git diff $BASE..HEAD -- src/store/schema.ts src/monsters/`
+      → empty, where `$BASE` is the commit this plan's branch was cut from
+      (record it at branch creation, e.g. `BASE=$(git rev-parse HEAD)` before
+      the first commit; do NOT anchor at `2092dfc` — other plans may have
+      legitimately changed the schema by the time this one runs)
 - [ ] `grep -n "visitStage" src/store/schema.ts` → no matches (ephemeral only)
 - [ ] Visual pass done and reported (Home card, guardian cheer both variants,
       summary banner)

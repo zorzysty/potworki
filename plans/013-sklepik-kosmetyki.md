@@ -84,12 +84,15 @@ never face/DNA edits (warstwa-opiekuńcza contract).
   village sink total: 1016 + 170 = **1186✨**, still inside the tested
   [800, 1500] envelope (the range test needs NO widening — verify, don't
   bump).
-- **Launch catalog: 12 items ≈ 300✨** across tiers:
+- **Launch catalog: 12 items = 346✨ (≈ 350)** across tiers — tier sums
+  31 + 105 + 210; every number below must match the Step 2 table and the
+  Step 5 test range, they are one invariant:
   - Tier 1 (Sklepik L1): 4 hats, 5–12✨ each — first purchase within a
     session of opening the shop.
   - Tier 2 (L2): 4 items (fancier hats + first auras), 15–40✨.
-  - Tier 3 (L3): 4 premium auras/hats, 60–90✨ — the post-completion spark
-    flood finally has prestige goals.
+  - Tier 3 (L3): 4 premium auras/hats, 45–60✨ — the post-completion spark
+    flood finally has prestige goals (kept below building-L3 prices: a hat
+    must never out-cost the Zamek upgrade it's earned after).
 - Items are bought once (per item, not per monster — equipping is free and
   unlimited across monsters; generosity keeps dressing-up playful, not
   grindy).
@@ -303,10 +306,10 @@ Launch catalog (PROPOZYCJE — ids stable, names free):
 | `wianek` | Wianek | hat | 2 | 20 |
 | `aura-serduszek` | Aura serduszek | aura | 2 | 30 |
 | `aura-gwiazdek` | Aura gwiazdek | aura | 2 | 40 |
-| `kapelusz-czarodzieja` | Kapelusz czarodzieja | hat | 3 | 60 |
-| `korona-lodowa` | Korona lodowa | hat | 3 | 70 |
-| `aura-teczy` | Aura tęczy | aura | 3 | 80 |
-| `aura-iskier` | Aura iskier | aura | 3 | 90 |
+| `kapelusz-czarodzieja` | Kapelusz czarodzieja | hat | 3 | 45 |
+| `korona-lodowa` | Korona lodowa | hat | 3 | 50 |
+| `aura-teczy` | Aura tęczy | aura | 3 | 55 |
+| `aura-iskier` | Aura iskier | aura | 3 | 60 |
 
 Pure, no `Math.random`/`Date.now()`/DOM.
 
@@ -368,8 +371,14 @@ L1 ≤ 20 (shop opens mid-early — new invariant).
 Model on `village.test.ts`: 12 items, unique ids, every tier ∈ {1,2,3}, every
 slot ∈ {hat, aura}; economy invariants: cheapest tier-1 ≤ 8 (impulse buy),
 tier monotonic in price bands (min tier2 > max tier1 NOT required — assert
-only: every tier-3 ≥ 60, launch total in [250, 400]); `availableCosmetics(0)`
-→ empty, `(1)` → only tier 1, `(3)` → all; `isOwned`/`equippedFor` basics.
+only: every tier-3 ≥ 45, launch total in **[300, 450]**; the Step 2 catalog
+sums to 346, comfortably inside); `availableCosmetics(0)` → empty, `(1)` →
+only tier 1, `(3)` → all; `isOwned`/`equippedFor` basics.
+
+> **Shared invariant with plan 014**: card frames (plan 014) later APPEND
+> ~5 frame items (+140✨) to this same catalog and restate the launch-total
+> range to **[430, 580]** — 014 owns that bump. Do not "future-proof" the
+> range here; keep it honest for the 12-item launch so drift is caught.
 
 **Verify**: `bun test src/game/cosmetics.test.ts` → pass.
 
@@ -419,8 +428,13 @@ add a stock section:
 
 - Rows per item (reuse `DecorationRow` styling): `CosmeticArt` mini, name,
   and: owned → ✅; affordable & tier unlocked → `Kup! ✨15`; unaffordable →
-  `✨ x/y` chip (never error tone); tier locked → row dimmed with
-  `Ulepsz Sklepik! 🔒` chip (aspiration framing).
+  `✨ x/y` chip (never error tone); tier locked → **dim ONLY the art**, keep
+  the item NAME full-contrast (a child must be able to read what she's
+  aspiring to), with an `Ulepsz Sklepik! 🔒` chip (aspiration framing).
+- a11y (biome's a11y rules are OFF — the plan is the only enforcement):
+  every icon-only or art-only interactive element gets an `aria-label`
+  (codebase convention — see existing `aria-label` on plot buttons and the
+  back button); the buy button's visible text suffices for itself.
 - After a successful buy: small confetti + one-line hint (PROPOZYCJA:
   "Załóż w Moich Potworkach → Ubierz 🎩").
 - Sklepik level 0 → no stock section (the detail view already sells the L1
@@ -434,11 +448,17 @@ add a stock section:
   `MonsterStage` with `overlay={<EquippedOverlay monsterId={...}/>}` —
   grid tiles and silhouette branch stay on `MonsterSvg` (no cosmetics there;
   cheap and uncluttered).
-- Add an "Ubierz 🎩" section in the owned-card modal (near the companion
-  button): per slot, a horizontal row of owned items (+ "zdejmij" ∅ chip);
+- Add an "Ubierz 🎩" section in the owned-card modal as a **COLLAPSIBLE
+  section** (collapsed by default, header row with chevron, ≥64px tap
+  target). **Composition contract for this modal** (binding across plans —
+  see `plans/README.md`, sekcja „Shared-surface governance"): fixed order is
+  companion-button → **wardrobe („Ubierz 🎩")** → expedition section (plan
+  017, future). The card must stay a trophy first, control panel second.
+- Inside: per slot, a horizontal row of owned items (+ "zdejmij" ∅ chip);
   tap = `equipCosmetic` (instant, no confirmation); equipped item ringed.
-  Empty wardrobe → single gentle hint pointing at the Sklepik (PROPOZYCJA:
-  "Kapelusze kupisz w Sklepiku w Wiosce!").
+  Item chips are art-only → each gets `aria-label` = item name; the ∅ chip
+  gets `aria-label="Zdejmij"`. Empty wardrobe → single gentle hint pointing
+  at the Sklepik (PROPOZYCJA: "Kapelusze kupisz w Sklepiku w Wiosce!").
 
 **Verify**: visual — equip/unequip round-trips, card art updates live,
 companion picked up the outfit on Home.

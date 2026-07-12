@@ -12,11 +12,13 @@
 > state" excerpts against the live code before proceeding; on a mismatch,
 > treat it as a STOP condition.
 >
-> **DOX (this repo)**: Binding `CLAUDE.md` hierarchy. This plan touches ONLY
+> **DOX (this repo)**: Binding `CLAUDE.md` hierarchy. This plan touches
 > root-owned paths (`vite.config.ts`, `package.json`, `index.html`, `public/`,
-> a new `scripts/`) — read root `CLAUDE.md` before editing; no `src/` child
-> doc applies (no runtime source changes). The root doc IS updated in Step 7
-> (deploy contract + the "Poza src/" index line gain the PWA/scripts notes).
+> a new `scripts/`) **plus one scoped CSS block in `src/styles.css`
+> (safe-area insets, Step 5)** — read root `CLAUDE.md` AND `src/CLAUDE.md`
+> before editing. The root doc is updated in Step 8 (deploy contract + the
+> "Poza src/" index line gain the PWA/scripts notes); `src/CLAUDE.md` gets
+> one line for the safe-area block.
 >
 > **Naming (user preference, binding)**: the user wordsmiths player-facing
 > Polish strings. Manifest `name`/`short_name`/`description` are PROPOZYCJE —
@@ -50,6 +52,13 @@ Two wins, one small plugin:
    and a real app icon a 9-year-old taps like any other game. (Today the
    `apple-touch-icon` points at an SVG, which iOS ignores — so an iPad
    home-screen shortcut currently gets a screenshot blob as its icon.)
+
+Standalone mode also REMOVES the browser's own inset handling:
+`index.html` already sets `viewport-fit=cover`, and **nothing in
+`src/styles.css` uses `env(safe-area-inset-*)`** — installed full-screen,
+the round screen's keypad would sit under the iPad home indicator and the
+top row would crowd the status bar. Step 5 closes that gap (the one place
+this plan touches `src/`).
 
 **The one hard requirement: a stale service worker must NEVER pin the child
 to an old build.** Deploys go push-to-`main` → GH Pages, and the save schema
@@ -90,8 +99,13 @@ Verified at `2092dfc` (branch `feat/012-wioska-budowanie`):
   (`--no-sandbox --disable-gpu`), scripts in the session scratchpad — the
   established pattern from plan 012's visual passes. Puppeteer's
   `page.setOfflineMode(true)` gives the offline toggle.
-- `bun test` → 217 pass. This plan changes no runtime `src/` code, so the
-  suite is expected to be **byte-for-byte unaffected**.
+- `bun test` → 217 pass. This plan changes no `src/` logic (the sole `src/`
+  touch is the Step-5 CSS media block), so the suite is expected to be
+  **byte-for-byte unaffected**.
+- `index.html:9` sets `viewport-fit=cover` **and** `user-scalable=no`;
+  `grep -rn "safe-area" src/` → zero hits (the standalone inset gap Step 5
+  fixes). App shell: `App.tsx:62-63` — outer background div + inner content
+  column, both `min-h-dvh` (the cascade documented in Step 5).
 
 ## Commands you will need
 
@@ -113,11 +127,15 @@ Verified at `2092dfc` (branch `feat/012-wioska-budowanie`):
   `public/apple-touch-icon.png` (generated, committed)
 - `scripts/make-icons.ts` (create) — deterministic icon generation
 - `index.html` — apple-touch-icon → PNG
-- `CLAUDE.md` (root) — deploy note + `scripts/` in the "Poza src/" line
+- `src/styles.css` — ONE `@media (display-mode: standalone)` safe-area block
+  (Step 5; plus the `--app-vh` fallback and its `min-h-dvh` call-site swap
+  ONLY if the documented overflow pitfall materializes)
+- `CLAUDE.md` (root) + `src/CLAUDE.md` — DOX notes (Step 8)
 - `plans/README.md` — status row
 
 **Out of scope** (do NOT touch):
-- Anything under `src/` — `injectRegister: "auto"` injects the SW
+- Anything under `src/` beyond the Step-5 CSS block (and its documented
+  fallback) — in particular `injectRegister: "auto"` injects the SW
   registration into the built entry; no manual `registerSW` code. If you
   find yourself editing `src/main.tsx`, stop — you chose the wrong register
   mode.
@@ -255,7 +273,62 @@ Replace the SVG apple-touch-icon line:
 **Verify**: `bun run build` → exit 0; `grep apple-touch-icon dist/index.html`
 shows the `.png`.
 
-### Step 5: Offline verification (preview + headless chromium)
+### Step 5: Safe-area insets for standalone (`src/styles.css`)
+
+`viewport-fit=cover` is already set (`index.html:9`) and standalone mode has
+no browser chrome to keep UI out of the hardware zones — without insets the
+round-screen **keypad sits under the iPad home indicator** and the top row
+(back button, HelpTip) crowds the status bar. Add ONE scoped block to
+`src/styles.css` (after the `body { … }` rules, before the animation
+sections), active only when installed:
+
+```css
+/* PWA standalone: odsuń UI od notcha i home-indicatora (viewport-fit=cover
+   w index.html). W przeglądarce chrome robi to za nas — blok celowo scoped. */
+@media (display-mode: standalone) {
+	body {
+		padding: env(safe-area-inset-top) env(safe-area-inset-right)
+			env(safe-area-inset-bottom) env(safe-area-inset-left);
+	}
+}
+```
+
+**Known pitfall you must verify (the `min-h-dvh` cascade)**: the app shell
+(`App.tsx:62-63`) AND leaf screens all declare `min-h-dvh`; `dvh` measures
+the FULL viewport, so body padding can make content overflow by the inset
+sum → a small persistent page scroll. The requirement is: **all tap targets
+clear the insets AND no persistent vertical scroll appears on any screen**.
+If the padding introduces scroll (check the round screen and village), apply
+the documented fallback instead of improvising: define a safe viewport
+custom property and switch the `min-h-dvh` call sites to it —
+
+```css
+:root { --app-vh: 100dvh; }
+@media (display-mode: standalone) {
+	:root {
+		--app-vh: calc(
+			100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+		);
+	}
+	body { padding: env(safe-area-inset-top) env(safe-area-inset-right)
+		env(safe-area-inset-bottom) env(safe-area-inset-left); }
+}
+```
+
+with `min-h-dvh` → `min-h-[var(--app-vh)]` across `src/` (mechanical sed;
+list the touched files in the report). Prefer the simple body-padding
+variant if it verifies clean; escalate to the fallback only on observed
+overflow.
+
+**Verify**: `bun run typecheck` + `bun run build` → exit 0. Best-effort
+headless check: `page.emulateMediaFeatures([{ name: "display-mode", value:
+"standalone" }])` → assert `getComputedStyle(document.body).paddingBottom`
+reflects the env() declaration (emulated insets are 0 in headless, so this
+only proves the block applies). **The real acceptance is the on-device
+checklist item in the Test plan** — emulation cannot reproduce the home
+indicator.
+
+### Step 6: Offline verification (preview + headless chromium)
 
 `bun run preview` (serves `dist/` with the `/potworki/` base), then a
 scratchpad puppeteer script:
@@ -274,12 +347,13 @@ scratchpad puppeteer script:
 **Verify**: all four assertions pass; attach the offline screenshot to the
 report.
 
-### Step 6: Full-suite pass
+### Step 7: Full-suite pass
 
-**Verify**: `bun test` → 217 pass (unchanged — this plan touches no runtime
-source); `bun run typecheck`, `bun run build`, `bun run check` → all exit 0.
+**Verify**: `bun test` → 217 pass (unchanged — the only `src/` touch is a
+CSS media block, which no test exercises); `bun run typecheck`,
+`bun run build`, `bun run check` → all exit 0.
 
-### Step 7: DOX pass (root only)
+### Step 8: DOX pass
 
 - Root `CLAUDE.md`, "Deploy" paragraph: add one sentence — the build emits a
   PWA service worker (`vite-plugin-pwa`, autoUpdate: po deployu appka
@@ -288,8 +362,9 @@ source); `bun run typecheck`, `bun run build`, `bun run check` → all exit 0.
 - Root `CLAUDE.md`, "Poza `src/` nie ma child docs" line: mention
   `scripts/` (generator ikon PWA, uruchamiany ręcznie) and the `public/`
   icon set.
-- No `src/` child docs change (no runtime source touched) — state this in
-  the closeout report.
+- `src/CLAUDE.md` (owns `styles.css`): one line in the styles bullet — the
+  `@media (display-mode: standalone)` safe-area block (and, if the Step-5
+  fallback was needed, the `--app-vh` custom property contract).
 - `plans/README.md` — status row for 018.
 
 **Verify**: `bun run check` → exit 0.
@@ -299,16 +374,23 @@ source); `bun run typecheck`, `bun run build`, `bun run check` → all exit 0.
 No unit tests apply (build-time config; the suite must simply stay green and
 untouched). Verification IS the test:
 - build artifacts present with correct scope/start_url (Step 3),
-- the four-step offline puppeteer pass (Step 5) — boot offline + play a
+- the four-step offline puppeteer pass (Step 6) — boot offline + play a
   question offline, with screenshot,
 - icons visually correct, maskable safe-zone respected (Step 2),
 - `bun test` unchanged at 217.
 
-Manual follow-up on real hardware (operator, post-merge): install to home
-screen on the actual tablet (Android: „Dodaj do ekranu głównego"; iPad:
-Udostępnij → „Do ekranu początkowego"), toggle airplane mode, play a round;
-after the NEXT deploy, launch once online and confirm the new build shows up
-on the second launch.
+Manual follow-up on real hardware (operator, post-merge — this checklist is
+part of acceptance, not optional):
+1. Install to home screen on the actual tablet (Android: „Dodaj do ekranu
+   głównego"; iPad: Udostępnij → „Do ekranu początkowego").
+2. **Safe areas (Step 5's real acceptance)**: in the installed app, open a
+   round — the ENTIRE keypad (bottom row included) must be comfortably
+   tappable above the home indicator, the back button/HelpTip clear of the
+   status bar, in BOTH orientations; no screen may show a persistent
+   vertical scroll it didn't have in the browser.
+3. Toggle airplane mode, play a full round offline.
+4. After the NEXT deploy: launch once online, close, relaunch — confirm the
+   new build shows up on the second launch.
 
 ## Done criteria
 
@@ -323,9 +405,15 @@ Machine-checkable. ALL must hold:
 - [ ] `dist/index.html` references `apple-touch-icon.png` (not the SVG)
 - [ ] Offline puppeteer pass: SW registered, reload offline boots Home,
       a round starts offline (screenshot reported)
-- [ ] `git diff --name-only` shows ONLY the in-scope files (no `src/`, no
-      workflow changes)
-- [ ] Root `CLAUDE.md` deploy note added; `plans/README.md` row updated
+- [ ] `src/styles.css` contains the `@media (display-mode: standalone)`
+      safe-area block; emulated display-mode check shows it applies
+- [ ] `git diff --name-only` shows ONLY the in-scope files (under `src/`
+      nothing but `styles.css` — and its fallback call-sites if escalated;
+      no workflow changes)
+- [ ] Root `CLAUDE.md` deploy note + `src/CLAUDE.md` styles note added;
+      `plans/README.md` row updated
+- [ ] On-device checklist handed to the operator (items 1–4 of the Test
+      plan), with the safe-area item called out as blocking
 
 ## STOP conditions
 
@@ -342,7 +430,8 @@ Stop and report back (do not improvise) if:
 - The offline reload boots a BLANK page while online works — precache glob
   is missing an asset class (check the woff2/png globs) — diagnose, and if
   the fix isn't a glob, report.
-- Anything requires editing `.github/workflows/deploy.yml` or `src/**`.
+- Anything requires editing `.github/workflows/deploy.yml`, or `src/**`
+  beyond Step 5's CSS block and its documented `--app-vh` fallback.
 - You are tempted to add an in-app "update available" prompt — out of scope
   by design (autoUpdate exists precisely to avoid asking a child to manage
   software updates).
@@ -354,6 +443,18 @@ Stop and report back (do not improvise) if:
   builds. Nuclear option: site settings → wyczyść dane strony **(NIE robić
   bez eksportu zapisu — localStorage padnie razem z SW; to kolejny argument
   za planem „eksport/import zapisu")**.
+- **First-run edge**: if the app is installed and the very first launch
+  happens offline (or gets killed before precache completes), the child sees
+  a blank page — there is nothing cached yet. Not a bug to fix (the SW can't
+  cache what it never fetched): just launch once online after installing.
+  The Step-6 automated pass waits for `serviceWorker.ready` before going
+  offline, so it deliberately does NOT cover this half-cached case — hence
+  this note.
+- **Zoom (a11y record)**: `index.html` has had `user-scalable=no` since
+  before this plan; in standalone there is no browser zoom fallback, so
+  pinch-zoom is fully unavailable in the installed app. Out of this plan's
+  scope to change — recorded here so a future accessibility pass weighs it
+  deliberately (OS-level zoom/loupe still works).
 - The SW precaches the whole build (~a few hundred KB gz) — revisit
   `globPatterns` only if the bundle ever grows enough for install-time cost
   to matter on the tablet.
