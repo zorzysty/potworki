@@ -38,12 +38,15 @@ export function wanderParams(id: number, index: number): WanderParams {
 	const jx = (hash01(id) - 0.5) * 5
 	const jy = (hash01(id + 7) - 0.5) * 5
 	const leftPct = clamp(8 + fx * 74 + jx, 4, 84) // pas X 8–82%
-	const bottomPct = clamp(7 + fy * 54 + jy, 4, 62) // pas Y (bottom) 7–61%
+	// pas Y (bottom) 6–40%: wędrowcy zostają PONIŻEJ linii budynków (grunt na
+	// ~47% od góry) — nie chodzą po dachach; przy budynkach bywają tylko
+	// mieszkańcy (Resident, celowo)
+	const bottomPct = clamp(6 + fy * 34 + jy, 4, 40) // pas Y (bottom) 6–40%
 	const dir = id % 2 === 0 ? 1 : -1
 	return {
 		leftPct,
 		bottomPct,
-		scale: 1.04 - ((bottomPct - 7) / 55) * 0.36, // niżej = większy (głębia)
+		scale: 1.06 - ((bottomPct - 6) / 36) * 0.34, // niżej = większy (głębia)
 		wanderX: dir * (40 + Math.floor(hash01(id + 31) * 46)), // ±40..86 px
 		durS: 6 + hash01(id + 53) * 5, // 6–11 s
 		delayS: -(hash01(id + 71) * 9), // ujemna faza → różny start

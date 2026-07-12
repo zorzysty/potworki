@@ -42,13 +42,17 @@ const PLOTS: Record<
 	BuildingId,
 	{ left: number; width: string; dy: number; z: number }
 > = {
-	domki: { left: 1, width: "clamp(88px, 15%, 172px)", dy: 0, z: 3 },
-	"plac-zabaw": { left: 15, width: "clamp(92px, 15%, 178px)", dy: -2, z: 2 },
-	sklepik: { left: 29, width: "clamp(64px, 9%, 110px)", dy: -2, z: 4 },
-	zamek: { left: 40, width: "clamp(120px, 20%, 235px)", dy: 16, z: 1 },
-	fontanna: { left: 63, width: "clamp(72px, 11%, 128px)", dy: -4, z: 4 },
-	latarnie: { left: 77, width: "clamp(64px, 9%, 105px)", dy: 2, z: 3 },
-	ogrodek: { left: 88, width: "clamp(68px, 10%, 112px)", dy: -6, z: 4 },
+	// SKYLINE W DWÓCH RZĘDACH (zygzak): tylny rząd stoi WYŻEJ na zboczu
+	// (dy ~+36, mniejszy, z-tyłu), przedni na linii gruntu — dzięki temu 7
+	// budynków mieści się na wąskim ekranie bez ściśnięcia (lefts mogą się
+	// nakładać w poziomie, bo rzędy rozdziela wysokość).
+	domki: { left: 0, width: "clamp(76px, 13%, 160px)", dy: 38, z: 1 },
+	"plac-zabaw": { left: 9, width: "clamp(84px, 14%, 172px)", dy: -2, z: 5 },
+	sklepik: { left: 27, width: "clamp(64px, 9%, 110px)", dy: 40, z: 2 },
+	zamek: { left: 37, width: "clamp(108px, 19%, 225px)", dy: 22, z: 3 },
+	fontanna: { left: 66, width: "clamp(72px, 11%, 128px)", dy: -4, z: 5 },
+	latarnie: { left: 62, width: "clamp(56px, 8%, 96px)", dy: 42, z: 1 },
+	ogrodek: { left: 85, width: "clamp(64px, 10%, 108px)", dy: 34, z: 2 },
 }
 
 // mieszkańcy: zbudowany budynek przyciąga jednego z pokazywanych potworków
