@@ -82,7 +82,10 @@ function WardrobeSection({ monsterId }: { monsterId: number }) {
 									<div className="mb-1 text-xs font-extrabold uppercase tracking-wide text-slate-400">
 										{label}
 									</div>
-									<div className="flex gap-2 overflow-x-auto pb-1">
+									{/* p-1 (nie pb-1): przewijalna oś X wymusza clip w osi Y, a ring-4
+									    zaznaczenia rysuje się POZA boksem chipa — bez paddingu ze
+									    wszystkich stron obwódka ucina się od góry/boków */}
+									<div className="flex gap-2 overflow-x-auto p-1">
 										<button
 											type="button"
 											aria-label="Zdejmij"
@@ -116,7 +119,10 @@ function WardrobeSection({ monsterId }: { monsterId: number }) {
 								<div className="mb-1 text-xs font-extrabold uppercase tracking-wide text-slate-400">
 									Ramka
 								</div>
-								<div className="flex gap-2 overflow-x-auto pb-1">
+								{/* p-1 (nie pb-1): przewijalna oś X wymusza clip w osi Y, a ring-4
+									    zaznaczenia rysuje się POZA boksem chipa — bez paddingu ze
+									    wszystkich stron obwódka ucina się od góry/boków */}
+								<div className="flex gap-2 overflow-x-auto p-1">
 									{/* PROPOZYCJA do dopracowania — „Bez ramki" = oprawa rzadkości */}
 									<button
 										type="button"
