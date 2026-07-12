@@ -42,12 +42,12 @@ export function BuildReveal({
 
 			<div className="relative flex h-56 w-72 items-center justify-center rounded-3xl bg-white/90 p-4 shadow-2xl">
 				{revealed ? (
-					<div className="anim-pop-in">
-						<BuildingArt id={id} level={level} size={210} />
+					<div className="anim-pop-in h-full w-full">
+						<BuildingArt id={id} level={level} size="fill" />
 					</div>
 				) : (
-					<div className="anim-shake">
-						<BuildingArt id={id} level={level} size={210} silhouette />
+					<div className="anim-shake h-full w-full">
+						<BuildingArt id={id} level={level} size="fill" silhouette />
 					</div>
 				)}
 			</div>

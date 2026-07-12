@@ -62,8 +62,8 @@ function BuildingDetail({
 
 			{/* podgląd tego, co POWSTANIE (następny poziom) — w pełnym kolorze,
 			    aspiracja ma pokazywać prawdziwą nagrodę */}
-			<div className="flex h-44 items-center justify-center">
-				<BuildingArt id={id} level={showLevel} size={170} />
+			<div className="h-36 w-full max-w-60">
+				<BuildingArt id={id} level={showLevel} size="fill" />
 			</div>
 
 			<div className="max-w-xs text-center text-lg font-bold text-slate-600">
@@ -122,11 +122,11 @@ function BuildingRow({
 			onClick={() => onOpen(id)}
 			className="flex w-full touch-manipulation items-center gap-3 rounded-2xl bg-violet-50 p-3 active:scale-[0.98]"
 		>
-			<div className="w-16 shrink-0">
+			<div className="h-14 w-16 shrink-0">
 				<BuildingArt
 					id={id}
 					level={Math.max(1, level)}
-					size={60}
+					size="fill"
 					silhouette={level === 0}
 				/>
 			</div>
@@ -228,14 +228,16 @@ export function BuildSheet({
 	onSetGoal: (id: BuildingId | null) => void
 }) {
 	return (
-		<div className="fixed inset-0 z-40 flex items-end justify-center">
+		// wyśrodkowany modal (wzór karty kolekcjonerskiej), NIE bottom sheet —
+		// na niskich/szerokich ekranach arkusz przyklejony do dołu wyglądał na ucięty
+		<div className="fixed inset-0 z-40 flex items-center justify-center p-4">
 			<button
 				type="button"
 				aria-label="Zamknij"
 				onClick={onClose}
 				className="absolute inset-0 bg-slate-900/40"
 			/>
-			<div className="relative max-h-[84dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 pb-8 shadow-2xl">
+			<div className="relative max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl">
 				<div className="mb-3 flex items-center justify-between">
 					{view.kind === "building" ? (
 						<button

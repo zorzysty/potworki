@@ -22,7 +22,13 @@ export const DECORATION_EMOJI: Record<DecorationId, string> = {
 const OUTLINE = "#5f45c4"
 const STONE_LINE = "#ffffff"
 
+// "fill" = wypełnij kontener obiema osiami; viewBox + domyślne
+// preserveAspectRatio (meet) skalują rysunek bez zniekształceń — jedyny
+// niezawodny sposób na wysokie arty (latarnia) w boksach o stałej wysokości
+// (wiersze listy, podglądy modali).
 function svgStyle(size: number | string): CSSProperties {
+	if (size === "fill")
+		return { width: "100%", height: "100%", display: "block" }
 	return {
 		width: typeof size === "number" ? `${size}px` : size,
 		height: "auto",
@@ -692,6 +698,8 @@ export function BuildingArt({
 		<span
 			style={{
 				display: "block",
+				width: "100%",
+				height: "100%",
 				filter: "brightness(0) saturate(0)",
 				opacity: 0.3,
 			}}
