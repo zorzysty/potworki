@@ -3,11 +3,11 @@ import type { CosmeticsState } from "../game/cosmetics"
 import { INITIAL_COSMETICS } from "../game/cosmetics"
 import type { ExpeditionState } from "../game/expeditions"
 import type { FactKey } from "../game/facts"
-import type { PendingEgg } from "../game/rewards"
+import { ISKIERKI_CAP, type PendingEgg } from "../game/rewards"
 import type { VillageState } from "../game/village"
 import { INITIAL_VILLAGE } from "../game/village"
 
-export const SAVE_VERSION = 12
+export const SAVE_VERSION = 13
 
 // Wpis ledgera osiągnięć. `seen` jak celebratedStage: false → badge „nowe!" na Home,
 // czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen).
@@ -209,6 +209,42 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 			...s,
 			expedition: null,
 			achievementStats: { ...stats, expeditionsCompleted: 0 },
+		}
+	},
+	// v12→v13: wycofano kosmetyk "aura-iskier" (nieudany wizualnie). Właściciel
+	// dostaje zwrot pełnej ceny (60✨, cap portfela), wpisy z garderoby znikają —
+	// zapis niczego nie traci (postęp dziecka święty). equippedFor dodatkowo
+	// filtruje id spoza katalogu, więc nieprzemigrowane resztki są neutralne.
+	12: (state) => {
+		const s = state as Record<string, unknown>
+		const c =
+			s.cosmetics && typeof s.cosmetics === "object"
+				? (s.cosmetics as Record<string, unknown>)
+				: null
+		if (!c) return { ...s }
+		const owned = Array.isArray(c.owned) ? c.owned : []
+		const had = owned.includes("aura-iskier")
+		const equippedRaw =
+			c.equipped && typeof c.equipped === "object"
+				? (c.equipped as Record<string, Record<string, unknown>>)
+				: {}
+		const equipped: Record<string, Record<string, unknown>> = {}
+		for (const [mid, slots] of Object.entries(equippedRaw)) {
+			const rest: Record<string, unknown> = {}
+			for (const [slot, id] of Object.entries(slots ?? {})) {
+				if (id !== "aura-iskier") rest[slot] = id
+			}
+			equipped[mid] = rest
+		}
+		const iskierki = typeof s.iskierki === "number" ? s.iskierki : 0
+		return {
+			...s,
+			iskierki: had ? Math.min(ISKIERKI_CAP, iskierki + 60) : iskierki,
+			cosmetics: {
+				...c,
+				owned: owned.filter((id) => id !== "aura-iskier"),
+				equipped,
+			},
 		}
 	},
 }

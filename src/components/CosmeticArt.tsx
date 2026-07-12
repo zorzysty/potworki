@@ -198,8 +198,6 @@ function Glyph({ id }: { id: CosmeticId }) {
 			return <EmojiGlyph e="⭐" />
 		case "aura-teczy":
 			return <EmojiGlyph e="🌈" />
-		case "aura-iskier":
-			return <EmojiGlyph e="🎇" />
 		default:
 			return <EmojiGlyph e="🎩" />
 	}
@@ -265,17 +263,11 @@ function AuraFx({ id }: { id: CosmeticId }) {
 					bits: ["💗", "💕", "💗"],
 					cls: "anim-float",
 				}
-			: id === "aura-gwiazdek"
-				? {
-						glow: "rgba(251,191,36,0.30)",
-						bits: ["⭐", "✨", "⭐"],
-						cls: "anim-sparkle",
-					}
-				: {
-						glow: "rgba(255,255,255,0.50)",
-						bits: ["✨", "🎇", "✨"],
-						cls: "anim-sparkle",
-					}
+			: {
+					glow: "rgba(251,191,36,0.30)",
+					bits: ["⭐", "✨", "⭐"],
+					cls: "anim-sparkle",
+				}
 	const spots: CSSProperties[] = [
 		{ left: "-6%", top: "16%" },
 		{ right: "-8%", top: "36%", animationDelay: "0.5s" },

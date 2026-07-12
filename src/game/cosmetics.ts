@@ -28,7 +28,8 @@ export interface CosmeticDef {
 	cornerEmoji?: string
 }
 
-// Katalog startowy: 12 przedmiotów = 346✨ (tiery 31 + 105 + 210).
+// Katalog startowy: 11 przedmiotów = 286✨ (tiery 31 + 105 + 150).
+// (aura-iskier wycofana po premierze — v12→v13 zwraca właścicielom 60✨.)
 // Ceny poniżej cen L3 budynków — kapelusz nigdy nie przebija ulepszenia Zamku.
 // PROPOZYCJE do dopracowania (nazwy); id zamrożone (persystowane w zapisie).
 export const COSMETICS: readonly CosmeticDef[] = [
@@ -85,11 +86,10 @@ export const COSMETICS: readonly CosmeticDef[] = [
 		cost: 50,
 	},
 	{ id: "aura-teczy", name: "Aura tęczy", slot: "aura", tier: 3, cost: 55 },
-	{ id: "aura-iskier", name: "Aura iskier", slot: "aura", tier: 3, cost: 60 },
 	// Ramki kart kolekcjonerskich (plan 014): oprawa modala posiadanego
 	// potworka, kupowana raz, zakładana per potworek (slot "frame").
 	// PROPOZYCJE do dopracowania (nazwy); id zamrożone (persystowane w zapisie).
-	// Razem 140✨ → suma katalogu 486✨ (testowany przedział [430, 580]).
+	// Razem 140✨ → suma katalogu 426✨ (testowany przedział [380, 530]).
 	{
 		id: "rama-kwiatki",
 		name: "Ramka w Kwiatki",
@@ -169,5 +169,12 @@ export function equippedFor(
 	c: CosmeticsState,
 	monsterId: number,
 ): Partial<Record<CosmeticSlot, CosmeticId>> {
-	return c.equipped[monsterId] ?? {}
+	// Odfiltruj id spoza katalogu (przedmioty wycofane ze sklepiku): osierocone
+	// wpisy w zapisie są neutralne zamiast renderować przypadkowy fallback.
+	const eq = c.equipped[monsterId] ?? {}
+	const out: Partial<Record<CosmeticSlot, CosmeticId>> = {}
+	for (const [slot, id] of Object.entries(eq)) {
+		if (id && COSMETICS_BY_ID.has(id)) out[slot as CosmeticSlot] = id
+	}
+	return out
 }

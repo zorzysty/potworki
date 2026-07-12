@@ -15,8 +15,8 @@ import { INITIAL_VILLAGE } from "./village"
 const launchTotal = COSMETICS.reduce((s, c) => s + c.cost, 0)
 
 describe("katalog kosmetyki — integralność", () => {
-	test("17 przedmiotów (12 z planu 013 + 5 ramek z planu 014), unikalne id", () => {
-		expect(COSMETICS.length).toBe(17)
+	test("16 przedmiotów (11 z planu 013 po wycofaniu aura-iskier + 5 ramek z planu 014), unikalne id", () => {
+		expect(COSMETICS.length).toBe(16)
 		const ids = COSMETICS.map((c) => c.id)
 		expect(new Set(ids).size).toBe(ids.length)
 	})
@@ -44,11 +44,11 @@ describe("katalog kosmetyki — inwarianty ekonomii (decyzje projektowe)", () =>
 		for (const c of COSMETICS.filter((c) => c.tier === 3))
 			expect(c.cost).toBeGreaterThanOrEqual(45)
 	})
-	test("suma katalogu (013 + ramki 014) w przedziale 430–580", () => {
-		// Podbite z [300, 450] przy dołożeniu 5 ramek (140✨) w planie 014 —
-		// przedział ma łapać dryf 17 przedmiotów (dziś 486✨).
-		expect(launchTotal).toBeGreaterThanOrEqual(430)
-		expect(launchTotal).toBeLessThanOrEqual(580)
+	test("suma katalogu (013 + ramki 014) w przedziale 380–530", () => {
+		// [300,450] → [430,580] po ramkach z planu 014; → [380,530] po wycofaniu
+		// aura-iskier (−60✨; migracja v12→v13 zwraca cenę). Dziś 426✨.
+		expect(launchTotal).toBeGreaterThanOrEqual(380)
+		expect(launchTotal).toBeLessThanOrEqual(530)
 	})
 })
 

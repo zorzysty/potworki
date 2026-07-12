@@ -283,6 +283,43 @@ describe("migrateSave", () => {
 		expect(result.iskierki).toBe(3)
 	})
 
+	test("v12→v13: wycofana aura-iskier — zwrot 60✨, wpisy garderoby czyszczone", () => {
+		const v12 = {
+			iskierki: 950,
+			cosmetics: {
+				owned: ["kokarda", "aura-iskier", "aura-teczy"],
+				equipped: {
+					3: { aura: "aura-iskier", hat: "kokarda" },
+					5: { aura: "aura-teczy" },
+				},
+			},
+		}
+		const result = migrateSave(v12, 12) as {
+			iskierki: number
+			cosmetics: {
+				owned: string[]
+				equipped: Record<string, Record<string, string>>
+			}
+		}
+		// zwrot ceny z capem portfela (950 + 60 → 999)
+		expect(result.iskierki).toBe(999)
+		expect(result.cosmetics.owned).toEqual(["kokarda", "aura-teczy"])
+		// założenia: aura znika, reszta slotów zostaje
+		expect(result.cosmetics.equipped[3]).toEqual({ hat: "kokarda" })
+		expect(result.cosmetics.equipped[5]).toEqual({ aura: "aura-teczy" })
+	})
+
+	test("v12→v13: bez aura-iskier = brak zwrotu; brak cosmetics nie wywraca migracji", () => {
+		const clean = migrateSave(
+			{ iskierki: 7, cosmetics: { owned: ["kokarda"], equipped: {} } },
+			12,
+		) as { iskierki: number; cosmetics: { owned: string[] } }
+		expect(clean.iskierki).toBe(7)
+		expect(clean.cosmetics.owned).toEqual(["kokarda"])
+		const bare = migrateSave({ iskierki: 3 }, 12) as { iskierki: number }
+		expect(bare.iskierki).toBe(3)
+	})
+
 	test("fallback: brak unlockedStage → celebratedStage === 0", () => {
 		const result = migrateSave({}, 2) as Record<string, unknown>
 		expect(result.celebratedStage).toBe(0)
