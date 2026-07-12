@@ -556,3 +556,23 @@ body {
 		transform: translate(7px, -9px);
 	}
 }
+
+/* kapelusz jedzie z podskokiem potworka — lockstep z .monster-bob (2.4s,
+   ten sam easing, wspólny start przy montażu). Amplituda: -5 jednostek
+   viewBoxu 200 = -2,5% wysokości potworka; kapelusz ma 44% szerokości sceny
+   (kwadratowy art), więc -5,7% własnej wysokości ≈ ten sam dystans na
+   KAŻDYM rozmiarze sceny. Łańcuch transformacji powtarza bazę z inline
+   (translateX/rotate), bo animacja nadpisuje transform w całości. */
+.anim-hat-bob {
+	animation: hat-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes hat-bob {
+	0%,
+	100% {
+		transform: translateX(-50%) rotate(-6deg) translateY(0);
+	}
+	50% {
+		transform: translateX(-50%) rotate(-6deg) translateY(-5.7%);
+	}
+}

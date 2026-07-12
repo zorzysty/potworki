@@ -308,7 +308,16 @@ function AuraFx({ id }: { id: CosmeticId }) {
 // overlay={<><EquippedOverlay …/>{reakcja}</>}. Brak wpisów → null (zero DOM).
 // Ramka (slot "frame") celowo NIE tutaj: renderuje ją kontener karty
 // kolekcjonerskiej w CollectionScreen (cardClasses), nie nakładka na potworku.
-export function EquippedOverlay({ monsterId }: { monsterId: number }) {
+export function EquippedOverlay({
+	monsterId,
+	animate = true,
+}: {
+	monsterId: number
+	// true (domyślnie): kapelusz podskakuje w rytm .monster-bob potworka —
+	// wszyscy dzisiejsi callerzy renderują żywe potworki; false dla
+	// ewentualnych przyszłych statycznych użyć
+	animate?: boolean
+}) {
 	const cosmetics = useGame((s) => s.cosmetics)
 	const eq = equippedFor(cosmetics, monsterId)
 	if (!eq.hat && !eq.aura) return null
@@ -317,7 +326,7 @@ export function EquippedOverlay({ monsterId }: { monsterId: number }) {
 			{eq.aura && <AuraFx id={eq.aura} />}
 			{eq.hat && (
 				<div
-					className="absolute left-1/2"
+					className={`absolute left-1/2 ${animate ? "anim-hat-bob" : ""}`}
 					style={{
 						top: "-6%",
 						width: "44%",
