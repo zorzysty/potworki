@@ -4,6 +4,7 @@ import { Companion } from "../components/Companion"
 import { EggView } from "../components/EggView"
 import { HelpTip } from "../components/HelpTip"
 import { visitStage } from "../game/adaptive"
+import { expeditionProgress } from "../game/expeditions"
 import { fragmentsForEgg, isMaxStage, unlockedFactors } from "../game/facts"
 import { canAffordSomething } from "../game/village"
 import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
@@ -27,6 +28,8 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const iskierki = useGame((s) => s.iskierki)
 	const villageVisited = useGame((s) => s.villageVisited)
 	const facts = useGame((s) => s.facts)
+	const expedition = useGame((s) => s.expedition)
+	const totalRounds = useGame((s) => s.totalRounds)
 	const mode = useGame((s) => s.mode)
 	const setMode = useGame((s) => s.setMode)
 	const startRound = useGame((s) => s.startRound)
@@ -60,6 +63,16 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const visitRegion = visited !== null ? REGIONS[visited] : undefined
 	const guardianOwned =
 		visitRegion !== undefined && visitRegion.guardianId in ownedMonsters
+	// chip postępu wyprawy: pasywny status POD gniazdem; zasada „maks jedna
+	// proaktywna karta na Home" — USTĘPUJE zaproszeniu Strażnika, gdy oba by
+	// grały; „Graj!" nigdy nie spada niżej (plans/README.md, governance)
+	const trip =
+		expedition && !visitRegion
+			? expeditionProgress(expedition, totalRounds)
+			: null
+	const travelerName = expedition
+		? MONSTERS[expedition.monsterId]?.name
+		: undefined
 
 	return (
 		<div className="flex min-h-[var(--app-vh)] flex-col items-center gap-4 p-5 pt-8">
@@ -241,6 +254,26 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					/>
 				</div>
 			</div>
+
+			{trip && (
+				<button
+					type="button"
+					onClick={() => goTo("collection")}
+					className="touch-manipulation flex min-h-16 w-full max-w-xs items-center gap-2 rounded-3xl bg-white/80 px-4 py-2 shadow-md active:scale-95"
+				>
+					<span className="text-xl">🎒</span>
+					{/* PROPOZYCJA do dopracowania — chip postępu wyprawy */}
+					<span className="truncate text-sm font-extrabold text-grape-dark">
+						{travelerName}: {trip.done}/{trip.total} rund
+					</span>
+					<span className="h-2 min-w-8 flex-1 overflow-hidden rounded-full bg-slate-200">
+						<span
+							className="block h-full rounded-full bg-gradient-to-r from-emerald-300 to-emerald-400 transition-[width]"
+							style={{ width: `${(trip.done / trip.total) * 100}%` }}
+						/>
+					</span>
+				</button>
+			)}
 
 			<BigButton
 				onClick={() => goTo("collection")}

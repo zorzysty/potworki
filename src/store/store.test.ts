@@ -4,6 +4,7 @@ import { ACHIEVEMENTS } from "../achievements/catalog"
 import type { FactStats } from "../game/adaptive"
 import { emptyStats, stageFacts, VISIT_BONUS } from "../game/adaptive"
 import { COSMETICS } from "../game/cosmetics"
+import { EXPEDITIONS_BY_ID } from "../game/expeditions"
 import type { FactKey } from "../game/facts"
 import { ISKIERKI_FOR_DUP, WISH_COST_NO_DREAM } from "../game/rewards"
 import { BUILDINGS, DECORATIONS } from "../game/village"
@@ -1326,5 +1327,157 @@ describe("odwiedziny u Strażnika (startVisitRound)", () => {
 		useGame.setState({ iskierki: 998 })
 		playVisitRoundClean()
 		expect(game().iskierki).toBe(999)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Wyprawy potworków: wysłanie/zawrócenie (guardy), rozstrzygnięcie po rundach,
+// nagroda + cap, licznik, parytet debugFinishRound
+// ---------------------------------------------------------------------------
+
+describe("wyprawy potworków", () => {
+	const playCleanRound = () => {
+		game().startRound()
+		for (let i = 0; i < 10; i++) {
+			answer(true)
+			game().nextQuestion()
+		}
+	}
+	const ownSome = () =>
+		useGame.setState({
+			ownedMonsters: { 0: { hatchedAt: 0 }, 1: { hatchedAt: 1 } },
+		})
+	const zwiadReward = EXPEDITIONS_BY_ID.get("zwiad")?.rewardIskierki as number
+
+	test("sendExpedition: ustawia stan z roundsAtStart === totalRounds", () => {
+		suppressAchievements()
+		ownSome()
+		playCleanRound() // totalRounds = 1 → snapshot musi być z chwili wysłania
+		game().sendExpedition(0, "zwiad")
+		expect(game().expedition).toEqual({
+			monsterId: 0,
+			typeId: "zwiad",
+			roundsAtStart: 1,
+		})
+	})
+
+	test("sendExpedition: no-op gdy wyprawa już trwa (jedna naraz)", () => {
+		ownSome()
+		game().sendExpedition(0, "zwiad")
+		game().sendExpedition(1, "wielka")
+		expect(game().expedition?.monsterId).toBe(0)
+		expect(game().expedition?.typeId).toBe("zwiad")
+	})
+
+	test("sendExpedition: no-op dla nieposiadanego potworka", () => {
+		ownSome()
+		game().sendExpedition(42, "zwiad")
+		expect(game().expedition).toBeNull()
+	})
+
+	test("sendExpedition: no-op dla przyjaciela (zostaje w domu)", () => {
+		ownSome()
+		useGame.setState({ companionId: 0 })
+		game().sendExpedition(0, "zwiad")
+		expect(game().expedition).toBeNull()
+		// inny posiadany potworek może iść
+		game().sendExpedition(1, "zwiad")
+		expect(game().expedition?.monsterId).toBe(1)
+	})
+
+	test("recallExpedition: czyści bez nagrody i bez kary; ponowne wysłanie działa od ręki", () => {
+		suppressAchievements()
+		ownSome()
+		useGame.setState({ iskierki: 10 })
+		game().sendExpedition(0, "zwiad")
+		game().recallExpedition()
+		expect(game().expedition).toBeNull()
+		expect(game().iskierki).toBe(10)
+		// bez cooldownu — misclick jest odwracalny w obie strony
+		game().sendExpedition(0, "wyprawa")
+		expect(game().expedition?.typeId).toBe("wyprawa")
+	})
+
+	test("rozstrzygnięcie: zwiad (3 rundy) wraca dokładnie po 3. ukończonej rundzie", () => {
+		suppressAchievements()
+		ownSome()
+		game().sendExpedition(0, "zwiad")
+
+		playCleanRound() // runda 1: żołd 4 (pierwsza dnia, perfekcja)
+		expect(game().expedition).not.toBeNull()
+		expect(game().round?.expeditionReturn).toBeNull()
+		playCleanRound() // runda 2: żołd 3 — wciąż w drodze
+		expect(game().expedition).not.toBeNull()
+		expect(game().round?.expeditionReturn).toBeNull()
+
+		playCleanRound() // runda 3: żołd 3 + powrót
+		const s = game()
+		expect(s.round?.expeditionReturn).toEqual({
+			monsterId: 0,
+			rewardIskierki: zwiadReward,
+			tropMonsterId: null, // zwiad: tropChance 0
+		})
+		expect(s.expedition).toBeNull()
+		expect(s.achievementStats.expeditionsCompleted).toBe(1)
+		// portfel = żołdy (4+3+3) + nagroda wyprawy + ewentualne tęcze jajek
+		// (jajko nr 1 domyka się w rundzie 1 przy score 30 → ~40% tęczy; jajko
+		// nr 2, próg 14, domyka się w rundzie 3) — wzór testów żołdu
+		const rainbow1 = s.pendingEggs[0]?.quality === "rainbow" ? 1 : 0
+		const rainbow2 = s.pendingEggs[1]?.quality === "rainbow" ? 1 : 0
+		expect(s.iskierki).toBe(4 + 3 + 3 + zwiadReward + rainbow1 + rainbow2)
+	})
+
+	test("nagroda powrotu respektuje cap portfela (998 → 999)", () => {
+		suppressAchievements()
+		ownSome()
+		game().sendExpedition(0, "zwiad")
+		playCleanRound()
+		playCleanRound()
+		useGame.setState({ iskierki: 998 })
+		playCleanRound() // żołd 3 + nagroda 4 → i tak 999
+		expect(game().round?.expeditionReturn).not.toBeNull()
+		expect(game().iskierki).toBe(999)
+	})
+
+	test("debugFinishRound rozstrzyga powrót tak samo jak prawdziwa finalizacja", () => {
+		suppressAchievements()
+		ownSome()
+		game().sendExpedition(0, "zwiad")
+		playCleanRound()
+		playCleanRound()
+		game().startRound()
+		game().debugFinishRound(30) // 3. ukończona runda
+		const s = game()
+		expect(s.round?.phase).toBe("summary")
+		expect(s.round?.expeditionReturn?.monsterId).toBe(0)
+		expect(s.round?.expeditionReturn?.rewardIskierki).toBe(zwiadReward)
+		expect(s.expedition).toBeNull()
+		expect(s.achievementStats.expeditionsCompleted).toBe(1)
+	})
+
+	test("debugSimulateRound rozstrzyga po cichu (licznik i nagroda bez rundy)", () => {
+		suppressAchievements()
+		ownSome()
+		game().sendExpedition(0, "zwiad")
+		const before = game().iskierki
+		game().debugSimulateRound(30)
+		game().debugSimulateRound(30)
+		expect(game().expedition).not.toBeNull()
+		game().debugSimulateRound(30)
+		const s = game()
+		expect(s.expedition).toBeNull()
+		expect(s.achievementStats.expeditionsCompleted).toBe(1)
+		expect(s.round).toBeNull()
+		// portfel urósł co najmniej o nagrodę wyprawy (plus żołdy/tęcze symulacji)
+		expect(s.iskierki).toBeGreaterThanOrEqual(before + zwiadReward)
+	})
+
+	test("debugReset czyści wyprawę (spread INITIAL_SAVE)", () => {
+		ownSome()
+		game().sendExpedition(0, "wielka")
+		expect(game().expedition).not.toBeNull()
+		game().debugReset()
+		expect(game().expedition).toBeNull()
+		expect(game().achievementStats.expeditionsCompleted).toBe(0)
 	})
 })

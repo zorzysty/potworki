@@ -17,6 +17,12 @@ import {
 import type { CosmeticId, CosmeticSlot } from "../game/cosmetics"
 import { COSMETICS_BY_ID, isOwned, sklepikLevel } from "../game/cosmetics"
 import { simulateRoundOutcome } from "../game/debug"
+import type { ExpeditionTypeId } from "../game/expeditions"
+import {
+	EXPEDITIONS_BY_ID,
+	isExpeditionDone,
+	resolveExpedition,
+} from "../game/expeditions"
 import type { Fact, FactKey, GameMode, RoundQuestion } from "../game/facts"
 
 export type { RoundQuestion } from "../game/facts"
@@ -57,6 +63,7 @@ import {
 	idsByRarityForMode,
 	isDivisionOnly,
 	isGapOnly,
+	MONSTERS,
 	rarityOf,
 } from "../monsters/catalog"
 import type { AchievementCounters, AchievementEntry, SaveState } from "./schema"
@@ -100,6 +107,15 @@ export interface RoundState {
 	// wybiera region/Strażnika i włącza podziękowanie (+VISIT_BONUS ✨) przy finalizacji.
 	// Efemeryczne (RoundState nie jest persystowany). null = zwykła runda.
 	visitStage: number | null
+	// powrót z wyprawy rozstrzygnięty przy finalizacji TEJ rundy (karta w
+	// podsumowaniu): nagroda już doliczona do iskierek; trop = wskazówka o
+	// nieposiadanym potworku (null gdy brak). Efemeryczne jak wageEarned —
+	// bez migracji. null = nikt nie wrócił w tej rundzie.
+	expeditionReturn: {
+		monsterId: number
+		rewardIskierki: number
+		tropMonsterId: number | null
+	} | null
 }
 
 export interface HatchResult {
@@ -132,6 +148,8 @@ interface GameState extends SaveState {
 	clearLastHatch: () => void
 	setDreamMonster: (id: number | null) => void
 	setCompanion: (id: number | null) => void
+	sendExpedition: (monsterId: number, typeId: ExpeditionTypeId) => void
+	recallExpedition: () => void
 	buyWishEgg: () => void
 	buildVillage: (id: BuildingId) => void
 	buyDecoration: (id: DecorationId) => void
@@ -173,6 +191,37 @@ function bumpDaysPlayed(
 	const today = dayStamp(now)
 	if (stats.lastPlayedDay === today) return stats
 	return { ...stats, daysPlayed: stats.daysPlayed + 1, lastPlayedDay: today }
+}
+
+// Pula tropu z wyprawy: WSZYSTKIE id katalogu (wskazówka może dotyczyć każdego
+// nieposiadanego — także ekskluzywnych trybów, bo wymarzonym może być każdy).
+const ALL_MONSTER_IDS: readonly number[] = MONSTERS.map((m) => m.id)
+
+// Rozstrzygnięcie powrotu wyprawy przy finalizacji rundy (totalRounds+1 =
+// właśnie ukończona runda); matematyka w src/game/expeditions.ts. Gdy nikt nie
+// wraca — stan wyprawy bez zmian, reward 0. Wspólne dla nextQuestion i ścieżek
+// debug (debugFinishRound płaci i pokazuje kartę powrotu; debugSimulateRound
+// płaci po cichu — nie ma rundy, więc nie ma expeditionReturn).
+function settleExpedition(state: SaveState): {
+	expedition: SaveState["expedition"]
+	expeditionReturn: RoundState["expeditionReturn"]
+	reward: number
+} {
+	const e = state.expedition
+	if (!e || !isExpeditionDone(e, state.totalRounds + 1)) {
+		return { expedition: e, expeditionReturn: null, reward: 0 }
+	}
+	const r = resolveExpedition(
+		e,
+		new Set(Object.keys(state.ownedMonsters).map(Number)),
+		ALL_MONSTER_IDS,
+		Math.random,
+	)
+	return {
+		expedition: null,
+		expeditionReturn: { monsterId: e.monsterId, ...r },
+		reward: r.rewardIskierki,
+	}
 }
 
 // Pula losowania potworków zależna od trybu jajka (idsByRarityForMode w
@@ -346,6 +395,7 @@ export const useGame = create<GameState>()(
 						unlockedThisRound: false,
 						wageEarned: 0,
 						visitStage: null,
+						expeditionReturn: null,
 					},
 				})
 			},
@@ -401,6 +451,7 @@ export const useGame = create<GameState>()(
 						unlockedThisRound: false,
 						wageEarned: 0,
 						visitStage: visited,
+						expeditionReturn: null,
 					},
 				})
 			},
@@ -588,12 +639,19 @@ export const useGame = create<GameState>()(
 					// własną linią). Ścieżki debug (debugFinishRound/debugSimulateRound)
 					// omijają ten blok — świadomie nie płacą bonusu.
 					const visitBonus = round.visitStage !== null ? VISIT_BONUS : 0
+					// wyprawa wraca? (totalRounds+1 = właśnie ukończona runda) — PO
+					// żołdzie; nagroda dolicza się do tej samej, RAZ capowanej sumy
+					// co żołd i bonus wizyty (dwa niezależne źródła dochodu)
+					const settled = settleExpedition(state)
 					const achievementStats = bumpDaysPlayed(
 						{
 							...state.achievementStats,
 							perfectRounds:
 								state.achievementStats.perfectRounds +
 								(round.stars === MAX_STARS_PER_ROUND ? 1 : 0),
+							expeditionsCompleted:
+								state.achievementStats.expeditionsCompleted +
+								(settled.expeditionReturn !== null ? 1 : 0),
 						},
 						now,
 					)
@@ -602,15 +660,17 @@ export const useGame = create<GameState>()(
 						totalRounds: state.totalRounds + 1,
 						iskierki: Math.min(
 							ISKIERKI_CAP,
-							state.iskierki + wageEarned + visitBonus,
+							state.iskierki + wageEarned + visitBonus + settled.reward,
 						),
 						achievementStats,
+						expedition: settled.expedition,
 						round: {
 							...round,
 							phase: "summary",
 							asked,
 							unlockedThisRound,
 							wageEarned,
+							expeditionReturn: settled.expeditionReturn,
 						},
 					})
 					get().checkAchievements()
@@ -726,6 +786,26 @@ export const useGame = create<GameState>()(
 			// interakcji z pulą losowań — dlatego, w odróżnieniu od dreamMonsterId,
 			// bez guardów isDivisionOnly (każdy posiadany potworek może nim być).
 			setCompanion: (id) => set({ companionId: id }),
+
+			// Wysyła potworka na wyprawę (postęp = ukończone rundy, patrz
+			// src/game/expeditions.ts). Guardy (ciche no-op): jedna wyprawa naraz,
+			// tylko posiadany potworek, NIGDY przyjaciel (zostaje w domu — to on
+			// mieszka na Home i kibicuje w rundach). Ten guard jest źródłem prawdy;
+			// UI pokazuje łagodne wyjaśnienia zamiast zablokowanych przycisków.
+			sendExpedition: (monsterId, typeId) => {
+				const state = get()
+				if (state.expedition !== null) return
+				if (!(monsterId in state.ownedMonsters)) return
+				if (monsterId === state.companionId) return
+				if (!EXPEDITIONS_BY_ID.has(typeId)) return
+				set({
+					expedition: { monsterId, typeId, roundsAtStart: state.totalRounds },
+				})
+			},
+
+			// Zawrócenie z wyprawy: darmowe i natychmiastowe — bez nagrody i bez
+			// kary (pomyłki muszą być odwracalne; zero lock-in anxiety).
+			recallExpedition: () => set({ expedition: null }),
 
 			buyWishEgg: () => {
 				const state = get()
@@ -932,16 +1012,29 @@ export const useGame = create<GameState>()(
 					undefined,
 					state.mode,
 				)
+				// wyprawa rozstrzyga się jak w prawdziwej rundzie, ale PO CICHU —
+				// symulacja nie ma rundy, więc karta powrotu (expeditionReturn) nie
+				// istnieje; nagroda i licznik idą normalnie
+				const settled = settleExpedition(state)
 				set({
 					facts: o.facts,
 					eggFragments: o.eggFragments,
 					eggStarBank: o.eggStarBank,
 					eggsEarned: o.eggsEarned,
 					pendingEggs: o.pendingEggs,
-					iskierki: o.iskierki,
+					iskierki: Math.min(ISKIERKI_CAP, o.iskierki + settled.reward),
 					unlockedStage: o.unlockedStage,
 					totalRounds: state.totalRounds + 1,
-					achievementStats: bumpDaysPlayed(state.achievementStats, Date.now()),
+					expedition: settled.expedition,
+					achievementStats: bumpDaysPlayed(
+						{
+							...state.achievementStats,
+							expeditionsCompleted:
+								state.achievementStats.expeditionsCompleted +
+								(settled.expeditionReturn !== null ? 1 : 0),
+						},
+						Date.now(),
+					),
 				})
 				get().checkAchievements()
 			},
@@ -961,15 +1054,19 @@ export const useGame = create<GameState>()(
 					FACTS_BY_KEY.get(round.question.key),
 					round.mode,
 				)
+				// wyprawa rozstrzyga się jak przy prawdziwej finalizacji — runda
+				// wchodzi w summary z pełnymi eventami, więc karta powrotu też gra
+				const settled = settleExpedition(state)
 				set({
 					facts: o.facts,
 					eggFragments: o.eggFragments,
 					eggStarBank: o.eggStarBank,
 					eggsEarned: o.eggsEarned,
 					pendingEggs: o.pendingEggs,
-					iskierki: o.iskierki,
+					iskierki: Math.min(ISKIERKI_CAP, o.iskierki + settled.reward),
 					unlockedStage: o.unlockedStage,
 					totalRounds: state.totalRounds + 1,
+					expedition: settled.expedition,
 					// symulacja nie przechodzi przez pressConfirm/nextQuestion, więc liczniki
 					// zdarzeniowe ustawiamy tu wprost — by dało się przetestować z ekranu debug
 					achievementStats: bumpDaysPlayed(
@@ -979,6 +1076,9 @@ export const useGame = create<GameState>()(
 							perfectRounds:
 								state.achievementStats.perfectRounds +
 								(totalStars === MAX_STARS_PER_ROUND ? 1 : 0),
+							expeditionsCompleted:
+								state.achievementStats.expeditionsCompleted +
+								(settled.expeditionReturn !== null ? 1 : 0),
 						},
 						Date.now(),
 					),
@@ -992,6 +1092,7 @@ export const useGame = create<GameState>()(
 						eggsCreated: o.createdIndices,
 						unlockedThisRound: o.unlockedThisRound,
 						wageEarned: o.wage,
+						expeditionReturn: settled.expeditionReturn,
 					},
 				})
 				get().checkAchievements()

@@ -92,7 +92,7 @@ function ownedGuardians(save: SaveState): number {
 
 const MAX_STAGE = STAGES.length - 1
 
-// 46 osiągnięć. Tytuły/opisy są robocze (do dopracowania); id są stabilne.
+// 48 osiągnięć. Tytuły/opisy są robocze (do dopracowania); id są stabilne.
 // Trudność (easy/medium/hard/legendary → 5/10/15/25 iskierek) jest per-wpis w polu
 // `difficulty`; kolejność tablicy = tripwire persystencji, nie grupowanie wg trudności.
 export const ACHIEVEMENTS: readonly AchievementDef[] = [
@@ -535,5 +535,27 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		icon: "🔍",
 		difficulty: "medium",
 		progress: ({ counters }) => ({ current: counters.gapCorrect, target: 50 }),
+	},
+	{
+		id: "pierwsza-wyprawa",
+		title: "Pierwsza wyprawa",
+		description: "Wyślij potworka na wyprawę i przywitaj go po powrocie.",
+		icon: "🎒",
+		difficulty: "easy",
+		progress: ({ counters }) => ({
+			current: counters.expeditionsCompleted,
+			target: 1,
+		}),
+	},
+	{
+		id: "obiezyswiat",
+		title: "Obieżyświat",
+		description: "Ukończ 10 wypraw potworków.",
+		icon: "🧭",
+		difficulty: "medium",
+		progress: ({ counters }) => ({
+			current: counters.expeditionsCompleted,
+			target: 10,
+		}),
 	},
 ]

@@ -21,6 +21,7 @@ const maxCounters: AchievementCounters = {
 	wishEggsBought: 5,
 	daysPlayed: 21,
 	lastPlayedDay: "2026-1-1",
+	expeditionsCompleted: 10,
 }
 const maxSave: SaveState = {
 	...INITIAL_SAVE,
@@ -64,12 +65,12 @@ describe("evaluateAchievements", () => {
 		expect(r.iskierkiReward).toBe(0)
 	})
 
-	test("maksymalny zapis → wszystkie 46 + pełna nagroda (565)", () => {
+	test("maksymalny zapis → wszystkie 48 + pełna nagroda (580)", () => {
 		const r = evaluateAchievements(maxCtx, new Set())
 		expect(r.newlyUnlocked.length).toBe(ACHIEVEMENTS.length)
 		expect(r.iskierkiReward).toBe(TOTAL_REWARD)
-		// 9×easy(5) + 15×medium(10) + 18×hard(15) + 4×legendary(25) = 565
-		expect(r.iskierkiReward).toBe(565)
+		// 10×easy(5) + 16×medium(10) + 18×hard(15) + 4×legendary(25) = 580
+		expect(r.iskierkiReward).toBe(580)
 	})
 
 	test("idempotencja: już zdobyte nie wpadają ponownie ani nie naliczają iskierek", () => {

@@ -11,6 +11,7 @@ import {
 	equippedFor,
 	isOwned,
 } from "../game/cosmetics"
+import { EXPEDITIONS, expeditionProgress } from "../game/expeditions"
 import { RARITY_ORDER } from "../game/rewards"
 import {
 	isDivisionOnly,
@@ -34,7 +35,7 @@ const SORTED_MONSTERS = [...MONSTERS].sort(
 
 // Garderoba na karcie posiadanego potworka: sekcja ZWIJANA (domyślnie zwinięta
 // — karta ma zostać trofeum, nie panelem sterowania; kolejność sekcji modala:
-// przyjaciel → Ubierz 🎩 → przyszła Wyprawa, patrz plans/README.md „Shared-
+// przyjaciel → Ubierz 🎩 → Wyprawa 🎒, patrz plans/README.md „Shared-
 // surface governance"). Per slot poziomy rządek kupionych rzeczy + chip
 // „zdejmij"; tap zakłada od ręki (equipCosmetic), założona rzecz ma ring.
 function WardrobeSection({ monsterId }: { monsterId: number }) {
@@ -148,6 +149,120 @@ function WardrobeSection({ monsterId }: { monsterId: number }) {
 								</div>
 							</div>
 						)}
+					</div>
+				))}
+		</div>
+	)
+}
+
+// Wyprawa na karcie posiadanego potworka: sekcja ZWIJANA (domyślnie zwinięta)
+// POD garderobą — kolejność sekcji modala: przyjaciel → Ubierz 🎩 → Wyprawa 🎒
+// (binding w plans/README.md „Shared-surface governance"). Jedna wyprawa naraz,
+// przyjaciel zostaje w domu (guard w store jest źródłem prawdy — tu tylko
+// łagodne wyjaśnienia, nigdy ton błędu), zawrócenie darmowe i natychmiastowe.
+function ExpeditionSection({
+	monsterId,
+	onSent,
+}: {
+	monsterId: number
+	onSent: () => void
+}) {
+	const expedition = useGame((s) => s.expedition)
+	const totalRounds = useGame((s) => s.totalRounds)
+	const companionId = useGame((s) => s.companionId)
+	const sendExpedition = useGame((s) => s.sendExpedition)
+	const recallExpedition = useGame((s) => s.recallExpedition)
+	const [open, setOpen] = useState(false)
+
+	const isTraveler = expedition?.monsterId === monsterId
+	const progress = expedition
+		? expeditionProgress(expedition, totalRounds)
+		: null
+
+	return (
+		<div className="w-full rounded-2xl bg-emerald-50">
+			<div className="flex items-center gap-1 pr-3">
+				<button
+					type="button"
+					onClick={() => setOpen((o) => !o)}
+					className="flex min-h-16 min-w-0 flex-1 touch-manipulation items-center justify-between px-4 py-3 text-lg font-extrabold text-grape-dark active:scale-[0.98]"
+				>
+					<span>
+						Wyprawa 🎒
+						{isTraveler && progress && (
+							<span className="ml-2 text-sm font-extrabold text-emerald-600">
+								{progress.done}/{progress.total}
+							</span>
+						)}
+					</span>
+					<span
+						className={`text-xl transition-transform ${open ? "rotate-180" : ""}`}
+					>
+						▾
+					</span>
+				</button>
+				<HelpTip
+					placement="top"
+					align="right"
+					text="Wyślij potworka na wyprawę! Każda ukończona runda przybliża go do powrotu — wróci z iskierkami ✨. W każdej chwili możesz go zawrócić, nic się nie stanie."
+				/>
+			</div>
+			{open &&
+				(isTraveler && progress ? (
+					<div className="flex flex-col gap-2 px-3 pb-3">
+						{/* PROPOZYCJA do dopracowania — status podróżnika */}
+						<div className="flex items-center justify-center gap-1.5 rounded-2xl bg-white px-4 py-3 text-lg font-extrabold text-emerald-600">
+							🎒 W drodze: {progress.done}/{progress.total} rund
+						</div>
+						<BigButton
+							onClick={recallExpedition}
+							variant="secondary"
+							className="w-full py-3 text-lg"
+						>
+							Zawróć
+						</BigButton>
+					</div>
+				) : monsterId === companionId ? (
+					// PROPOZYCJA do dopracowania — przyjaciel nigdy nie wyjeżdża;
+					// łagodna linijka, nie zablokowany przycisk
+					<div className="px-4 pb-4 text-center text-sm font-bold text-slate-500">
+						Przyjaciel woli zostać z Tobą 💛
+					</div>
+				) : expedition ? (
+					// PROPOZYCJA do dopracowania — ktoś inny jest w drodze
+					<div className="px-4 pb-4 text-center text-sm font-bold text-slate-500">
+						Ktoś już jest na wyprawie — poczekaj na jego powrót
+					</div>
+				) : (
+					<div className="flex flex-col gap-2 px-3 pb-3">
+						{EXPEDITIONS.map((def) => (
+							<button
+								key={def.id}
+								type="button"
+								onClick={() => {
+									sendExpedition(monsterId, def.id)
+									onSent()
+								}}
+								className="flex min-h-16 touch-manipulation flex-col items-start justify-center gap-0.5 rounded-2xl bg-white px-4 py-2 text-left active:scale-[0.98]"
+							>
+								<span className="flex w-full items-baseline justify-between gap-2">
+									<span className="text-lg font-extrabold text-grape-dark">
+										{def.name}
+									</span>
+									<span className="whitespace-nowrap text-sm font-extrabold text-slate-500">
+										{def.durationRounds} rund ·{" "}
+										<span className="text-amber-500">
+											+{def.rewardIskierki} ✨
+										</span>
+										{/* podpowiedź tropu tylko dla pewniaka (wielka) */}
+										{def.tropChance >= 1 && " · 🔍 trop!"}
+									</span>
+								</span>
+								<span className="text-xs font-bold text-slate-400">
+									{def.description}
+								</span>
+							</button>
+						))}
 					</div>
 				))}
 		</div>
@@ -459,6 +574,12 @@ export function CollectionScreen() {
 
 								{/* ===== GARDEROBA (zwijana) ===== */}
 								<WardrobeSection monsterId={selected.id} />
+
+								{/* ===== WYPRAWA (zwijana) ===== */}
+								<ExpeditionSection
+									monsterId={selected.id}
+									onSent={() => setSelectedId(null)}
+								/>
 							</>
 						) : (
 							<>

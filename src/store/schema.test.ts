@@ -13,7 +13,7 @@ describe("migrateSave", () => {
 		expect(migrateSave(x, SAVE_VERSION)).toEqual(x)
 	})
 
-	test("pełny łańcuch v1→v11: eggsEarned, celebratedStage, mode jajek, eggStarBank, osiągnięcia, companionId, wioska, gapCorrect, garderoba, dane zachowane", () => {
+	test("pełny łańcuch v1→v12: eggsEarned, celebratedStage, mode jajek, eggStarBank, osiągnięcia, companionId, wioska, gapCorrect, garderoba, wyprawy, dane zachowane", () => {
 		const v1 = {
 			ownedMonsters: {
 				0: { hatchedAt: 0 },
@@ -32,8 +32,8 @@ describe("migrateSave", () => {
 		expect(result.pendingEggs).toEqual([{ quality: "normal", mode: "mult" }])
 		// v4→v5: brak eggFragments w v1 → eggStarBank 0
 		expect(result.eggStarBank).toBe(0)
-		// v5→v6 + v6→v7 + v9→v10: osiągnięcia — pusty ledger + zerowe liczniki
-		// (z daysPlayed i gapCorrect)
+		// v5→v6 + v6→v7 + v9→v10 + v11→v12: osiągnięcia — pusty ledger + zerowe
+		// liczniki (z daysPlayed, gapCorrect i expeditionsCompleted)
 		expect(result.achievements).toEqual({})
 		expect(result.achievementStats).toEqual({
 			perfectRounds: 0,
@@ -44,6 +44,7 @@ describe("migrateSave", () => {
 			daysPlayed: 0,
 			lastPlayedDay: "",
 			gapCorrect: 0,
+			expeditionsCompleted: 0,
 		})
 		// v7→v8: companionId startuje null (brak przyjaciela)
 		expect(result.companionId).toBeNull()
@@ -55,6 +56,8 @@ describe("migrateSave", () => {
 		})
 		// v10→v11: garderoba startuje pusta
 		expect(result.cosmetics).toEqual({ owned: [], equipped: {} })
+		// v11→v12: nikt nie jest na wyprawie
+		expect(result.expedition).toBeNull()
 		// dane oryginalne zachowane
 		expect(result.iskierki).toBe(7)
 		expect(result.unlockedStage).toBe(2)
@@ -90,13 +93,14 @@ describe("migrateSave", () => {
 			daysPlayed: 0,
 			lastPlayedDay: "",
 			gapCorrect: 0,
+			expeditionsCompleted: 0,
 		})
 		expect(result.companionId).toBeNull()
 		expect(result.iskierki).toBe(4)
 		expect(result.totalRounds).toBe(9)
 	})
 
-	test("v6→koniec: dopisuje daysPlayed/lastPlayedDay/gapCorrect do istniejących liczników", () => {
+	test("v6→koniec: dopisuje daysPlayed/lastPlayedDay/gapCorrect/expeditionsCompleted do istniejących liczników", () => {
 		const v6 = {
 			iskierki: 3,
 			achievementStats: {
@@ -117,6 +121,7 @@ describe("migrateSave", () => {
 			daysPlayed: 0,
 			lastPlayedDay: "",
 			gapCorrect: 0,
+			expeditionsCompleted: 0,
 		})
 		expect(result.iskierki).toBe(3)
 	})
@@ -127,6 +132,7 @@ describe("migrateSave", () => {
 			daysPlayed: 0,
 			lastPlayedDay: "",
 			gapCorrect: 0,
+			expeditionsCompleted: 0,
 		})
 		expect(result.iskierki).toBe(9)
 	})
@@ -154,13 +160,17 @@ describe("migrateSave", () => {
 			daysPlayed: 3,
 			lastPlayedDay: "2026-7-1",
 			gapCorrect: 0,
+			expeditionsCompleted: 0,
 		})
 		expect(result.iskierki).toBe(11)
 	})
 
 	test("v9→v10: brak achievementStats nie wywraca migracji", () => {
 		const result = migrateSave({ iskierki: 9 }, 9) as Record<string, unknown>
-		expect(result.achievementStats).toEqual({ gapCorrect: 0 })
+		expect(result.achievementStats).toEqual({
+			gapCorrect: 0,
+			expeditionsCompleted: 0,
+		})
 		expect(result.iskierki).toBe(9)
 	})
 
@@ -171,6 +181,45 @@ describe("migrateSave", () => {
 		expect(result.iskierki).toBe(123)
 		expect(result.companionId).toBe(3)
 		expect(result.totalRounds).toBe(12)
+	})
+
+	test("v11→v12: dodaje expedition null + expeditionsCompleted 0, reszta liczników zachowana", () => {
+		const v11 = {
+			iskierki: 55,
+			companionId: 2,
+			achievementStats: {
+				perfectRounds: 2,
+				divCorrect: 4,
+				totalStars: 30,
+				rainbowEggsHatched: 1,
+				wishEggsBought: 0,
+				daysPlayed: 3,
+				lastPlayedDay: "2026-7-1",
+				gapCorrect: 6,
+			},
+		}
+		const result = migrateSave(v11, 11) as Record<string, unknown>
+		expect(result.expedition).toBeNull()
+		expect(result.achievementStats).toEqual({
+			perfectRounds: 2,
+			divCorrect: 4,
+			totalStars: 30,
+			rainbowEggsHatched: 1,
+			wishEggsBought: 0,
+			daysPlayed: 3,
+			lastPlayedDay: "2026-7-1",
+			gapCorrect: 6,
+			expeditionsCompleted: 0,
+		})
+		expect(result.iskierki).toBe(55)
+		expect(result.companionId).toBe(2)
+	})
+
+	test("v11→v12: brak achievementStats nie wywraca migracji", () => {
+		const result = migrateSave({ iskierki: 9 }, 11) as Record<string, unknown>
+		expect(result.expedition).toBeNull()
+		expect(result.achievementStats).toEqual({ expeditionsCompleted: 0 })
+		expect(result.iskierki).toBe(9)
 	})
 
 	test("v7→v8: dodaje companionId null, reszta zachowana", () => {
@@ -258,6 +307,7 @@ describe("INITIAL_SAVE shape-lock", () => {
 			"eggFragments",
 			"eggStarBank",
 			"eggsEarned",
+			"expedition",
 			"facts",
 			"iskierki",
 			"ownedMonsters",

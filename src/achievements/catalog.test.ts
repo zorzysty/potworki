@@ -23,6 +23,7 @@ const maxCounters: AchievementCounters = {
 	wishEggsBought: 5,
 	daysPlayed: 21,
 	lastPlayedDay: "2026-1-1",
+	expeditionsCompleted: 10,
 }
 const maxSave: SaveState = {
 	...INITIAL_SAVE,
@@ -55,8 +56,8 @@ const emptyCtx: AchievementCtx = {
 }
 
 describe("ACHIEVEMENTS catalog", () => {
-	test("jest dokładnie 46 osiągnięć", () => {
-		expect(ACHIEVEMENTS.length).toBe(46)
+	test("jest dokładnie 48 osiągnięć", () => {
+		expect(ACHIEVEMENTS.length).toBe(48)
 	})
 
 	test("id są unikalne", () => {
@@ -114,6 +115,8 @@ describe("ACHIEVEMENTS catalog", () => {
 			"wielki-budowniczy",
 			"pierwsza-luka",
 			"luka-50",
+			"pierwsza-wyprawa",
+			"obiezyswiat",
 		])
 	})
 

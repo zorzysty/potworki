@@ -1,12 +1,13 @@
 import type { FactStats } from "../game/adaptive"
 import type { CosmeticsState } from "../game/cosmetics"
 import { INITIAL_COSMETICS } from "../game/cosmetics"
+import type { ExpeditionState } from "../game/expeditions"
 import type { FactKey } from "../game/facts"
 import type { PendingEgg } from "../game/rewards"
 import type { VillageState } from "../game/village"
 import { INITIAL_VILLAGE } from "../game/village"
 
-export const SAVE_VERSION = 11
+export const SAVE_VERSION = 12
 
 // Wpis ledgera osiągnięć. `seen` jak celebratedStage: false → badge „nowe!" na Home,
 // czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen).
@@ -29,6 +30,9 @@ export interface AchievementCounters {
 	// store podbija `daysPlayed` tylko gdy nowa runda wypada w innym dniu niż ostatnia.
 	daysPlayed: number
 	lastPlayedDay: string
+	// ukończone wyprawy potworków — `expedition` czyści się przy powrocie, więc
+	// „ile wypraw ukończono" nie jest odtwarzalne z reszty zapisu (wzór wishEggsBought)
+	expeditionsCompleted: number
 }
 
 export interface SaveState {
@@ -48,6 +52,9 @@ export interface SaveState {
 	achievementStats: AchievementCounters // liczniki zdarzeniowe (patrz wyżej)
 	village: VillageState // wioska budowniczych: poziomy budynków, dekoracje, wybrany cel
 	cosmetics: CosmeticsState // garderoba: kupione przedmioty ze Sklepiku + założone per potworek
+	// potworek w drodze (null = nikt); postęp liczony WYŁĄCZNIE z totalRounds,
+	// nigdy zegarem — duration/reward pochodzą z katalogu w src/game/expeditions.ts
+	expedition: ExpeditionState | null
 }
 
 export const INITIAL_SAVE: SaveState = {
@@ -73,9 +80,11 @@ export const INITIAL_SAVE: SaveState = {
 		wishEggsBought: 0,
 		daysPlayed: 0,
 		lastPlayedDay: "",
+		expeditionsCompleted: 0,
 	},
 	village: INITIAL_VILLAGE,
 	cosmetics: INITIAL_COSMETICS,
+	expedition: null,
 }
 
 export const SAVE_KEYS = Object.keys(INITIAL_SAVE) as (keyof SaveState)[]
@@ -187,6 +196,21 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 		...(state as Record<string, unknown>),
 		cosmetics: { owned: [], equipped: {} },
 	}),
+	// v11→v12: dodano wyprawy potworków (plan 017). Start: nikt nie jest w drodze;
+	// licznik ukończonych wypraw od zera (mechanika liczy się od wdrożenia — wzorzec
+	// dni-grania, reconcile nie nadrabia wstecz).
+	11: (state) => {
+		const s = state as Record<string, unknown>
+		const stats =
+			s.achievementStats && typeof s.achievementStats === "object"
+				? (s.achievementStats as Record<string, unknown>)
+				: {}
+		return {
+			...s,
+			expedition: null,
+			achievementStats: { ...stats, expeditionsCompleted: 0 },
+		}
+	},
 }
 
 export function migrateSave(state: unknown, fromVersion: number): unknown {

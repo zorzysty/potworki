@@ -2,12 +2,14 @@ import confetti from "canvas-confetti"
 import { useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { HelpTip } from "../components/HelpTip"
+import { SpeechBubble } from "../components/SpeechBubble"
 import { BuildingArt } from "../components/village/BuildingArt"
 import { BuildReveal } from "../components/village/BuildReveal"
 import { BuildSheet, type SheetView } from "../components/village/BuildSheet"
 import { Resident, type ResidentMode } from "../components/village/Resident"
 import { WanderingMonster, wanderParams } from "../components/WanderingMonster"
 import type { CosmeticId } from "../game/cosmetics"
+import { expeditionProgress } from "../game/expeditions"
 import type { BuildingId, DecorationId } from "../game/village"
 import {
 	BUILDINGS,
@@ -17,7 +19,7 @@ import {
 	nextLevelCost,
 	villageCap,
 } from "../game/village"
-import { MONSTER_COUNT } from "../monsters/catalog"
+import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
 
@@ -102,8 +104,12 @@ export function VillageScreen() {
 	const setVillageGoal = useGame((s) => s.setVillageGoal)
 	const cosmetics = useGame((s) => s.cosmetics)
 	const buyCosmetic = useGame((s) => s.buyCosmetic)
+	const expedition = useGame((s) => s.expedition)
+	const totalRounds = useGame((s) => s.totalRounds)
 
 	const [sheet, setSheet] = useState<SheetView | null>(null)
+	// dymek postępu wyprawy przy obozie 🏕️ (tap otwiera/zamyka)
+	const [showCamp, setShowCamp] = useState(false)
 	const [reveal, setReveal] = useState<{
 		id: BuildingId
 		level: number
@@ -122,7 +128,10 @@ export function VillageScreen() {
 		(a, b) =>
 			(ownedMonsters[b]?.hatchedAt ?? 0) - (ownedMonsters[a]?.hatchedAt ?? 0),
 	)
-	let shown = sorted.slice(0, cap)
+	// podróżnik na wyprawie jest NIEOBECNY w wiosce — jego nieobecność wyjaśnia
+	// obóz 🏕️ na skraju łąki (bez niego zniknięcie wyglądałoby na zgubę/bug)
+	const travelers = sorted.filter((id) => id !== expedition?.monsterId)
+	let shown = travelers.slice(0, cap)
 	if (
 		companionId !== null &&
 		companionId in ownedMonsters &&
@@ -149,6 +158,11 @@ export function VillageScreen() {
 	const flowerPalette = FLOWER_PALETTE[ogrodek] ?? FLOWER_PALETTE[1]
 	const has = (id: DecorationId) => village.decorations.includes(id)
 	const goal = currentGoal(village)
+	// obóz wyprawy: postęp x/y rund + imię podróżnika (dymek po tapnięciu)
+	const camp = expedition ? expeditionProgress(expedition, totalRounds) : null
+	const travelerName = expedition
+		? MONSTERS[expedition.monsterId]?.name
+		: undefined
 	// pomnik przedstawia PIERWSZEGO wyklutego potworka dziecka
 	const firstHatchedId = [...ownedIds].sort(
 		(a, b) =>
@@ -489,6 +503,39 @@ export function VillageScreen() {
 							cheerNonce={i < 3 ? cheerNonce : 0}
 						/>
 					))}
+
+					{/* 🏕️ obóz wyprawy (WYMAGANY, gdy ktoś jest w drodze): namiot +
+					    mini-sylwetka podróżnika na stałym skraju łąki — dziecko zawsze
+					    wie, GDZIE jest jej potworek; tap → dymek z postępem x/y rund */}
+					{expedition && camp && (
+						<div
+							className="absolute z-[15]"
+							style={{ right: "2%", bottom: "2%" }}
+						>
+							{showCamp && (
+								<div className="absolute bottom-full right-0 w-max pb-1">
+									{/* PROPOZYCJA do dopracowania — dymek postępu wyprawy */}
+									<SpeechBubble
+										text={`🎒 ${travelerName}: ${camp.done}/${camp.total} rund`}
+									/>
+								</div>
+							)}
+							<button
+								type="button"
+								onClick={() => setShowCamp((v) => !v)}
+								aria-label={`${travelerName} jest na wyprawie — pokaż postęp`}
+								className="flex min-h-16 min-w-16 touch-manipulation flex-col items-center active:scale-95"
+							>
+								<span className="text-4xl drop-shadow">🏕️</span>
+								<MonsterSvg
+									id={expedition.monsterId}
+									size={36}
+									animate={false}
+									className="monster-silhouette opacity-80"
+								/>
+							</button>
+						</div>
+					)}
 
 					{/* wieczór (zabawka maks latarni): przygasza scenę, latarnie świecą */}
 					{evening && latarnie >= MAX_BUILDING_LEVEL && (

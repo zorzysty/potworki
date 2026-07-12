@@ -1,11 +1,15 @@
 import { BigButton } from "../components/BigButton"
+import { EquippedOverlay } from "../components/CosmeticArt"
 import { EggReward } from "../components/EggReward"
 import { GateReveal } from "../components/gate"
+import { MonsterStage } from "../components/MonsterStage"
+import { RARITY_META } from "../components/rarity"
 import { StarMeter } from "../components/StarMeter"
 import { useGateReveal } from "../components/useGateReveal"
 import { VISIT_BONUS } from "../game/adaptive"
 import { fragmentsForEgg } from "../game/facts"
 import { currentGoal } from "../game/village"
+import { rarityOf } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { REGIONS } from "../monsters/world"
 import { useGame } from "../store/store"
@@ -18,6 +22,8 @@ export function RoundSummary() {
 	const eggsEarned = useGame((s) => s.eggsEarned)
 	const village = useGame((s) => s.village)
 	const iskierki = useGame((s) => s.iskierki)
+	const dreamMonsterId = useGame((s) => s.dreamMonsterId)
+	const setDreamMonster = useGame((s) => s.setDreamMonster)
 	const goTo = useGame((s) => s.goTo)
 	const startRound = useGame((s) => s.startRound)
 
@@ -46,6 +52,11 @@ export function RoundSummary() {
 		round.visitStage !== null ? REGIONS[round.visitStage] : undefined
 	const guardianOwned =
 		visitRegion !== undefined && visitRegion.guardianId in ownedMonsters
+	// powrót z wyprawy: nagroda już doliczona przy finalizacji; trop pokazuje
+	// TYLKO sylwetkę + rzadkość (nigdy imię — konwencja „???" do wyklucia)
+	const back = round.expeditionReturn
+	const tropRarity =
+		back?.tropMonsterId != null ? rarityOf(back.tropMonsterId) : null
 
 	return (
 		<div className="flex min-h-[var(--app-vh)] flex-col items-center justify-center gap-5 p-6">
@@ -94,6 +105,64 @@ export function RoundSummary() {
 						</span>
 					)}
 				</button>
+			)}
+
+			{/* karta powrotu z wyprawy — POD chipem żołdu, rodzeństwo EggReward
+			    (kontrakt animacji jajka nietknięty); kompaktowa karta, nie pełny
+			    ekran (hierarchia payoffów: pełny ekran tylko dla rzadszych zdarzeń) */}
+			{back && (
+				<div className="anim-pop flex w-full max-w-sm flex-col gap-3 rounded-3xl bg-white/90 p-4 shadow-lg">
+					<div className="flex items-center gap-3">
+						{/* powracający nosi swój strój — przez MonsterStage */}
+						<MonsterStage
+							id={back.monsterId}
+							size={72}
+							overlay={<EquippedOverlay monsterId={back.monsterId} />}
+						/>
+						{/* PROPOZYCJA do dopracowania — powitanie z wyprawy */}
+						<div className="flex-1 text-lg font-extrabold leading-tight text-grape-dark">
+							Wrócił(a) z wyprawy!{" "}
+							<span className="whitespace-nowrap text-amber-500">
+								+{back.rewardIskierki} ✨
+							</span>
+						</div>
+					</div>
+					{back.tropMonsterId !== null && tropRarity !== null && (
+						<div className="flex items-center gap-3 rounded-2xl bg-violet-50 px-3 py-2">
+							{/* trop: sylwetka + rzadkość, NIGDY imię (tajemnica do wyklucia) */}
+							<MonsterSvg
+								id={back.tropMonsterId}
+								size={52}
+								animate={false}
+								className="monster-silhouette"
+							/>
+							<div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+								{/* PROPOZYCJA do dopracowania — tekst tropu */}
+								<span className="text-sm font-extrabold leading-tight text-slate-600">
+									Ktoś tajemniczy zostawił ślad!
+								</span>
+								<span
+									className={`rounded-full px-2.5 py-0.5 text-xs font-extrabold ${RARITY_META[tropRarity].badge}`}
+								>
+									{RARITY_META[tropRarity].label}
+								</span>
+							</div>
+							{/* oferta TYLKO przy pustym slocie wymarzonego — nigdy podmiana
+							    wybranego przez dziecko (decyzja maintainera) */}
+							{dreamMonsterId === null && (
+								<button
+									type="button"
+									onClick={() => setDreamMonster(back.tropMonsterId)}
+									className="touch-manipulation min-h-16 shrink-0 rounded-2xl bg-gradient-to-b from-amber-300 to-amber-400 px-3 py-2 text-sm font-extrabold text-white shadow active:scale-95"
+								>
+									Ustaw jako
+									<br />
+									wymarzonego! ✨
+								</button>
+							)}
+						</div>
+					)}
+				</div>
 			)}
 
 			{/* gdy brama otwiera się w tej rundzie, GateReveal (z-50) zasłania całość —
