@@ -229,7 +229,7 @@ export function CosmeticArt({
 
 // Aura: miękka poświata + drobinki wokół potworka (transform/opacity only,
 // niska nieprzezroczystość — potworek zostaje bohaterem).
-function AuraFx({ id }: { id: CosmeticId }) {
+function AuraFx({ id, animate }: { id: CosmeticId; animate: boolean }) {
 	if (id === "aura-teczy") {
 		return (
 			<>
@@ -244,11 +244,13 @@ function AuraFx({ id }: { id: CosmeticId }) {
 						mask: "radial-gradient(closest-side, transparent 60%, #000 66%)",
 					}}
 				/>
-				<span className="anim-float absolute left-[-6%] top-[6%] text-base">
+				<span
+					className={`absolute left-[-6%] top-[6%] text-base ${animate ? "anim-float" : ""}`}
+				>
 					🌈
 				</span>
 				<span
-					className="anim-sparkle absolute right-[-4%] bottom-[10%] text-sm"
+					className={`absolute right-[-4%] bottom-[10%] text-sm ${animate ? "anim-sparkle" : ""}`}
 					style={{ animationDelay: "0.6s" }}
 				>
 					✨
@@ -285,7 +287,7 @@ function AuraFx({ id }: { id: CosmeticId }) {
 			{spots.map((style, i) => (
 				<span
 					key={`${id}-${i}`}
-					className={`${fx.cls} absolute text-base`}
+					className={`${animate ? fx.cls : ""} absolute text-base`}
 					style={style}
 				>
 					{fx.bits[i]}
@@ -305,7 +307,9 @@ export function EquippedOverlay({
 	animate = true,
 }: {
 	monsterId: number
-	// true (domyślnie): kapelusz podskakuje w rytm .monster-bob potworka —
+	// true (domyślnie): kapelusz podskakuje w rytm .monster-bob potworka,
+	// a drobinki aury pływają/iskrzą; false = w pełni statyczny strój (kafle
+	// listy kolekcji) —
 	// wszyscy dzisiejsi callerzy renderują żywe potworki; false dla
 	// ewentualnych przyszłych statycznych użyć
 	animate?: boolean
@@ -315,7 +319,7 @@ export function EquippedOverlay({
 	if (!eq.hat && !eq.aura) return null
 	return (
 		<>
-			{eq.aura && <AuraFx id={eq.aura} />}
+			{eq.aura && <AuraFx id={eq.aura} animate={animate} />}
 			{eq.hat && (
 				<div
 					className={`absolute left-1/2 ${animate ? "anim-hat-bob" : ""}`}

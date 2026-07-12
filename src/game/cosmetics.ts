@@ -22,8 +22,9 @@ export interface CosmeticDef {
 	cost: number
 	// Pola ramek (slot "frame", plan 014) — oprawa karty kolekcjonerskiej:
 	// cardClasses podstawia się za CARD_THEME[rarity].card na kontenerze modala
-	// (rzadkość zostaje czytelna: wstążka RARITY_META.badge i kafle siatki
-	// nietknięte), cornerEmoji to opcjonalne emoji w GÓRNYCH rogach okna z artem.
+	// ORAZ za rzadkościowy kolor krawędzi kafla siatki (statycznie, bez anim-glow;
+	// rzadkość zostaje czytelna przez wstążkę RARITY_META.badge na karcie),
+	// cornerEmoji to opcjonalne emoji w GÓRNYCH rogach okna z artem.
 	cardClasses?: string
 	cornerEmoji?: string
 }

@@ -372,20 +372,45 @@ export function CollectionScreen() {
 				{SORTED_MONSTERS.map((monster) => {
 					const owned = monster.id in ownedMonsters
 					const isDream = monster.id === dreamMonsterId
+					// kafel nosi strój potworka (kapelusz/aura/ramka) STATYCZNIE —
+					// 80 animowanych kafli to za dużo, a lista ma być spokojna.
+					// Założona ramka podmienia rzadkościowy kolor krawędzi (świadoma
+					// decyzja maintainera; anim-glow złotej ramki wycięty na kaflu).
+					const tileFrameId = owned
+						? equippedFor(cosmetics, monster.id).frame
+						: undefined
+					const tileFrame =
+						tileFrameId !== undefined
+							? COSMETICS_BY_ID.get(tileFrameId)
+									?.cardClasses?.replace("anim-glow", "")
+									.trim()
+							: undefined
 					return (
 						<button
 							key={monster.id}
 							type="button"
 							onClick={() => setSelectedId(monster.id)}
 							className={`touch-manipulation relative flex flex-col items-center rounded-2xl border-4 bg-white/80 p-2 shadow-sm transition-transform active:scale-95
-								${RARITY_META[monster.rarity].border} ${isDream ? "ring-4 ring-amber-300" : ""}`}
+								${tileFrame ?? RARITY_META[monster.rarity].border} ${isDream ? "ring-4 ring-amber-300" : ""}`}
 						>
-							<MonsterSvg
-								id={monster.id}
-								size="100%"
-								animate={false}
-								className={owned ? "" : "monster-silhouette"}
-							/>
+							{owned ? (
+								<MonsterStage
+									id={monster.id}
+									size="100%"
+									animate={false}
+									frame="w-full"
+									overlay={
+										<EquippedOverlay monsterId={monster.id} animate={false} />
+									}
+								/>
+							) : (
+								<MonsterSvg
+									id={monster.id}
+									size="100%"
+									animate={false}
+									className="monster-silhouette"
+								/>
+							)}
 							<div className="mt-1 truncate text-xs font-extrabold text-slate-600">
 								{owned ? monster.name : "???"}
 							</div>
