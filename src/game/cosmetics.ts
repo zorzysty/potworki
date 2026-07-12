@@ -8,7 +8,7 @@ import { buildingLevel } from "./village"
 // schematu zapisu (id to stabilne stringi). To zaprojektowany powtarzalny zlew
 // iskierek po komplecie wioski i kolekcji.
 //
-// Czysty moduł: bez Math.random/Date.now()/DOM. Jednokierunkowy import
+// Czysty moduł: bez losowości, zegara i DOM. Jednokierunkowy import
 // z village.ts (buildingLevel) — bez cyklu.
 
 export type CosmeticSlot = "hat" | "aura" // "frame" zarezerwowane dla planu 014

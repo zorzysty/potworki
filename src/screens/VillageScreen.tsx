@@ -23,7 +23,7 @@ import { useGame } from "../store/store"
 
 // ---------------------------------------------------------------------------
 // Kompozycja sceny: pas nieba (słońce, tęcza, poświata latarni) → pas budynków
-// (górna 1/3, 6 działek) → łąka (wędrowcy, ścieżka, dekoracje). Budynki są
+// (górna 1/3, 7 działek) → łąka (wędrowcy, ścieżka, dekoracje). Budynki są
 // scenerią, przed którą żyją potworki — nie ikonami na brzegach ekranu.
 // Każdy zakup ZMIENIA scenę (kwiaty na łące, ścieżka, światła), nie tylko
 // dodaje obrazek — patrz plans/012 (zasada 2).
