@@ -126,7 +126,9 @@ function ZamekArt({ level, size }: { level: number; size: number | string }) {
 	const wall = `url(#zamek-w-${uid})`
 	const roof = `url(#zamek-r-${uid})`
 	return (
-		<svg viewBox="0 0 170 132" style={svgStyle(size)} aria-hidden="true">
+		// viewBox zaczyna się na y=-20: dach złotego donżonu (apex y=-4) i jego
+		// proporczyk (do y=-16) wystają ponad y=0 — bez marginesu szczyt się ucina
+		<svg viewBox="0 -20 170 152" style={svgStyle(size)} aria-hidden="true">
 			<defs>
 				<linearGradient id={`zamek-w-${uid}`} x1="0" y1="0" x2="0" y2="1">
 					{gold ? (
