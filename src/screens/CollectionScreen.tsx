@@ -283,6 +283,7 @@ export function CollectionScreen() {
 	const iskierki = useGame((s) => s.iskierki)
 	const setDreamMonster = useGame((s) => s.setDreamMonster)
 	const setCompanion = useGame((s) => s.setCompanion)
+	const expedition = useGame((s) => s.expedition)
 	const buyWishEgg = useGame((s) => s.buyWishEgg)
 	const goTo = useGame((s) => s.goTo)
 	const unlockedStage = useGame((s) => s.unlockedStage)
@@ -593,6 +594,13 @@ export function CollectionScreen() {
 									{selected.id === companionId ? (
 										<div className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-rose-50 px-4 py-3 text-lg font-extrabold text-rose-500">
 											💛 To Twój przyjaciel
+										</div>
+									) : expedition?.monsterId === selected.id ? (
+										/* PROPOZYCJA do dopracowania — podróżnik nie może teraz
+										   zostać przyjacielem (guard w store jest źródłem prawdy;
+										   łagodna linijka zamiast martwego przycisku) */
+										<div className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-sky-50 px-4 py-3 text-lg font-extrabold text-sky-600">
+											🎒 Wróci z wyprawy — wtedy możecie się zaprzyjaźnić!
 										</div>
 									) : (
 										<div className="flex w-full items-center gap-2">

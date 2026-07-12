@@ -1400,6 +1400,19 @@ describe("wyprawy potworków", () => {
 		expect(game().expedition?.monsterId).toBe(1)
 	})
 
+	test("setCompanion: no-op dla podróżnika na wyprawie", () => {
+		ownSome()
+		game().sendExpedition(0, "zwiad")
+		game().setCompanion(0)
+		expect(game().companionId).toBeNull()
+		// inny posiadany potworek może zostać przyjacielem
+		game().setCompanion(1)
+		expect(game().companionId).toBe(1)
+		// null (zdjęcie przyjaciela) zawsze działa
+		game().setCompanion(null)
+		expect(game().companionId).toBeNull()
+	})
+
 	test("recallExpedition: czyści bez nagrody i bez kary; ponowne wysłanie działa od ręki", () => {
 		suppressAchievements()
 		ownSome()

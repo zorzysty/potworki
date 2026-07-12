@@ -790,7 +790,15 @@ export const useGame = create<GameState>()(
 			// ulubiony przyjaciel (Home + kibicowanie); czysto prezentacyjny, brak
 			// interakcji z pulą losowań — dlatego, w odróżnieniu od dreamMonsterId,
 			// bez guardów isDivisionOnly (każdy posiadany potworek może nim być).
-			setCompanion: (id) => set({ companionId: id }),
+			// Przyjaciel nie może być jednocześnie podróżnikiem (lustro guardu w
+			// sendExpedition — tam przyjaciel nie wyrusza, tu podróżnik nie zostaje
+			// przyjacielem; inaczej wioska renderowałaby go podwójnie: na łące i w
+			// obozie 🏕️). Guard w store jest źródłem prawdy; UI pokazuje łagodne
+			// wyjaśnienie zamiast przycisku.
+			setCompanion: (id) => {
+				if (id !== null && id === get().expedition?.monsterId) return
+				set({ companionId: id })
+			},
 
 			// Wysyła potworka na wyprawę (postęp = ukończone rundy, patrz
 			// src/game/expeditions.ts). Guardy (ciche no-op): jedna wyprawa naraz,
