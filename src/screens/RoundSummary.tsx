@@ -3,12 +3,16 @@ import { EggReward } from "../components/EggReward"
 import { GateReveal } from "../components/gate"
 import { StarMeter } from "../components/StarMeter"
 import { useGateReveal } from "../components/useGateReveal"
+import { VISIT_BONUS } from "../game/adaptive"
 import { fragmentsForEgg } from "../game/facts"
 import { currentGoal } from "../game/village"
+import { MonsterSvg } from "../monsters/MonsterSvg"
+import { REGIONS } from "../monsters/world"
 import { useGame } from "../store/store"
 
 export function RoundSummary() {
 	const round = useGame((s) => s.round)
+	const ownedMonsters = useGame((s) => s.ownedMonsters)
 	const pendingEggs = useGame((s) => s.pendingEggs)
 	const eggFragments = useGame((s) => s.eggFragments)
 	const eggsEarned = useGame((s) => s.eggsEarned)
@@ -36,6 +40,12 @@ export function RoundSummary() {
 	// żołd + postęp do celu budowy: podsumowanie to moment decyzji „jeszcze jedna
 	// runda?" — dziecko widzi, że TA runda przybliżyła cel (iskierki są już po żołdzie)
 	const goal = currentGoal(village)
+	// runda-wizyta: Strażnik dziękuje osobnym bannerem (+VISIT_BONUS ✨ już
+	// doliczone przy finalizacji; chip żołdu zostaje czystym żołdem)
+	const visitRegion =
+		round.visitStage !== null ? REGIONS[round.visitStage] : undefined
+	const guardianOwned =
+		visitRegion !== undefined && visitRegion.guardianId in ownedMonsters
 
 	return (
 		<div className="flex min-h-[var(--app-vh)] flex-col items-center justify-center gap-5 p-6">
@@ -102,6 +112,20 @@ export function RoundSummary() {
 			{round.unlockedThisRound && (
 				<div className="anim-pop rounded-3xl bg-gradient-to-r from-amber-300 to-orange-400 px-6 py-3 text-center text-2xl font-extrabold text-white shadow-lg">
 					Nowa brama otwarta! 🎉
+				</div>
+			)}
+
+			{visitRegion && (
+				<div className="anim-pop flex items-center gap-3 rounded-3xl bg-gradient-to-r from-amber-300 to-orange-400 px-5 py-3 text-white shadow-lg">
+					<MonsterSvg
+						id={visitRegion.guardianId}
+						size={48}
+						className={guardianOwned ? undefined : "monster-silhouette"}
+					/>
+					{/* PROPOZYCJA do dopracowania — podziękowanie Strażnika */}
+					<div className="text-xl font-extrabold leading-tight">
+						Strażnik dziękuje za odwiedziny! 💛 +{VISIT_BONUS} ✨
+					</div>
 				</div>
 			)}
 

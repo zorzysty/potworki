@@ -3,10 +3,12 @@ import { BigButton } from "../components/BigButton"
 import { Companion } from "../components/Companion"
 import { EggView } from "../components/EggView"
 import { HelpTip } from "../components/HelpTip"
+import { visitStage } from "../game/adaptive"
 import { fragmentsForEgg, isMaxStage, unlockedFactors } from "../game/facts"
 import { canAffordSomething } from "../game/village"
 import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
+import { REGIONS } from "../monsters/world"
 import { useGame } from "../store/store"
 
 const ALL_TABLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -24,9 +26,11 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const village = useGame((s) => s.village)
 	const iskierki = useGame((s) => s.iskierki)
 	const villageVisited = useGame((s) => s.villageVisited)
+	const facts = useGame((s) => s.facts)
 	const mode = useGame((s) => s.mode)
 	const setMode = useGame((s) => s.setMode)
 	const startRound = useGame((s) => s.startRound)
+	const startVisitRound = useGame((s) => s.startVisitRound)
 	const goTo = useGame((s) => s.goTo)
 
 	const ownedIds = Object.keys(ownedMonsters).map(Number)
@@ -48,6 +52,14 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	// badge sesyjny: znika po pierwszej wizycie w wiosce (nie może stać się
 	// tapetą, gdy dochód przegoni wydatki), wraca w nowej sesji jeśli nadal stać
 	const canBuild = !villageVisited && canAffordSomething(village, iskierki)
+	// zaproszenie Strażnika: najsłabsza starsza tabliczka podupadła → ciepła
+	// karta-oferta (nigdy obowiązek — bez badge'a i licznika, znika sama, gdy
+	// mastery wróci). Zasada „maks jedna proaktywna karta na Home": zaproszenie
+	// ma pierwszeństwo (plans/README.md, Shared-surface governance).
+	const visited = visitStage(facts, unlockedStage)
+	const visitRegion = visited !== null ? REGIONS[visited] : undefined
+	const guardianOwned =
+		visitRegion !== undefined && visitRegion.guardianId in ownedMonsters
 
 	return (
 		<div className="flex min-h-[var(--app-vh)] flex-col items-center gap-4 p-5 pt-8">
@@ -149,6 +161,35 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 			<BigButton onClick={startRound} className="w-full max-w-xs py-6 text-4xl">
 				Graj! 🚀
 			</BigButton>
+
+			{visitRegion && (
+				<button
+					type="button"
+					onClick={startVisitRound}
+					className="anim-fade-up touch-manipulation flex w-full max-w-xs items-center gap-3 rounded-3xl bg-white/80 px-4 py-3 text-left shadow-md active:scale-95"
+				>
+					<MonsterSvg
+						id={visitRegion.guardianId}
+						size={44}
+						className={guardianOwned ? undefined : "monster-silhouette"}
+					/>
+					<div className="min-w-0 flex-1">
+						{/* PROPOZYCJE do dopracowania — teksty zaproszenia Strażnika */}
+						<div className="text-base font-extrabold leading-tight text-grape-dark">
+							Strażnik {visitRegion.name} zaprasza cię w odwiedziny!{" "}
+							{visitRegion.emoji}
+						</div>
+						<div className="mt-0.5 text-sm font-bold text-slate-500">
+							Odśwież starą tabliczkę ×{visitRegion.factor}
+						</div>
+						{!guardianOwned && (
+							<div className="text-xs font-bold text-slate-400">
+								Poznasz go, gdy go wyklujesz!
+							</div>
+						)}
+					</div>
+				</button>
+			)}
 
 			<div className="relative w-full max-w-xs">
 				<button

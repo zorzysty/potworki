@@ -10,6 +10,9 @@ import {
 	newlyUnlockedFactor,
 	pickNextFact,
 	shouldUnlockNextStage,
+	VISIT_BONUS,
+	visitRoundPlan,
+	visitStage,
 } from "../game/adaptive"
 import { simulateRoundOutcome } from "../game/debug"
 import type { Fact, FactKey, GameMode, RoundQuestion } from "../game/facts"
@@ -90,6 +93,10 @@ export interface RoundState {
 	eggsCreated: number[] // indeksy w pendingEggs utworzone w tej rundzie (kolor jajka jest finalny już od utworzenia)
 	unlockedThisRound: boolean
 	wageEarned: number // żołd przyznany przy finalizacji (faza summary); 0 do końca rundy
+	// runda-wizyta u Strażnika: etap odwiedzanej (najsłabszej starszej) tabliczki —
+	// wybiera region/Strażnika i włącza podziękowanie (+VISIT_BONUS ✨) przy finalizacji.
+	// Efemeryczne (RoundState nie jest persystowany). null = zwykła runda.
+	visitStage: number | null
 }
 
 export interface HatchResult {
@@ -112,6 +119,7 @@ interface GameState extends SaveState {
 	goTo: (screen: Screen) => void
 	setMode: (mode: GameMode) => void
 	startRound: () => void
+	startVisitRound: () => void
 	pressDigit: (digit: number) => void
 	pressBackspace: () => void
 	pressConfirm: () => void
@@ -317,6 +325,62 @@ export const useGame = create<GameState>()(
 						eggsCreated: [],
 						unlockedThisRound: false,
 						wageEarned: 0,
+						visitStage: null,
+					},
+				})
+			},
+
+			// Runda-wizyta u Strażnika: powtórka starszych tabliczek opowiedziana jako
+			// odwiedziny w krainie najsłabszej z nich. Mechanika identyczna ze zwykłą
+			// rundą (mastery, gwiazdki, jajka, żołd); różnice: plan z visitRoundPlan
+			// (połowa z odwiedzanej tabliczki, reszta ze starszych), tryb PRZYPIĘTY do
+			// "mult" (zaproszenie mówi „tabliczka ×N", pytania muszą się zgadzać —
+			// przełącznik Home zostaje nietknięty dla późniejszych zwykłych rund)
+			// i podziękowanie Strażnika (+VISIT_BONUS ✨) przy finalizacji.
+			startVisitRound: () => {
+				const state = get()
+				const stage = state.unlockedStage
+				const visited = visitStage(state.facts, stage)
+				// defensywnie: bez potrzeby utrzymania karta zaproszenia nie powinna
+				// się renderować — wtedy zwykła runda
+				if (visited === null) {
+					get().startRound()
+					return
+				}
+				const plan = visitRoundPlan(
+					state.facts,
+					visited,
+					stage,
+					QUESTIONS_PER_ROUND,
+					Math.random,
+				).map((f) => f.key)
+				const firstFact = plan[0] ? FACTS_BY_KEY.get(plan[0]) : undefined
+				if (!firstFact) {
+					get().startRound()
+					return
+				}
+				set({
+					screen: "round",
+					round: {
+						mode: "mult",
+						introFactor: null,
+						plan,
+						planPos: 1,
+						index: 0,
+						total: QUESTIONS_PER_ROUND,
+						question: makeQuestion(firstFact, false, "mult", null, Math.random),
+						phase: "answering",
+						answer: "",
+						stars: 0,
+						lastStars: 0,
+						startedAt: Date.now(),
+						asked: [],
+						requeues: {},
+						shakeNonce: 0,
+						eggsCreated: [],
+						unlockedThisRound: false,
+						wageEarned: 0,
+						visitStage: visited,
 					},
 				})
 			},
@@ -496,6 +560,11 @@ export const useGame = create<GameState>()(
 						round.stars,
 						firstRoundToday,
 					)
+					// podziękowanie Strażnika za rundę-wizytę — OSOBNO od żołdu
+					// (wageEarned zostaje czystym żołdem; podsumowanie pokazuje bonus
+					// własną linią). Ścieżki debug (debugFinishRound/debugSimulateRound)
+					// omijają ten blok — świadomie nie płacą bonusu.
+					const visitBonus = round.visitStage !== null ? VISIT_BONUS : 0
 					const achievementStats = bumpDaysPlayed(
 						{
 							...state.achievementStats,
@@ -508,7 +577,10 @@ export const useGame = create<GameState>()(
 					set({
 						unlockedStage,
 						totalRounds: state.totalRounds + 1,
-						iskierki: Math.min(ISKIERKI_CAP, state.iskierki + wageEarned),
+						iskierki: Math.min(
+							ISKIERKI_CAP,
+							state.iskierki + wageEarned + visitBonus,
+						),
 						achievementStats,
 						round: {
 							...round,

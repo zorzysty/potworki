@@ -197,6 +197,60 @@ export function needsMaintenance(
 	return old.length > 0 && meanMastery(facts, old) < MAINTAIN_THRESHOLD
 }
 
+// Iskierki podziękowania od Strażnika za odwiedziny (koniec rundy-wizyty).
+// Celowo małe: wizyty odpalają się rzadko (tylko przy podupadłych tabliczkach,
+// zwykle po przerwie), a nagradzają dokładnie to zachowanie, na którym nam
+// zależy — powtórkę. Strojenie tutaj.
+export const VISIT_BONUS = 2
+
+// Etap do odwiedzenia: NAJSŁABSZA (najniższa średnia mastery) już odblokowana
+// starsza tabliczka — null, gdy utrzymanie nie jest potrzebne. To ona wybiera
+// region/Strażnika zaproszenia; needsMaintenance pozostaje sygnałem zbiorczym.
+export function visitStage(
+	facts: Partial<Record<FactKey, FactStats>>,
+	stage: number,
+): number | null {
+	if (!needsMaintenance(facts, stage)) return null
+	let weakest: number | null = null
+	let weakestMean = Number.POSITIVE_INFINITY
+	for (let s = 0; s < stage; s++) {
+		const mean = meanMastery(facts, stageFacts(s))
+		if (mean < weakestMean) {
+			weakestMean = mean
+			weakest = s
+		}
+	}
+	return weakest
+}
+
+// Plan rundy-wizyty (lustro introRoundPlan): połowa (zaokrąglona w górę)
+// z odwiedzanej tabliczki (stageFacts(visited)), reszta z pozostałych
+// starszych działań — wszędzie waga „słabsze częściej" (sampleDistinct).
+// Zwraca `total` różnych działań w losowej kolejności; gdy pula odwiedzanej
+// tabliczki jest mniejsza niż połowa, resztę dobiera z pozostałych starszych.
+export function visitRoundPlan(
+	facts: Partial<Record<FactKey, FactStats>>,
+	visited: number,
+	stage: number,
+	total: number,
+	rand: () => number,
+): Fact[] {
+	const focus = sampleDistinct(
+		stageFacts(visited),
+		facts,
+		Math.ceil(total / 2),
+		rand,
+	)
+	const focusKeys = new Set(focus.map((f) => f.key))
+	const rest = sampleDistinct(
+		olderFacts(stage).filter((f) => !focusKeys.has(f.key)),
+		facts,
+		total - focus.length,
+		rand,
+	)
+	return shuffle([...focus, ...rest], rand)
+}
+
 // Odblokowanie (hybryda): najnowsza tabliczka spróbowana w całości i opanowana (avg ≥ próg)
 // ORAZ starsze tabliczki nie spadły poniżej progu utrzymania.
 export function shouldUnlockNextStage(

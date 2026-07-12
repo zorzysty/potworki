@@ -4,6 +4,7 @@ import { CheerCompanion } from "../components/Companion"
 import { Keypad } from "../components/Keypad"
 import { QuestionCard } from "../components/QuestionCard"
 import { StarMeter } from "../components/StarMeter"
+import { REGIONS } from "../monsters/world"
 import { useGame } from "../store/store"
 import { RoundSummary } from "./RoundSummary"
 
@@ -13,6 +14,7 @@ export function RoundScreen({
 	debugEnabled?: boolean
 }) {
 	const round = useGame((s) => s.round)
+	const ownedMonsters = useGame((s) => s.ownedMonsters)
 	const nextQuestion = useGame((s) => s.nextQuestion)
 	const exitRoundEarly = useGame((s) => s.exitRoundEarly)
 	const debugFinishRound = useGame((s) => s.debugFinishRound)
@@ -28,13 +30,25 @@ export function RoundScreen({
 	if (!round) return null
 	if (round.phase === "summary") return <RoundSummary />
 
+	// runda-wizyta: Strażnik odwiedzanej krainy gospodarzem (kibicuje z rogu),
+	// sylwetka gdy nieposiadany (precedens: mapa)
+	const visitRegion =
+		round.visitStage !== null ? REGIONS[round.visitStage] : undefined
+	const guardianId = visitRegion?.guardianId
+
 	return (
 		<div className="flex min-h-[var(--app-vh)] flex-col gap-3 p-4 land:mx-auto land:max-w-4xl land:flex-row land:items-center land:gap-8">
 			<div className="flex flex-1 flex-col gap-3 land:justify-center">
-				<div className="flex items-center justify-between">
-					<div className="rounded-full bg-white/70 px-4 py-1 text-lg font-extrabold text-grape-dark">
+				<div className="flex items-center justify-between gap-2">
+					<div className="whitespace-nowrap rounded-full bg-white/70 px-4 py-1 text-lg font-extrabold text-grape-dark">
 						Pytanie {round.index + 1} / {round.total}
 					</div>
+					{visitRegion && (
+						// PROPOZYCJA do dopracowania — pigułka regionu rundy-wizyty
+						<div className="min-w-0 flex-1 truncate rounded-full bg-white/70 px-3 py-1 text-center text-sm font-extrabold text-grape-dark">
+							{visitRegion.emoji} Odwiedziny: {visitRegion.name}
+						</div>
+					)}
 					<button
 						type="button"
 						onClick={() => setPaused(true)}
@@ -53,8 +67,16 @@ export function RoundScreen({
 				<Keypad />
 			</div>
 
-			{/* przyjaciel kibicuje z rogu (gdy wybrany) — nigdy nie zasłania karty */}
-			<CheerCompanion phase={round.phase} lastStars={round.lastStars} />
+			{/* przyjaciel kibicuje z rogu (gdy wybrany) — nigdy nie zasłania karty;
+			    w rundzie-wizycie zamiast niego kibicuje Strażnik regionu */}
+			<CheerCompanion
+				phase={round.phase}
+				lastStars={round.lastStars}
+				overrideId={guardianId}
+				overrideSilhouette={
+					guardianId !== undefined && !(guardianId in ownedMonsters)
+				}
+			/>
 
 			{debugEnabled && round.phase === "answering" && round.index === 0 && (
 				<div className="fixed right-2 bottom-2 z-40 flex flex-col items-end gap-1">

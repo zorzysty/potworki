@@ -189,14 +189,21 @@ export function Companion({ size = 150 }: { size?: number }) {
 
 // Mały przyjaciel kibicujący w rundzie: reaguje na fazę pytania, nigdy nie zasłania
 // karty i nie karze. Bez dotyku/tekstu (słowa odciągałyby wzrok od matmy).
+// W rundzie-wizycie gospodarzem jest Strażnik regionu: `overrideId` renderuje go
+// zamiast przyjaciela (z pominięciem warunku posiadania), `overrideSilhouette`
+// pokazuje sylwetkę, gdy nieposiadany (tajemniczy gospodarz — precedens: mapa).
 export function CheerCompanion({
 	phase,
 	lastStars,
 	size = 80,
+	overrideId,
+	overrideSilhouette = false,
 }: {
 	phase: RoundPhase | undefined
 	lastStars: number
 	size?: number
+	overrideId?: number
+	overrideSilhouette?: boolean
 }) {
 	const companionId = useGame((s) => s.companionId)
 	const owned = useGame((s) => s.ownedMonsters)
@@ -234,7 +241,12 @@ export function CheerCompanion({
 		return () => clearTimeout(t)
 	}, [reaction])
 
-	if (companionId === null || !(companionId in owned)) return null
+	// Strażnik-gospodarz ma pierwszeństwo; bez niego zachowanie jak dotąd
+	// (przyjaciel, gdy wybrany i posiadany — inaczej nic).
+	const hostId =
+		overrideId ??
+		(companionId !== null && companionId in owned ? companionId : null)
+	if (hostId === null) return null
 
 	const animClass =
 		reaction?.anim === "cheer"
@@ -250,9 +262,14 @@ export function CheerCompanion({
 				    żeby nie kasował transformu skoku) */}
 				<div className={reaction?.big ? "anim-rainbow" : ""}>
 					<MonsterStage
-						id={companionId}
+						id={hostId}
 						size={size}
 						animate
+						className={
+							overrideId !== undefined && overrideSilhouette
+								? "monster-silhouette"
+								: undefined
+						}
 						overlay={
 							reaction?.hearts ? <HeartBurst nonce={reaction.nonce} /> : null
 						}

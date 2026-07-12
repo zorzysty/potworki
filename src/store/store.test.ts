@@ -1,6 +1,9 @@
 /// <reference types="bun-types" />
 import { beforeEach, describe, expect, test } from "bun:test"
 import { ACHIEVEMENTS } from "../achievements/catalog"
+import type { FactStats } from "../game/adaptive"
+import { emptyStats, stageFacts, VISIT_BONUS } from "../game/adaptive"
+import type { FactKey } from "../game/facts"
 import { ISKIERKI_FOR_DUP } from "../game/rewards"
 import { BUILDINGS, DECORATIONS } from "../game/village"
 import {
@@ -902,5 +905,107 @@ describe("wioska budowniczych", () => {
 			goalId: null,
 		})
 		expect(merged.iskierki).toBe(5)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Odwiedziny u Strażnika: runda-wizyta (plan, przypięty tryb, bonus przy finalizacji)
+// ---------------------------------------------------------------------------
+
+describe("odwiedziny u Strażnika (startVisitRound)", () => {
+	// Podupadłe starsze tabliczki na etapie 2: baza (etap 0) najsłabsza (0.2),
+	// ×3 (etap 1) mocniejsza (0.4) → zaproszenie wskazuje etap 0
+	// (średnia starszych 4/15 ≈ 0.27 < MAINTAIN_THRESHOLD)
+	function seedDecayedFacts() {
+		const facts: Partial<Record<FactKey, FactStats>> = {}
+		for (const f of stageFacts(0))
+			facts[f.key] = { ...emptyStats(), attempts: 1, mastery: 0.2 }
+		for (const f of stageFacts(1))
+			facts[f.key] = { ...emptyStats(), attempts: 1, mastery: 0.4 }
+		useGame.setState({ facts, unlockedStage: 2 })
+	}
+
+	const playVisitRoundClean = () => {
+		game().startVisitRound()
+		for (let i = 0; i < 10; i++) {
+			answer(true)
+			game().nextQuestion()
+		}
+	}
+
+	test("startVisitRound: visitStage = najsłabszy etap, plan 10 kluczy, pierwsze pytanie z planu, introFactor null", () => {
+		seedDecayedFacts()
+		game().startVisitRound()
+		const r = requireRound()
+		expect(game().screen).toBe("round")
+		expect(r.visitStage).toBe(0)
+		expect(r.plan?.length).toBe(10)
+		expect(r.question.key).toBe(r.plan?.[0] as FactKey)
+		expect(r.introFactor).toBeNull()
+	})
+
+	test("tryb przypięty do mult: przełącznik ÷ nie zmienia rundy-wizyty, sam zostaje div", () => {
+		seedDecayedFacts()
+		game().setMode("div")
+		game().startVisitRound()
+		expect(game().round?.mode).toBe("mult")
+		// efemeryczny przełącznik nietknięty — późniejsze zwykłe rundy dalej ÷
+		expect(game().mode).toBe("div")
+	})
+
+	test("zwykły startRound: visitStage === null", () => {
+		game().startRound()
+		expect(game().round?.visitStage).toBeNull()
+	})
+
+	test("startVisitRound przy zdrowych tabliczkach = zwykła runda (visitStage null)", () => {
+		// świeży zapis: etap 0, brak starszych tabliczek → defensywny fallback
+		game().startVisitRound()
+		expect(game().screen).toBe("round")
+		expect(game().round?.visitStage).toBeNull()
+	})
+
+	test("finalizacja: czysta runda-wizyta płaci żołd + VISIT_BONUS (żołd osobno), pytania z planu", () => {
+		suppressAchievements()
+		seedDecayedFacts()
+		game().startVisitRound()
+		const plan = [...(requireRound().plan ?? [])]
+		const asked: string[] = []
+		for (let i = 0; i < 10; i++) {
+			asked.push(requireRound().question.key)
+			answer(true)
+			game().nextQuestion()
+		}
+		// pytania bazowe konsumują plan pozycyjnie
+		expect(asked).toEqual(plan)
+		const s = game()
+		expect(s.round?.phase).toBe("summary")
+		expect(s.round?.visitStage).toBe(0)
+		// żołd zostaje czystym żołdem: 1 baza + 1 dobra + 1 perfekcja + 1 pierwszy
+		// dzień (świeży zapis), zamek 0 = 4; bonus Strażnika osobno w iskierkach
+		expect(s.round?.wageEarned).toBe(4)
+		const rainbow = s.pendingEggs[0]?.quality === "rainbow" ? 1 : 0
+		expect(s.iskierki).toBe(4 + VISIT_BONUS + rainbow)
+	})
+
+	test("zwykła runda nie płaci bonusu Strażnika (sam żołd)", () => {
+		suppressAchievements()
+		game().startRound()
+		for (let i = 0; i < 10; i++) {
+			answer(true)
+			game().nextQuestion()
+		}
+		expect(game().round?.visitStage).toBeNull()
+		expect(game().round?.wageEarned).toBe(4)
+		const rainbow = game().pendingEggs[0]?.quality === "rainbow" ? 1 : 0
+		expect(game().iskierki).toBe(4 + rainbow)
+	})
+
+	test("bonus Strażnika respektuje cap portfela (998 → 999)", () => {
+		suppressAchievements()
+		seedDecayedFacts()
+		useGame.setState({ iskierki: 998 })
+		playVisitRoundClean()
+		expect(game().iskierki).toBe(999)
 	})
 })

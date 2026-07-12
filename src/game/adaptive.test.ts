@@ -14,6 +14,9 @@ import {
 	shouldUnlockNextStage,
 	stageFacts,
 	stageProgress,
+	VISIT_BONUS,
+	visitRoundPlan,
+	visitStage,
 } from "./adaptive"
 import type { FactKey } from "./facts"
 import { budgetMs, unlockedFacts } from "./facts"
@@ -208,6 +211,65 @@ describe("needsMaintenance", () => {
 			facts[f.key] = { ...emptyStats(), attempts: 1, mastery: 0.9 }
 		}
 		expect(needsMaintenance(facts, 1)).toBe(false)
+	})
+})
+
+// Helper: ustawia całą tabliczkę etapu `s` (stageFacts) na zadane mastery
+function withStageMastery(
+	facts: Partial<Record<FactKey, FactStats>>,
+	s: number,
+	mastery: number,
+): Partial<Record<FactKey, FactStats>> {
+	for (const f of stageFacts(s)) {
+		facts[f.key] = { ...emptyStats(), attempts: 1, mastery }
+	}
+	return facts
+}
+
+describe("odwiedziny u Strażnika (visitStage / visitRoundPlan)", () => {
+	test("VISIT_BONUS jest dodatni (podziękowanie Strażnika istnieje)", () => {
+		expect(VISIT_BONUS).toBeGreaterThan(0)
+	})
+
+	test("visitStage: świeży zapis → null (brak starszych tabliczek)", () => {
+		expect(visitStage({}, 0)).toBeNull()
+	})
+
+	test("visitStage: etap 1 ze zdrowym zestawem bazowym (0.9) → null (brak utrzymania)", () => {
+		const facts = withStageMastery({}, 0, 0.9)
+		expect(visitStage(facts, 1)).toBeNull()
+	})
+
+	test("visitStage: etap 2, baza 0.2 + tabliczka ×3 0.4 → najsłabszy etap 0", () => {
+		const facts = withStageMastery(withStageMastery({}, 0, 0.2), 1, 0.4)
+		expect(visitStage(facts, 2)).toBe(0)
+	})
+
+	test("visitStage: zamienione średnie (baza 0.4, ×3 0.2) → etap 1", () => {
+		const facts = withStageMastery(withStageMastery({}, 0, 0.4), 1, 0.2)
+		expect(visitStage(facts, 2)).toBe(1)
+	})
+
+	test("visitRoundPlan: 10 różnych działań, ≥5 z odwiedzanej tabliczki, wszystkie ze starszej puli", () => {
+		const facts = withStageMastery(withStageMastery({}, 0, 0.2), 1, 0.4)
+		const plan = visitRoundPlan(facts, 0, 2, 10, mulberry32(7))
+		expect(plan.length).toBe(10)
+		expect(new Set(plan.map((f) => f.key)).size).toBe(10)
+		// co najmniej połowa z odwiedzanej tabliczki (reszta może też z niej trafić)
+		const focusKeys = new Set(stageFacts(0).map((f) => f.key))
+		expect(
+			plan.filter((f) => focusKeys.has(f.key)).length,
+		).toBeGreaterThanOrEqual(5)
+		// wszystko ze starszej puli etapu 2 (unlockedFacts(1))
+		const olderPool = new Set(unlockedFacts(1).map((f) => f.key))
+		for (const f of plan) expect(olderPool.has(f.key)).toBe(true)
+	})
+
+	test("visitRoundPlan: deterministyczny przy tym samym seedzie", () => {
+		const facts = withStageMastery(withStageMastery({}, 0, 0.2), 1, 0.4)
+		const a = visitRoundPlan(facts, 0, 2, 10, mulberry32(7)).map((f) => f.key)
+		const b = visitRoundPlan(facts, 0, 2, 10, mulberry32(7)).map((f) => f.key)
+		expect(a).toEqual(b)
 	})
 })
 
