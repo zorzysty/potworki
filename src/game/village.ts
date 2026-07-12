@@ -12,6 +12,7 @@ export type BuildingId =
 	| "domki"
 	| "fontanna"
 	| "zamek"
+	| "sklepik"
 
 export type DecorationId =
 	| "kwiatki"
@@ -109,6 +110,20 @@ export const BUILDINGS: readonly BuildingDef[] = [
 			"+3 ✨ za każdą ukończoną rundę!",
 		],
 		costs: [20, 100, 250],
+	},
+	// Sklepik odblokowuje KOSMETYKĘ (kapelusze/aury z src/game/cosmetics.ts):
+	// poziom budynku = dostępny tier asortymentu (Heroes-style). Zawsze APPEND —
+	// kod działek/testów/osiągnięć iteruje po tablicy.
+	{
+		id: "sklepik",
+		name: "Sklepik",
+		levelNames: ["Stragan", "Sklepik", "Dom Mody Potworków"], // PROPOZYCJE
+		descriptions: [
+			"Kapelusze dla potworków! (Ubierasz w Moich Potworkach.)",
+			"Nowe nakrycia głowy i pierwsze aury!",
+			"Najpiękniejsze aury i stroje — moda na całą wioskę!",
+		],
+		costs: [15, 45, 110],
 	},
 ]
 

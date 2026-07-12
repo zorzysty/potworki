@@ -14,6 +14,8 @@ import {
 	visitRoundPlan,
 	visitStage,
 } from "../game/adaptive"
+import type { CosmeticId, CosmeticSlot } from "../game/cosmetics"
+import { COSMETICS_BY_ID, isOwned, sklepikLevel } from "../game/cosmetics"
 import { simulateRoundOutcome } from "../game/debug"
 import type { Fact, FactKey, GameMode, RoundQuestion } from "../game/facts"
 
@@ -134,6 +136,12 @@ interface GameState extends SaveState {
 	buildVillage: (id: BuildingId) => void
 	buyDecoration: (id: DecorationId) => void
 	setVillageGoal: (id: BuildingId | null) => void
+	buyCosmetic: (id: CosmeticId) => void
+	equipCosmetic: (
+		monsterId: number,
+		slot: CosmeticSlot,
+		id: CosmeticId | null,
+	) => void
 	applyDecay: () => void
 	markGatesCelebrated: () => void
 	checkAchievements: () => void
@@ -260,6 +268,11 @@ export function mergePersisted(
 		village: {
 			...current.village,
 			...(p.village ?? {}),
+		},
+		// ...i dla garderoby (zapis v10 bez pola nie może dać undefined.owned)
+		cosmetics: {
+			...current.cosmetics,
+			...(p.cosmetics ?? {}),
 		},
 	}
 }
@@ -774,6 +787,53 @@ export const useGame = create<GameState>()(
 			// na zbudowanym-maks budynku, a currentGoal i tak ma na to fallback
 			setVillageGoal: (id) =>
 				set((s) => ({ village: { ...s.village, goalId: id } })),
+
+			// Kupno przedmiotu ze Sklepiku (wzór buildVillage): nieznane id / już
+			// kupiony / tier ponad poziom sklepiku / brak środków = ciche no-op.
+			buyCosmetic: (id) => {
+				const state = get()
+				const def = COSMETICS_BY_ID.get(id)
+				if (!def) return
+				if (isOwned(state.cosmetics, id)) return
+				if (def.tier > sklepikLevel(state.village)) return
+				if (state.iskierki < def.cost) return
+				set({
+					iskierki: state.iskierki - def.cost,
+					cosmetics: {
+						...state.cosmetics,
+						owned: [...state.cosmetics.owned, id],
+					},
+				})
+				get().checkAchievements()
+			},
+
+			// Zakłada/zdejmuje kosmetykę (garderoba w Moich Potworkach): tylko
+			// KUPIONE przedmioty na tylko POSIADANE potworki; null zdejmuje slot.
+			// Ubieranie jest darmowe i nielimitowane (jeden przedmiot może nosić
+			// wiele potworków naraz — hojność, nie grind).
+			equipCosmetic: (monsterId, slot, id) => {
+				const state = get()
+				if (!(monsterId in state.ownedMonsters)) return
+				if (id !== null) {
+					const def = COSMETICS_BY_ID.get(id)
+					if (!def || def.slot !== slot) return
+					if (!isOwned(state.cosmetics, id)) return
+				}
+				const forMonster = {
+					...(state.cosmetics.equipped[monsterId] ?? {}),
+				}
+				if (id === null) delete forMonster[slot]
+				else forMonster[slot] = id
+				set({
+					cosmetics: {
+						...state.cosmetics,
+						equipped: {
+							...state.cosmetics.equipped,
+							[monsterId]: forMonster,
+						},
+					},
+				})
+			},
 
 			applyDecay: () => {
 				const now = Date.now()

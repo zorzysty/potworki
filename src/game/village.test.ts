@@ -35,8 +35,8 @@ const grandTotal =
 	DECORATIONS.reduce((s, d) => s + d.cost, 0)
 
 describe("katalog wioski — integralność", () => {
-	test("6 budynków i 6 dekoracji, unikalne id", () => {
-		expect(BUILDINGS.length).toBe(6)
+	test("7 budynków i 6 dekoracji, unikalne id", () => {
+		expect(BUILDINGS.length).toBe(7)
 		expect(DECORATIONS.length).toBe(6)
 		const ids = [...BUILDINGS.map((b) => b.id), ...DECORATIONS.map((d) => d.id)]
 		expect(new Set(ids).size).toBe(ids.length)
@@ -79,6 +79,13 @@ describe("katalog wioski — inwarianty ekonomii (decyzje projektowe)", () => {
 	test("cały zlew (wszystkie poziomy + dekoracje) w przedziale 800–1500", () => {
 		expect(grandTotal).toBeGreaterThanOrEqual(800)
 		expect(grandTotal).toBeLessThanOrEqual(1500)
+	})
+	test("sklepik L1 ≤ 20 — sklep otwiera się w połowie wczesnej gry", () => {
+		const sklepik = BUILDINGS.find((b) => b.id === "sklepik")
+		expect(sklepik).toBeDefined()
+		expect(
+			(sklepik as (typeof BUILDINGS)[number]).costs[0],
+		).toBeLessThanOrEqual(20)
 	})
 })
 

@@ -1,10 +1,12 @@
 import type { FactStats } from "../game/adaptive"
+import type { CosmeticsState } from "../game/cosmetics"
+import { INITIAL_COSMETICS } from "../game/cosmetics"
 import type { FactKey } from "../game/facts"
 import type { PendingEgg } from "../game/rewards"
 import type { VillageState } from "../game/village"
 import { INITIAL_VILLAGE } from "../game/village"
 
-export const SAVE_VERSION = 10
+export const SAVE_VERSION = 11
 
 // Wpis ledgera osiągnięć. `seen` jak celebratedStage: false → badge „nowe!" na Home,
 // czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen).
@@ -45,6 +47,7 @@ export interface SaveState {
 	achievements: Record<string, AchievementEntry> // zdobyte osiągnięcia (klucz = stabilne id z achievements/catalog)
 	achievementStats: AchievementCounters // liczniki zdarzeniowe (patrz wyżej)
 	village: VillageState // wioska budowniczych: poziomy budynków, dekoracje, wybrany cel
+	cosmetics: CosmeticsState // garderoba: kupione przedmioty ze Sklepiku + założone per potworek
 }
 
 export const INITIAL_SAVE: SaveState = {
@@ -72,6 +75,7 @@ export const INITIAL_SAVE: SaveState = {
 		lastPlayedDay: "",
 	},
 	village: INITIAL_VILLAGE,
+	cosmetics: INITIAL_COSMETICS,
 }
 
 export const SAVE_KEYS = Object.keys(INITIAL_SAVE) as (keyof SaveState)[]
@@ -177,6 +181,12 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 			achievementStats: { ...stats, gapCorrect: 0 },
 		}
 	},
+	// v10→v11: dodano garderobę (kosmetyka per-potworek ze Sklepiku, plan 013).
+	// Start pusty — przedmioty kupuje się w sklepiku, zakłada w Moich Potworkach.
+	10: (state) => ({
+		...(state as Record<string, unknown>),
+		cosmetics: { owned: [], equipped: {} },
+	}),
 }
 
 export function migrateSave(state: unknown, fromVersion: number): unknown {

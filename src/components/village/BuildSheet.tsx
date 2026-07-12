@@ -1,3 +1,10 @@
+import { useState } from "react"
+import type {
+	CosmeticDef,
+	CosmeticId,
+	CosmeticsState,
+} from "../../game/cosmetics"
+import { COSMETICS, isOwned, sklepikLevel } from "../../game/cosmetics"
 import type { BuildingId, DecorationId, VillageState } from "../../game/village"
 import {
 	BUILDINGS,
@@ -8,6 +15,7 @@ import {
 	nextLevelCost,
 } from "../../game/village"
 import { BigButton } from "../BigButton"
+import { CosmeticArt } from "../CosmeticArt"
 import { BuildingArt, DECORATION_EMOJI } from "./BuildingArt"
 
 export type SheetView = { kind: "building"; id: BuildingId } | { kind: "list" }
@@ -30,18 +38,119 @@ function ProgressChip({ have, cost }: { have: number; cost: number }) {
 	)
 }
 
+// Wiersz asortymentu sklepiku (wzór DecorationRow). Zablokowany tier jest
+// ZAJAWKĄ, nie błędem: przygaszony TYLKO art, nazwa w pełnym kontraście
+// (dziecko musi umieć przeczytać, do czego aspiruje) + chip „Ulepsz Sklepik!".
+function CosmeticRow({
+	def,
+	owned,
+	unlocked,
+	iskierki,
+	onBuy,
+}: {
+	def: CosmeticDef
+	owned: boolean
+	unlocked: boolean
+	iskierki: number
+	onBuy: (id: CosmeticId) => void
+}) {
+	const affordable = iskierki >= def.cost
+	return (
+		<div className="flex w-full items-center gap-3 rounded-2xl bg-violet-50 p-3">
+			<div
+				className={`flex w-16 shrink-0 justify-center ${
+					unlocked ? "" : "opacity-35 grayscale"
+				}`}
+			>
+				<CosmeticArt id={def.id} size={40} />
+			</div>
+			<div className="flex-1 text-left text-lg font-extrabold text-grape-dark">
+				{def.name}
+			</div>
+			{owned ? (
+				<div className="text-2xl">✅</div>
+			) : !unlocked ? (
+				<div className="whitespace-nowrap rounded-full bg-white px-3 py-1 text-sm font-extrabold text-grape-dark">
+					Ulepsz Sklepik! 🔒
+				</div>
+			) : affordable ? (
+				<button
+					type="button"
+					onClick={() => onBuy(def.id)}
+					className="touch-manipulation whitespace-nowrap rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-4 py-2 text-base font-extrabold text-white shadow active:scale-95"
+				>
+					Kup! ✨{def.cost}
+				</button>
+			) : (
+				<div className="rounded-full bg-white px-3 py-1 text-base font-extrabold text-slate-400">
+					✨{Math.min(iskierki, def.cost)}/{def.cost}
+				</div>
+			)}
+		</div>
+	)
+}
+
+// Asortyment w szczególe sklepiku: widoczny dopiero od L1 (szczegół L0
+// sprzedaje samą budowę). Po udanym zakupie jedna linijka podpowiedzi
+// prowadzi do garderoby.
+function SklepikStock({
+	village,
+	cosmetics,
+	iskierki,
+	onBuyCosmetic,
+}: {
+	village: VillageState
+	cosmetics: CosmeticsState
+	iskierki: number
+	onBuyCosmetic: (id: CosmeticId) => void
+}) {
+	const level = sklepikLevel(village)
+	const [justBought, setJustBought] = useState(false)
+	if (level < 1) return null
+	return (
+		<div className="mt-2 flex w-full flex-col gap-2">
+			<div className="text-sm font-extrabold uppercase tracking-wide text-slate-400">
+				Na półkach
+			</div>
+			{justBought && (
+				// PROPOZYCJA do dopracowania — podpowiedź po zakupie
+				<div className="anim-pop rounded-2xl bg-amber-50 px-4 py-2 text-center text-sm font-extrabold text-amber-600">
+					Załóż w Moich Potworkach → Ubierz 🎩
+				</div>
+			)}
+			{COSMETICS.map((c) => (
+				<CosmeticRow
+					key={c.id}
+					def={c}
+					owned={isOwned(cosmetics, c.id)}
+					unlocked={c.tier <= level}
+					iskierki={iskierki}
+					onBuy={(id) => {
+						onBuyCosmetic(id)
+						setJustBought(true)
+					}}
+				/>
+			))}
+		</div>
+	)
+}
+
 function BuildingDetail({
 	id,
 	village,
+	cosmetics,
 	iskierki,
 	onBuild,
 	onSetGoal,
+	onBuyCosmetic,
 }: {
 	id: BuildingId
 	village: VillageState
+	cosmetics: CosmeticsState
 	iskierki: number
 	onBuild: (id: BuildingId) => void
 	onSetGoal: (id: BuildingId | null) => void
+	onBuyCosmetic: (id: CosmeticId) => void
 }) {
 	const def = BUILDINGS_BY_ID.get(id)
 	if (!def) return null
@@ -95,6 +204,16 @@ function BuildingDetail({
 						</button>
 					</>
 				)
+			)}
+
+			{/* asortyment kosmetyki — tylko w szczególe sklepiku, od L1 */}
+			{id === "sklepik" && (
+				<SklepikStock
+					village={village}
+					cosmetics={cosmetics}
+					iskierki={iskierki}
+					onBuyCosmetic={onBuyCosmetic}
+				/>
 			)}
 		</div>
 	)
@@ -209,6 +328,7 @@ function DecorationRow({
 export function BuildSheet({
 	view,
 	village,
+	cosmetics,
 	iskierki,
 	onClose,
 	onShowList,
@@ -216,9 +336,11 @@ export function BuildSheet({
 	onBuild,
 	onBuyDecoration,
 	onSetGoal,
+	onBuyCosmetic,
 }: {
 	view: SheetView
 	village: VillageState
+	cosmetics: CosmeticsState
 	iskierki: number
 	onClose: () => void
 	onShowList: () => void
@@ -226,6 +348,7 @@ export function BuildSheet({
 	onBuild: (id: BuildingId) => void
 	onBuyDecoration: (id: DecorationId) => void
 	onSetGoal: (id: BuildingId | null) => void
+	onBuyCosmetic: (id: CosmeticId) => void
 }) {
 	return (
 		// wyśrodkowany modal (wzór karty kolekcjonerskiej), NIE bottom sheet —
@@ -269,9 +392,11 @@ export function BuildSheet({
 					<BuildingDetail
 						id={view.id}
 						village={village}
+						cosmetics={cosmetics}
 						iskierki={iskierki}
 						onBuild={onBuild}
 						onSetGoal={onSetGoal}
+						onBuyCosmetic={onBuyCosmetic}
 					/>
 				) : (
 					<div className="flex flex-col gap-2">

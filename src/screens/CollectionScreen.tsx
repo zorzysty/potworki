@@ -1,7 +1,11 @@
 import { useState } from "react"
 import { BigButton } from "../components/BigButton"
+import { CosmeticArt, EquippedOverlay } from "../components/CosmeticArt"
 import { HelpTip } from "../components/HelpTip"
+import { MonsterStage } from "../components/MonsterStage"
 import { CARD_THEME, RARITY_META } from "../components/rarity"
+import type { CosmeticSlot } from "../game/cosmetics"
+import { COSMETICS, equippedFor, isOwned } from "../game/cosmetics"
 import { RARITY_ORDER } from "../game/rewards"
 import {
 	isDivisionOnly,
@@ -22,6 +26,85 @@ const SORTED_MONSTERS = [...MONSTERS].sort(
 		RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity) ||
 		a.id - b.id,
 )
+
+// Garderoba na karcie posiadanego potworka: sekcja ZWIJANA (domyślnie zwinięta
+// — karta ma zostać trofeum, nie panelem sterowania; kolejność sekcji modala:
+// przyjaciel → Ubierz 🎩 → przyszła Wyprawa, patrz plans/README.md „Shared-
+// surface governance"). Per slot poziomy rządek kupionych rzeczy + chip
+// „zdejmij"; tap zakłada od ręki (equipCosmetic), założona rzecz ma ring.
+function WardrobeSection({ monsterId }: { monsterId: number }) {
+	const cosmetics = useGame((s) => s.cosmetics)
+	const equipCosmetic = useGame((s) => s.equipCosmetic)
+	const [open, setOpen] = useState(false)
+	const eq = equippedFor(cosmetics, monsterId)
+	const ownedItems = COSMETICS.filter((c) => isOwned(cosmetics, c.id))
+	const slots: { slot: CosmeticSlot; label: string }[] = [
+		{ slot: "hat", label: "Kapelusze" },
+		{ slot: "aura", label: "Aury" },
+	]
+	return (
+		<div className="w-full rounded-2xl bg-violet-50">
+			<button
+				type="button"
+				onClick={() => setOpen((o) => !o)}
+				className="flex min-h-16 w-full touch-manipulation items-center justify-between px-4 py-3 text-lg font-extrabold text-grape-dark active:scale-[0.98]"
+			>
+				<span>Ubierz 🎩</span>
+				<span
+					className={`text-xl transition-transform ${open ? "rotate-180" : ""}`}
+				>
+					▾
+				</span>
+			</button>
+			{open &&
+				(ownedItems.length === 0 ? (
+					// PROPOZYCJA do dopracowania — pusta garderoba prowadzi do Sklepiku
+					<div className="px-4 pb-4 text-center text-sm font-bold text-slate-500">
+						Kapelusze kupisz w Sklepiku w Wiosce!
+					</div>
+				) : (
+					<div className="flex flex-col gap-2 px-3 pb-3">
+						{slots.map(({ slot, label }) => {
+							const items = ownedItems.filter((c) => c.slot === slot)
+							if (items.length === 0) return null
+							return (
+								<div key={slot}>
+									<div className="mb-1 text-xs font-extrabold uppercase tracking-wide text-slate-400">
+										{label}
+									</div>
+									<div className="flex gap-2 overflow-x-auto pb-1">
+										<button
+											type="button"
+											aria-label="Zdejmij"
+											onClick={() => equipCosmetic(monsterId, slot, null)}
+											className={`flex h-16 w-16 shrink-0 touch-manipulation items-center justify-center rounded-2xl bg-white text-2xl font-extrabold text-slate-400 active:scale-95 ${
+												eq[slot] === undefined ? "ring-4 ring-amber-300" : ""
+											}`}
+										>
+											∅
+										</button>
+										{items.map((item) => (
+											<button
+												key={item.id}
+												type="button"
+												aria-label={item.name}
+												onClick={() => equipCosmetic(monsterId, slot, item.id)}
+												className={`flex h-16 w-16 shrink-0 touch-manipulation items-center justify-center rounded-2xl bg-white active:scale-95 ${
+													eq[slot] === item.id ? "ring-4 ring-amber-300" : ""
+												}`}
+											>
+												<CosmeticArt id={item.id} size={44} />
+											</button>
+										))}
+									</div>
+								</div>
+							)
+						})}
+					</div>
+				))}
+		</div>
+	)
+}
 
 export function CollectionScreen() {
 	const ownedMonsters = useGame((s) => s.ownedMonsters)
@@ -155,8 +238,11 @@ export function CollectionScreen() {
 						{selectedOwned ? (
 							<>
 								{/* ===== OKNO Z ARTEM — bohater karty ===== */}
+								{/* shrink-0: okno ma overflow-hidden (min-height liczy się jako 0),
+								    więc bez tego flexbox ściska JE zamiast przewijać dłuższą kartę
+								    (karta urosła o garderobę) */}
 								<div
-									className={`relative w-full overflow-hidden rounded-3xl border-2 bg-gradient-to-br p-3 ${cardTheme.window} ${cardTheme.windowBorder}`}
+									className={`relative w-full shrink-0 overflow-hidden rounded-3xl border-2 bg-gradient-to-br p-3 ${cardTheme.window} ${cardTheme.windowBorder}`}
 								>
 									{/* radialny blask za potworkiem */}
 									<div
@@ -190,7 +276,14 @@ export function CollectionScreen() {
 										</div>
 									)}
 									<div className="relative flex justify-center">
-										<MonsterSvg id={selected.id} size={180} animate={true} />
+										{/* przez MonsterStage — karta pokazuje założony strój
+										    (każdy potworek z kosmetyką renderuje się przez Stage) */}
+										<MonsterStage
+											id={selected.id}
+											size={180}
+											animate={true}
+											overlay={<EquippedOverlay monsterId={selected.id} />}
+										/>
 									</div>
 								</div>
 
@@ -285,6 +378,9 @@ export function CollectionScreen() {
 										/>
 									</div>
 								)}
+
+								{/* ===== GARDEROBA (zwijana) ===== */}
+								<WardrobeSection monsterId={selected.id} />
 							</>
 						) : (
 							<>

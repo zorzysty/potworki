@@ -13,7 +13,7 @@ describe("migrateSave", () => {
 		expect(migrateSave(x, SAVE_VERSION)).toEqual(x)
 	})
 
-	test("pełny łańcuch v1→v10: eggsEarned, celebratedStage, mode jajek, eggStarBank, osiągnięcia, companionId, wioska, gapCorrect, dane zachowane", () => {
+	test("pełny łańcuch v1→v11: eggsEarned, celebratedStage, mode jajek, eggStarBank, osiągnięcia, companionId, wioska, gapCorrect, garderoba, dane zachowane", () => {
 		const v1 = {
 			ownedMonsters: {
 				0: { hatchedAt: 0 },
@@ -53,6 +53,8 @@ describe("migrateSave", () => {
 			decorations: [],
 			goalId: null,
 		})
+		// v10→v11: garderoba startuje pusta
+		expect(result.cosmetics).toEqual({ owned: [], equipped: {} })
 		// dane oryginalne zachowane
 		expect(result.iskierki).toBe(7)
 		expect(result.unlockedStage).toBe(2)
@@ -162,6 +164,15 @@ describe("migrateSave", () => {
 		expect(result.iskierki).toBe(9)
 	})
 
+	test("v10→v11: dodaje pustą garderobę, reszta (w tym iskierki) zachowana", () => {
+		const v10 = { iskierki: 123, companionId: 3, totalRounds: 12 }
+		const result = migrateSave(v10, 10) as Record<string, unknown>
+		expect(result.cosmetics).toEqual({ owned: [], equipped: {} })
+		expect(result.iskierki).toBe(123)
+		expect(result.companionId).toBe(3)
+		expect(result.totalRounds).toBe(12)
+	})
+
 	test("v7→v8: dodaje companionId null, reszta zachowana", () => {
 		const v7 = { iskierki: 5, dreamMonsterId: 3, totalRounds: 12 }
 		const result = migrateSave(v7, 7) as Record<string, unknown>
@@ -242,6 +253,7 @@ describe("INITIAL_SAVE shape-lock", () => {
 			"achievements",
 			"celebratedStage",
 			"companionId",
+			"cosmetics",
 			"dreamMonsterId",
 			"eggFragments",
 			"eggStarBank",

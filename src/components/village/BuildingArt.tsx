@@ -659,6 +659,224 @@ function OgrodekArt({ level, size }: { level: number; size: number | string }) {
 	)
 }
 
+// pasiasty daszek sklepiku (markiza z falbanką) — znak firmowy straganu/butiku
+function Awning({
+	x,
+	y,
+	w,
+	h = 13,
+}: {
+	x: number
+	y: number
+	w: number
+	h?: number
+}) {
+	const n = 5
+	const step = w / n
+	return (
+		<g stroke={OUTLINE} strokeWidth={1.6}>
+			<rect x={x} y={y} width={w} height={h} rx={3} fill="#ff8fb0" />
+			{Array.from({ length: Math.floor(n / 2) }, (_, i) => (
+				<rect
+					key={i}
+					x={x + (i * 2 + 1) * step}
+					y={y}
+					width={step}
+					height={h}
+					fill="#fff1f2"
+					stroke="none"
+				/>
+			))}
+			{/* falbanka: zwisające półkola w rytmie pasków */}
+			{Array.from({ length: n }, (_, i) => (
+				<path
+					key={`f${i}`}
+					d={`M${x + i * step} ${y + h} a${step / 2} ${step / 2} 0 0 0 ${step} 0`}
+					fill={i % 2 ? "#fff1f2" : "#ff8fb0"}
+				/>
+			))}
+			<rect x={x} y={y} width={w} height={h} rx={3} fill="none" />
+		</g>
+	)
+}
+
+// mini-kapelusz na wystawie (towar sklepiku)
+function MiniHat({
+	x,
+	y,
+	color = "#7c5cf0",
+}: {
+	x: number
+	y: number
+	color?: string
+}) {
+	return (
+		<g stroke={OUTLINE} strokeWidth={1.3}>
+			<rect x={x - 5} y={y - 10} width={10} height={9} rx={1.5} fill={color} />
+			<rect x={x - 8} y={y - 2} width={16} height={3.2} rx={1.6} fill={color} />
+		</g>
+	)
+}
+
+function SklepikArt({ level, size }: { level: number; size: number | string }) {
+	const uid = useId()
+	const boutique = level >= 3
+	return (
+		<svg viewBox="0 0 130 104" style={svgStyle(size)} aria-hidden="true">
+			<defs>
+				<linearGradient id={`skl-w-${uid}`} x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0%" stopColor="#fef3c7" />
+					<stop offset="100%" stopColor="#fbbf77" />
+				</linearGradient>
+				<linearGradient id={`skl-c-${uid}`} x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0%" stopColor="#d9a45f" />
+					<stop offset="100%" stopColor="#a9743a" />
+				</linearGradient>
+			</defs>
+			<ellipse
+				cx={65}
+				cy={100}
+				rx={54}
+				ry={3.5}
+				fill="#1e293b"
+				opacity={0.08}
+			/>
+
+			{level === 1 ? (
+				// L1 stragan: lada z desek, słupki, pasiasty daszek, kapelusze na ladzie
+				<g stroke={OUTLINE} strokeWidth={2}>
+					<line x1={33} y1={70} x2={33} y2={30} strokeWidth={3} />
+					<line x1={97} y1={70} x2={97} y2={30} strokeWidth={3} />
+					<rect
+						x={28}
+						y={70}
+						width={74}
+						height={28}
+						rx={3}
+						fill={`url(#skl-c-${uid})`}
+					/>
+					<g stroke="#f3ddc3" strokeOpacity={0.6} strokeWidth={1.4}>
+						<line x1={30} y1={79} x2={100} y2={79} />
+						<line x1={30} y1={88} x2={100} y2={88} />
+					</g>
+					<MiniHat x={50} y={68} />
+					<MiniHat x={80} y={68} color="#ff5e8a" />
+					<Awning x={22} y={24} w={86} />
+				</g>
+			) : (
+				// L2 sklepik / L3 butik: budynek z witryną, markizą i szyldem
+				<g stroke={OUTLINE} strokeWidth={2}>
+					{/* piętro butiku (L3) */}
+					{boutique && (
+						<>
+							<rect
+								x={32}
+								y={16}
+								width={66}
+								height={30}
+								rx={3}
+								fill={`url(#skl-w-${uid})`}
+							/>
+							<circle cx={48} cy={30} r={5} fill="#ffd95e" strokeWidth={1.4} />
+							<circle cx={82} cy={30} r={5} fill="#ffd95e" strokeWidth={1.4} />
+							<Pennant x={65} y={4} />
+						</>
+					)}
+					{/* dach nad parterem */}
+					<path
+						d={
+							boutique
+								? "M24 16 L65 2 L106 16 L106 20 L24 20 Z"
+								: "M22 40 L65 22 L108 40 L108 44 L22 44 Z"
+						}
+						fill="#e84a7a"
+					/>
+					{/* parter */}
+					<rect
+						x={26}
+						y={boutique ? 46 : 42}
+						width={78}
+						height={boutique ? 52 : 56}
+						rx={3}
+						fill={`url(#skl-w-${uid})`}
+					/>
+					{/* witryna z towarem: kapelusze rosną z poziomem mody */}
+					<rect
+						x={34}
+						y={boutique ? 58 : 56}
+						width={34}
+						height={26}
+						rx={2.5}
+						fill="#ede9fe"
+						strokeWidth={1.6}
+					/>
+					<MiniHat x={44} y={boutique ? 82 : 80} />
+					<MiniHat x={59} y={boutique ? 82 : 80} color="#ff5e8a" />
+					{boutique && (
+						<circle
+							cx={51}
+							cy={64}
+							r={3}
+							fill="#ffd95e"
+							strokeWidth={1.2}
+							className="anim-sparkle"
+						/>
+					)}
+					{/* drzwi z gałką */}
+					<path
+						d={`M80 98 v-16 a8 8 0 0 1 16 0 v16 Z`}
+						fill="#7c5cf0"
+						opacity={0.85}
+					/>
+					<circle cx={93} cy={90} r={1.3} fill="#ffd95e" stroke="none" />
+					{/* markiza nad witryną */}
+					<Awning x={30} y={boutique ? 48 : 46} w={42} h={11} />
+					{/* szyld z kapeluszem (świeci w butiku) */}
+					{boutique && (
+						<circle
+							cx={88}
+							cy={62}
+							r={11}
+							fill="#ffd95e"
+							opacity={0.25}
+							stroke="none"
+						/>
+					)}
+					<circle
+						cx={88}
+						cy={62}
+						r={8}
+						fill={boutique ? "#ffd95e" : "#fff7ed"}
+						strokeWidth={1.6}
+					/>
+					<MiniHat x={88} y={66} color="#5f45c4" />
+				</g>
+			)}
+
+			{/* iskierki mody (L3) */}
+			{boutique && (
+				<g fill="#ffffff">
+					<circle cx={30} cy={26} r={2} className="anim-sparkle" />
+					<circle
+						cx={102}
+						cy={34}
+						r={1.8}
+						className="anim-sparkle"
+						style={{ animationDelay: "0.7s" }}
+					/>
+					<circle
+						cx={65}
+						cy={12}
+						r={2.2}
+						className="anim-sparkle"
+						style={{ animationDelay: "1.3s" }}
+					/>
+				</g>
+			)}
+		</svg>
+	)
+}
+
 // Dispatcher: jeden punkt wejścia dla plotów, arkusza i BuildReveal.
 // `level` 1..3 = zbudowany art; `silhouette` = jednolity cień (niezbudowana
 // działka na scenie / wiersz listy) — filtr inline, odporny na brak klas.
@@ -693,6 +911,9 @@ export function BuildingArt({
 			break
 		case "ogrodek":
 			art = <OgrodekArt level={lvl} size={size} />
+			break
+		case "sklepik":
+			art = <SklepikArt level={lvl} size={size} />
 			break
 	}
 	if (!silhouette) return art

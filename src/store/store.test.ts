@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test } from "bun:test"
 import { ACHIEVEMENTS } from "../achievements/catalog"
 import type { FactStats } from "../game/adaptive"
 import { emptyStats, stageFacts, VISIT_BONUS } from "../game/adaptive"
+import { COSMETICS } from "../game/cosmetics"
 import type { FactKey } from "../game/facts"
 import { ISKIERKI_FOR_DUP, WISH_COST_NO_DREAM } from "../game/rewards"
 import { BUILDINGS, DECORATIONS } from "../game/village"
@@ -1084,6 +1085,123 @@ describe("wioska budowniczych", () => {
 			decorations: [],
 			goalId: null,
 		})
+		expect(merged.iskierki).toBe(5)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Sklepik: kupno kosmetyki (tier lock, dedupe, fundusze) i garderoba (equip)
+// ---------------------------------------------------------------------------
+
+describe("sklepik — kosmetyka", () => {
+	const tier1 = COSMETICS.find(
+		(c) => c.tier === 1,
+	) as (typeof COSMETICS)[number]
+	const tier2 = COSMETICS.find(
+		(c) => c.tier === 2,
+	) as (typeof COSMETICS)[number]
+	const villageWithSklepik = (level: number) => ({
+		buildings: { sklepik: level },
+		decorations: [],
+		goalId: null,
+	})
+
+	test("buyCosmetic: tier-1 za dokładnie tyle iskierek → kupione, portfel 0", () => {
+		suppressAchievements()
+		useGame.setState({
+			iskierki: tier1.cost,
+			village: villageWithSklepik(1),
+		})
+		game().buyCosmetic(tier1.id)
+		expect(game().cosmetics.owned).toEqual([tier1.id])
+		expect(game().iskierki).toBe(0)
+	})
+
+	test("buyCosmetic: już kupiony → ciche no-op (nie płaci drugi raz)", () => {
+		suppressAchievements()
+		useGame.setState({
+			iskierki: tier1.cost * 2,
+			village: villageWithSklepik(1),
+		})
+		game().buyCosmetic(tier1.id)
+		game().buyCosmetic(tier1.id)
+		expect(game().cosmetics.owned).toEqual([tier1.id])
+		expect(game().iskierki).toBe(tier1.cost)
+	})
+
+	test("buyCosmetic: tier 2 przy sklepiku L1 → no-op (blokada tieru)", () => {
+		suppressAchievements()
+		useGame.setState({ iskierki: 999, village: villageWithSklepik(1) })
+		game().buyCosmetic(tier2.id)
+		expect(game().cosmetics.owned).toEqual([])
+		expect(game().iskierki).toBe(999)
+	})
+
+	test("buyCosmetic: sklepik niezbudowany (L0) → no-op nawet dla tier 1", () => {
+		suppressAchievements()
+		useGame.setState({ iskierki: 999 })
+		game().buyCosmetic(tier1.id)
+		expect(game().cosmetics.owned).toEqual([])
+		expect(game().iskierki).toBe(999)
+	})
+
+	test("buyCosmetic: nieznane id / brak środków → no-op", () => {
+		suppressAchievements()
+		useGame.setState({
+			iskierki: tier1.cost - 1,
+			village: villageWithSklepik(3),
+		})
+		game().buyCosmetic("nie-ma-takiego")
+		game().buyCosmetic(tier1.id) // za mało iskierek
+		expect(game().cosmetics.owned).toEqual([])
+		expect(game().iskierki).toBe(tier1.cost - 1)
+	})
+
+	test("equipCosmetic: kupiony kapelusz na posiadanym potworku; null zdejmuje", () => {
+		suppressAchievements()
+		useGame.setState({
+			ownedMonsters: { [FIRST_MONSTER_ID]: { hatchedAt: 1 } },
+			cosmetics: { owned: [tier1.id], equipped: {} },
+		})
+		game().equipCosmetic(FIRST_MONSTER_ID, "hat", tier1.id)
+		expect(game().cosmetics.equipped[FIRST_MONSTER_ID]?.hat).toBe(tier1.id)
+		game().equipCosmetic(FIRST_MONSTER_ID, "hat", null)
+		expect(game().cosmetics.equipped[FIRST_MONSTER_ID]?.hat).toBeUndefined()
+	})
+
+	test("equipCosmetic: NIEKUPIONY przedmiot / NIEPOSIADANY potworek / zły slot → no-op", () => {
+		suppressAchievements()
+		useGame.setState({
+			ownedMonsters: { [FIRST_MONSTER_ID]: { hatchedAt: 1 } },
+			cosmetics: { owned: [tier1.id], equipped: {} },
+		})
+		// niekupiony przedmiot
+		game().equipCosmetic(FIRST_MONSTER_ID, "hat", tier2.id)
+		expect(game().cosmetics.equipped[FIRST_MONSTER_ID]).toBeUndefined()
+		// nieposiadany potworek
+		game().equipCosmetic(FIRST_MONSTER_ID + 1, "hat", tier1.id)
+		expect(game().cosmetics.equipped[FIRST_MONSTER_ID + 1]).toBeUndefined()
+		// slot niezgodny z przedmiotem (kapelusz do slotu aury)
+		game().equipCosmetic(FIRST_MONSTER_ID, "aura", tier1.id)
+		expect(game().cosmetics.equipped[FIRST_MONSTER_ID]).toBeUndefined()
+	})
+
+	test("equipCosmetic: nie mutuje poprzedniego stanu equipped (nowe obiekty)", () => {
+		suppressAchievements()
+		useGame.setState({
+			ownedMonsters: { [FIRST_MONSTER_ID]: { hatchedAt: 1 } },
+			cosmetics: { owned: [tier1.id], equipped: {} },
+		})
+		const before = game().cosmetics.equipped
+		game().equipCosmetic(FIRST_MONSTER_ID, "hat", tier1.id)
+		expect(before).toEqual({})
+		expect(game().cosmetics.equipped).not.toBe(before)
+	})
+
+	test("merge backfilluje brakującą garderobę (anti-undefined po dev-HMR)", () => {
+		const current = useGame.getState()
+		const merged = mergePersisted({ iskierki: 5 }, current)
+		expect(merged.cosmetics).toEqual({ owned: [], equipped: {} })
 		expect(merged.iskierki).toBe(5)
 	})
 })

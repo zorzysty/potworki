@@ -1,5 +1,6 @@
 import { type CSSProperties, useEffect, useRef, useState } from "react"
 import { HeartBurst } from "./Companion"
+import { EquippedOverlay } from "./CosmeticArt"
 import { pickPhrase, VILLAGE_TAP } from "./companionPhrases"
 import { MonsterStage } from "./MonsterStage"
 import { SpeechBubble } from "./SpeechBubble"
@@ -136,12 +137,16 @@ export function WanderingMonster({
 							id={id}
 							size={size}
 							animate
+							// kosmetyka komponuje się z reakcją/znacznikiem (fragment)
 							overlay={
-								react ? (
-									<HeartBurst nonce={react.nonce} />
-								) : isCompanion ? (
-									<CompanionMarker />
-								) : null
+								<>
+									<EquippedOverlay monsterId={id} />
+									{react ? (
+										<HeartBurst nonce={react.nonce} />
+									) : isCompanion ? (
+										<CompanionMarker />
+									) : null}
+								</>
 							}
 						/>
 					</div>

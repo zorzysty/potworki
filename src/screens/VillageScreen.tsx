@@ -7,6 +7,7 @@ import { BuildReveal } from "../components/village/BuildReveal"
 import { BuildSheet, type SheetView } from "../components/village/BuildSheet"
 import { Resident, type ResidentMode } from "../components/village/Resident"
 import { WanderingMonster, wanderParams } from "../components/WanderingMonster"
+import type { CosmeticId } from "../game/cosmetics"
 import type { BuildingId, DecorationId } from "../game/village"
 import {
 	BUILDINGS,
@@ -39,12 +40,13 @@ const PLOTS: Record<
 	BuildingId,
 	{ left: number; width: string; dy: number; z: number }
 > = {
-	domki: { left: 2, width: "clamp(88px, 15%, 172px)", dy: 0, z: 3 },
-	"plac-zabaw": { left: 18, width: "clamp(92px, 15%, 178px)", dy: -2, z: 2 },
-	zamek: { left: 39, width: "clamp(120px, 20%, 235px)", dy: 16, z: 1 },
-	fontanna: { left: 62, width: "clamp(72px, 11%, 128px)", dy: -4, z: 4 },
-	latarnie: { left: 76, width: "clamp(64px, 9%, 105px)", dy: 2, z: 3 },
-	ogrodek: { left: 87, width: "clamp(68px, 10%, 112px)", dy: -6, z: 4 },
+	domki: { left: 1, width: "clamp(88px, 15%, 172px)", dy: 0, z: 3 },
+	"plac-zabaw": { left: 15, width: "clamp(92px, 15%, 178px)", dy: -2, z: 2 },
+	sklepik: { left: 29, width: "clamp(64px, 9%, 110px)", dy: -2, z: 4 },
+	zamek: { left: 40, width: "clamp(120px, 20%, 235px)", dy: 16, z: 1 },
+	fontanna: { left: 63, width: "clamp(72px, 11%, 128px)", dy: -4, z: 4 },
+	latarnie: { left: 77, width: "clamp(64px, 9%, 105px)", dy: 2, z: 3 },
+	ogrodek: { left: 88, width: "clamp(68px, 10%, 112px)", dy: -6, z: 4 },
 }
 
 // mieszkańcy: zbudowany budynek przyciąga jednego z pokazywanych potworków
@@ -98,6 +100,8 @@ export function VillageScreen() {
 	const buildVillage = useGame((s) => s.buildVillage)
 	const buyDecoration = useGame((s) => s.buyDecoration)
 	const setVillageGoal = useGame((s) => s.setVillageGoal)
+	const cosmetics = useGame((s) => s.cosmetics)
+	const buyCosmetic = useGame((s) => s.buyCosmetic)
 
 	const [sheet, setSheet] = useState<SheetView | null>(null)
 	const [reveal, setReveal] = useState<{
@@ -168,6 +172,12 @@ export function VillageScreen() {
 	const handleBuyDecoration = (id: DecorationId) => {
 		buyDecoration(id)
 		setCheerNonce((n) => n + 1)
+		confetti({ particleCount: 45, spread: 60, origin: { y: 0.6 } })
+	}
+
+	// zakup kosmetyki: małe confetti (podpowiedź garderoby pokazuje arkusz)
+	const handleBuyCosmetic = (id: CosmeticId) => {
+		buyCosmetic(id)
 		confetti({ particleCount: 45, spread: 60, origin: { y: 0.6 } })
 	}
 
@@ -508,6 +518,7 @@ export function VillageScreen() {
 				<BuildSheet
 					view={sheet}
 					village={village}
+					cosmetics={cosmetics}
 					iskierki={iskierki}
 					onClose={() => setSheet(null)}
 					onShowList={() => setSheet({ kind: "list" })}
@@ -515,6 +526,7 @@ export function VillageScreen() {
 					onBuild={handleBuild}
 					onBuyDecoration={handleBuyDecoration}
 					onSetGoal={setVillageGoal}
+					onBuyCosmetic={handleBuyCosmetic}
 				/>
 			)}
 

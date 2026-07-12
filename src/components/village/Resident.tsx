@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { HeartBurst } from "../Companion"
+import { EquippedOverlay } from "../CosmeticArt"
 import { MonsterStage } from "../MonsterStage"
 
 export type ResidentMode = "doze" | "play" | "guard"
@@ -64,7 +65,13 @@ export function Resident({
 						id={id}
 						size={54}
 						animate
-						overlay={react !== null ? <HeartBurst nonce={react} /> : null}
+						// kosmetyka komponuje się z reakcją (fragment)
+						overlay={
+							<>
+								<EquippedOverlay monsterId={id} />
+								{react !== null ? <HeartBurst nonce={react} /> : null}
+							</>
+						}
 					/>
 				</div>
 				{mode === "doze" && react === null && (
