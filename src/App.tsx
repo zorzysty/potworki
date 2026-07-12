@@ -59,8 +59,8 @@ export function App() {
 						: "bg-gradient-to-b from-violet-200 via-fuchsia-100 to-amber-50"
 
 	return (
-		<div className={`min-h-dvh ${background}`}>
-			<div className="mx-auto min-h-dvh max-w-lg land:max-w-none">
+		<div className={`min-h-[var(--app-vh)] ${background}`}>
+			<div className="mx-auto min-h-[var(--app-vh)] max-w-lg land:max-w-none">
 				{screen === "home" && <HomeScreen debugEnabled={DEBUG_ENABLED} />}
 				{screen === "round" && <RoundScreen debugEnabled={DEBUG_ENABLED} />}
 				{screen === "hatch" && <HatchScreen />}

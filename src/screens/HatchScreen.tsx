@@ -62,7 +62,7 @@ export function HatchScreen() {
 	}
 
 	return (
-		<div className="flex min-h-dvh flex-col items-center p-5">
+		<div className="flex min-h-[var(--app-vh)] flex-col items-center p-5">
 			<div className="flex w-full items-center justify-between">
 				<button
 					type="button"

@@ -65,7 +65,7 @@ export function MapScreen() {
 	for (let st = unlockedStage; st >= 1; st--) conquered.push(st)
 
 	return (
-		<div className="flex min-h-dvh flex-col gap-3 p-4">
+		<div className="flex min-h-[var(--app-vh)] flex-col gap-3 p-4">
 			<div className="flex items-center justify-between">
 				<button
 					type="button"

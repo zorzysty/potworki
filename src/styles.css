@@ -46,6 +46,28 @@ body {
 	user-select: none;
 }
 
+/* PWA standalone: odsuń UI od notcha i home-indicatora (viewport-fit=cover
+   w index.html). W przeglądarce chrome robi to za nas — blok celowo scoped.
+   --app-vh = bezpieczna wysokość viewportu: ekrany używają min-h-[var(--app-vh)]
+   zamiast min-h-dvh, bo dvh mierzy PEŁNY viewport i padding body robiłby
+   trwały scroll o sumę insetów (zweryfikowane realnymi env() przez CDP). */
+:root {
+	--app-vh: 100dvh;
+}
+@media (display-mode: standalone) {
+	:root {
+		--app-vh: calc(
+			100dvh -
+			env(safe-area-inset-top) -
+			env(safe-area-inset-bottom)
+		);
+	}
+	body {
+		padding: env(safe-area-inset-top) env(safe-area-inset-right)
+			env(safe-area-inset-bottom) env(safe-area-inset-left);
+	}
+}
+
 /* ---------- animacje potworków (wnętrza SVG) ---------- */
 
 .monster-bob {

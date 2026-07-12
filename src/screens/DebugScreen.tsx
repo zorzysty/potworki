@@ -30,7 +30,7 @@ export function DebugScreen() {
 		"touch-manipulation rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-slate-700 shadow active:scale-95"
 
 	return (
-		<div className="min-h-dvh select-text p-4 text-sm">
+		<div className="min-h-[var(--app-vh)] select-text p-4 text-sm">
 			<button type="button" onClick={() => goTo("home")} className={btn}>
 				← Home
 			</button>

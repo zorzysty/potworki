@@ -182,7 +182,7 @@ export function VillageScreen() {
 	}
 
 	return (
-		<div className="flex min-h-dvh flex-col gap-3 p-4">
+		<div className="flex min-h-[var(--app-vh)] flex-col gap-3 p-4">
 			<div className="flex items-center justify-between">
 				<button
 					type="button"

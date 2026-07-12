@@ -49,7 +49,7 @@ export function CollectionScreen() {
 	const cardTheme = selected ? CARD_THEME[selected.rarity] : CARD_THEME.common
 
 	return (
-		<div className="flex min-h-dvh flex-col gap-4 p-4">
+		<div className="flex min-h-[var(--app-vh)] flex-col gap-4 p-4">
 			<div className="flex items-center justify-between">
 				<button
 					type="button"

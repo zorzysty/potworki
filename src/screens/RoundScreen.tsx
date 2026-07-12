@@ -29,7 +29,7 @@ export function RoundScreen({
 	if (round.phase === "summary") return <RoundSummary />
 
 	return (
-		<div className="flex min-h-dvh flex-col gap-3 p-4 land:mx-auto land:max-w-4xl land:flex-row land:items-center land:gap-8">
+		<div className="flex min-h-[var(--app-vh)] flex-col gap-3 p-4 land:mx-auto land:max-w-4xl land:flex-row land:items-center land:gap-8">
 			<div className="flex flex-1 flex-col gap-3 land:justify-center">
 				<div className="flex items-center justify-between">
 					<div className="rounded-full bg-white/70 px-4 py-1 text-lg font-extrabold text-grape-dark">

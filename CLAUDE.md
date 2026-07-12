@@ -24,7 +24,7 @@ Linter i formatter: **biome** (konfiguracja w `biome.json` — wcięcia tabami, 
 
 Weryfikacja: `bun test` (testy jednostkowe logiki gry i katalogu potworków), `bun run typecheck`, `bun run check`, ekran debug (`?debug` w URL → link „debug" na ekranie głównym: tabela mastery, galeria 76 potworków, przełącznik trybu, przyciski oszukiwania) oraz ręczny click-through.
 
-Deploy: push do `main` → GitHub Actions uruchamia `bun test` (blokuje deploy przy błędzie), buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`.
+Deploy: push do `main` → GitHub Actions uruchamia `bun test` (blokuje deploy przy błędzie), buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`. Build emituje service worker PWA (`vite-plugin-pwa` w `vite.config.ts`, `registerType: "autoUpdate"`: po deployu appka aktualizuje się sama przy pierwszym uruchomieniu online; offline działa z precache całego builda) — appka jest instalowalna z ekranu głównego (manifest `scope`/`start_url` MUSZĄ siedzieć pod `/potworki/`; nazwy w manifeście to PROPOZYCJE).
 
 ## Architektura (przegląd)
 
@@ -125,4 +125,4 @@ When the user requests a durable behavior change, record it here or in the relev
 
 - [src/CLAUDE.md](src/CLAUDE.md) — cały kod aplikacji: warstwa UI (ekrany, komponenty, wejście, animacje) oraz indeks domen `game/` (logika adaptacyjna i nagrody), `monsters/` (zamrożony katalog potworków), `store/` (persystencja i przepływ gry), `achievements/` (katalog i ocena osiągnięć). Root zachowuje: komendy, deploy, zasady projektowe, testowanie w WSL.
 
-Poza `src/` nie ma child docs: `.github/workflows/` (jeden plik deployu), `public/` (favicon), `ROADMAP.md` (pomysły na przyszłość; sklepik-wioska i warstwa opiekuńcza zrealizowane — zostały follow-upy, m.in. kosmetyka per-potworek) i pliki konfiguracyjne w rocie są opisane sekcją „Komendy" powyżej.
+Poza `src/` nie ma child docs: `.github/workflows/` (jeden plik deployu), `public/` (favicon + wygenerowane ikony PWA: `pwa-192/512`, `pwa-maskable-512`, `apple-touch-icon`), `scripts/` (`make-icons.ts` — generator ikon PWA z `favicon.svg`, uruchamiany ręcznie po zmianie favicona; instrukcja w komentarzu pliku), `ROADMAP.md` (pomysły na przyszłość; sklepik-wioska i warstwa opiekuńcza zrealizowane — zostały follow-upy, m.in. kosmetyka per-potworek) i pliki konfiguracyjne w rocie są opisane sekcją „Komendy" powyżej.

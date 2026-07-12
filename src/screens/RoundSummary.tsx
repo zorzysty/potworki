@@ -38,7 +38,7 @@ export function RoundSummary() {
 	const goal = currentGoal(village)
 
 	return (
-		<div className="flex min-h-dvh flex-col items-center justify-center gap-5 p-6">
+		<div className="flex min-h-[var(--app-vh)] flex-col items-center justify-center gap-5 p-6">
 			<div className="anim-pop text-4xl font-extrabold text-grape-dark">
 				Koniec rundy! 🎉
 			</div>

@@ -50,7 +50,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const canBuild = !villageVisited && canAffordSomething(village, iskierki)
 
 	return (
-		<div className="flex min-h-dvh flex-col items-center gap-4 p-5 pt-8">
+		<div className="flex min-h-[var(--app-vh)] flex-col items-center gap-4 p-5 pt-8">
 			<h1 className="bg-gradient-to-r from-grape to-bubblegum bg-clip-text text-6xl font-extrabold text-transparent">
 				Potworki
 			</h1>
