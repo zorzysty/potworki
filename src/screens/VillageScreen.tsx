@@ -1,5 +1,5 @@
 import confetti from "canvas-confetti"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { HelpTip } from "../components/HelpTip"
 import { SpeechBubble } from "../components/SpeechBubble"
@@ -123,38 +123,63 @@ export function VillageScreen() {
 	// persystowany i nigdy automatyczny
 	const [evening, setEvening] = useState(false)
 
-	const ownedIds = Object.keys(ownedMonsters).map(Number)
-	const ownedCount = ownedIds.length
+	// Łańcuch pochodnych wędrowców/mieszkańców + stabilne obiekty `params` w JEDNYM
+	// useMemo — memo(WanderingMonster) widzi te same referencje, więc przełączniki
+	// UI wioski (evening/sheet/showCamp) nie rekonsyliują ~26 drzew SVG. Deps =
+	// dokładnie te wycinki store, które łańcuch czyta (referencyjnie stabilne).
+	const {
+		ownedIds,
+		ownedCount,
+		activeSpots,
+		residentCount,
+		residentIds,
+		wanderers,
+	} = useMemo(() => {
+		const ownedIds = Object.keys(ownedMonsters).map(Number)
+		const ownedCount = ownedIds.length
 
-	// najnowsi do limitu (limit rośnie z domkami), ale przyjaciel zawsze w komplecie
-	const cap = villageCap(village)
-	const sorted = [...ownedIds].sort(
-		(a, b) =>
-			(ownedMonsters[b]?.hatchedAt ?? 0) - (ownedMonsters[a]?.hatchedAt ?? 0),
-	)
-	// podróżnik na wyprawie jest NIEOBECNY w wiosce — jego nieobecność wyjaśnia
-	// obóz 🏕️ na skraju łąki (bez niego zniknięcie wyglądałoby na zgubę/bug)
-	const travelers = sorted.filter((id) => id !== expedition?.monsterId)
-	let shown = travelers.slice(0, cap)
-	if (
-		companionId !== null &&
-		companionId in ownedMonsters &&
-		!shown.includes(companionId)
-	) {
-		shown = [companionId, ...shown.slice(0, cap - 1)]
-	}
+		// najnowsi do limitu (limit rośnie z domkami), ale przyjaciel zawsze w komplecie
+		const cap = villageCap(village)
+		const sorted = [...ownedIds].sort(
+			(a, b) =>
+				(ownedMonsters[b]?.hatchedAt ?? 0) - (ownedMonsters[a]?.hatchedAt ?? 0),
+		)
+		// podróżnik na wyprawie jest NIEOBECNY w wiosce — jego nieobecność wyjaśnia
+		// obóz 🏕️ na skraju łąki (bez niego zniknięcie wyglądałoby na zgubę/bug)
+		const travelers = sorted.filter((id) => id !== expedition?.monsterId)
+		let shown = travelers.slice(0, cap)
+		if (
+			companionId !== null &&
+			companionId in ownedMonsters &&
+			!shown.includes(companionId)
+		) {
+			shown = [companionId, ...shown.slice(0, cap - 1)]
+		}
 
-	// mieszkańcy: budynki z RESIDENT_SPOTS przygarniają potworki z końca listy
-	// (przyjaciel — początek listy — zawsze zostaje wędrowcem)
-	const activeSpots = RESIDENT_SPOTS.filter(
-		([id]) => buildingLevel(village, id) >= 1,
-	)
-	const residentCount = Math.min(
-		activeSpots.length,
-		Math.max(0, shown.length - 1),
-	)
-	const residentIds = shown.slice(shown.length - residentCount)
-	const wanderIds = shown.slice(0, shown.length - residentCount)
+		// mieszkańcy: budynki z RESIDENT_SPOTS przygarniają potworki z końca listy
+		// (przyjaciel — początek listy — zawsze zostaje wędrowcem)
+		const activeSpots = RESIDENT_SPOTS.filter(
+			([id]) => buildingLevel(village, id) >= 1,
+		)
+		const residentCount = Math.min(
+			activeSpots.length,
+			Math.max(0, shown.length - 1),
+		)
+		const residentIds = shown.slice(shown.length - residentCount)
+		const wanderIds = shown.slice(0, shown.length - residentCount)
+		const wanderers = wanderIds.map((id, i) => ({
+			id,
+			params: wanderParams(id, i),
+		}))
+		return {
+			ownedIds,
+			ownedCount,
+			activeSpots,
+			residentCount,
+			residentIds,
+			wanderers,
+		}
+	}, [ownedMonsters, village, expedition, companionId])
 
 	const ogrodek = buildingLevel(village, "ogrodek")
 	const latarnie = buildingLevel(village, "latarnie")
@@ -501,11 +526,11 @@ export function VillageScreen() {
 					})}
 
 					{/* wędrowcy */}
-					{wanderIds.map((id, i) => (
+					{wanderers.map(({ id, params }, i) => (
 						<WanderingMonster
 							key={id}
 							id={id}
-							params={wanderParams(id, i)}
+							params={params}
 							isCompanion={id === companionId}
 							cheerNonce={i < 3 ? cheerNonce : 0}
 						/>

@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useRef, useState } from "react"
+import { type CSSProperties, memo, useEffect, useRef, useState } from "react"
 import { HeartBurst } from "./Companion"
 import { EquippedOverlay } from "./CosmeticArt"
 import { pickPhrase, VILLAGE_TAP } from "./companionPhrases"
@@ -65,7 +65,10 @@ function CompanionMarker() {
 
 // Jeden potworek dryfujący po wiosce. Wędrówka to czysty CSS (anim-stroll + zmienne),
 // więc brak timerów na ruch; tylko reakcja na dotyk używa StrictMode-safe timeoutu.
-export function WanderingMonster({
+// memo: przełączniki UI wioski (wieczór, arkusz, obóz) nie rekonsyliują ~26 drzew
+// SVG — wymaga stabilnego `params` (useMemo w VillageScreen); wszystko dynamiczne
+// w środku to prymitywne propsy albo własna subskrypcja store (EquippedOverlay).
+export const WanderingMonster = memo(function WanderingMonster({
 	id,
 	params,
 	isCompanion,
@@ -162,4 +165,4 @@ export function WanderingMonster({
 			</div>
 		</div>
 	)
-}
+})
