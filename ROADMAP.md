@@ -1,6 +1,11 @@
 1. Daj iskierkom drugie życie (sklepik) — najlepszy stosunek zysku do wysiłku
 
-Dziś iskierki powstają tylko z duplikatów i idą tylko na Jajko Życzeń. To martwa waluta dla kogoś, kto ma już sporo potworków.
+✅ ZREALIZOWANE (v1, plan 012): Wioska Budowniczych — 6 budynków × 3 poziomy +
+dekoracje za iskierki, żołd za ukończoną rundę (z bonusem zamku i pierwszej
+rundy dnia), wybierany cel budowy, sylwetki-aspiracje, celebracje budowy,
+mieszkańcy przy budynkach. Fast-follow (jeszcze nie): akcesoria/tła dla
+potworków przez sloty `MonsterStage` (dobry pretekst na budynek „Sklepik"),
+ramki do kart kolekcjonerskich, powtarzalny zlew po komplecie wioski+kolekcji.
 
 - Sklepik za iskierki: dekoracje do wioski, akcesoria/tła dla potworków, ramki do kart kolekcjonerskich. Duplikat przestaje rozczarowywać („znowu ten sam"), bo zawsze przybliża do czegoś.
 - Czysto kosmetyczne → nie dotyka pedagogiki ani zamrożonego seeda, więc bezpieczne. Rozszerza istniejący EggBankState/iskierki, nie tworzy nowej ekonomii od zera.

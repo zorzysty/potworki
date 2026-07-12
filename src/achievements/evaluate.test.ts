@@ -1,6 +1,7 @@
 /// <reference types="bun-types" />
 import { describe, expect, test } from "bun:test"
 import { ALL_FACTS, STAGES } from "../game/facts"
+import { BUILDINGS, MAX_BUILDING_LEVEL } from "../game/village"
 import { MONSTER_COUNT } from "../monsters/catalog"
 import type { AchievementCounters, SaveState } from "../store/schema"
 import { INITIAL_SAVE } from "../store/schema"
@@ -36,6 +37,13 @@ const maxSave: SaveState = {
 	totalRounds: 100,
 	iskierki: 1000,
 	achievementStats: maxCounters,
+	village: {
+		buildings: Object.fromEntries(
+			BUILDINGS.map((b) => [b.id, MAX_BUILDING_LEVEL]),
+		),
+		decorations: [],
+		goalId: null,
+	},
 }
 const maxCtx: AchievementCtx = { save: maxSave, counters: maxCounters }
 const emptyCtx: AchievementCtx = {
@@ -55,12 +63,12 @@ describe("evaluateAchievements", () => {
 		expect(r.iskierkiReward).toBe(0)
 	})
 
-	test("maksymalny zapis → wszystkie 41 + pełna nagroda (520)", () => {
+	test("maksymalny zapis → wszystkie 44 + pełna nagroda (550)", () => {
 		const r = evaluateAchievements(maxCtx, new Set())
 		expect(r.newlyUnlocked.length).toBe(ACHIEVEMENTS.length)
 		expect(r.iskierkiReward).toBe(TOTAL_REWARD)
-		// 7×easy(5) + 13×medium(10) + 17×hard(15) + 4×legendary(25) = 520
-		expect(r.iskierkiReward).toBe(520)
+		// 8×easy(5) + 14×medium(10) + 18×hard(15) + 4×legendary(25) = 550
+		expect(r.iskierkiReward).toBe(550)
 	})
 
 	test("idempotencja: już zdobyte nie wpadają ponownie ani nie naliczają iskierek", () => {

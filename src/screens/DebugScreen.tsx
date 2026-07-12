@@ -1,5 +1,6 @@
 import { RARITY_META } from "../components/rarity"
 import { ALL_FACTS } from "../game/facts"
+import { roundWage, villageValue } from "../game/village"
 import { MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
@@ -11,6 +12,8 @@ export function DebugScreen() {
 	const celebratedStage = useGame((s) => s.celebratedStage)
 	const totalRounds = useGame((s) => s.totalRounds)
 	const eggsEarned = useGame((s) => s.eggsEarned)
+	const village = useGame((s) => s.village)
+	const wishEggsBought = useGame((s) => s.achievementStats.wishEggsBought)
 	const mode = useGame((s) => s.mode)
 	const setMode = useGame((s) => s.setMode)
 	const goTo = useGame((s) => s.goTo)
@@ -20,6 +23,7 @@ export function DebugScreen() {
 	const debugAddIskierki = useGame((s) => s.debugAddIskierki)
 	const debugAddEgg = useGame((s) => s.debugAddEgg)
 	const debugOpenGate = useGame((s) => s.debugOpenGate)
+	const debugBuildAll = useGame((s) => s.debugBuildAll)
 	const debugReset = useGame((s) => s.debugReset)
 
 	const btn =
@@ -33,6 +37,13 @@ export function DebugScreen() {
 			<div className="my-2 font-bold">
 				etap: {unlockedStage} | uczczony: {celebratedStage} | rundy:{" "}
 				{totalRounds} | iskierki: {iskierki} | jajka: {eggsEarned}
+			</div>
+			{/* pacing ekonomii wioski: wydane ≈ wartość wioski + koszty jajek życzeń,
+			    zarobione ≈ wydane + portfel — obserwacja balansu bez nowych liczników */}
+			<div className="mb-2 font-bold text-slate-500">
+				wioska: {villageValue(village)} ✨ zainwestowane | jajka życzeń kupione:{" "}
+				{wishEggsBought} | żołd za 30⭐ dziś: {roundWage(village, 30, false)}–
+				{roundWage(village, 30, true)} ✨
 			</div>
 			<div className="mb-3 flex items-center gap-2">
 				<span className="font-bold text-slate-500">
@@ -113,6 +124,9 @@ export function DebugScreen() {
 				</button>
 				<button type="button" className={btn} onClick={debugOpenGate}>
 					otwórz bramę
+				</button>
+				<button type="button" className={btn} onClick={debugBuildAll}>
+					zbuduj całą wioskę
 				</button>
 				<button
 					type="button"

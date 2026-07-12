@@ -125,4 +125,4 @@ When the user requests a durable behavior change, record it here or in the relev
 
 - [src/CLAUDE.md](src/CLAUDE.md) — cały kod aplikacji: warstwa UI (ekrany, komponenty, wejście, animacje) oraz indeks domen `game/` (logika adaptacyjna i nagrody), `monsters/` (zamrożony katalog potworków), `store/` (persystencja i przepływ gry), `achievements/` (katalog i ocena osiągnięć). Root zachowuje: komendy, deploy, zasady projektowe, testowanie w WSL.
 
-Poza `src/` nie ma child docs: `.github/workflows/` (jeden plik deployu), `public/` (favicon), `ROADMAP.md` (pomysły na przyszłość: sklepik za iskierki; warstwa opiekuńcza/wioska zrealizowana w v1) i pliki konfiguracyjne w rocie są opisane sekcją „Komendy" powyżej.
+Poza `src/` nie ma child docs: `.github/workflows/` (jeden plik deployu), `public/` (favicon), `ROADMAP.md` (pomysły na przyszłość; sklepik-wioska i warstwa opiekuńcza zrealizowane — zostały follow-upy, m.in. kosmetyka per-potworek) i pliki konfiguracyjne w rocie są opisane sekcją „Komendy" powyżej.

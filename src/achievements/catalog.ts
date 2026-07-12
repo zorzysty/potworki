@@ -1,4 +1,5 @@
 import { ALL_FACTS, isMaxStage, STAGES } from "../game/facts"
+import { BUILDINGS, MAX_BUILDING_LEVEL } from "../game/village"
 import {
 	DIVISION_ONLY_IDS,
 	IDS_BY_RARITY,
@@ -78,6 +79,12 @@ function ownedDivisionOnly(save: SaveState): number {
 	return n
 }
 
+// Budynki wioski o poziomie ≥ podanego (osiągnięcia budowniczego — czysto z zapisu).
+function buildingsAtLeast(save: SaveState, level: number): number {
+	return BUILDINGS.filter((b) => (save.village.buildings[b.id] ?? 0) >= level)
+		.length
+}
+
 // Ilu strażników krain (po jednym na region) już posiadamy.
 function ownedGuardians(save: SaveState): number {
 	return REGIONS.filter((r) => r.guardianId in save.ownedMonsters).length
@@ -85,7 +92,7 @@ function ownedGuardians(save: SaveState): number {
 
 const MAX_STAGE = STAGES.length - 1
 
-// 41 osiągnięć. Tytuły/opisy są robocze (do dopracowania); id są stabilne.
+// 44 osiągnięcia. Tytuły/opisy są robocze (do dopracowania); id są stabilne.
 // Trudność (easy/medium/hard/legendary → 5/10/15/25 iskierek) jest per-wpis w polu
 // `difficulty`; kolejność tablicy = tripwire persystencji, nie grupowanie wg trudności.
 export const ACHIEVEMENTS: readonly AchievementDef[] = [
@@ -479,5 +486,38 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		icon: "🗓️",
 		difficulty: "legendary",
 		progress: ({ counters }) => ({ current: counters.daysPlayed, target: 21 }),
+	},
+	{
+		id: "pierwsza-budowla",
+		title: "Pierwsza budowla",
+		description: "Zbuduj coś w wiosce.",
+		icon: "🏗️",
+		difficulty: "easy",
+		progress: ({ save }) => ({
+			current: Math.min(1, buildingsAtLeast(save, 1)),
+			target: 1,
+		}),
+	},
+	{
+		id: "wioska-w-rozkwicie",
+		title: "Wioska w rozkwicie",
+		description: "Zbuduj wszystkie budynki w wiosce.",
+		icon: "🏘️",
+		difficulty: "medium",
+		progress: ({ save }) => ({
+			current: buildingsAtLeast(save, 1),
+			target: BUILDINGS.length,
+		}),
+	},
+	{
+		id: "wielki-budowniczy",
+		title: "Wielki budowniczy",
+		description: "Ulepsz każdy budynek wioski na najwyższy poziom.",
+		icon: "🏰",
+		difficulty: "hard",
+		progress: ({ save }) => ({
+			current: buildingsAtLeast(save, MAX_BUILDING_LEVEL),
+			target: BUILDINGS.length,
+		}),
 	},
 ]

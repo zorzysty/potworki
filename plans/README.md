@@ -13,7 +13,7 @@ when a change alters a contract.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 012  | Wioska Budowniczych — budynki i dekoracje za iskierki (Heroes 3) | P1 | L | — | TODO |
+| 012  | Wioska Budowniczych — budynki i dekoracje za iskierki (Heroes 3) | P1 | L | — | DONE — branch `feat/012-wioska-budowanie` (217 tests) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale).
 

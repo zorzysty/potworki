@@ -1,6 +1,7 @@
 /// <reference types="bun-types" />
 import { describe, expect, test } from "bun:test"
 import { ALL_FACTS, STAGES } from "../game/facts"
+import { BUILDINGS, MAX_BUILDING_LEVEL } from "../game/village"
 import { MONSTER_COUNT } from "../monsters/catalog"
 import type { AchievementCounters, SaveState } from "../store/schema"
 import { INITIAL_SAVE } from "../store/schema"
@@ -38,6 +39,13 @@ const maxSave: SaveState = {
 	totalRounds: 100,
 	iskierki: 1000,
 	achievementStats: maxCounters,
+	village: {
+		buildings: Object.fromEntries(
+			BUILDINGS.map((b) => [b.id, MAX_BUILDING_LEVEL]),
+		),
+		decorations: [],
+		goalId: null,
+	},
 }
 const maxCtx: AchievementCtx = { save: maxSave, counters: maxCounters }
 const emptyCtx: AchievementCtx = {
@@ -46,8 +54,8 @@ const emptyCtx: AchievementCtx = {
 }
 
 describe("ACHIEVEMENTS catalog", () => {
-	test("jest dokładnie 41 osiągnięć", () => {
-		expect(ACHIEVEMENTS.length).toBe(41)
+	test("jest dokładnie 44 osiągnięcia", () => {
+		expect(ACHIEVEMENTS.length).toBe(44)
 	})
 
 	test("id są unikalne", () => {
@@ -100,6 +108,9 @@ describe("ACHIEVEMENTS catalog", () => {
 			"gwiazdki-1500",
 			"dni-grania-14",
 			"dni-grania-21",
+			"pierwsza-budowla",
+			"wioska-w-rozkwicie",
+			"wielki-budowniczy",
 		])
 	})
 
