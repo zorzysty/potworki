@@ -48,18 +48,17 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
   015 faza C** (infra first, then pedagogy, then the economy arc; the
   save-touching trio lands one at a time).
 
-## Open design questions for the maintainer (flagged by the plans)
+## Design decisions (maintainer, 2026-07-12) — executors follow these
 
-- 013: goal-tracking i badge „stać cię!" celowo ignorują kosmetyki w v1
-  (sklepik się odkrywa, nie wypycha) — zmienić, by pasek celu mógł wskazywać
-  kapelusz? (zmienia sygnaturę `currentGoal` — zdecydować PRZED startem).
-- 015: token trybu `"gap"` zamrożony w `PendingEgg.mode` po deployu — polskie
-  ETYKIETY dowolne, token nie; oraz: czy potworki tylko-luka (ids 76–79,
-  faza C) wchodzą do v1?
-- 016: bonus strażnika (+2✨) jako osobna linia w podsumowaniu, nie w chipie
-  żołdu — scalić w jedną liczbę?
-- 017: powrót z tropem proponuje wymarzonego tylko przy PUSTYM slocie (v1 nie
-  nadpisuje) — dopuścić propozycję podmiany?
+- **013**: cel i badge „stać cię!" IGNORUJĄ kosmetyki (sklepik się odkrywa,
+  nie wypycha) — jak w planie; `currentGoal` bez zmian sygnatury.
+- **015**: potworki tylko-luka (ids 76–79) **wchodzą do v1** — faza C jest w
+  zakresie, nie opcjonalna (severability = tylko możliwość wycofania).
+  Token trybu w kodzie: `"gap"`.
+- **016**: bonus strażnika (+2✨) jako OSOBNA linia w podsumowaniu — chip
+  żołdu zostaje czysty; jak w planie.
+- **017**: trop proponuje wymarzonego wyłącznie przy PUSTYM slocie (nigdy
+  podmiana) — jak w planie.
 
 ## Archive
 

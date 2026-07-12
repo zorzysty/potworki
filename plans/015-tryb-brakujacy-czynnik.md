@@ -31,8 +31,11 @@
 ## Status
 
 - **Priority**: P2 (feature — highest pedagogy-per-effort on the idea list)
-- **Effort**: M (Phase A+B core mode); +M for the optional, severable Phase C
-  (gap-only monsters + counter/achievements)
+- **Effort**: L — Phase A+B (core mode, M) **plus Phase C** (gap-only
+  monsters + counter/achievements), which is **IN SCOPE for v1 per the
+  maintainer's decision (2026-07-12)**. Phase C remains technically
+  severable (each sub-step compiles alone) — that is a rollback affordance,
+  not an invitation to skip it.
 - **Risk**: MED (a third value in a persisted union; Phase C touches the
   frozen monster catalog via its documented append-only procedure)
 - **Depends on**: none functionally; written against `feat/012-wioska-budowanie`
@@ -186,7 +189,8 @@ appended achievement ids + tripwire/totals updates (`catalog.test.ts`,
 - `src/store/store.test.ts` — „tryb luki" describe (mirror of „tryb dzielenia")
 - DOX docs (Step 12)
 
-**In scope — Phase C (optional, severable; each sub-step compiles alone)**:
+**In scope — Phase C (v1 per maintainer decision 2026-07-12; "severable" =
+rollback affordance only, each sub-step compiles alone)**:
 - `src/monsters/catalog.ts` — ids 76–79 (`GAP_ONLY_IDS`, `isGapOnly`,
   `rarityOf` block, `MONSTER_COUNT = 80`), `idsByRarityForMode` rework
 - `src/monsters/catalog.test.ts` — distribution 36/21/11/12, signature append
