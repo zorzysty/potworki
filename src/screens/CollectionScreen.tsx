@@ -2,6 +2,7 @@ import { useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { CosmeticArt, EquippedOverlay } from "../components/CosmeticArt"
 import { HelpTip } from "../components/HelpTip"
+import { ModalCloseX } from "../components/ModalCloseX"
 import { MonsterStage } from "../components/MonsterStage"
 import { CARD_THEME, RARITY_META } from "../components/rarity"
 import type { CosmeticSlot } from "../game/cosmetics"
@@ -446,14 +447,10 @@ export function CollectionScreen() {
 						className="anim-pop relative w-full max-w-sm"
 						onClick={(e) => e.stopPropagation()}
 					>
-						<button
-							type="button"
-							aria-label="Zamknij kartę"
-							onClick={() => setSelectedId(null)}
-							className="absolute -left-2 -top-2 z-10 flex h-12 w-12 touch-manipulation items-center justify-center rounded-full bg-white text-xl font-extrabold text-grape-dark shadow-lg ring-2 ring-violet-200 active:scale-90"
-						>
-							✕
-						</button>
+						<ModalCloseX
+							onClose={() => setSelectedId(null)}
+							label="Zamknij kartę"
+						/>
 						<div
 							className={`flex max-h-[88vh] w-full flex-col items-center gap-3 overflow-y-auto rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${frameDef?.cardClasses ?? cardTheme.card}`}
 						>
@@ -684,13 +681,6 @@ export function CollectionScreen() {
 									)}
 								</>
 							)}
-							<button
-								type="button"
-								onClick={() => setSelectedId(null)}
-								className="touch-manipulation pt-1 text-lg font-bold text-slate-400 active:scale-95"
-							>
-								Zamknij
-							</button>
 						</div>
 					</div>
 				</div>

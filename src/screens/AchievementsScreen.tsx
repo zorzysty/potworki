@@ -11,6 +11,7 @@ import {
 } from "../achievements/evaluate"
 import { TIER_META } from "../components/achievementTier"
 import { HelpTip } from "../components/HelpTip"
+import { ModalCloseX } from "../components/ModalCloseX"
 import { useGame } from "../store/store"
 
 interface AchievementRow {
@@ -222,9 +223,11 @@ function AchievementModal({
 			onClick={onClose}
 		>
 			<div
-				className={`anim-pop flex w-full max-w-sm flex-col gap-4 rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${unlocked ? tier.border : "border-slate-300"}`}
+				className={`anim-pop relative flex w-full max-w-sm flex-col gap-4 rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${unlocked ? tier.border : "border-slate-300"}`}
 				onClick={(e) => e.stopPropagation()}
 			>
+				{/* karta się nie przewija, więc ✕ może siedzieć na niej wprost */}
+				<ModalCloseX onClose={onClose} />
 				{/* ===== PANEL-BOHATER: ikona + odznaka nagrody w rogu ===== */}
 				<div
 					className={`relative flex items-center justify-center rounded-3xl bg-gradient-to-br py-9 ${unlocked ? tier.tint : "from-slate-100 to-slate-200"}`}
@@ -296,14 +299,6 @@ function AchievementModal({
 						Jeszcze przed tobą — dasz radę! 💪
 					</div>
 				)}
-
-				<button
-					type="button"
-					onClick={onClose}
-					className="touch-manipulation text-lg font-bold text-slate-400 active:scale-95"
-				>
-					Zamknij
-				</button>
 			</div>
 		</div>
 	)
