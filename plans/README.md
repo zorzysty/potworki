@@ -14,8 +14,52 @@ when a change alters a contract.
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
 | 012  | Wioska Budowniczych — budynki i dekoracje za iskierki (Heroes 3) | P1 | L | — | DONE — branch `feat/012-wioska-budowanie` (217 tests) |
+| 013  | Sklepik — kosmetyka per-potworek (kapelusze/aury przez sloty MonsterStage) | P2 | L | 012 | TODO |
+| 014  | Ramki kart kolekcjonerskich (przedmioty sklepiku, slot "frame") | P3 | S | 013 | TODO |
+| 015  | Tryb „brakujący czynnik" (`7 × _ = 42`) — trzeci widok tych samych faktów | P2 | L (M bez fazy C) | — | TODO |
+| 016  | Odwiedziny Strażnika — fabularne rundy powtórkowe przy `needsMaintenance` | P2 | S–M | — | TODO |
+| 017  | Wyprawy potworków — postęp w RUNDACH (nigdy zegar), nagrody ✨ | P3 | M | — | TODO |
+| 018  | PWA/offline — instalacja na tablecie, gra bez sieci | P2 | S | — | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale).
+
+## Dependency & coordination notes (013–018)
+
+- **All of 013–018 assume plan 012 is on the branch/`main`** (drift checks anchor
+  at `2092dfc`).
+- **`SAVE_VERSION` collision**: 013 (`cosmetics`), 017 (`expedition` +
+  counter) and 015 Phase C (`lukaCorrect` counter) each add `SaveState`
+  fields. Each plan deliberately says "migration number = next available at
+  implementation time" — **land them sequentially** (any order) and let each
+  take the next version; never develop two save-touching plans in parallel
+  branches without rebasing the migration slot.
+- **Achievement-count collision**: 017 (+2) and 015 Phase C (+2) both update
+  the frozen-id tripwire and the absolute totals in `evaluate.test.ts`
+  (written against today's 44 / 550✨). Whichever lands second must recompute
+  the absolute numbers. 013 adds no achievements but changes the TARGET of
+  `wioska-w-rozkwicie`/`wielki-budowniczy` (7th building; 013 handles the
+  test fallout itself).
+- **014 hard-depends on 013** (save shape `cosmetics.owned`/`equipped`, shop
+  UI, tier gating) and adds no save version of its own; its executor must
+  verify 013's landed symbols and STOP on mismatch.
+- **016 and 018 are fully independent** (zero save changes; 018 touches no
+  `src/` at runtime) — safe to do anytime, in parallel with anything.
+- Recommended sequence: **018 → 016 → 015 (fazy A–B) → 013 → 014 → 017 →
+  015 faza C** (infra first, then pedagogy, then the economy arc; the
+  save-touching trio lands one at a time).
+
+## Open design questions for the maintainer (flagged by the plans)
+
+- 013: goal-tracking i badge „stać cię!" celowo ignorują kosmetyki w v1
+  (sklepik się odkrywa, nie wypycha) — zmienić, by pasek celu mógł wskazywać
+  kapelusz? (zmienia sygnaturę `currentGoal` — zdecydować PRZED startem).
+- 015: token trybu `"gap"` zamrożony w `PendingEgg.mode` po deployu — polskie
+  ETYKIETY dowolne, token nie; oraz: czy potworki tylko-luka (ids 76–79,
+  faza C) wchodzą do v1?
+- 016: bonus strażnika (+2✨) jako osobna linia w podsumowaniu, nie w chipie
+  żołdu — scalić w jedną liczbę?
+- 017: powrót z tropem proponuje wymarzonego tylko przy PUSTYM slocie (v1 nie
+  nadpisuje) — dopuścić propozycję podmiany?
 
 ## Archive
 
@@ -50,6 +94,7 @@ Condensed from the 2026-06 audits; full rationale in git history of this file:
   `rarityOf` spans new id blocks while `RARITY_ODDS` stayed fixed; the
   `simulateRoundOutcome` harness could measure dup/iskierki pacing.
   (Plan 012 adds a wage income + village sink — re-measure after it lands.)
-- **Per-monster cosmetics via `MonsterStage` slots + card frames** — the
-  natural follow-up to plan 012 (see its Maintenance notes).
 - **Audio feedback** for the reward loop (needs mute/autoplay UX).
+
+(Per-monster cosmetics + card frames graduated to plans 013/014; story-framed
+review, a third mode, expeditions and PWA to 015–018.)
