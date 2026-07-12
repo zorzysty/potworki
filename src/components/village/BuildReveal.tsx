@@ -40,16 +40,14 @@ export function BuildReveal({
 				{revealed ? "Zbudowane! 🎉" : "Budujemy… 🔨"}
 			</div>
 
-			<div className="relative flex h-52 w-64 items-center justify-center rounded-3xl bg-white/90 p-4 shadow-2xl">
+			<div className="relative flex h-56 w-72 items-center justify-center rounded-3xl bg-white/90 p-4 shadow-2xl">
 				{revealed ? (
 					<div className="anim-pop-in">
-						<BuildingArt id={id} level={level} size={190} />
+						<BuildingArt id={id} level={level} size={210} />
 					</div>
 				) : (
 					<div className="anim-shake">
-						<div className="opacity-30 grayscale">
-							<BuildingArt id={id} level={level} size={190} />
-						</div>
+						<BuildingArt id={id} level={level} size={210} silhouette />
 					</div>
 				)}
 			</div>

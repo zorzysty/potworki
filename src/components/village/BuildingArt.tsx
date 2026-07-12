@@ -1,10 +1,14 @@
+import type { CSSProperties } from "react"
 import { useId } from "react"
 import type { BuildingId, DecorationId } from "../../game/village"
 
-// Art budynków wioski: poziom = WIDOCZNY wzrost (rozmiar, elementy, światła) —
+// Art budynków wioski: poziom = WIDOCZNY wzrost (rozmiar, wieże, światła) —
 // żadnych kropek-poziomów; arkusz budowy pokazuje „poziom X/3" tekstem.
-// SVG ręczne (idiom potworków: gradienty, zaokrąglenia, gruby kontur), emoji
-// tylko tam, gdzie wystarcza. Sylwetkę (level 0) stylizuje caller (grayscale).
+// Ręczne SVG w idiomie potworków (gradienty z palety, zaokrąglenia, gruby
+// kontur). `size` może być liczbą (px) lub stringiem CSS ("100%") — wysokość
+// wynika z viewBox. Sylwetka (silhouette) = jednolity ciemny cień budynku
+// (filtr inline, niezależny od klas Tailwinda) — czytelna aspiracja à la
+// Heroes 3, nie wyblakły obrazek.
 
 export const DECORATION_EMOJI: Record<DecorationId, string> = {
 	kwiatki: "🌼",
@@ -16,28 +20,117 @@ export const DECORATION_EMOJI: Record<DecorationId, string> = {
 }
 
 const OUTLINE = "#5f45c4"
+const STONE_LINE = "#ffffff"
 
-function ZamekArt({ level, size }: { level: number; size: number }) {
+function svgStyle(size: number | string): CSSProperties {
+	return {
+		width: typeof size === "number" ? `${size}px` : size,
+		height: "auto",
+		display: "block",
+	}
+}
+
+// chorągiewka na iglicy (Heroes lubi proporczyki)
+function Pennant({
+	x,
+	y,
+	flip = false,
+}: {
+	x: number
+	y: number
+	flip?: boolean
+}) {
+	const dir = flip ? -14 : 14
+	return (
+		<g>
+			<line
+				x1={x}
+				y1={y}
+				x2={x}
+				y2={y - 12}
+				stroke={OUTLINE}
+				strokeWidth={1.6}
+			/>
+			<path
+				d={`M${x} ${y - 12} l${dir} 3.5 l${-dir} 3.5 Z`}
+				fill="#ffd95e"
+				stroke={OUTLINE}
+				strokeWidth={1}
+			/>
+		</g>
+	)
+}
+
+// okno łukowe
+function ArchWindow({
+	x,
+	y,
+	w = 10,
+	lit,
+}: {
+	x: number
+	y: number
+	w?: number
+	lit: boolean
+}) {
+	const h = w * 1.5
+	return (
+		<path
+			d={`M${x - w / 2} ${y + h / 2} v-${h / 2} a${w / 2} ${w / 2} 0 0 1 ${w} 0 v${h / 2} Z`}
+			fill={lit ? "#ffd95e" : "#ede9fe"}
+			stroke={OUTLINE}
+			strokeWidth={1.4}
+		/>
+	)
+}
+
+// blanki na szczycie muru/wieży
+function Crenels({
+	x,
+	y,
+	width,
+	fill,
+}: {
+	x: number
+	y: number
+	width: number
+	fill: string
+}) {
+	const n = Math.max(2, Math.round(width / 14))
+	const step = width / (n * 2 - 1)
+	return (
+		<g stroke={OUTLINE} strokeWidth={1.6}>
+			{Array.from({ length: n }, (_, i) => (
+				<rect
+					key={i}
+					x={x + i * step * 2}
+					y={y}
+					width={step}
+					height={8}
+					fill={fill}
+				/>
+			))}
+		</g>
+	)
+}
+
+function ZamekArt({ level, size }: { level: number; size: number | string }) {
 	const uid = useId()
 	const gold = level >= 3
 	const wall = `url(#zamek-w-${uid})`
+	const roof = `url(#zamek-r-${uid})`
 	return (
-		<svg
-			viewBox="0 0 120 106"
-			width={size}
-			height={(size * 106) / 120}
-			aria-hidden="true"
-		>
+		<svg viewBox="0 0 170 132" style={svgStyle(size)} aria-hidden="true">
 			<defs>
 				<linearGradient id={`zamek-w-${uid}`} x1="0" y1="0" x2="0" y2="1">
 					{gold ? (
 						<>
-							<stop offset="0%" stopColor="#ffe9a3" />
-							<stop offset="100%" stopColor="#f0b429" />
+							<stop offset="0%" stopColor="#ffedb0" />
+							<stop offset="100%" stopColor="#eeb42f" />
 						</>
 					) : (
 						<>
-							<stop offset="0%" stopColor="#c4b5fd" />
+							<stop offset="0%" stopColor="#cabcfd" />
 							<stop offset="100%" stopColor="#8b6cf5" />
 						</>
 					)}
@@ -47,72 +140,115 @@ function ZamekArt({ level, size }: { level: number; size: number }) {
 					<stop offset="100%" stopColor="#e84a7a" />
 				</linearGradient>
 			</defs>
-			{/* boczne wieże + mur (od L2) */}
-			{level >= 2 && (
-				<g stroke={OUTLINE} strokeWidth={2} strokeLinejoin="round">
-					<rect x={30} y={62} width={60} height={40} fill={wall} />
-					<rect x={16} y={48} width={22} height={54} rx={3} fill={wall} />
-					<rect x={82} y={48} width={22} height={54} rx={3} fill={wall} />
-					<path d="M13 48 L27 28 L41 48 Z" fill={`url(#zamek-r-${uid})`} />
-					<path d="M79 48 L93 28 L107 48 Z" fill={`url(#zamek-r-${uid})`} />
-					{/* brama */}
-					<path
-						d="M50 102 V84 a10 10 0 0 1 20 0 v18 Z"
-						fill="#4c1d95"
-						opacity={0.85}
-					/>
+
+			{/* cień pod budowlą */}
+			<ellipse cx={85} cy={128} rx={62} ry={4} fill="#1e293b" opacity={0.08} />
+
+			{/* skrajne baszty (tylko L3 — cytadela) */}
+			{gold && (
+				<g stroke={OUTLINE} strokeWidth={1.8}>
+					<rect x={6} y={88} width={18} height={40} rx={2} fill={wall} />
+					<path d="M2 88 L15 70 L28 88 Z" fill={roof} />
+					<rect x={146} y={88} width={18} height={40} rx={2} fill={wall} />
+					<path d="M142 88 L155 70 L168 88 Z" fill={roof} />
 				</g>
 			)}
-			{/* wieża główna (zawsze) */}
-			<g stroke={OUTLINE} strokeWidth={2} strokeLinejoin="round">
+
+			{/* boczne wieże + mury (od L2) */}
+			{level >= 2 && (
+				<g stroke={OUTLINE} strokeWidth={2}>
+					{/* mury łączące (za wieżami) */}
+					<rect
+						x={40}
+						y={92}
+						width={90}
+						height={36}
+						fill={wall}
+						opacity={0.92}
+					/>
+					<Crenels x={40} y={86} width={90} fill={wall} />
+					{/* wieże */}
+					<rect x={24} y={62} width={28} height={66} rx={3} fill={wall} />
+					<rect x={118} y={62} width={28} height={66} rx={3} fill={wall} />
+					<path d="M18 62 L38 34 L58 62 Z" fill={roof} />
+					<path d="M112 62 L132 34 L152 62 Z" fill={roof} />
+					<Pennant x={38} y={34} flip />
+					<Pennant x={132} y={34} />
+					<ArchWindow x={38} y={84} lit={gold} />
+					<ArchWindow x={132} y={84} lit={gold} />
+					{/* pasy kamienia */}
+					<g stroke={STONE_LINE} strokeOpacity={0.3} strokeWidth={1.4}>
+						<line x1={26} y1={96} x2={50} y2={96} />
+						<line x1={120} y1={96} x2={144} y2={96} />
+					</g>
+				</g>
+			)}
+
+			{/* wieża główna (zawsze) — donżon */}
+			<g stroke={OUTLINE} strokeWidth={2}>
 				<rect
-					x={44}
-					y={26}
-					width={32}
-					height={level >= 2 ? 44 : 76}
+					x={64}
+					y={gold ? 26 : 40}
+					width={42}
+					height={gold ? 76 : 62}
 					rx={3}
 					fill={wall}
 				/>
-				{/* blanki */}
-				<rect x={42} y={20} width={8} height={9} fill={wall} />
-				<rect x={56} y={20} width={8} height={9} fill={wall} />
-				<rect x={70} y={20} width={8} height={9} fill={wall} />
-				{/* dach + chorągiewka */}
-				<path d="M40 20 L60 4 L80 20 Z" fill={`url(#zamek-r-${uid})`} />
-				<line x1={60} y1={4} x2={60} y2={-1} stroke={OUTLINE} />
+				<Crenels x={62} y={gold ? 20 : 34} width={46} fill={wall} />
+				<path
+					d={gold ? "M56 20 L85 -4 L114 20 Z" : "M56 34 L85 12 L114 34 Z"}
+					fill={roof}
+				/>
+				{/* pasy kamienia */}
+				<g stroke={STONE_LINE} strokeOpacity={0.3} strokeWidth={1.4}>
+					<line x1={66} y1={gold ? 56 : 66} x2={104} y2={gold ? 56 : 66} />
+					<line x1={66} y1={gold ? 80 : 84} x2={104} y2={gold ? 80 : 84} />
+				</g>
 			</g>
-			<path
-				d="M60 0 l12 3 -12 3 Z"
-				fill="#ffd95e"
-				stroke={OUTLINE}
-				strokeWidth={1}
-			/>
-			{/* okno */}
-			<circle
-				cx={60}
-				cy={level >= 2 ? 44 : 52}
-				r={6}
-				fill={gold ? "#fff7d6" : "#ede9fe"}
-				stroke={OUTLINE}
-				strokeWidth={1.5}
-			/>
-			{/* iskierki Zamku Iskierek */}
+			<Pennant x={85} y={gold ? -4 : 12} />
+			<ArchWindow x={85} y={gold ? 44 : 58} w={12} lit={gold} />
+
+			{/* przedni mur z bramą (zawsze — nawet Wieżyczka ma wejście) */}
+			<g stroke={OUTLINE} strokeWidth={2}>
+				<rect x={52} y={100} width={66} height={28} fill={wall} />
+				<Crenels x={52} y={94} width={66} fill={wall} />
+				<path
+					d="M72 128 v-14 a13 13 0 0 1 26 0 v14 Z"
+					fill="#4c1d95"
+					opacity={0.9}
+				/>
+				{/* deski bramy */}
+				<g stroke="#c4b5fd" strokeWidth={1} opacity={0.5}>
+					<line x1={79} y1={110} x2={79} y2={128} />
+					<line x1={85} y1={106} x2={85} y2={128} />
+					<line x1={91} y1={110} x2={91} y2={128} />
+				</g>
+			</g>
+
+			{/* iskierki cytadeli */}
 			{gold && (
 				<g fill="#ffffff">
-					<circle cx={28} cy={40} r={2.2} className="anim-sparkle" />
+					<circle cx={38} cy={50} r={2.2} className="anim-sparkle" />
 					<circle
-						cx={94}
-						cy={38}
-						r={1.8}
+						cx={132}
+						cy={48}
+						r={1.9}
 						className="anim-sparkle"
 						style={{ animationDelay: "0.6s" }}
 					/>
 					<circle
-						cx={60}
-						cy={14}
-						r={2}
+						cx={85}
+						cy={8}
+						r={2.4}
 						className="anim-sparkle"
 						style={{ animationDelay: "1.1s" }}
+					/>
+					<circle
+						cx={15}
+						cy={80}
+						r={1.7}
+						className="anim-sparkle"
+						style={{ animationDelay: "1.6s" }}
 					/>
 				</g>
 			)}
@@ -120,16 +256,11 @@ function ZamekArt({ level, size }: { level: number; size: number }) {
 	)
 }
 
-function DomkiArt({ level, size }: { level: number; size: number }) {
+function DomkiArt({ level, size }: { level: number; size: number | string }) {
 	const uid = useId()
-	const xs = level === 1 ? [52] : level === 2 ? [24, 80] : [4, 54, 104]
+	const xs = level === 1 ? [52] : level === 2 ? [20, 84] : [0, 52, 104]
 	return (
-		<svg
-			viewBox="0 0 148 78"
-			width={size}
-			height={(size * 78) / 148}
-			aria-hidden="true"
-		>
+		<svg viewBox="0 0 148 92" style={svgStyle(size)} aria-hidden="true">
 			<defs>
 				<linearGradient id={`dom-b-${uid}`} x1="0" y1="0" x2="0" y2="1">
 					<stop offset="0%" stopColor="#fef3c7" />
@@ -140,19 +271,20 @@ function DomkiArt({ level, size }: { level: number; size: number }) {
 					<stop offset="100%" stopColor="#6d4fd8" />
 				</linearGradient>
 			</defs>
+			<ellipse cx={74} cy={89} rx={64} ry={3.5} fill="#1e293b" opacity={0.08} />
 			{/* chorągiewki nad miasteczkiem (L3) */}
 			{level >= 3 && (
 				<g>
 					<path
-						d="M8 14 Q74 2 140 14"
+						d="M6 26 Q74 12 142 26"
 						stroke={OUTLINE}
 						strokeWidth={1.5}
 						fill="none"
 					/>
-					{[22, 46, 70, 94, 118].map((x, i) => (
+					{[22, 48, 74, 100, 126].map((x, i) => (
 						<path
 							key={x}
-							d={`M${x} ${9 - (i % 2)} l4 8 l-9 -1 Z`}
+							d={`M${x} ${20 - (i % 2) * 2} l4.5 9 l-10 -1 Z`}
 							fill={i % 2 ? "#ff5e8a" : "#ffd95e"}
 							stroke={OUTLINE}
 							strokeWidth={1}
@@ -162,30 +294,45 @@ function DomkiArt({ level, size }: { level: number; size: number }) {
 			)}
 			{xs.map((x, i) => (
 				<g key={x} stroke={OUTLINE} strokeWidth={2} strokeLinejoin="round">
+					{/* komin + dymek (od L2 domki są „zamieszkane" na full) */}
+					<rect x={x + 29} y={30} width={7} height={14} fill="#a78bfa" />
+					{level >= 2 && (
+						<g stroke="none" fill="#e2e8f0" opacity={0.8}>
+							<circle cx={x + 33} cy={24} r={3} className="anim-float" />
+							<circle
+								cx={x + 36}
+								cy={17}
+								r={2.2}
+								className="anim-float"
+								style={{ animationDelay: "0.9s" }}
+							/>
+						</g>
+					)}
 					<rect
 						x={x + 4}
-						y={38}
-						width={32}
+						y={50}
+						width={36}
 						height={38}
 						rx={3}
 						fill={`url(#dom-b-${uid})`}
 					/>
 					<path
-						d={`M${x} 40 L${x + 20} 18 L${x + 40} 40 Z`}
+						d={`M${x - 2} 52 L${x + 22} 28 L${x + 46} 52 Z`}
 						fill={`url(#dom-r-${uid})`}
 					/>
-					{/* drzwi + świecące okno */}
+					{/* drzwi z gałką + okrągłe okno */}
 					<path
-						d={`M${x + 14} 76 v-12 a6 6 0 0 1 12 0 v12 Z`}
+						d={`M${x + 15} 88 v-13 a7 7 0 0 1 14 0 v13 Z`}
 						fill="#7c5cf0"
-						opacity={0.8}
+						opacity={0.85}
 					/>
+					<circle cx={x + 26} cy={80} r={1.3} fill="#ffd95e" stroke="none" />
 					<circle
-						cx={x + 20}
-						cy={46}
-						r={4}
+						cx={x + 22}
+						cy={58}
+						r={4.5}
 						fill={i === 0 || level >= 2 ? "#ffd95e" : "#ede9fe"}
-						strokeWidth={1.2}
+						strokeWidth={1.4}
 					/>
 				</g>
 			))}
@@ -193,16 +340,17 @@ function DomkiArt({ level, size }: { level: number; size: number }) {
 	)
 }
 
-function FontannaArt({ level, size }: { level: number; size: number }) {
+function FontannaArt({
+	level,
+	size,
+}: {
+	level: number
+	size: number | string
+}) {
 	const uid = useId()
 	const rainbow = level >= 3
 	return (
-		<svg
-			viewBox="0 0 100 88"
-			width={size}
-			height={(size * 88) / 100}
-			aria-hidden="true"
-		>
+		<svg viewBox="0 0 110 96" style={svgStyle(size)} aria-hidden="true">
 			<defs>
 				<linearGradient id={`font-w-${uid}`} x1="0" y1="0" x2="1" y2="0">
 					{rainbow ? (
@@ -219,44 +367,51 @@ function FontannaArt({ level, size }: { level: number; size: number }) {
 					)}
 				</linearGradient>
 			</defs>
+			<ellipse cx={55} cy={92} rx={48} ry={3.5} fill="#1e293b" opacity={0.08} />
 			{/* strugi wody */}
-			<g stroke="#38bdf8" strokeWidth={3} strokeLinecap="round" fill="none">
-				<path d="M50 26 C40 34 36 48 34 66" />
-				<path d="M50 26 C60 34 64 48 66 66" />
-				{level >= 2 && <path d="M50 24 C50 38 50 52 50 60" />}
+			<g stroke="#38bdf8" strokeWidth={3.5} strokeLinecap="round" fill="none">
+				<path d="M55 26 C43 34 39 50 37 70" />
+				<path d="M55 26 C67 34 71 50 73 70" />
+				{level >= 2 && (
+					<>
+						<path d="M55 24 C55 40 55 54 55 62" />
+						<path d="M55 28 C48 38 45 52 44 66" strokeWidth={2.2} />
+						<path d="M55 28 C62 38 65 52 66 66" strokeWidth={2.2} />
+					</>
+				)}
 			</g>
 			{/* górna czasza + postument */}
 			<g stroke={OUTLINE} strokeWidth={2}>
-				<circle cx={50} cy={22} r={4.5} fill="#bae6fd" />
-				<ellipse cx={50} cy={38} rx={15} ry={5} fill="#e2e8f0" />
-				<rect x={45} y={38} width={10} height={26} fill="#cbd5e1" />
-				{/* basen */}
-				<ellipse cx={50} cy={72} rx={38} ry={12} fill="#e2e8f0" />
-				<ellipse
-					cx={50}
-					cy={70}
-					rx={31}
-					ry={8.5}
-					fill={`url(#font-w-${uid})`}
-				/>
+				<circle cx={55} cy={21} r={5} fill="#bae6fd" />
+				<ellipse cx={55} cy={40} rx={17} ry={5.5} fill="#e2e8f0" />
+				<rect x={49} y={40} width={12} height={28} fill="#cbd5e1" />
+				{/* basen z kamienną obwódką */}
+				<ellipse cx={55} cy={76} rx={44} ry={14} fill="#e2e8f0" />
+				<ellipse cx={55} cy={73} rx={36} ry={10} fill={`url(#font-w-${uid})`} />
 			</g>
-			{/* skrzące iskierki na wodzie */}
+			{/* ząbki kamiennej cembrowiny */}
+			<g stroke={OUTLINE} strokeWidth={1} opacity={0.35}>
+				{[20, 34, 48, 62, 76, 90].map((x) => (
+					<line key={x} x1={x} y1={84} x2={x + 3} y2={88} />
+				))}
+			</g>
+			{/* iskierki na wodzie */}
 			<g fill="#ffffff">
-				<circle cx={36} cy={69} r={1.8} className="anim-sparkle" />
+				<circle cx={38} cy={72} r={2} className="anim-sparkle" />
 				{level >= 2 && (
 					<circle
-						cx={62}
-						cy={71}
-						r={2}
+						cx={70}
+						cy={74}
+						r={2.2}
 						className="anim-sparkle"
 						style={{ animationDelay: "0.7s" }}
 					/>
 				)}
 				{rainbow && (
 					<circle
-						cx={50}
-						cy={66}
-						r={2.2}
+						cx={55}
+						cy={69}
+						r={2.4}
 						className="anim-sparkle"
 						style={{ animationDelay: "1.3s" }}
 					/>
@@ -266,63 +421,67 @@ function FontannaArt({ level, size }: { level: number; size: number }) {
 	)
 }
 
-function PlacZabawArt({ level, size }: { level: number; size: number }) {
+function PlacZabawArt({
+	level,
+	size,
+}: {
+	level: number
+	size: number | string
+}) {
 	return (
-		<svg
-			viewBox="0 0 160 92"
-			width={size}
-			height={(size * 92) / 160}
-			aria-hidden="true"
-		>
-			{/* zjeżdżalnia (zawsze): drabinka + ślizg */}
+		<svg viewBox="0 0 160 96" style={svgStyle(size)} aria-hidden="true">
+			<ellipse cx={80} cy={92} rx={70} ry={3.5} fill="#1e293b" opacity={0.08} />
+			{/* zjeżdżalnia (zawsze): kolorowa wieżyczka + ślizg */}
 			<g stroke={OUTLINE} strokeWidth={2.5} strokeLinecap="round">
-				<line x1={136} y1={88} x2={136} y2={26} />
-				<line x1={148} y1={88} x2={148} y2={26} />
-				<line x1={136} y1={42} x2={148} y2={42} />
-				<line x1={136} y1={58} x2={148} y2={58} />
-				<line x1={136} y1={74} x2={148} y2={74} />
-				<rect x={128} y={20} width={26} height={8} rx={3} fill="#7c5cf0" />
+				<line x1={134} y1={90} x2={134} y2={28} />
+				<line x1={148} y1={90} x2={148} y2={28} />
+				<line x1={134} y1={46} x2={148} y2={46} />
+				<line x1={134} y1={62} x2={148} y2={62} />
+				<line x1={134} y1={78} x2={148} y2={78} />
+				<rect x={126} y={20} width={30} height={10} rx={4} fill="#7c5cf0" />
 			</g>
 			<path
-				d="M130 28 Q96 44 72 86"
+				d="M128 30 Q94 46 68 88"
 				stroke="#ffd95e"
-				strokeWidth={11}
+				strokeWidth={12}
 				strokeLinecap="round"
 				fill="none"
 			/>
 			<path
-				d="M130 28 Q96 44 72 86"
-				stroke={OUTLINE}
-				strokeWidth={2}
+				d="M128 30 Q94 46 68 88"
+				stroke="#f59e0b"
+				strokeWidth={3}
 				strokeLinecap="round"
 				fill="none"
-				strokeDasharray="1 7"
-				opacity={0.4}
+				strokeDasharray="2 10"
+				opacity={0.7}
 			/>
 			{/* huśtawka (L2+) */}
 			{level >= 2 && (
 				<g stroke={OUTLINE} strokeWidth={2.5} strokeLinecap="round">
-					<line x1={8} y1={88} x2={20} y2={30} />
-					<line x1={52} y1={88} x2={40} y2={30} />
+					<line x1={6} y1={90} x2={20} y2={30} stroke="#ff5e8a" />
+					<line x1={54} y1={90} x2={40} y2={30} stroke="#ff5e8a" />
+					<line x1={6} y1={90} x2={20} y2={30} strokeOpacity={0.35} />
+					<line x1={54} y1={90} x2={40} y2={30} strokeOpacity={0.35} />
 					<line x1={16} y1={30} x2={44} y2={30} />
-					<line x1={26} y1={30} x2={26} y2={62} strokeWidth={1.5} />
-					<line x1={36} y1={30} x2={36} y2={62} strokeWidth={1.5} />
-					<rect x={22} y={62} width={18} height={5} rx={2} fill="#ff5e8a" />
+					<line x1={25} y1={30} x2={25} y2={64} strokeWidth={1.6} />
+					<line x1={37} y1={30} x2={37} y2={64} strokeWidth={1.6} />
+					<rect x={20} y={64} width={22} height={6} rx={3} fill="#ff5e8a" />
 				</g>
 			)}
 			{/* trampolina (L3) */}
 			{level >= 3 && (
 				<g stroke={OUTLINE} strokeWidth={2}>
-					<line x1={78} y1={88} x2={82} y2={76} />
-					<line x1={118} y1={88} x2={114} y2={76} />
-					<ellipse cx={98} cy={74} rx={24} ry={7} fill="#8b6cf5" />
+					<line x1={72} y1={90} x2={78} y2={78} />
+					<line x1={118} y1={90} x2={112} y2={78} />
+					<ellipse cx={95} cy={76} rx={26} ry={8} fill="#8b6cf5" />
 					<ellipse
-						cx={98}
-						cy={72}
-						rx={18}
-						ry={4.5}
+						cx={95}
+						cy={74}
+						rx={20}
+						ry={5}
 						fill="#c4b5fd"
-						strokeWidth={1}
+						strokeWidth={1.2}
 					/>
 				</g>
 			)}
@@ -330,31 +489,54 @@ function PlacZabawArt({ level, size }: { level: number; size: number }) {
 	)
 }
 
-function LatarnieArt({ level, size }: { level: number; size: number }) {
-	const w = 24 + level * 30
-	const lamps = Array.from({ length: level }, (_, i) => 27 + i * 30)
+function LatarnieArt({
+	level,
+	size,
+}: {
+	level: number
+	size: number | string
+}) {
+	const lamps = Array.from({ length: level }, (_, i) => 24 + i * 34)
+	const vbWidth = 48 + (level - 1) * 34
 	return (
 		<svg
-			viewBox={`0 0 ${24 + 3 * 30} 88`}
-			width={(size * w) / 114}
-			height={(size * 88) / 114}
+			viewBox={`0 0 ${vbWidth} 96`}
+			style={svgStyle(size)}
 			aria-hidden="true"
 		>
+			<ellipse
+				cx={vbWidth / 2}
+				cy={93}
+				rx={vbWidth / 2 - 4}
+				ry={3}
+				fill="#1e293b"
+				opacity={0.08}
+			/>
 			{lamps.map((x, i) => (
 				<g key={x}>
-					{/* poświata */}
-					<circle cx={x} cy={22} r={13} fill="#ffd95e" opacity={0.3} />
+					{/* poświata (dwuwarstwowa — naprawdę świeci) */}
+					<circle cx={x} cy={24} r={17} fill="#ffd95e" opacity={0.22} />
+					<circle cx={x} cy={24} r={10} fill="#ffe9a3" opacity={0.4} />
 					<g stroke={OUTLINE} strokeWidth={2}>
-						<line x1={x} y1={86} x2={x} y2={30} strokeWidth={3.5} />
-						<circle cx={x} cy={22} r={8} fill="#fff7d6" />
-						<path d={`M${x - 6} 13 L${x} 7 L${x + 6} 13`} fill="#7c5cf0" />
+						<line x1={x} y1={92} x2={x} y2={34} strokeWidth={4} />
+						{/* stopa i zawijas */}
+						<path
+							d={`M${x - 8} 92 h16`}
+							strokeWidth={3}
+							strokeLinecap="round"
+						/>
+						<path d={`M${x} 44 q8 0 8 -7`} fill="none" strokeWidth={1.8} />
+						{/* latarenka */}
+						<path d={`M${x - 7} 30 h14 l-2 -12 h-10 Z`} fill="#fff7d6" />
+						<path d={`M${x - 6} 14 L${x} 8 L${x + 6} 14`} fill="#7c5cf0" />
+						<circle cx={x} cy={24} r={2.6} fill="#ffb020" stroke="none" />
 					</g>
-					{/* świetliki przy alejce (L2+) */}
+					{/* świetliki (L2+) */}
 					{level >= 2 && (
 						<circle
-							cx={x + 12}
-							cy={40 + i * 6}
-							r={1.8}
+							cx={x + 13}
+							cy={44 + i * 7}
+							r={1.9}
 							fill="#fff3b0"
 							className="anim-firefly"
 							style={{ animationDelay: `${i * 0.9}s` }}
@@ -366,51 +548,155 @@ function LatarnieArt({ level, size }: { level: number; size: number }) {
 	)
 }
 
-function OgrodekArt({ level, size }: { level: number; size: number }) {
-	const flowers = ["🌷🌼", "🌷🌼🌻", "🌺🌷🌼🌻"][level - 1] ?? "🌷"
+function OgrodekArt({ level, size }: { level: number; size: number | string }) {
+	const uid = useId()
+	// kwiaty: tulipan / słonecznik / dzwonek — więcej i barwniej z poziomem
+	const flowers: { x: number; kind: number }[] = [
+		{ x: 22, kind: 0 },
+		{ x: 50, kind: 1 },
+		{ x: 78, kind: 0 },
+		...(level >= 2
+			? [
+					{ x: 36, kind: 2 },
+					{ x: 64, kind: 2 },
+				]
+			: []),
+		...(level >= 3
+			? [
+					{ x: 10, kind: 1 },
+					{ x: 90, kind: 1 },
+				]
+			: []),
+	]
+	const petal = ["#ff5e8a", "#ffd95e", "#8b6cf5"]
 	return (
-		<div
-			className="relative flex flex-col items-center"
-			style={{ width: size }}
-			aria-hidden="true"
-		>
-			<div style={{ fontSize: size / (2.6 + level * 0.4) }}>{flowers}</div>
+		<svg viewBox="0 0 100 72" style={svgStyle(size)} aria-hidden="true">
+			<defs>
+				<linearGradient id={`ogr-${uid}`} x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0%" stopColor="#d9a45f" />
+					<stop offset="100%" stopColor="#a9743a" />
+				</linearGradient>
+			</defs>
+			<ellipse cx={50} cy={69} rx={46} ry={3} fill="#1e293b" opacity={0.08} />
+			{/* płotek sztachetowy */}
+			<g stroke={OUTLINE} strokeWidth={1.6}>
+				{[6, 21, 36, 51, 66, 81, 94].map((x) => (
+					<path
+						key={x}
+						d={`M${x - 2.5} 62 v-20 l2.5 -4 l2.5 4 v20 Z`}
+						fill="#fff7ed"
+					/>
+				))}
+				<line x1={2} y1={48} x2={98} y2={48} stroke="#f3ddc3" strokeWidth={4} />
+				<line x1={2} y1={48} x2={98} y2={48} strokeWidth={1.2} />
+			</g>
 			{/* grządka */}
-			<div
-				className="-mt-1 rounded-full border-2 border-amber-700/40 bg-gradient-to-b from-amber-500/70 to-amber-700/70"
-				style={{ width: size * 0.92, height: size * 0.2 }}
+			<ellipse
+				cx={50}
+				cy={62}
+				rx={47}
+				ry={8}
+				fill={`url(#ogr-${uid})`}
+				stroke={OUTLINE}
+				strokeWidth={1.6}
 			/>
+			{/* kwiaty */}
+			{flowers.map(({ x, kind }, i) => (
+				<g key={`${x}-${i}`} stroke={OUTLINE} strokeWidth={1.2}>
+					<line
+						x1={x}
+						y1={58}
+						x2={x}
+						y2={40}
+						stroke="#3f9e5f"
+						strokeWidth={2}
+					/>
+					{kind === 1 ? (
+						<>
+							{[0, 60, 120, 180, 240, 300].map((deg) => (
+								<ellipse
+									key={deg}
+									cx={x}
+									cy={33}
+									rx={3}
+									ry={6}
+									fill={petal[1]}
+									transform={`rotate(${deg} ${x} 36)`}
+									stroke="none"
+								/>
+							))}
+							<circle cx={x} cy={36} r={4} fill="#a9743a" />
+						</>
+					) : (
+						<path
+							d={`M${x - 5} 40 q-2 -10 5 -10 q7 0 5 10 Z`}
+							fill={petal[kind === 2 ? 2 : 0]}
+						/>
+					)}
+				</g>
+			))}
 			{level >= 3 && (
-				<span className="anim-sparkle absolute -right-1 top-0 text-sm">✨</span>
+				<g fill="#ffffff">
+					<circle cx={16} cy={30} r={2} className="anim-sparkle" />
+					<circle
+						cx={86}
+						cy={26}
+						r={1.8}
+						className="anim-sparkle"
+						style={{ animationDelay: "0.8s" }}
+					/>
+				</g>
 			)}
-		</div>
+		</svg>
 	)
 }
 
 // Dispatcher: jeden punkt wejścia dla plotów, arkusza i BuildReveal.
-// `level` 1..3 = zbudowany art; poziom 0 obsługuje CALLER (sylwetka L1 w grayscale).
+// `level` 1..3 = zbudowany art; `silhouette` = jednolity cień (niezbudowana
+// działka na scenie / wiersz listy) — filtr inline, odporny na brak klas.
 export function BuildingArt({
 	id,
 	level,
 	size = 90,
+	silhouette = false,
 }: {
 	id: BuildingId
 	level: number
-	size?: number
+	size?: number | string
+	silhouette?: boolean
 }) {
 	const lvl = Math.max(1, Math.min(3, level))
+	let art: React.ReactElement
 	switch (id) {
 		case "zamek":
-			return <ZamekArt level={lvl} size={size} />
+			art = <ZamekArt level={lvl} size={size} />
+			break
 		case "domki":
-			return <DomkiArt level={lvl} size={size} />
+			art = <DomkiArt level={lvl} size={size} />
+			break
 		case "fontanna":
-			return <FontannaArt level={lvl} size={size} />
+			art = <FontannaArt level={lvl} size={size} />
+			break
 		case "plac-zabaw":
-			return <PlacZabawArt level={lvl} size={size} />
+			art = <PlacZabawArt level={lvl} size={size} />
+			break
 		case "latarnie":
-			return <LatarnieArt level={lvl} size={size} />
+			art = <LatarnieArt level={lvl} size={size} />
+			break
 		case "ogrodek":
-			return <OgrodekArt level={lvl} size={size} />
+			art = <OgrodekArt level={lvl} size={size} />
+			break
 	}
+	if (!silhouette) return art
+	return (
+		<span
+			style={{
+				display: "block",
+				filter: "brightness(0) saturate(0)",
+				opacity: 0.3,
+			}}
+		>
+			{art}
+		</span>
+	)
 }

@@ -60,11 +60,10 @@ function BuildingDetail({
 				poziom {level}/{MAX_BUILDING_LEVEL}
 			</div>
 
-			{/* podgląd tego, co POWSTANIE (następny poziom); sylwetka gdy jeszcze nic nie stoi */}
-			<div className="flex h-40 items-center justify-center">
-				<div className={level === 0 ? "opacity-50 grayscale" : ""}>
-					<BuildingArt id={id} level={showLevel} size={150} />
-				</div>
+			{/* podgląd tego, co POWSTANIE (następny poziom) — w pełnym kolorze,
+			    aspiracja ma pokazywać prawdziwą nagrodę */}
+			<div className="flex h-44 items-center justify-center">
+				<BuildingArt id={id} level={showLevel} size={170} />
 			</div>
 
 			<div className="max-w-xs text-center text-lg font-bold text-slate-600">
@@ -123,10 +122,13 @@ function BuildingRow({
 			onClick={() => onOpen(id)}
 			className="flex w-full touch-manipulation items-center gap-3 rounded-2xl bg-violet-50 p-3 active:scale-[0.98]"
 		>
-			<div
-				className={`w-16 shrink-0 ${level === 0 ? "opacity-40 grayscale" : ""}`}
-			>
-				<BuildingArt id={id} level={Math.max(1, level)} size={60} />
+			<div className="w-16 shrink-0">
+				<BuildingArt
+					id={id}
+					level={Math.max(1, level)}
+					size={60}
+					silhouette={level === 0}
+				/>
 			</div>
 			<div className="flex-1 text-left">
 				<div className="text-lg font-extrabold text-grape-dark">

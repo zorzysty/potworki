@@ -28,14 +28,23 @@ import { useGame } from "../store/store"
 // dodaje obrazek — patrz plans/012 (zasada 2).
 // ---------------------------------------------------------------------------
 
-// działki budynków: left w %, rozmiar artu w px (cele dotykowe ≥ 64 px)
-const PLOTS: Record<BuildingId, { left: number; top: number; size: number }> = {
-	domki: { left: 1, top: 11, size: 88 },
-	"plac-zabaw": { left: 16, top: 15, size: 88 },
-	zamek: { left: 37, top: 2, size: 96 },
-	fontanna: { left: 61, top: 13, size: 72 },
-	latarnie: { left: 79, top: 8, size: 84 },
-	ogrodek: { left: 83, top: 37, size: 60 },
+// Działki budynków STOJĄ na linii wzgórz: kontener o zerowej wysokości na
+// GROUND_LINE_TOP, każdy plot kotwiczy stopę przez bottom (dy = uniesienie na
+// zboczu; zamek na szczycie) — żadnego pływania w powietrzu niezależnie od
+// proporcji ekranu. Szerokość artu proporcjonalna do sceny (clamp: min = cel
+// dotykowy, max = rozmiar tabletowy), więc na szerokim laptopie budynki nie
+// kurczą się do pikseli. z = kolejność w skyline (niżej na zboczu = z przodu).
+const GROUND_LINE_TOP = "47%"
+const PLOTS: Record<
+	BuildingId,
+	{ left: number; width: string; dy: number; z: number }
+> = {
+	domki: { left: 2, width: "clamp(88px, 15%, 172px)", dy: 0, z: 3 },
+	"plac-zabaw": { left: 18, width: "clamp(92px, 15%, 178px)", dy: -2, z: 2 },
+	zamek: { left: 39, width: "clamp(120px, 20%, 235px)", dy: 16, z: 1 },
+	fontanna: { left: 62, width: "clamp(72px, 11%, 128px)", dy: -4, z: 4 },
+	latarnie: { left: 76, width: "clamp(64px, 9%, 105px)", dy: 2, z: 3 },
+	ogrodek: { left: 87, width: "clamp(68px, 10%, 112px)", dy: -6, z: 4 },
 }
 
 // mieszkańcy: zbudowany budynek przyciąga jednego z pokazywanych potworków
@@ -255,20 +264,48 @@ export function VillageScreen() {
 				</div>
 			) : (
 				// `isolate`: z-indexy wędrowców (do ~96) zostają WEWNĄTRZ sceny — nie
-				// przebijają arkusza budowy (z-40) ani pełnoekranowych revealów (z-50)
-				<div className="isolate relative w-full flex-1 overflow-hidden rounded-3xl">
+				// przebijają arkusza budowy (z-40) ani pełnoekranowych revealów (z-50).
+				// `max-w-5xl mx-auto`: na szerokim laptopie scena jest wyśrodkowaną
+				// dioramą, nie rozciągniętym pustkowiem z malutkimi budynkami.
+				<div className="isolate relative mx-auto w-full max-w-5xl flex-1 overflow-hidden rounded-3xl">
 					{/* niebo */}
-					<div className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-sky-200/60 to-transparent" />
-					<span className="pointer-events-none absolute left-[5%] top-[3%] text-3xl opacity-80">
+					<div className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-sky-200/70 to-transparent" />
+					<span className="pointer-events-none absolute left-[5%] top-[3%] text-4xl opacity-80">
 						☀️
 					</span>
+					<span className="pointer-events-none absolute left-[24%] top-[7%] text-3xl opacity-60">
+						☁️
+					</span>
+					<span className="pointer-events-none absolute right-[14%] top-[4%] text-4xl opacity-50">
+						☁️
+					</span>
 					{has("tecza") && (
-						<span className="pointer-events-none absolute left-[50%] top-[1%] text-6xl opacity-90">
+						<span className="pointer-events-none absolute left-[65%] top-[2%] text-7xl opacity-90">
 							🌈
 						</span>
 					)}
-					{/* łąka */}
-					<div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-emerald-300/80 to-transparent" />
+
+					{/* wzgórza aż do dołu sceny (bez szwu) — budynki stoją NA nich;
+					    oba zbocza wysokie, żeby kontrastowały z niebem po obu stronach */}
+					<svg
+						className="pointer-events-none absolute inset-x-0 z-[2]"
+						style={{ top: "26%", bottom: 0 }}
+						viewBox="0 0 100 60"
+						preserveAspectRatio="none"
+						aria-hidden="true"
+					>
+						<path
+							d="M0 60 L0 14 Q10 6 22 10 Q36 15 50 5 Q60 -1 72 6 Q86 13 100 8 L100 60 Z"
+							fill="#b5ebcd"
+						/>
+						<path
+							d="M0 60 L0 22 Q16 15 34 19 Q52 24 70 17 Q86 11 100 16 L100 60 Z"
+							fill="#9ce3bc"
+						/>
+					</svg>
+
+					{/* łąka (głębia na wzgórzach) */}
+					<div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-2/5 bg-gradient-to-t from-emerald-300/70 to-transparent" />
 
 					{/* efekty sceny (zakupy zmieniają całą scenę, nie tylko działkę) */}
 					<div className="pointer-events-none absolute inset-0 z-[5]">
@@ -357,12 +394,12 @@ export function VillageScreen() {
 						{/* Fontanna Marzeń: odbicie wymarzonego potworka w wodzie */}
 						{fontanna >= MAX_BUILDING_LEVEL && dreamMonsterId !== null && (
 							<span
-								className="absolute opacity-40"
-								style={{ left: "64.5%", top: "24%", transform: "scaleY(-1)" }}
+								className="absolute opacity-25"
+								style={{ left: "65.5%", top: "46%", transform: "scaleY(-1)" }}
 							>
 								<MonsterSvg
 									id={dreamMonsterId}
-									size={30}
+									size={28}
 									animate={false}
 									className="monster-silhouette"
 								/>
@@ -370,8 +407,12 @@ export function VillageScreen() {
 						)}
 					</div>
 
-					{/* pas budynków: 6 działek; sylwetka z ceną = cel do zdobycia */}
-					<div className="pointer-events-none absolute inset-0 z-20">
+					{/* pas budynków: kontener o zerowej wysokości NA linii wzgórz —
+					    każdy budynek kotwiczy stopę do gruntu (bottom: dy) */}
+					<div
+						className="pointer-events-none absolute inset-x-0 z-20"
+						style={{ top: GROUND_LINE_TOP }}
+					>
 						{BUILDINGS.map((b) => {
 							const level = buildingLevel(village, b.id)
 							const plot = PLOTS[b.id]
@@ -383,27 +424,29 @@ export function VillageScreen() {
 									onClick={() => openPlot(b.id)}
 									aria-label={`${b.name}${level === 0 ? " (do zbudowania)" : ""}`}
 									className="pointer-events-auto absolute flex min-h-16 min-w-16 touch-manipulation flex-col items-center active:scale-95"
-									style={{ left: `${plot.left}%`, top: `${plot.top}%` }}
+									style={{
+										left: `${plot.left}%`,
+										bottom: plot.dy,
+										width: plot.width,
+										zIndex: plot.z,
+									}}
 								>
-									{level === 0 ? (
-										<>
-											<span className="opacity-40 grayscale">
-												<BuildingArt id={b.id} level={1} size={plot.size} />
-											</span>
-											{cost !== null && (
-												<span
-													className={`-mt-1 rounded-full px-2 py-0.5 text-xs font-extrabold shadow-sm ${
-														iskierki >= cost
-															? "bg-gradient-to-r from-amber-300 to-orange-400 text-white"
-															: "bg-white/85 text-slate-400"
-													}`}
-												>
-													✨{cost}
-												</span>
-											)}
-										</>
-									) : (
-										<BuildingArt id={b.id} level={level} size={plot.size} />
+									<BuildingArt
+										id={b.id}
+										level={Math.max(1, level)}
+										size="100%"
+										silhouette={level === 0}
+									/>
+									{level === 0 && cost !== null && (
+										<span
+											className={`-mt-2 rounded-full px-2.5 py-0.5 text-sm font-extrabold shadow ${
+												iskierki >= cost
+													? "bg-gradient-to-r from-amber-300 to-orange-400 text-white"
+													: "bg-white/90 text-slate-500"
+											}`}
+										>
+											✨{cost}
+										</span>
 									)}
 								</button>
 							)
