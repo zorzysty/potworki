@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test"
 import { mulberry32 } from "../monsters/catalog"
 import { INITIAL_SAVE } from "../store/schema"
 import { distributeStars, simulateRoundOutcome } from "./debug"
+import { dayStamp } from "./time"
 
 describe("distributeStars", () => {
 	test("all 3s when total equals n*3", () => {
@@ -67,5 +68,30 @@ describe("simulateRoundOutcome", () => {
 		expect(result.eggFragments).toBe(10)
 		expect(result.pendingEggs).toHaveLength(0)
 		expect(result.createdIndices).toHaveLength(0)
+	})
+
+	test("żołd: symulowana runda wypłaca iskierki jak prawdziwa (lustro store)", () => {
+		// świeży zapis: lastPlayedDay "" → pierwsza runda dnia; 30★ = dobra+perfekcja;
+		// pusta wioska → 1+1+1+1 = 4
+		const state = { ...INITIAL_SAVE }
+		const result = simulateRoundOutcome(state, 30, mulberry32(7), fixedNow)
+		expect(result.wage).toBe(4)
+		expect(result.iskierki).toBeGreaterThanOrEqual(4) // + ewentualna tęczowa iskierka
+
+		// zamek L2 + runda tego samego dnia co lastPlayedDay → 1+1+1+2 = 5
+		const withCastle = {
+			...INITIAL_SAVE,
+			village: {
+				buildings: { zamek: 2 as number },
+				decorations: [],
+				goalId: null,
+			},
+			achievementStats: {
+				...INITIAL_SAVE.achievementStats,
+				lastPlayedDay: dayStamp(fixedNow),
+			},
+		}
+		const r2 = simulateRoundOutcome(withCastle, 30, mulberry32(7), fixedNow)
+		expect(r2.wage).toBe(5)
 	})
 })

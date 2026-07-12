@@ -13,7 +13,7 @@ describe("migrateSave", () => {
 		expect(migrateSave(x, SAVE_VERSION)).toEqual(x)
 	})
 
-	test("pełny łańcuch v1→v8: eggsEarned, celebratedStage, mode jajek, eggStarBank, osiągnięcia, companionId, dane zachowane", () => {
+	test("pełny łańcuch v1→v9: eggsEarned, celebratedStage, mode jajek, eggStarBank, osiągnięcia, companionId, wioska, dane zachowane", () => {
 		const v1 = {
 			ownedMonsters: {
 				0: { hatchedAt: 0 },
@@ -45,9 +45,28 @@ describe("migrateSave", () => {
 		})
 		// v7→v8: companionId startuje null (brak przyjaciela)
 		expect(result.companionId).toBeNull()
+		// v8→v9: wioska startuje pusta
+		expect(result.village).toEqual({
+			buildings: {},
+			decorations: [],
+			goalId: null,
+		})
 		// dane oryginalne zachowane
 		expect(result.iskierki).toBe(7)
 		expect(result.unlockedStage).toBe(2)
+	})
+
+	test("v8→v9: dodaje pustą wioskę, reszta zachowana", () => {
+		const v8 = { iskierki: 42, companionId: 3, totalRounds: 12 }
+		const result = migrateSave(v8, 8) as Record<string, unknown>
+		expect(result.village).toEqual({
+			buildings: {},
+			decorations: [],
+			goalId: null,
+		})
+		expect(result.iskierki).toBe(42)
+		expect(result.companionId).toBe(3)
+		expect(result.totalRounds).toBe(12)
 	})
 
 	test("v5→v8: dodaje pusty ledger osiągnięć, zerowe liczniki i companionId, reszta zachowana", () => {
@@ -195,6 +214,7 @@ describe("INITIAL_SAVE shape-lock", () => {
 			"pendingEggs",
 			"totalRounds",
 			"unlockedStage",
+			"village",
 		])
 	})
 })

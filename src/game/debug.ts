@@ -7,7 +7,9 @@ import {
 } from "./adaptive"
 import type { Fact, FactKey, GameMode } from "./facts"
 import { budgetMs, isMaxStage, QUESTIONS_PER_ROUND } from "./facts"
-import { addEggFragment } from "./rewards"
+import { addEggFragment, ISKIERKI_CAP } from "./rewards"
+import { dayStamp } from "./time"
+import { roundWage } from "./village"
 
 // Rozkłada sumę gwiazdek na n pytań (każde 0..3): jak najwięcej trójek (szybkie
 // odpowiedzi → większy przyrost mastery), reszta wolniej. Dla debug-symulacji rundy.
@@ -88,6 +90,12 @@ export function simulateRoundOutcome(
 		unlockedThisRound = true
 	}
 
+	// żołd za ukończoną rundę — lustro finalizacji nextQuestion (bonus dnia
+	// liczony względem lastPlayedDay sprzed rundy, jak w store)
+	const firstRoundToday = state.achievementStats.lastPlayedDay !== dayStamp(now)
+	const wage = roundWage(state.village, totalStars, firstRoundToday)
+	iskierki = Math.min(ISKIERKI_CAP, iskierki + wage)
+
 	return {
 		facts,
 		eggFragments,
@@ -97,6 +105,7 @@ export function simulateRoundOutcome(
 		createdIndices,
 		asked,
 		iskierki,
+		wage,
 		unlockedStage,
 		unlockedThisRound,
 	}

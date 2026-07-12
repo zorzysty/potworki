@@ -1,8 +1,10 @@
 import type { FactStats } from "../game/adaptive"
 import type { FactKey } from "../game/facts"
 import type { PendingEgg } from "../game/rewards"
+import type { VillageState } from "../game/village"
+import { INITIAL_VILLAGE } from "../game/village"
 
-export const SAVE_VERSION = 8
+export const SAVE_VERSION = 9
 
 // Wpis ledgera osiągnięć. `seen` jak celebratedStage: false → badge „nowe!" na Home,
 // czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen).
@@ -41,6 +43,7 @@ export interface SaveState {
 	totalRounds: number
 	achievements: Record<string, AchievementEntry> // zdobyte osiągnięcia (klucz = stabilne id z achievements/catalog)
 	achievementStats: AchievementCounters // liczniki zdarzeniowe (patrz wyżej)
+	village: VillageState // wioska budowniczych: poziomy budynków, dekoracje, wybrany cel
 }
 
 export const INITIAL_SAVE: SaveState = {
@@ -66,6 +69,7 @@ export const INITIAL_SAVE: SaveState = {
 		daysPlayed: 0,
 		lastPlayedDay: "",
 	},
+	village: INITIAL_VILLAGE,
 }
 
 export const SAVE_KEYS = Object.keys(INITIAL_SAVE) as (keyof SaveState)[]
@@ -150,6 +154,13 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 	7: (state) => ({
 		...(state as Record<string, unknown>),
 		companionId: null,
+	}),
+	// v8→v9: dodano wioskę budowniczych (budynki + dekoracje za iskierki, wybrany
+	// cel). Start pusty — dotychczasowe iskierki dziecka zostają nietknięte i od
+	// razu ma za co je wydać.
+	8: (state) => ({
+		...(state as Record<string, unknown>),
+		village: { buildings: {}, decorations: [], goalId: null },
 	}),
 }
 

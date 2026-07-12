@@ -36,6 +36,16 @@ import {
 	WISH_COST,
 	WISH_COST_NO_DREAM,
 } from "../game/rewards"
+import { dayStamp } from "../game/time"
+import type { BuildingId, DecorationId } from "../game/village"
+import {
+	BUILDINGS,
+	buildingLevel,
+	DECORATIONS,
+	MAX_BUILDING_LEVEL,
+	nextLevelCost,
+	roundWage,
+} from "../game/village"
 import {
 	FIRST_MONSTER_ID,
 	IDS_BY_RARITY,
@@ -79,6 +89,7 @@ export interface RoundState {
 	shakeNonce: number
 	eggsCreated: number[] // indeksy w pendingEggs utworzone w tej rundzie (kolor jajka jest finalny już od utworzenia)
 	unlockedThisRound: boolean
+	wageEarned: number // żołd przyznany przy finalizacji (faza summary); 0 do końca rundy
 }
 
 export interface HatchResult {
@@ -94,6 +105,9 @@ interface GameState extends SaveState {
 	lastHatch: HatchResult | null
 	mode: GameMode // efemeryczny przełącznik mnożenie/dzielenie (Home), reset do "mult"
 	achievementQueue: string[] // efemeryczna kolejka id osiągnięć do pokazania jako toast „zdobyte!"
+	// efemeryczne: czy w tej sesji odwiedzono wioskę — gasi badge „stać cię!" na Home
+	// do końca sesji (badge nie może stać się tapetą, gdy dochód przegoni wydatki)
+	villageVisited: boolean
 
 	goTo: (screen: Screen) => void
 	setMode: (mode: GameMode) => void
@@ -108,6 +122,9 @@ interface GameState extends SaveState {
 	setDreamMonster: (id: number | null) => void
 	setCompanion: (id: number | null) => void
 	buyWishEgg: () => void
+	buildVillage: (id: BuildingId) => void
+	buyDecoration: (id: DecorationId) => void
+	setVillageGoal: (id: BuildingId | null) => void
 	applyDecay: () => void
 	markGatesCelebrated: () => void
 	checkAchievements: () => void
@@ -122,15 +139,13 @@ interface GameState extends SaveState {
 	debugAddIskierki: (amount: number) => void
 	debugAddEgg: (quality: EggQuality) => void
 	debugOpenGate: () => void
+	debugBuildAll: () => void
 	debugReset: () => void
 }
 
-// Lokalny znacznik dnia (YYYY-M-D) — baza dla osiągnięcia „w ilu różnych dni grano"
-// oraz powitań przyjaciela na Home (poziom powitania z porównania z lastPlayedDay).
-export function dayStamp(now: number): string {
-	const d = new Date(now)
-	return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
-}
+// Znacznik dnia mieszka w czystym src/game/time.ts (żołd i debug-symulacja go
+// potrzebują bez cyklu importów); re-eksport dla dotychczasowych konsumentów.
+export { dayStamp } from "../game/time"
 
 // Podbija licznik dni gry przy PIERWSZEJ ukończonej rundzie danego dnia (kumulacyjnie,
 // nie streak — przerwa nie zeruje). Wołane wszędzie tam, gdzie rośnie totalRounds.
@@ -225,6 +240,12 @@ export function mergePersisted(
 			...current.achievementStats,
 			...(p.achievementStats ?? {}),
 		},
+		// ta sama siatka bezpieczeństwa dla wioski (zapis v9 bez pola po dev-HMR
+		// nie może dać undefined.buildings)
+		village: {
+			...current.village,
+			...(p.village ?? {}),
+		},
 	}
 }
 
@@ -237,10 +258,16 @@ export const useGame = create<GameState>()(
 			lastHatch: null,
 			mode: "mult",
 			achievementQueue: [],
+			villageVisited: false,
 
-			// stan rundy żyje tylko na ekranie rundy
+			// stan rundy żyje tylko na ekranie rundy; wejście do wioski gasi
+			// sesyjny badge „stać cię!" na Home
 			goTo: (screen) =>
-				set((s) => ({ screen, round: screen === "round" ? s.round : null })),
+				set((s) => ({
+					screen,
+					round: screen === "round" ? s.round : null,
+					villageVisited: s.villageVisited || screen === "village",
+				})),
 
 			setMode: (mode) => set({ mode }),
 
@@ -289,6 +316,7 @@ export const useGame = create<GameState>()(
 						shakeNonce: 0,
 						eggsCreated: [],
 						unlockedThisRound: false,
+						wageEarned: 0,
 					},
 				})
 			},
@@ -447,8 +475,8 @@ export const useGame = create<GameState>()(
 
 				if (nextIndex >= round.total) {
 					// koniec rundy: jajka mają już finalny kolor z chwili domknięcia
-					// (eggStarBank), iskierka za tęczowe też już przyznana — zostaje tylko
-					// sprawdzenie odblokowania i policzenie rundy
+					// (eggStarBank), iskierka za tęczowe też już przyznana — zostaje
+					// sprawdzenie odblokowania, policzenie rundy i żołd
 					let unlockedStage = state.unlockedStage
 					let unlockedThisRound = false
 					if (
@@ -458,6 +486,16 @@ export const useGame = create<GameState>()(
 						unlockedStage++
 						unlockedThisRound = true
 					}
+					const now = Date.now()
+					// PRZED bumpDaysPlayed — bump nadpisuje lastPlayedDay, a bonus dnia
+					// liczy się względem stanu sprzed tej rundy
+					const firstRoundToday =
+						state.achievementStats.lastPlayedDay !== dayStamp(now)
+					const wageEarned = roundWage(
+						state.village,
+						round.stars,
+						firstRoundToday,
+					)
 					const achievementStats = bumpDaysPlayed(
 						{
 							...state.achievementStats,
@@ -465,17 +503,19 @@ export const useGame = create<GameState>()(
 								state.achievementStats.perfectRounds +
 								(round.stars === MAX_STARS_PER_ROUND ? 1 : 0),
 						},
-						Date.now(),
+						now,
 					)
 					set({
 						unlockedStage,
 						totalRounds: state.totalRounds + 1,
+						iskierki: Math.min(ISKIERKI_CAP, state.iskierki + wageEarned),
 						achievementStats,
 						round: {
 							...round,
 							phase: "summary",
 							asked,
 							unlockedThisRound,
+							wageEarned,
 						},
 					})
 					get().checkAchievements()
@@ -611,6 +651,47 @@ export const useGame = create<GameState>()(
 				})
 				get().checkAchievements()
 			},
+
+			// Budowa/ulepszenie budynku (wzór buyWishEgg: brak środków = ciche no-op).
+			// Kupno celu dziecka („Mój cel!") czyści goalId — cel osiągnięty.
+			buildVillage: (id) => {
+				const state = get()
+				const cost = nextLevelCost(state.village, id)
+				if (cost === null || state.iskierki < cost) return
+				set({
+					iskierki: state.iskierki - cost,
+					village: {
+						...state.village,
+						buildings: {
+							...state.village.buildings,
+							[id]: buildingLevel(state.village, id) + 1,
+						},
+						goalId: state.village.goalId === id ? null : state.village.goalId,
+					},
+				})
+				get().checkAchievements()
+			},
+
+			buyDecoration: (id) => {
+				const state = get()
+				const def = DECORATIONS.find((d) => d.id === id)
+				if (!def) return
+				if (state.village.decorations.includes(id)) return
+				if (state.iskierki < def.cost) return
+				set({
+					iskierki: state.iskierki - def.cost,
+					village: {
+						...state.village,
+						decorations: [...state.village.decorations, id],
+					},
+				})
+				get().checkAchievements()
+			},
+
+			// cienki setter celu budowy (wzór setDreamMonster); UI nie oferuje celu
+			// na zbudowanym-maks budynku, a currentGoal i tak ma na to fallback
+			setVillageGoal: (id) =>
+				set((s) => ({ village: { ...s.village, goalId: id } })),
 
 			applyDecay: () => {
 				const now = Date.now()
@@ -768,6 +849,7 @@ export const useGame = create<GameState>()(
 						asked: o.asked,
 						eggsCreated: o.createdIndices,
 						unlockedThisRound: o.unlockedThisRound,
+						wageEarned: o.wage,
 					},
 				})
 				get().checkAchievements()
@@ -798,6 +880,19 @@ export const useGame = create<GameState>()(
 						: { unlockedStage: s.unlockedStage + 1 },
 				),
 
+			// stawia całą wioskę BEZ wydawania iskierek — narzędzie do testów
+			// wizualnych (pełna scena jednym stuknięciem, wzór debugOwnRarity)
+			debugBuildAll: () =>
+				set({
+					village: {
+						buildings: Object.fromEntries(
+							BUILDINGS.map((b) => [b.id, MAX_BUILDING_LEVEL]),
+						),
+						decorations: DECORATIONS.map((d) => d.id),
+						goalId: null,
+					},
+				}),
+
 			debugReset: () =>
 				set({
 					...INITIAL_SAVE,
@@ -806,6 +901,7 @@ export const useGame = create<GameState>()(
 					screen: "home",
 					mode: "mult",
 					achievementQueue: [],
+					villageVisited: false,
 				}),
 		}),
 		{

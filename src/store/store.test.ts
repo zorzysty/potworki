@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, test } from "bun:test"
 import { ACHIEVEMENTS } from "../achievements/catalog"
 import { ISKIERKI_FOR_DUP } from "../game/rewards"
+import { BUILDINGS, DECORATIONS } from "../game/village"
 import {
 	DIVISION_ONLY_IDS,
 	FIRST_MONSTER_ID,
@@ -94,8 +95,13 @@ describe("szczęśliwa ścieżka — 10 poprawnych odpowiedzi", () => {
 		// jakość jest jedną z czterech dozwolonych
 		const q = s.pendingEggs[0]?.quality
 		expect(["normal", "silver", "gold", "rainbow"]).toContain(q as string)
-		// iskierka za tęczowe jajko — teraz właściwość jajka, nie rundy
-		expect(s.iskierki).toBe(s.pendingEggs[0]?.quality === "rainbow" ? 1 : 0)
+		// żołd: baza 1 + dobra runda 1 + perfekcja 1 + pierwsza runda dnia 1
+		// (świeży zapis: lastPlayedDay === ""), pusta wioska (zamek 0) = 4
+		expect(s.round?.wageEarned).toBe(4)
+		// iskierki = żołd + iskierka za tęczowe jajko (właściwość jajka)
+		expect(s.iskierki).toBe(
+			4 + (s.pendingEggs[0]?.quality === "rainbow" ? 1 : 0),
+		)
 		// bank gwiazdek zeruje się przy domknięciu jajka
 		expect(s.eggStarBank).toBe(0)
 	})
@@ -744,5 +750,155 @@ describe("osiągnięcia", () => {
 		expect(merged.achievementStats.daysPlayed).toBe(0) // brak → backfill z INITIAL, nie NaN
 		expect(merged.achievementStats.lastPlayedDay).toBe("")
 		expect(Number.isNaN(merged.achievementStats.daysPlayed)).toBe(false)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Wioska budowniczych: budowa/ulepszanie, cel, dekoracje, żołd za rundę
+// ---------------------------------------------------------------------------
+
+describe("wioska budowniczych", () => {
+	const playCleanRound = () => {
+		game().startRound()
+		for (let i = 0; i < 10; i++) {
+			answer(true)
+			game().nextQuestion()
+		}
+	}
+	const costOf = (id: string, level: number) =>
+		(BUILDINGS.find((b) => b.id === id) as (typeof BUILDINGS)[number]).costs[
+			level
+		] as number
+
+	test("buildVillage: kupno L1 odejmuje koszt; brak środków = ciche no-op", () => {
+		suppressAchievements()
+		useGame.setState({ iskierki: costOf("ogrodek", 0) })
+		game().buildVillage("ogrodek")
+		expect(game().village.buildings.ogrodek).toBe(1)
+		expect(game().iskierki).toBe(0)
+		// L2 kosztuje więcej niż 0 → no-op, poziom bez zmian
+		game().buildVillage("ogrodek")
+		expect(game().village.buildings.ogrodek).toBe(1)
+		expect(game().iskierki).toBe(0)
+	})
+
+	test("buildVillage: ulepszenie L1→L2 odejmuje koszt L2", () => {
+		suppressAchievements()
+		useGame.setState({
+			iskierki: costOf("ogrodek", 1),
+			village: { buildings: { ogrodek: 1 }, decorations: [], goalId: null },
+		})
+		game().buildVillage("ogrodek")
+		expect(game().village.buildings.ogrodek).toBe(2)
+		expect(game().iskierki).toBe(0)
+	})
+
+	test("buildVillage: maks poziom = no-op nawet z pełnym portfelem", () => {
+		suppressAchievements()
+		useGame.setState({
+			iskierki: 999,
+			village: { buildings: { ogrodek: 3 }, decorations: [], goalId: null },
+		})
+		game().buildVillage("ogrodek")
+		expect(game().village.buildings.ogrodek).toBe(3)
+		expect(game().iskierki).toBe(999)
+	})
+
+	test("cel: setVillageGoal ustawia; kupno celu go czyści, kupno innego nie", () => {
+		suppressAchievements()
+		game().setVillageGoal("zamek")
+		expect(game().village.goalId).toBe("zamek")
+		useGame.setState({ iskierki: costOf("ogrodek", 0) })
+		game().buildVillage("ogrodek") // inny budynek — cel zostaje
+		expect(game().village.goalId).toBe("zamek")
+		useGame.setState({ iskierki: costOf("zamek", 0) })
+		game().buildVillage("zamek") // cel osiągnięty — czyści się
+		expect(game().village.buildings.zamek).toBe(1)
+		expect(game().village.goalId).toBeNull()
+	})
+
+	test("buyDecoration: kupuje raz, odejmuje koszt; drugi raz = no-op", () => {
+		suppressAchievements()
+		const kwiatki = DECORATIONS.find(
+			(d) => d.id === "kwiatki",
+		) as (typeof DECORATIONS)[number]
+		useGame.setState({ iskierki: kwiatki.cost + 1 })
+		game().buyDecoration("kwiatki")
+		expect(game().village.decorations).toEqual(["kwiatki"])
+		expect(game().iskierki).toBe(1)
+		game().buyDecoration("kwiatki")
+		expect(game().village.decorations).toEqual(["kwiatki"])
+		expect(game().iskierki).toBe(1)
+	})
+
+	test("żołd: pierwsza runda dnia z bonusem, druga bez; zamek dodaje poziom", () => {
+		suppressAchievements()
+		// runda 1 (perfekcyjna, świeży zapis → pierwsza runda dnia):
+		// 1 baza + 1 dobra + 1 perfekcja + 1 dzień = 4
+		playCleanRound()
+		expect(game().round?.wageEarned).toBe(4)
+		// żołd + ewentualna iskierka za tęczowe pierwsze jajko
+		const rainbowBonus = game().pendingEggs[0]?.quality === "rainbow" ? 1 : 0
+		expect(game().iskierki).toBe(4 + rainbowBonus)
+
+		// runda 2 tego samego dnia: bez bonusu dnia = 3
+		const before = game().iskierki
+		playCleanRound()
+		expect(game().round?.wageEarned).toBe(3)
+		expect(game().iskierki).toBe(before + 3)
+
+		// zamek L3: +3 do żołdu (runda 3, ten sam dzień) = 6
+		useGame.setState({
+			village: { buildings: { zamek: 3 }, decorations: [], goalId: null },
+		})
+		const before3 = game().iskierki
+		playCleanRound()
+		expect(game().round?.wageEarned).toBe(6)
+		expect(game().iskierki).toBe(before3 + 6)
+	})
+
+	test("żołd: wyjście w trakcie rundy nie wypłaca (jak totalRounds)", () => {
+		suppressAchievements()
+		game().startRound()
+		answer(true)
+		game().exitRoundEarly()
+		expect(game().iskierki).toBe(0)
+		expect(game().totalRounds).toBe(0)
+	})
+
+	test("żołd respektuje cap portfela (999)", () => {
+		suppressAchievements()
+		useGame.setState({ iskierki: 998 })
+		playCleanRound()
+		expect(game().iskierki).toBe(999)
+	})
+
+	test("villageVisited: false na starcie, true po wejściu do wioski, reset zeruje", () => {
+		expect(game().villageVisited).toBe(false)
+		game().goTo("village")
+		expect(game().villageVisited).toBe(true)
+		game().goTo("home") // wyjście nie gasi flagi (sesyjna)
+		expect(game().villageVisited).toBe(true)
+		game().debugReset()
+		expect(game().villageVisited).toBe(false)
+	})
+
+	test("debugBuildAll: pełna wioska bez wydawania iskierek", () => {
+		useGame.setState({ iskierki: 7 })
+		game().debugBuildAll()
+		for (const b of BUILDINGS) expect(game().village.buildings[b.id]).toBe(3)
+		expect(game().village.decorations.length).toBe(DECORATIONS.length)
+		expect(game().iskierki).toBe(7)
+	})
+
+	test("merge backfilluje brakującą wioskę (anti-undefined po dev-HMR)", () => {
+		const current = useGame.getState()
+		const merged = mergePersisted({ iskierki: 5 }, current)
+		expect(merged.village).toEqual({
+			buildings: {},
+			decorations: [],
+			goalId: null,
+		})
+		expect(merged.iskierki).toBe(5)
 	})
 })
