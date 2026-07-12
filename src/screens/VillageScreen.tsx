@@ -296,11 +296,14 @@ export function VillageScreen() {
 				// `max-w-5xl mx-auto`: na szerokim laptopie scena jest wyśrodkowaną
 				// dioramą, nie rozciągniętym pustkowiem z malutkimi budynkami.
 				<div className="isolate relative mx-auto w-full max-w-5xl flex-1 overflow-hidden rounded-3xl">
-					{/* niebo */}
+					{/* niebo — słońce chowa się na wieczór (księżyc przejmuje jego
+					    miejsce w nakładce wieczoru; nigdy oba naraz) */}
 					<div className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-sky-200/70 to-transparent" />
-					<span className="pointer-events-none absolute left-[5%] top-[3%] text-4xl opacity-80">
-						☀️
-					</span>
+					{!(evening && latarnie >= MAX_BUILDING_LEVEL) && (
+						<span className="pointer-events-none absolute left-[5%] top-[3%] text-4xl opacity-80">
+							☀️
+						</span>
+					)}
 					<span className="pointer-events-none absolute left-[24%] top-[7%] text-3xl opacity-60">
 						☁️
 					</span>
@@ -544,7 +547,8 @@ export function VillageScreen() {
 					{/* wieczór (zabawka maks latarni): przygasza scenę, latarnie świecą */}
 					{evening && latarnie >= MAX_BUILDING_LEVEL && (
 						<div className="pointer-events-none absolute inset-0 z-[120] bg-gradient-to-b from-indigo-950/60 via-indigo-900/35 to-indigo-950/20">
-							<span className="absolute right-[8%] top-[4%] text-3xl">🌙</span>
+							{/* księżyc w miejscu słońca (podmiana, nie duet) */}
+							<span className="absolute left-[5%] top-[3%] text-4xl">🌙</span>
 							<span className="anim-sparkle absolute left-[22%] top-[6%] text-sm text-white">
 								✦
 							</span>
