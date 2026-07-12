@@ -11,6 +11,7 @@
 		"format": "bunx --bun @biomejs/biome format --write",
 		"lint": "bunx --bun @biomejs/biome lint --write",
 		"check": "bunx --bun @biomejs/biome check --write --unsafe",
+		"verify": "bun test && bun run typecheck && bunx --bun @biomejs/biome ci .",
 		"test": "bun test"
 	},
 	"dependencies": {

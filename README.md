@@ -20,6 +20,9 @@ bun run dev       # dev server
 bun run build     # build produkcyjny (tsc + vite)
 bun run preview   # podgląd builda
 bun run typecheck # sam typecheck
+bun test          # testy jednostkowe
+bun run check     # biome: format + lint (zapisuje poprawki)
+bun run verify    # pełna brama: test + typecheck + biome (tylko sprawdza)
 ```
 
 ## Deploy (GitHub Pages)

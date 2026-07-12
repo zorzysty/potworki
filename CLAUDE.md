@@ -18,13 +18,14 @@ bun run check     # biome: format + lint + organizacja importów (--write --unsa
 bun run format    # biome: tylko formatowanie (--write)
 bun run lint      # biome: tylko lint (--write)
 bun test          # testy jednostkowe (src/game/*.test.ts, src/monsters/*.test.ts)
+bun run verify    # pełna brama: test + typecheck + biome ci (tylko sprawdza, nic nie zapisuje)
 ```
 
 Linter i formatter: **biome** (konfiguracja w `biome.json` — wcięcia tabami, podwójne cudzysłowy, średniki tylko gdy potrzebne, preset recommended + reguły React, a11y wyłączone). **Po każdej zakończonej zmianie w kodzie uruchom `bun run check` i napraw wszystko, co zgłosi** — to obowiązkowy krok przed uznaniem zadania za skończone.
 
 Weryfikacja: `bun test` (testy jednostkowe logiki gry i katalogu potworków), `bun run typecheck`, `bun run check`, ekran debug (`?debug` w URL → link „debug" na ekranie głównym: tabela mastery, galeria 80 potworków, przełącznik trybu, przyciski oszukiwania) oraz ręczny click-through.
 
-Deploy: push do `main` → GitHub Actions uruchamia `bun test` (blokuje deploy przy błędzie), buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`. Build emituje service worker PWA (`vite-plugin-pwa` w `vite.config.ts`, `registerType: "autoUpdate"`: po deployu appka aktualizuje się sama przy pierwszym uruchomieniu online; offline działa z precache całego builda) — appka jest instalowalna z ekranu głównego (manifest `scope`/`start_url` MUSZĄ siedzieć pod `/potworki/`; nazwy w manifeście to PROPOZYCJE).
+Deploy: push do `main` → GitHub Actions uruchamia `bun test` i `biome ci` (blokują deploy przy błędzie), buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`. Build emituje service worker PWA (`vite-plugin-pwa` w `vite.config.ts`, `registerType: "autoUpdate"`: po deployu appka aktualizuje się sama przy pierwszym uruchomieniu online; offline działa z precache całego builda) — appka jest instalowalna z ekranu głównego (manifest `scope`/`start_url` MUSZĄ siedzieć pod `/potworki/`; nazwy w manifeście to PROPOZYCJE).
 
 ## Architektura (przegląd)
 
