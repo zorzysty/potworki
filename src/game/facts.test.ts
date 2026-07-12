@@ -191,6 +191,60 @@ describe("makeQuestion", () => {
 			expect(q.b).toBe(8) // rand=0 < 0.5 → fact.a
 		})
 	})
+
+	describe("gap mode (brakujący czynnik)", () => {
+		test("b to iloczyn czynników, a to jeden z czynników (rand=0 → fact.a)", () => {
+			const q = makeQuestion(fact, false, "gap", null, () => 0)
+			expect(q.b).toBe(36) // 4*9
+			expect(q.a).toBe(4)
+		})
+
+		test("rand=0.9 → znany czynnik to fact.b", () => {
+			const q = makeQuestion(fact, false, "gap", null, () => 0.9)
+			expect(q.a).toBe(9)
+			expect(q.b).toBe(36)
+		})
+
+		test("expectedAnswer to DRUGI czynnik — liczba całkowita w 1..10", () => {
+			for (const r of [0, 0.9]) {
+				const q = makeQuestion(fact, false, "gap", null, () => r)
+				const missing = expectedAnswer(q, "gap")
+				expect(Number.isInteger(missing)).toBe(true)
+				expect(missing).toBeGreaterThanOrEqual(1)
+				expect(missing).toBeLessThanOrEqual(10)
+				// znany × brakujący = iloczyn
+				expect(q.a * missing).toBe(q.b)
+				expect([fact.a, fact.b]).toContain(missing)
+			}
+		})
+
+		test("intro: nowy czynnik wymuszony jako ZNANY czynnik a (rand ignorowany)", () => {
+			// introFactor = 8, fact = {a:8, b:9} → a = 8, niezależnie od rand
+			const fact89 = { a: 8, b: 9, key: "8x9" as const }
+			const q = makeQuestion(fact89, false, "gap", 8, () => 0.9)
+			expect(q.a).toBe(8)
+			expect(q.b).toBe(72)
+			expect(expectedAnswer(q, "gap")).toBe(9)
+		})
+
+		test("intro: introFactor jest fact.b → znany czynnik = introFactor", () => {
+			const fact89 = { a: 8, b: 9, key: "8x9" as const }
+			const q = makeQuestion(fact89, false, "gap", 9, () => 0)
+			expect(q.a).toBe(9)
+			expect(expectedAnswer(q, "gap")).toBe(8)
+		})
+
+		test("intro: introFactor nie należy do fact → znany losowy (rand=0 → fact.a)", () => {
+			const fact89 = { a: 8, b: 9, key: "8x9" as const }
+			const q = makeQuestion(fact89, false, "gap", 7, () => 0)
+			expect(q.a).toBe(8) // rand=0 < 0.5 → fact.a
+		})
+
+		test("isRequeue jest przekazywane poprawnie", () => {
+			const q = makeQuestion(fact, true, "gap", null, () => 0)
+			expect(q.isRequeue).toBe(true)
+		})
+	})
 })
 
 describe("expectedAnswer", () => {
@@ -202,5 +256,23 @@ describe("expectedAnswer", () => {
 	test("div: zwraca a/b", () => {
 		const q = { key: "4x9" as const, a: 36, b: 4, isRequeue: false }
 		expect(expectedAnswer(q, "div")).toBe(9)
+	})
+
+	test("gap: zwraca b/a (brakujący czynnik)", () => {
+		const q = { key: "4x9" as const, a: 4, b: 36, isRequeue: false }
+		expect(expectedAnswer(q, "gap")).toBe(9)
+	})
+
+	test("3-way dla jednego faktu: te same dane, trzy widoki", () => {
+		// fakt 4×9: mult 4×9=36, div 36÷4=9, gap 4×_=36 → 9
+		expect(
+			expectedAnswer({ key: "4x9", a: 4, b: 9, isRequeue: false }, "mult"),
+		).toBe(36)
+		expect(
+			expectedAnswer({ key: "4x9", a: 36, b: 9, isRequeue: false }, "div"),
+		).toBe(4)
+		expect(
+			expectedAnswer({ key: "4x9", a: 9, b: 36, isRequeue: false }, "gap"),
+		).toBe(4)
 	})
 })

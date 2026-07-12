@@ -4,7 +4,7 @@ import type { PendingEgg } from "../game/rewards"
 import type { VillageState } from "../game/village"
 import { INITIAL_VILLAGE } from "../game/village"
 
-export const SAVE_VERSION = 9
+export const SAVE_VERSION = 10
 
 // Wpis ledgera osiągnięć. `seen` jak celebratedStage: false → badge „nowe!" na Home,
 // czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen).
@@ -18,6 +18,7 @@ export interface AchievementEntry {
 export interface AchievementCounters {
 	perfectRounds: number
 	divCorrect: number
+	gapCorrect: number // poprawne pierwsze próby w trybie luki (brakujący czynnik)
 	totalStars: number
 	rainbowEggsHatched: number
 	wishEggsBought: number
@@ -63,6 +64,7 @@ export const INITIAL_SAVE: SaveState = {
 	achievementStats: {
 		perfectRounds: 0,
 		divCorrect: 0,
+		gapCorrect: 0,
 		totalStars: 0,
 		rainbowEggsHatched: 0,
 		wishEggsBought: 0,
@@ -162,6 +164,19 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 		...(state as Record<string, unknown>),
 		village: { buildings: {}, decorations: [], goalId: null },
 	}),
+	// v9→v10: licznik gapCorrect (tryb „brakujący czynnik", plan 015). Dopisujemy do
+	// istniejących achievementStats od zera — tryb dopiero się pojawia (wzorzec v6→v7).
+	9: (state) => {
+		const s = state as Record<string, unknown>
+		const stats =
+			s.achievementStats && typeof s.achievementStats === "object"
+				? (s.achievementStats as Record<string, unknown>)
+				: {}
+		return {
+			...s,
+			achievementStats: { ...stats, gapCorrect: 0 },
+		}
+	},
 }
 
 export function migrateSave(state: unknown, fromVersion: number): unknown {

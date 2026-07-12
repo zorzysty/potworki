@@ -1,5 +1,5 @@
 import { STAGES } from "../game/facts"
-import { isDivisionOnly } from "./catalog"
+import { isDivisionOnly, isGapOnly } from "./catalog"
 
 // Świat „Krainy Potworków": każdemu etapowi odblokowań (STAGES) odpowiada region
 // z nazwą o motywie liczbowym wprowadzanego czynnika i potworkiem-strażnikiem.
@@ -108,8 +108,22 @@ export const BRIDGE_ORIGIN = {
 	color: "bg-violet-100 text-violet-600",
 }
 
+// Pochodzenie potworków tylko-luka (tryb „brakujący czynnik"). Trzeci wariant
+// unii pochodzenia (kind "valley"), lustro BRIDGE_ORIGIN. Nazwa = PROPOZYCJA.
+export const VALLEY_ORIGIN = {
+	kind: "valley" as const,
+	name: "Dolina Zagadek",
+	emoji: "🧩",
+	color: "bg-fuchsia-100 text-fuchsia-600",
+}
+
 // Kraina pochodzenia potworka (paszport). Potworki tylko-dzielenie przybywają zza
-// Mostu Strażników, więc nie mają zwykłego regionu. Czysta — bez stanu gry.
-export function originOf(id: number): Region | typeof BRIDGE_ORIGIN {
-	return isDivisionOnly(id) ? BRIDGE_ORIGIN : (REGIONS[regionOf(id)] as Region)
+// Mostu Strażników, tylko-luka — z Doliny Zagadek; żadne z nich nie ma zwykłego
+// regionu (id % 7 kłamałby o krainie). Czysta — bez stanu gry.
+export function originOf(
+	id: number,
+): Region | typeof BRIDGE_ORIGIN | typeof VALLEY_ORIGIN {
+	if (isDivisionOnly(id)) return BRIDGE_ORIGIN
+	if (isGapOnly(id)) return VALLEY_ORIGIN
+	return REGIONS[regionOf(id)] as Region
 }

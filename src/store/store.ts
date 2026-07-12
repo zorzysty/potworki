@@ -54,6 +54,7 @@ import {
 	IDS_BY_RARITY,
 	idsByRarityForMode,
 	isDivisionOnly,
+	isGapOnly,
 	rarityOf,
 } from "../monsters/catalog"
 import type { AchievementCounters, AchievementEntry, SaveState } from "./schema"
@@ -166,19 +167,19 @@ function bumpDaysPlayed(
 	return { ...stats, daysPlayed: stats.daysPlayed + 1, lastPlayedDay: today }
 }
 
-// Pula losowania potworków zależna od trybu jajka: jajko z dzielenia widzi pełny
-// katalog (w tym legendarne tylko-dzielenie), jajko mnożeniowe/życzeń — bez nich.
-// Wymarzony potworek tylko-dzielenie nie ma priorytetu w trybie mnożenia (gdyby
-// został wybrany jako dream), bo i tak nie ma go w przefiltrowanej puli.
+// Pula losowania potworków zależna od trybu jajka (idsByRarityForMode w
+// src/monsters/). Wymarzony ma priorytet tylko, gdy jest w puli trybu jajka —
+// potworek ekskluzywny innego trybu nie może się wykluć „na życzenie" z cudzego
+// jajka (pickInTier nie sprawdza sam przynależności dreamu do puli).
 function rollContext(state: SaveState, mode: GameMode) {
+	const idsByRarity = idsByRarityForMode(mode)
 	const dreamId =
-		mode === "mult" &&
 		state.dreamMonsterId !== null &&
-		isDivisionOnly(state.dreamMonsterId)
-			? null
-			: state.dreamMonsterId
+		idsByRarity[rarityOf(state.dreamMonsterId)].includes(state.dreamMonsterId)
+			? state.dreamMonsterId
+			: null
 	return {
-		idsByRarity: idsByRarityForMode(mode),
+		idsByRarity,
 		owned: new Set(Object.keys(state.ownedMonsters).map(Number)),
 		dreamId,
 		rarityOf,
@@ -190,9 +191,15 @@ export function wishEggCost(
 	state: Pick<SaveState, "dreamMonsterId" | "ownedMonsters">,
 ): number {
 	const dream = state.dreamMonsterId
-	// jajko życzeń losuje z puli mnożeniowej → wymarzony tylko-dzielenie go nie
-	// dotyczy (zdobywa się go realną grą w dzielenie), więc liczymy jak bez dreamu
-	if (dream === null || dream in state.ownedMonsters || isDivisionOnly(dream))
+	// jajko życzeń losuje z puli mnożeniowej → wymarzony ekskluzywny dla innego
+	// trybu (tylko-dzielenie / tylko-luka) go nie dotyczy (zdobywa się go realną
+	// grą w swoim trybie), więc liczymy jak bez dreamu
+	if (
+		dream === null ||
+		dream in state.ownedMonsters ||
+		isDivisionOnly(dream) ||
+		isGapOnly(dream)
+	)
 		return WISH_COST_NO_DREAM
 	return WISH_COST[rarityOf(dream)]
 }
@@ -450,13 +457,16 @@ export const useGame = create<GameState>()(
 				const stars = round.stars + gained
 
 				// liczniki osiągnięć: kariera gwiazdek rośnie zawsze (gained=0 nieszkodliwe),
-				// poprawne pierwsze próby w dzieleniu liczymy osobno
+				// poprawne pierwsze próby w dzieleniu i w luce liczymy osobno
 				const achievementStats = {
 					...state.achievementStats,
 					totalStars: state.achievementStats.totalStars + gained,
 					divCorrect:
 						state.achievementStats.divCorrect +
 						(correct && round.mode === "div" ? 1 : 0),
+					gapCorrect:
+						state.achievementStats.gapCorrect +
+						(correct && round.mode === "gap" ? 1 : 0),
 				}
 
 				// fragment + gwiazdki niezależnie od wyniku — postęp nigdy nie przepada.

@@ -1,13 +1,20 @@
 /// <reference types="bun-types" />
 import { describe, expect, test } from "bun:test"
 import { STAGES } from "../game/facts"
-import { isDivisionOnly, MONSTER_COUNT, rarityOf } from "./catalog"
+import {
+	GAP_ONLY_IDS,
+	isDivisionOnly,
+	isGapOnly,
+	MONSTER_COUNT,
+	rarityOf,
+} from "./catalog"
 import {
 	BRIDGE_GUARDIAN_IDS,
 	BRIDGE_ORIGIN,
 	originOf,
 	REGIONS,
 	regionOf,
+	VALLEY_ORIGIN,
 } from "./world"
 
 describe("REGIONS", () => {
@@ -38,10 +45,11 @@ describe("strażnicy", () => {
 		expect(new Set(ids).size).toBe(ids.length)
 	})
 
-	test("każdy common|rare, nie tylko-dzielenie", () => {
+	test("każdy common|rare, nie ekskluzywny (tylko-dzielenie/tylko-luka)", () => {
 		for (const r of REGIONS) {
 			expect(["common", "rare"]).toContain(rarityOf(r.guardianId))
 			expect(isDivisionOnly(r.guardianId)).toBe(false)
+			expect(isGapOnly(r.guardianId)).toBe(false)
 		}
 	})
 
@@ -75,21 +83,26 @@ describe("regionOf / originOf", () => {
 		expect(seen.size).toBe(STAGES.length)
 	})
 
-	test("originOf: tylko-dzielenie → Most, reszta → region z polem stage", () => {
+	test("originOf: tylko-dzielenie → Most, tylko-luka → Dolina, reszta → region", () => {
 		for (const id of BRIDGE_GUARDIAN_IDS) {
 			expect(originOf(id)).toBe(BRIDGE_ORIGIN)
 		}
+		for (const id of GAP_ONLY_IDS) {
+			expect(originOf(id)).toBe(VALLEY_ORIGIN)
+		}
 		for (let id = 0; id < MONSTER_COUNT; id++) {
-			if (isDivisionOnly(id)) continue
+			if (isDivisionOnly(id) || isGapOnly(id)) continue
 			const origin = originOf(id)
 			expect(origin === REGIONS[regionOf(id)]).toBe(true)
 			expect("stage" in origin).toBe(true)
 		}
 	})
 
-	test("dyskryminator unii: kind region/bridge", () => {
+	test("dyskryminator unii: kind region/bridge/valley", () => {
 		expect(BRIDGE_ORIGIN.kind).toBe("bridge")
 		expect("stage" in BRIDGE_ORIGIN).toBe(false)
+		expect(VALLEY_ORIGIN.kind).toBe("valley")
+		expect("stage" in VALLEY_ORIGIN).toBe(false)
 		for (const r of REGIONS) expect(r.kind).toBe("region")
 	})
 })

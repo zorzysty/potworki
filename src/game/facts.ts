@@ -1,7 +1,9 @@
 export type FactKey = `${number}x${number}`
 
-// Tryb rundy: mnożenie albo dzielenie. Dzielenie to inny widok tego samego faktu.
-export type GameMode = "mult" | "div"
+// Tryb rundy: mnożenie, dzielenie albo brakujący czynnik ("gap": 7 × _ = 42).
+// Każdy tryb to inny widok tego samego faktu — wspólny postęp.
+// TOKEN "gap" jest ZAMROŻONY: persystowany w PendingEgg.mode.
+export type GameMode = "mult" | "div" | "gap"
 
 export interface Fact {
 	a: number // zawsze a <= b
@@ -81,6 +83,7 @@ export interface RoundQuestion {
 	key: FactKey
 	// w kolejności wyświetlania. Mnożenie: losowa orientacja czynników (a×b).
 	// Dzielenie: a = dzielna (iloczyn), b = dzielnik; oczekiwany wynik = a/b.
+	// Luka ("gap"): a = ZNANY czynnik, b = iloczyn; oczekiwany wynik = b/a.
 	a: number
 	b: number
 	isRequeue: boolean
@@ -88,7 +91,8 @@ export interface RoundQuestion {
 
 // Buduje pytanie do wyświetlenia z faktu wg trybu. Mnożenie: losowa orientacja
 // czynników. Dzielenie: (a*b) ÷ dzielnik = iloraz; w intro-rundzie nowy czynnik
-// wymuszany na pozycji dzielnika (72÷8, nie 72÷9). rand wstrzykiwany — testowalność.
+// wymuszany na pozycji dzielnika (72÷8, nie 72÷9). Luka: znany × _ = iloczyn.
+// rand wstrzykiwany — testowalność.
 export function makeQuestion(
 	fact: Fact,
 	isRequeue: boolean,
@@ -106,6 +110,19 @@ export function makeQuestion(
 				: fact.b
 		return { key: fact.key, a: fact.a * fact.b, b: divisor, isRequeue }
 	}
+	if (mode === "gap") {
+		// znany czynnik widoczny w działaniu; w intro-rundzie wymuszamy nową
+		// cyfrę na pozycji ZNANEGO czynnika (dziecko widzi nową liczbę i
+		// rozwiązuje o znajomą): 8 × _ = 72, nie 9 × _ = 72
+		const introIsOperand =
+			introFactor !== null && (fact.a === introFactor || fact.b === introFactor)
+		const known = introIsOperand
+			? (introFactor as number)
+			: rand() < 0.5
+				? fact.a
+				: fact.b
+		return { key: fact.key, a: known, b: fact.a * fact.b, isRequeue }
+	}
 	const flip = rand() < 0.5
 	return {
 		key: fact.key,
@@ -115,7 +132,7 @@ export function makeQuestion(
 	}
 }
 
-// Oczekiwany wynik pytania wg trybu (mnożenie a×b, dzielenie a÷b).
+// Oczekiwany wynik pytania wg trybu (mnożenie a×b, dzielenie a÷b, luka b÷a).
 export function expectedAnswer(q: RoundQuestion, mode: GameMode): number {
-	return mode === "div" ? q.a / q.b : q.a * q.b
+	return mode === "div" ? q.a / q.b : mode === "gap" ? q.b / q.a : q.a * q.b
 }

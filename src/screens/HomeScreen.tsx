@@ -128,18 +128,21 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 			)}
 
 			<div className="relative w-full max-w-xs">
-				<div className="flex gap-2 rounded-3xl bg-white/50 p-1.5">
+				<div className="flex gap-1.5 rounded-3xl bg-white/50 p-1.5">
+					{/* etykiety trybów: PROPOZYCJE do dopracowania (tokeny mult/div/gap
+					    są kodem i NIE zmieniają się — persystowane w jajkach) */}
 					{(
 						[
 							["mult", "× Mnożenie"],
 							["div", "÷ Dzielenie"],
+							["gap", "? Zgadnij"],
 						] as const
 					).map(([value, label]) => (
 						<button
 							key={value}
 							type="button"
 							onClick={() => setMode(value)}
-							className={`flex-1 touch-manipulation rounded-2xl py-3 text-lg font-extrabold transition-transform active:scale-95 ${
+							className={`min-h-16 flex-1 touch-manipulation rounded-2xl px-1 py-3 text-base font-extrabold transition-transform active:scale-95 ${
 								mode === value
 									? "bg-gradient-to-b from-grape to-grape-dark text-white shadow-md"
 									: "text-grape-dark"
@@ -150,10 +153,11 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					))}
 				</div>
 				<div className="absolute -right-2 -top-2">
+					{/* PROPOZYCJA do dopracowania — tekst pomocy przełącznika trybów */}
 					<HelpTip
 						placement="bottom"
 						align="right"
-						text="Wybierz, czego chcesz ćwiczyć: mnożenie albo dzielenie. Niektóre wyjątkowe potworki wykluwają się tylko z jajek zdobytych przez dzielenie!"
+						text="Wybierz, czego chcesz ćwiczyć: mnożenie, dzielenie albo zgadywanie brakującej liczby. Niektóre wyjątkowe potworki wykluwają się tylko z takich jajek!"
 					/>
 				</div>
 			</div>

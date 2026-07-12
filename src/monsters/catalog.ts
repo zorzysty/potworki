@@ -33,26 +33,36 @@ export interface Monster {
 	name: string
 }
 
-export const MONSTER_COUNT = 76
+export const MONSTER_COUNT = 80
 
 // Legendarne zdobywalne WYŁĄCZNIE przez dzielenie (jajka z rundy dzielenia).
 // Dołożone na końcu katalogu (id > dotychczasowego maks.), więc nie ruszają
-// zamrożonego seeda. Pula losowania filtruje je w trybie mnożenia — patrz store.
+// zamrożonego seeda. Pula losowania filtruje je poza trybem div — patrz niżej.
 export const DIVISION_ONLY_IDS: ReadonlySet<number> = new Set([72, 73, 74, 75])
 
 export function isDivisionOnly(id: number): boolean {
 	return DIVISION_ONLY_IDS.has(id)
 }
 
-// Pula potworków do losowania zależna od trybu jajka: dzielenie → pełny katalog,
-// mnożenie → bez legendarnych tylko-dzielenie. (Wyłącznie tier legendary się różni.)
+// Legendarne zdobywalne WYŁĄCZNIE przez tryb luki (brakujący czynnik, "gap").
+// Analogicznie dołożone na końcu katalogu — zamrożony seed nietknięty.
+export const GAP_ONLY_IDS: ReadonlySet<number> = new Set([76, 77, 78, 79])
+
+export function isGapOnly(id: number): boolean {
+	return GAP_ONLY_IDS.has(id)
+}
+
+// Pula potworków do losowania zależna od trybu jajka: każdy blok ekskluzywny
+// widoczny TYLKO dla swojego trybu (div → tylko-dzielenie, gap → tylko-luka);
+// mnożenie i Jajko Życzeń widzą bazę. Różni się wyłącznie tier legendary.
 export function idsByRarityForMode(
 	mode: GameMode,
 ): Record<Rarity, readonly number[]> {
-	if (mode === "div") return IDS_BY_RARITY
+	const excluded = (id: number) =>
+		(mode !== "div" && isDivisionOnly(id)) || (mode !== "gap" && isGapOnly(id))
 	return {
 		...IDS_BY_RARITY,
-		legendary: IDS_BY_RARITY.legendary.filter((id) => !isDivisionOnly(id)),
+		legendary: IDS_BY_RARITY.legendary.filter((id) => !excluded(id)),
 	}
 }
 
@@ -62,6 +72,10 @@ export function idsByRarityForMode(
 const SALT_STRIDE = 48
 
 export function rarityOf(id: number): Rarity {
+	if (id >= 76) {
+		// nowe potworki 76–79: legendary tylko-luka (GAP_ONLY_IDS)
+		return "legendary"
+	}
 	if (id >= 48) {
 		// nowe potworki 48–75: 48–59 common, 60–66 rare, 67–70 epic, 71 legendary,
 		// 72–75 legendary tylko-dzielenie (DIVISION_ONLY_IDS)

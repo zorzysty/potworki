@@ -156,6 +156,11 @@ export function HatchScreen() {
 													÷
 												</div>
 											)}
+											{e.mode === "gap" && (
+												<div className="absolute right-0 top-0 rounded-full bg-violet-500 px-1.5 text-xs font-extrabold text-white">
+													🧩
+												</div>
+											)}
 										</button>
 									))}
 								</div>

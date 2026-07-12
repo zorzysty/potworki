@@ -108,6 +108,12 @@ export function EggReward({
 								÷
 							</span>
 						)}
+						{/* 🧩 (nie „?") — „?" koliduje z konwencją „???" = nieznany potworek */}
+						{mode === "gap" && (
+							<span className="absolute -bottom-1 -left-1 rounded-full bg-grape px-2 py-0.5 text-sm font-extrabold text-white shadow">
+								🧩
+							</span>
+						)}
 					</div>
 				) : (
 					// jajko jeszcze nie gotowe — gwiazdki czekają w środku

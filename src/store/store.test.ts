@@ -4,15 +4,16 @@ import { ACHIEVEMENTS } from "../achievements/catalog"
 import type { FactStats } from "../game/adaptive"
 import { emptyStats, stageFacts, VISIT_BONUS } from "../game/adaptive"
 import type { FactKey } from "../game/facts"
-import { ISKIERKI_FOR_DUP } from "../game/rewards"
+import { ISKIERKI_FOR_DUP, WISH_COST_NO_DREAM } from "../game/rewards"
 import { BUILDINGS, DECORATIONS } from "../game/village"
 import {
 	DIVISION_ONLY_IDS,
 	FIRST_MONSTER_ID,
+	GAP_ONLY_IDS,
 	IDS_BY_RARITY,
 	rarityOf,
 } from "../monsters/catalog"
-import { mergePersisted, useGame } from "./store"
+import { mergePersisted, useGame, wishEggCost } from "./store"
 
 const game = () => useGame.getState()
 
@@ -32,14 +33,17 @@ function requireRound() {
 	return r
 }
 
-// odpowiada na bieżące pytanie zgodnie z trybem rundy (mnożenie a×b / dzielenie a÷b)
+// odpowiada na bieżące pytanie zgodnie z trybem rundy
+// (mnożenie a×b / dzielenie a÷b / luka: brakujący czynnik b÷a)
 function answerByMode(correct: boolean) {
 	const round = game().round
 	if (!round) throw new Error("brak rundy")
 	const expected =
 		round.mode === "div"
 			? round.question.a / round.question.b
-			: round.question.a * round.question.b
+			: round.mode === "gap"
+				? round.question.b / round.question.a
+				: round.question.a * round.question.b
 	const value = correct ? expected : expected + 1
 	for (const digit of String(value)) game().pressDigit(Number(digit))
 	game().pressConfirm()
@@ -567,6 +571,172 @@ describe("tryb dzielenia", () => {
 	})
 })
 
+// ---------------------------------------------------------------------------
+// Tryb luki (brakujący czynnik: 7 × _ = 42) — lustro „trybu dzielenia"
+// ---------------------------------------------------------------------------
+
+describe("tryb luki", () => {
+	test("startRound w trybie gap: runda.mode === gap, pytanie to znany×_=iloczyn", () => {
+		game().setMode("gap")
+		game().startRound()
+		const r = requireRound()
+		expect(r.mode).toBe("gap")
+		// b = iloczyn faktu, a = jeden z czynników, brakujący czynnik 1..10
+		const fact = r.question.key.split("x").map(Number)
+		const product = (fact[0] as number) * (fact[1] as number)
+		expect(r.question.b).toBe(product)
+		expect([fact[0], fact[1]]).toContain(r.question.a)
+		const missing = r.question.b / r.question.a
+		expect(Number.isInteger(missing)).toBe(true)
+		expect(missing).toBeGreaterThanOrEqual(1)
+		expect(missing).toBeLessThanOrEqual(10)
+	})
+
+	test("poprawna odpowiedź luki: faza correct, fragment, mastery WSPÓLNEGO faktu rośnie", () => {
+		game().setMode("gap")
+		game().startRound()
+		const key = requireRound().question.key
+		answerByMode(true)
+		const s = game()
+		expect(s.round?.phase).toBe("correct")
+		expect(s.eggFragments).toBe(1)
+		expect(s.facts[key]?.attempts).toBe(1)
+		expect((s.facts[key]?.mastery ?? 0) > 0).toBe(true)
+	})
+
+	test("jajko zdobyte w luce ma mode 'gap'", () => {
+		game().setMode("gap")
+		game().startRound()
+		// 10 poprawnych = pierwsze jajko (próg fragmentsForEgg(0)=10)
+		for (let i = 0; i < 10; i++) {
+			answerByMode(true)
+			game().nextQuestion()
+		}
+		const s = game()
+		expect(s.pendingEggs.length).toBe(1)
+		expect(s.pendingEggs[0]?.mode).toBe("gap")
+	})
+
+	test("debugReset wraca do trybu mnożenia (z gap)", () => {
+		game().setMode("gap")
+		game().debugReset()
+		expect(game().mode).toBe("mult")
+	})
+
+	test("pierwsza runda po odblokowaniu: 5/10 działań z nową cyfrą, w luce cyfra jest ZNANYM czynnikiem", () => {
+		game().debugOpenGate() // unlockedStage 0→1, nowa cyfra = 3
+		expect(game().unlockedStage).toBe(1)
+		game().setMode("gap")
+		game().startRound()
+		expect(game().round?.introFactor).toBe(3)
+
+		const keys: string[] = []
+		for (let i = 0; i < 10; i++) {
+			const q = requireRound().question
+			keys.push(q.key)
+			// w luce: pytanie z cyfrą 3 musi mieć 3 jako ZNANY czynnik (3 × _ = iloczyn)
+			if (q.key.split("x").map(Number).includes(3)) {
+				expect(q.a).toBe(3)
+				// brakujący czynnik to drugi czynnik (nie 3), poza kwadratem 3×3
+				if (q.key !== "3x3") expect(q.b / q.a).not.toBe(3)
+			}
+			answerByMode(true)
+			game().nextQuestion()
+		}
+		const withThree = keys.filter((k) => k.split("x").map(Number).includes(3))
+		expect(withThree.length).toBe(5)
+		expect(keys.length).toBe(10)
+		expect(new Set(keys).size).toBe(10)
+	})
+
+	test("jajko z luki nigdy nie wykluwa legendarnego tylko-dzielenie", () => {
+		// posiadamy wszystko oprócz legendarnych → losowanie legendarnego tieru
+		// z jajka gap nie może trafić w tylko-dzielenie (72–75)
+		game().debugOwnRarity("common")
+		game().debugOwnRarity("rare")
+		game().debugOwnRarity("epic")
+		game().setMode("gap") // debugAddEgg ostempluje jajka mode = "gap"
+		for (let i = 0; i < 200; i++) {
+			game().debugAddEgg("rainbow")
+			game().hatchEgg()
+			const id = game().lastHatch?.monsterId
+			if (id !== undefined) expect(DIVISION_ONLY_IDS.has(id)).toBe(false)
+		}
+	})
+
+	test("wymarzony tylko-dzielenie NIE przecieka do jajka gap (regresja guardu dreamu)", () => {
+		// posiadamy wszystko OPRÓCZ tylko-dzielenie; dream = 72 (div-only).
+		// Bez pool-membership w rollContext dream miałby priorytet w tierze
+		// legendary i jajko gap wykluwałoby 72 — ten test jest siecią regresji.
+		game().debugOwnRarity("common")
+		game().debugOwnRarity("rare")
+		game().debugOwnRarity("epic")
+		const owned = { ...game().ownedMonsters }
+		for (const id of [45, 46, 47, 71]) owned[id] = { hatchedAt: 0 }
+		useGame.setState({ ownedMonsters: owned })
+		game().setDreamMonster(72)
+		game().setMode("gap")
+		for (let i = 0; i < 200; i++) {
+			game().debugAddEgg("rainbow")
+			game().hatchEgg()
+			const id = game().lastHatch?.monsterId
+			if (id !== undefined) expect(DIVISION_ONLY_IDS.has(id)).toBe(false)
+		}
+	})
+
+	test("jajko z luki MOŻE wykluć legendarnego tylko-luka (osiągalność nagrody)", () => {
+		// posiadamy wszystko OPRÓCZ 4 legendarnych tylko-luka (76–79):
+		// common+rare+epic + legendarne bazowe i tylko-dzielenie. Każde NOWE
+		// wyklucie z jajka gap musi więc być jednym z tylko-luka.
+		game().debugOwnRarity("common")
+		game().debugOwnRarity("rare")
+		game().debugOwnRarity("epic")
+		const owned = { ...game().ownedMonsters }
+		for (const id of [45, 46, 47, 71, 72, 73, 74, 75])
+			owned[id] = { hatchedAt: 0 }
+		useGame.setState({ ownedMonsters: owned })
+
+		game().setMode("gap") // debugAddEgg ostempluje jajka mode = "gap"
+
+		let newCount = 0
+		for (let i = 0; i < 300; i++) {
+			game().debugAddEgg("rainbow") // 15% szans na legendarnego
+			game().hatchEgg()
+			const lh = game().lastHatch
+			if (lh?.isNew) {
+				newCount++
+				expect(GAP_ONLY_IDS.has(lh.monsterId)).toBe(true)
+			}
+		}
+		// 300 tęczowych × 15% legendary ⇒ trafienie praktycznie pewne (P(0)≈10⁻²¹)
+		expect(newCount).toBeGreaterThan(0)
+	})
+
+	test("wymarzony tylko-luka nie podbija ceny Jajka Życzeń (liczony jak bez dreamu)", () => {
+		// jajko życzeń losuje z puli mnożeniowej → tylko-luka go nie dotyczy
+		game().setDreamMonster(76)
+		const { dreamMonsterId, ownedMonsters } = game()
+		expect(wishEggCost({ dreamMonsterId, ownedMonsters })).toBe(
+			WISH_COST_NO_DREAM,
+		)
+	})
+
+	test("jajka mult i div NIGDY nie wykluwają tylko-luka", () => {
+		game().debugOwnRarity("common")
+		game().debugOwnRarity("rare")
+		game().debugOwnRarity("epic")
+		for (const eggMode of ["mult", "div"] as const) {
+			game().setMode(eggMode)
+			for (let i = 0; i < 200; i++) {
+				game().debugAddEgg("rainbow")
+				game().hatchEgg()
+				const id = game().lastHatch?.monsterId
+				if (id !== undefined) expect(GAP_ONLY_IDS.has(id)).toBe(false)
+			}
+		}
+	})
+})
+
 describe("nawigacja", () => {
 	test("exitRoundEarly — round null, screen home, fragments/totalRounds zachowane", () => {
 		game().startRound()
@@ -645,6 +815,16 @@ describe("osiągnięcia", () => {
 		const s = game()
 		expect(s.achievementStats.divCorrect).toBe(1)
 		expect(s.achievements["pierwsze-dzielenie"]).toBeDefined()
+	})
+
+	test("poprawna odpowiedź w luce → gapCorrect++ i 'pierwsza-luka' (divCorrect stoi)", () => {
+		game().setMode("gap")
+		game().startRound()
+		answerByMode(true)
+		const s = game()
+		expect(s.achievementStats.gapCorrect).toBe(1)
+		expect(s.achievementStats.divCorrect).toBe(0)
+		expect(s.achievements["pierwsza-luka"]).toBeDefined()
 	})
 
 	test("wyklucie tęczowego jajka → rainbowEggsHatched++ i 'teczowe-jajko'", () => {

@@ -92,7 +92,7 @@ function ownedGuardians(save: SaveState): number {
 
 const MAX_STAGE = STAGES.length - 1
 
-// 44 osiągnięcia. Tytuły/opisy są robocze (do dopracowania); id są stabilne.
+// 46 osiągnięć. Tytuły/opisy są robocze (do dopracowania); id są stabilne.
 // Trudność (easy/medium/hard/legendary → 5/10/15/25 iskierek) jest per-wpis w polu
 // `difficulty`; kolejność tablicy = tripwire persystencji, nie grupowanie wg trudności.
 export const ACHIEVEMENTS: readonly AchievementDef[] = [
@@ -519,5 +519,21 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 			current: buildingsAtLeast(save, MAX_BUILDING_LEVEL),
 			target: BUILDINGS.length,
 		}),
+	},
+	{
+		id: "pierwsza-luka",
+		title: "Detektyw liczb",
+		description: "Zgadnij brakującą liczbę w trybie zgadywania.",
+		icon: "🧩",
+		difficulty: "easy",
+		progress: ({ counters }) => ({ current: counters.gapCorrect, target: 1 }),
+	},
+	{
+		id: "luka-50",
+		title: "Tropiciel zagadek",
+		description: "Zgadnij brakującą liczbę 50 razy.",
+		icon: "🔍",
+		difficulty: "medium",
+		progress: ({ counters }) => ({ current: counters.gapCorrect, target: 50 }),
 	},
 ]

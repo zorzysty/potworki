@@ -15,6 +15,7 @@ import { evaluateAchievements } from "./evaluate"
 const maxCounters: AchievementCounters = {
 	perfectRounds: 25,
 	divCorrect: 200,
+	gapCorrect: 50,
 	totalStars: 1500,
 	rainbowEggsHatched: 3,
 	wishEggsBought: 5,
@@ -63,12 +64,12 @@ describe("evaluateAchievements", () => {
 		expect(r.iskierkiReward).toBe(0)
 	})
 
-	test("maksymalny zapis → wszystkie 44 + pełna nagroda (550)", () => {
+	test("maksymalny zapis → wszystkie 46 + pełna nagroda (565)", () => {
 		const r = evaluateAchievements(maxCtx, new Set())
 		expect(r.newlyUnlocked.length).toBe(ACHIEVEMENTS.length)
 		expect(r.iskierkiReward).toBe(TOTAL_REWARD)
-		// 8×easy(5) + 14×medium(10) + 18×hard(15) + 4×legendary(25) = 550
-		expect(r.iskierkiReward).toBe(550)
+		// 9×easy(5) + 15×medium(10) + 18×hard(15) + 4×legendary(25) = 565
+		expect(r.iskierkiReward).toBe(565)
 	})
 
 	test("idempotencja: już zdobyte nie wpadają ponownie ani nie naliczają iskierek", () => {

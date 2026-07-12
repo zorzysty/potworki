@@ -13,7 +13,7 @@ describe("migrateSave", () => {
 		expect(migrateSave(x, SAVE_VERSION)).toEqual(x)
 	})
 
-	test("pełny łańcuch v1→v9: eggsEarned, celebratedStage, mode jajek, eggStarBank, osiągnięcia, companionId, wioska, dane zachowane", () => {
+	test("pełny łańcuch v1→v10: eggsEarned, celebratedStage, mode jajek, eggStarBank, osiągnięcia, companionId, wioska, gapCorrect, dane zachowane", () => {
 		const v1 = {
 			ownedMonsters: {
 				0: { hatchedAt: 0 },
@@ -32,7 +32,8 @@ describe("migrateSave", () => {
 		expect(result.pendingEggs).toEqual([{ quality: "normal", mode: "mult" }])
 		// v4→v5: brak eggFragments w v1 → eggStarBank 0
 		expect(result.eggStarBank).toBe(0)
-		// v5→v6 + v6→v7: osiągnięcia — pusty ledger + zerowe liczniki (z daysPlayed)
+		// v5→v6 + v6→v7 + v9→v10: osiągnięcia — pusty ledger + zerowe liczniki
+		// (z daysPlayed i gapCorrect)
 		expect(result.achievements).toEqual({})
 		expect(result.achievementStats).toEqual({
 			perfectRounds: 0,
@@ -42,6 +43,7 @@ describe("migrateSave", () => {
 			wishEggsBought: 0,
 			daysPlayed: 0,
 			lastPlayedDay: "",
+			gapCorrect: 0,
 		})
 		// v7→v8: companionId startuje null (brak przyjaciela)
 		expect(result.companionId).toBeNull()
@@ -69,7 +71,7 @@ describe("migrateSave", () => {
 		expect(result.totalRounds).toBe(12)
 	})
 
-	test("v5→v8: dodaje pusty ledger osiągnięć, zerowe liczniki i companionId, reszta zachowana", () => {
+	test("v5→koniec: dodaje pusty ledger osiągnięć, zerowe liczniki i companionId, reszta zachowana", () => {
 		const v5 = {
 			iskierki: 4,
 			totalRounds: 9,
@@ -85,13 +87,14 @@ describe("migrateSave", () => {
 			wishEggsBought: 0,
 			daysPlayed: 0,
 			lastPlayedDay: "",
+			gapCorrect: 0,
 		})
 		expect(result.companionId).toBeNull()
 		expect(result.iskierki).toBe(4)
 		expect(result.totalRounds).toBe(9)
 	})
 
-	test("v6→v7: dopisuje daysPlayed + lastPlayedDay do istniejących liczników", () => {
+	test("v6→koniec: dopisuje daysPlayed/lastPlayedDay/gapCorrect do istniejących liczników", () => {
 		const v6 = {
 			iskierki: 3,
 			achievementStats: {
@@ -111,16 +114,51 @@ describe("migrateSave", () => {
 			wishEggsBought: 0,
 			daysPlayed: 0,
 			lastPlayedDay: "",
+			gapCorrect: 0,
 		})
 		expect(result.iskierki).toBe(3)
 	})
 
-	test("v6→v7: brak achievementStats nie wywraca migracji", () => {
+	test("v6→koniec: brak achievementStats nie wywraca migracji", () => {
 		const result = migrateSave({ iskierki: 9 }, 6) as Record<string, unknown>
 		expect(result.achievementStats).toEqual({
 			daysPlayed: 0,
 			lastPlayedDay: "",
+			gapCorrect: 0,
 		})
+		expect(result.iskierki).toBe(9)
+	})
+
+	test("v9→v10: dopisuje gapCorrect do istniejących liczników, reszta zachowana", () => {
+		const v9 = {
+			iskierki: 11,
+			achievementStats: {
+				perfectRounds: 2,
+				divCorrect: 4,
+				totalStars: 30,
+				rainbowEggsHatched: 1,
+				wishEggsBought: 0,
+				daysPlayed: 3,
+				lastPlayedDay: "2026-7-1",
+			},
+		}
+		const result = migrateSave(v9, 9) as Record<string, unknown>
+		expect(result.achievementStats).toEqual({
+			perfectRounds: 2,
+			divCorrect: 4,
+			totalStars: 30,
+			rainbowEggsHatched: 1,
+			wishEggsBought: 0,
+			daysPlayed: 3,
+			lastPlayedDay: "2026-7-1",
+			gapCorrect: 0,
+		})
+		expect(result.iskierki).toBe(11)
+	})
+
+	test("v9→v10: brak achievementStats nie wywraca migracji", () => {
+		const result = migrateSave({ iskierki: 9 }, 9) as Record<string, unknown>
+		expect(result.achievementStats).toEqual({ gapCorrect: 0 })
 		expect(result.iskierki).toBe(9)
 	})
 

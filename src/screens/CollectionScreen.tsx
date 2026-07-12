@@ -3,7 +3,12 @@ import { BigButton } from "../components/BigButton"
 import { HelpTip } from "../components/HelpTip"
 import { CARD_THEME, RARITY_META } from "../components/rarity"
 import { RARITY_ORDER } from "../game/rewards"
-import { isDivisionOnly, MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
+import {
+	isDivisionOnly,
+	isGapOnly,
+	MONSTER_COUNT,
+	MONSTERS,
+} from "../monsters/catalog"
 import { loreFor } from "../monsters/lore"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { originOf } from "../monsters/world"
@@ -86,6 +91,7 @@ export function CollectionScreen() {
 						{dreamMonsterId !== null &&
 							!(dreamMonsterId in ownedMonsters) &&
 							!isDivisionOnly(dreamMonsterId) &&
+							!isGapOnly(dreamMonsterId) &&
 							" (wymarzony!)"}
 					</BigButton>
 					<HelpTip
@@ -125,6 +131,11 @@ export function CollectionScreen() {
 							{isDivisionOnly(monster.id) && (
 								<div className="absolute -left-1.5 -top-1.5 rounded-full bg-violet-500 px-2 py-0.5 text-sm font-extrabold text-white shadow">
 									÷
+								</div>
+							)}
+							{isGapOnly(monster.id) && (
+								<div className="absolute -left-1.5 -top-1.5 rounded-full bg-fuchsia-500 px-1.5 py-0.5 text-sm font-extrabold text-white shadow">
+									🧩
 								</div>
 							)}
 						</button>
@@ -171,6 +182,11 @@ export function CollectionScreen() {
 									{isDivisionOnly(selected.id) && (
 										<div className="absolute top-2 left-2 z-10 rounded-full bg-violet-500 px-2.5 py-1 text-sm font-extrabold text-white shadow">
 											➗
+										</div>
+									)}
+									{isGapOnly(selected.id) && (
+										<div className="absolute top-2 left-2 z-10 rounded-full bg-fuchsia-500 px-2.5 py-1 text-sm font-extrabold text-white shadow">
+											🧩
 										</div>
 									)}
 									<div className="relative flex justify-center">
@@ -289,6 +305,12 @@ export function CollectionScreen() {
 								{isDivisionOnly(selected.id) && (
 									<div className="rounded-full bg-violet-100 px-4 py-1 text-sm font-extrabold text-violet-600">
 										➗ Tylko za dzielenie
+									</div>
+								)}
+								{/* PROPOZYCJA — etykieta trybu luki do dopracowania */}
+								{isGapOnly(selected.id) && (
+									<div className="rounded-full bg-fuchsia-100 px-4 py-1 text-sm font-extrabold text-fuchsia-600">
+										🧩 Tylko za zgadywanie liczby
 									</div>
 								)}
 								{selected.id === dreamMonsterId ? (

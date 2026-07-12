@@ -63,6 +63,13 @@ export function DebugScreen() {
 				>
 					÷ dzielenie
 				</button>
+				<button
+					type="button"
+					className={`${btn} ${mode === "gap" ? "bg-grape text-white" : ""}`}
+					onClick={() => setMode("gap")}
+				>
+					? luka
+				</button>
 			</div>
 			<div className="mb-1 font-bold text-slate-500">
 				symuluj rundę (10 pytań, suma gwiazdek):

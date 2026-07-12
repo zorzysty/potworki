@@ -17,6 +17,7 @@ import { achievementProgress } from "./evaluate"
 const maxCounters: AchievementCounters = {
 	perfectRounds: 25,
 	divCorrect: 200,
+	gapCorrect: 50,
 	totalStars: 1500,
 	rainbowEggsHatched: 3,
 	wishEggsBought: 5,
@@ -54,8 +55,8 @@ const emptyCtx: AchievementCtx = {
 }
 
 describe("ACHIEVEMENTS catalog", () => {
-	test("jest dokładnie 44 osiągnięcia", () => {
-		expect(ACHIEVEMENTS.length).toBe(44)
+	test("jest dokładnie 46 osiągnięć", () => {
+		expect(ACHIEVEMENTS.length).toBe(46)
 	})
 
 	test("id są unikalne", () => {
@@ -111,6 +112,8 @@ describe("ACHIEVEMENTS catalog", () => {
 			"pierwsza-budowla",
 			"wioska-w-rozkwicie",
 			"wielki-budowniczy",
+			"pierwsza-luka",
+			"luka-50",
 		])
 	})
 
