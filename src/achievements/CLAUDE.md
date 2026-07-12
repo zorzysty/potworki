@@ -6,7 +6,7 @@ Deklaratywny katalog osiągnięć i ich ocena jako czyste funkcje — bez Reacta
 
 ## Ownership
 
-- `catalog.ts` — typy (`Difficulty` = easy/medium/hard/legendary, `AchievementDef`, `AchievementCtx`), `REWARD_BY_DIFFICULTY` (5/10/15/25), `MASTERY_GOAL`, tablica `ACHIEVEMENTS` (48 sztuk) z czystą funkcją `progress(ctx)` każdego osiągnięcia. Helper `ownedGuardians` czyta `REGIONS` z `monsters/world` (strażnicy krain), helper `buildingsAtLeast` czyta `BUILDINGS` z `game/village` (osiągnięcia budowniczego: `pierwsza-budowla`/`wioska-w-rozkwicie`/`wielki-budowniczy`, czysto z `save.village`) — importy bez cyklu
+- `catalog.ts` — typy (`Difficulty` = easy/medium/hard/legendary, `AchievementDef`, `AchievementCtx`), `REWARD_BY_DIFFICULTY` (5/10/15/25), `MASTERY_GOAL`, tablica `ACHIEVEMENTS` (53 sztuki) z czystą funkcją `progress(ctx)` każdego osiągnięcia. Helper `ownedGuardians` czyta `REGIONS` z `monsters/world` (strażnicy krain), helper `buildingsAtLeast` czyta `BUILDINGS` z `game/village` (osiągnięcia budowniczego: `pierwsza-budowla`/`wioska-w-rozkwicie`/`wielki-budowniczy`, czysto z `save.village`) — importy bez cyklu
 - `evaluate.ts` — `achievementProgress` (postęp pojedynczego: current/target/unlocked/ratio) i `evaluateAchievements(ctx, alreadyUnlocked)` (jedyne wejście store: nowo spełnione + suma iskierek)
 
 ## Local Contracts
@@ -25,4 +25,4 @@ Deklaratywny katalog osiągnięć i ich ocena jako czyste funkcje — bez Reacta
 
 ## Verification
 
-`bun test src/achievements/catalog.test.ts src/achievements/evaluate.test.ts` — pokrywa: dokładnie 48 osiągnięć, unikalność i zamrożoną listę `id`, poprawną trudność/teksty, `progress` na czystym zapisie (nic zdobyte, target>0) i na maksymalnym (wszystkie zdobyte — fixture ma też w pełni zbudowaną wioskę, ratio∈[0,1]); `evaluateAchievements` (pusto na czystym, 48 + 580 iskierek na maks, idempotencja względem `alreadyUnlocked`, częściowy postęp). Integracja ze store (liczniki, retroaktywne odblokowania) — w `src/store/store.test.ts`.
+`bun test src/achievements/catalog.test.ts src/achievements/evaluate.test.ts` — pokrywa: dokładnie 53 osiągnięcia, unikalność i zamrożoną listę `id`, poprawną trudność/teksty, `progress` na czystym zapisie (nic zdobyte, target>0) i na maksymalnym (wszystkie zdobyte — fixture ma też w pełni zbudowaną wioskę, ratio∈[0,1]); `evaluateAchievements` (pusto na czystym, 53 + 630 iskierek na maks, idempotencja względem `alreadyUnlocked`, częściowy postęp). Integracja ze store (liczniki, retroaktywne odblokowania) — w `src/store/store.test.ts`.

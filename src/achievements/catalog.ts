@@ -1,7 +1,9 @@
+import { COSMETICS_BY_ID } from "../game/cosmetics"
 import { ALL_FACTS, isMaxStage, STAGES } from "../game/facts"
-import { BUILDINGS, MAX_BUILDING_LEVEL } from "../game/village"
+import { BUILDINGS, DECORATIONS, MAX_BUILDING_LEVEL } from "../game/village"
 import {
 	DIVISION_ONLY_IDS,
+	GAP_ONLY_IDS,
 	IDS_BY_RARITY,
 	MONSTER_COUNT,
 } from "../monsters/catalog"
@@ -73,6 +75,33 @@ function masteredForFactor(save: SaveState, n: number): number {
 	).length
 }
 
+// Potworki tylko-luka (Dolina Zagadek) — lustro ownedDivisionOnly.
+function ownedGapOnly(save: SaveState): number {
+	let n = 0
+	for (const id of GAP_ONLY_IDS) if (id in save.ownedMonsters) n++
+	return n
+}
+
+// Najliczniej ubrany potworek (wpisy filtrowane do katalogu — wycofane
+// przedmioty nie liczą się, spójnie z equippedFor).
+function maxEquippedSlots(save: SaveState): number {
+	let best = 0
+	for (const slots of Object.values(save.cosmetics.equipped)) {
+		const n = Object.values(slots ?? {}).filter(
+			(id) => id !== undefined && COSMETICS_BY_ID.has(id),
+		).length
+		if (n > best) best = n
+	}
+	return best
+}
+
+// Kupione dekoracje wioski (filtr do katalogu — odporność na osierocone id).
+function ownedDecorations(save: SaveState): number {
+	return save.village.decorations.filter((id) =>
+		DECORATIONS.some((d) => d.id === id),
+	).length
+}
+
 function ownedDivisionOnly(save: SaveState): number {
 	let n = 0
 	for (const id of DIVISION_ONLY_IDS) if (id in save.ownedMonsters) n++
@@ -92,7 +121,7 @@ function ownedGuardians(save: SaveState): number {
 
 const MAX_STAGE = STAGES.length - 1
 
-// 48 osiągnięć. Tytuły/opisy są robocze (do dopracowania); id są stabilne.
+// 53 osiągnięcia. Tytuły/opisy są robocze (do dopracowania); id są stabilne.
 // Trudność (easy/medium/hard/legendary → 5/10/15/25 iskierek) jest per-wpis w polu
 // `difficulty`; kolejność tablicy = tripwire persystencji, nie grupowanie wg trudności.
 export const ACHIEVEMENTS: readonly AchievementDef[] = [
@@ -556,6 +585,58 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		progress: ({ counters }) => ({
 			current: counters.expeditionsCompleted,
 			target: 10,
+		}),
+	},
+	{
+		id: "pierwszy-stroj",
+		title: "Pierwszy strój",
+		description: "Kup swój pierwszy przedmiot w Sklepiku.",
+		icon: "🎩",
+		difficulty: "easy",
+		progress: ({ save }) => ({
+			current: Math.min(1, save.cosmetics.owned.length),
+			target: 1,
+		}),
+	},
+	{
+		id: "wystrojony-potworek",
+		title: "Wystrojony potworek",
+		description: "Załóż jednemu potworkowi dwie rzeczy naraz.",
+		icon: "🎀",
+		difficulty: "medium",
+		progress: ({ save }) => ({ current: maxEquippedSlots(save), target: 2 }),
+	},
+	{
+		id: "dekorator",
+		title: "Dekorator wioski",
+		description: "Kup wszystkie dekoracje do wioski.",
+		icon: "⛲",
+		difficulty: "medium",
+		progress: ({ save }) => ({
+			current: ownedDecorations(save),
+			target: DECORATIONS.length,
+		}),
+	},
+	{
+		id: "mistrzowie-doliny",
+		title: "Mistrzowie Doliny",
+		description: "Zdobądź wszystkie potworki z Doliny Zagadek.",
+		icon: "🧩",
+		difficulty: "hard",
+		progress: ({ save }) => ({
+			current: ownedGapOnly(save),
+			target: GAP_ONLY_IDS.size,
+		}),
+	},
+	{
+		id: "gosc-straznika",
+		title: "Gość Strażnika",
+		description: "Ukończ 5 rund-odwiedzin u Strażnika.",
+		icon: "🏰",
+		difficulty: "medium",
+		progress: ({ counters }) => ({
+			current: counters.visitRoundsCompleted,
+			target: 5,
 		}),
 	},
 ]

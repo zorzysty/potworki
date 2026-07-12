@@ -45,6 +45,7 @@ describe("migrateSave", () => {
 			lastPlayedDay: "",
 			gapCorrect: 0,
 			expeditionsCompleted: 0,
+			visitRoundsCompleted: 0,
 		})
 		// v7→v8: companionId startuje null (brak przyjaciela)
 		expect(result.companionId).toBeNull()
@@ -94,6 +95,7 @@ describe("migrateSave", () => {
 			lastPlayedDay: "",
 			gapCorrect: 0,
 			expeditionsCompleted: 0,
+			visitRoundsCompleted: 0,
 		})
 		expect(result.companionId).toBeNull()
 		expect(result.iskierki).toBe(4)
@@ -122,6 +124,7 @@ describe("migrateSave", () => {
 			lastPlayedDay: "",
 			gapCorrect: 0,
 			expeditionsCompleted: 0,
+			visitRoundsCompleted: 0,
 		})
 		expect(result.iskierki).toBe(3)
 	})
@@ -133,6 +136,7 @@ describe("migrateSave", () => {
 			lastPlayedDay: "",
 			gapCorrect: 0,
 			expeditionsCompleted: 0,
+			visitRoundsCompleted: 0,
 		})
 		expect(result.iskierki).toBe(9)
 	})
@@ -161,6 +165,7 @@ describe("migrateSave", () => {
 			lastPlayedDay: "2026-7-1",
 			gapCorrect: 0,
 			expeditionsCompleted: 0,
+			visitRoundsCompleted: 0,
 		})
 		expect(result.iskierki).toBe(11)
 	})
@@ -170,6 +175,7 @@ describe("migrateSave", () => {
 		expect(result.achievementStats).toEqual({
 			gapCorrect: 0,
 			expeditionsCompleted: 0,
+			visitRoundsCompleted: 0,
 		})
 		expect(result.iskierki).toBe(9)
 	})
@@ -210,6 +216,7 @@ describe("migrateSave", () => {
 			lastPlayedDay: "2026-7-1",
 			gapCorrect: 6,
 			expeditionsCompleted: 0,
+			visitRoundsCompleted: 0,
 		})
 		expect(result.iskierki).toBe(55)
 		expect(result.companionId).toBe(2)
@@ -218,7 +225,10 @@ describe("migrateSave", () => {
 	test("v11→v12: brak achievementStats nie wywraca migracji", () => {
 		const result = migrateSave({ iskierki: 9 }, 11) as Record<string, unknown>
 		expect(result.expedition).toBeNull()
-		expect(result.achievementStats).toEqual({ expeditionsCompleted: 0 })
+		expect(result.achievementStats).toEqual({
+			expeditionsCompleted: 0,
+			visitRoundsCompleted: 0,
+		})
 		expect(result.iskierki).toBe(9)
 	})
 
@@ -281,6 +291,21 @@ describe("migrateSave", () => {
 	test("v3→v4: brak pendingEggs nie wywraca migracji", () => {
 		const result = migrateSave({ iskierki: 3 }, 3) as Record<string, unknown>
 		expect(result.iskierki).toBe(3)
+	})
+
+	test("v13→v14: dopisuje visitRoundsCompleted do istniejących liczników", () => {
+		const v13 = {
+			iskierki: 4,
+			achievementStats: { perfectRounds: 2, expeditionsCompleted: 1 },
+		}
+		const result = migrateSave(v13, 13) as {
+			iskierki: number
+			achievementStats: Record<string, number>
+		}
+		expect(result.achievementStats.visitRoundsCompleted).toBe(0)
+		expect(result.achievementStats.perfectRounds).toBe(2)
+		expect(result.achievementStats.expeditionsCompleted).toBe(1)
+		expect(result.iskierki).toBe(4)
 	})
 
 	test("v12→v13: wycofana aura-iskier — zwrot 60✨, wpisy garderoby czyszczone", () => {

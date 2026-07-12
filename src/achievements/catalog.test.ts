@@ -1,7 +1,7 @@
 /// <reference types="bun-types" />
 import { describe, expect, test } from "bun:test"
 import { ALL_FACTS, STAGES } from "../game/facts"
-import { BUILDINGS, MAX_BUILDING_LEVEL } from "../game/village"
+import { BUILDINGS, DECORATIONS, MAX_BUILDING_LEVEL } from "../game/village"
 import { MONSTER_COUNT } from "../monsters/catalog"
 import type { AchievementCounters, SaveState } from "../store/schema"
 import { INITIAL_SAVE } from "../store/schema"
@@ -24,6 +24,7 @@ const maxCounters: AchievementCounters = {
 	daysPlayed: 21,
 	lastPlayedDay: "2026-1-1",
 	expeditionsCompleted: 10,
+	visitRoundsCompleted: 5,
 }
 const maxSave: SaveState = {
 	...INITIAL_SAVE,
@@ -41,11 +42,15 @@ const maxSave: SaveState = {
 	totalRounds: 100,
 	iskierki: 1000,
 	achievementStats: maxCounters,
+	cosmetics: {
+		owned: ["kokarda", "aura-teczy"],
+		equipped: { 0: { hat: "kokarda", aura: "aura-teczy" } },
+	},
 	village: {
 		buildings: Object.fromEntries(
 			BUILDINGS.map((b) => [b.id, MAX_BUILDING_LEVEL]),
 		),
-		decorations: [],
+		decorations: DECORATIONS.map((d) => d.id),
 		goalId: null,
 	},
 }
@@ -56,8 +61,8 @@ const emptyCtx: AchievementCtx = {
 }
 
 describe("ACHIEVEMENTS catalog", () => {
-	test("jest dokładnie 48 osiągnięć", () => {
-		expect(ACHIEVEMENTS.length).toBe(48)
+	test("jest dokładnie 53 osiągnięcia", () => {
+		expect(ACHIEVEMENTS.length).toBe(53)
 	})
 
 	test("id są unikalne", () => {
@@ -117,6 +122,11 @@ describe("ACHIEVEMENTS catalog", () => {
 			"luka-50",
 			"pierwsza-wyprawa",
 			"obiezyswiat",
+			"pierwszy-stroj",
+			"wystrojony-potworek",
+			"dekorator",
+			"mistrzowie-doliny",
+			"gosc-straznika",
 		])
 	})
 

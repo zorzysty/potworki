@@ -7,7 +7,7 @@ import { ISKIERKI_CAP, type PendingEgg } from "../game/rewards"
 import type { VillageState } from "../game/village"
 import { INITIAL_VILLAGE } from "../game/village"
 
-export const SAVE_VERSION = 13
+export const SAVE_VERSION = 14
 
 // Wpis ledgera osiągnięć. `seen` jak celebratedStage: false → badge „nowe!" na Home,
 // czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen).
@@ -33,6 +33,9 @@ export interface AchievementCounters {
 	// ukończone wyprawy potworków — `expedition` czyści się przy powrocie, więc
 	// „ile wypraw ukończono" nie jest odtwarzalne z reszty zapisu (wzór wishEggsBought)
 	expeditionsCompleted: number
+	// ukończone rundy-odwiedziny u Strażnika (016) — runda-wizyta nie zostawia
+	// śladu w zapisie po finalizacji, więc licznik (wzór expeditionsCompleted)
+	visitRoundsCompleted: number
 }
 
 export interface SaveState {
@@ -81,6 +84,7 @@ export const INITIAL_SAVE: SaveState = {
 		daysPlayed: 0,
 		lastPlayedDay: "",
 		expeditionsCompleted: 0,
+		visitRoundsCompleted: 0,
 	},
 	village: INITIAL_VILLAGE,
 	cosmetics: INITIAL_COSMETICS,
@@ -245,6 +249,19 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 				owned: owned.filter((id) => id !== "aura-iskier"),
 				equipped,
 			},
+		}
+	},
+	// v13→v14: licznik rund-odwiedzin u Strażnika (osiągnięcie „gość Strażnika") —
+	// wizyt nie da się odtworzyć wstecz, start od zera (wzorzec v6→v7/daysPlayed).
+	13: (state) => {
+		const s = state as Record<string, unknown>
+		const stats =
+			s.achievementStats && typeof s.achievementStats === "object"
+				? (s.achievementStats as Record<string, unknown>)
+				: {}
+		return {
+			...s,
+			achievementStats: { ...stats, visitRoundsCompleted: 0 },
 		}
 	},
 }

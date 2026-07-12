@@ -1253,6 +1253,21 @@ describe("odwiedziny u Strażnika (startVisitRound)", () => {
 		}
 	}
 
+	test("visitRoundsCompleted: rośnie po rundzie-wizycie, nie po zwykłej", () => {
+		suppressAchievements()
+		seedDecayedFacts()
+		expect(game().achievementStats.visitRoundsCompleted).toBe(0)
+		playVisitRoundClean()
+		expect(game().achievementStats.visitRoundsCompleted).toBe(1)
+		// zwykła runda nie liczy się jako wizyta
+		game().startRound()
+		for (let i = 0; i < 10; i++) {
+			answer(true)
+			game().nextQuestion()
+		}
+		expect(game().achievementStats.visitRoundsCompleted).toBe(1)
+	})
+
 	test("startVisitRound: visitStage = najsłabszy etap, plan 10 kluczy, pierwsze pytanie z planu, introFactor null", () => {
 		seedDecayedFacts()
 		game().startVisitRound()

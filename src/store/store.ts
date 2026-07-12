@@ -652,6 +652,11 @@ export const useGame = create<GameState>()(
 							expeditionsCompleted:
 								state.achievementStats.expeditionsCompleted +
 								(settled.expeditionReturn !== null ? 1 : 0),
+							// rundy-wizyty liczą się tylko na realnej ścieżce finalizacji
+							// (debugFinishRound świadomie pomija — jak bonus wizyty)
+							visitRoundsCompleted:
+								state.achievementStats.visitRoundsCompleted +
+								(round.visitStage !== null ? 1 : 0),
 						},
 						now,
 					)
@@ -1079,6 +1084,11 @@ export const useGame = create<GameState>()(
 							expeditionsCompleted:
 								state.achievementStats.expeditionsCompleted +
 								(settled.expeditionReturn !== null ? 1 : 0),
+							// rundy-wizyty liczą się tylko na realnej ścieżce finalizacji
+							// (debugFinishRound świadomie pomija — jak bonus wizyty)
+							visitRoundsCompleted:
+								state.achievementStats.visitRoundsCompleted +
+								(round.visitStage !== null ? 1 : 0),
 						},
 						Date.now(),
 					),
