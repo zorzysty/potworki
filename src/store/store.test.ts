@@ -786,6 +786,21 @@ describe("przyjaciel", () => {
 })
 
 // ---------------------------------------------------------------------------
+// Splash otwarcia bramy: markGatesCelebrated (jedyny writer celebratedStage)
+// ---------------------------------------------------------------------------
+
+describe("markGatesCelebrated", () => {
+	test("dogania celebratedStage do unlockedStage", () => {
+		useGame.setState({ unlockedStage: 2, celebratedStage: 0 })
+		game().markGatesCelebrated()
+		expect(game().celebratedStage).toBe(2)
+		// idempotentne
+		game().markGatesCelebrated()
+		expect(game().celebratedStage).toBe(2)
+	})
+})
+
+// ---------------------------------------------------------------------------
 // Osiągnięcia
 // ---------------------------------------------------------------------------
 
@@ -1465,6 +1480,38 @@ describe("wyprawy potworków", () => {
 		playCleanRound() // żołd 3 + nagroda 4 → i tak 999
 		expect(game().round?.expeditionReturn).not.toBeNull()
 		expect(game().iskierki).toBe(999)
+	})
+
+	// Kanoniczny test „cały dochód końca rundy dzieli JEDEN cap": każde nowe
+	// źródło dochodu w finalizacji (czwarty składnik Math.min) ma tu dojść.
+	test("finalizacja: żołd + bonus Strażnika + nagroda wyprawy w jednej rundzie respektują wspólny cap (998 → 999)", () => {
+		suppressAchievements()
+		ownSome()
+		game().sendExpedition(0, "zwiad")
+		playCleanRound() // runda 1 — zwiad jeszcze w drodze
+		playCleanRound() // runda 2 — zwiad jeszcze w drodze
+		// stare tabliczki podupadły → visitStage != null (lokalna kopia
+		// seedDecayedFacts z sekcji „odwiedziny u Strażnika")
+		const facts: Partial<Record<FactKey, FactStats>> = {}
+		for (const f of stageFacts(0))
+			facts[f.key] = { ...emptyStats(), attempts: 1, mastery: 0.2 }
+		for (const f of stageFacts(1))
+			facts[f.key] = { ...emptyStats(), attempts: 1, mastery: 0.4 }
+		useGame.setState({ facts, unlockedStage: 2, iskierki: 998 })
+		// runda 3: wizyta u Strażnika + rozstrzygnięcie zwiadu w JEDNEJ finalizacji
+		game().startVisitRound()
+		for (let i = 0; i < 10; i++) {
+			answer(true)
+			game().nextQuestion()
+		}
+		const s = game()
+		// wszystkie trzy źródła weszły do JEDNEGO Math.min:
+		expect(s.round?.visitStage).not.toBeNull()
+		expect(s.round?.expeditionReturn).not.toBeNull()
+		expect(s.expedition).toBeNull()
+		expect(s.iskierki).toBe(999)
+		// żołd zostaje czystym żołdem mimo dwóch dodatkowych źródeł
+		expect(s.round?.wageEarned).toBeGreaterThan(0)
 	})
 
 	test("debugFinishRound rozstrzyga powrót tak samo jak prawdziwa finalizacja", () => {
