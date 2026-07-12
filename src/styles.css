@@ -267,6 +267,41 @@ body {
 	}
 }
 
+/* Tęczowa Rama (kosmetyka planu 014, slot "frame"): Tailwind nie umie
+   gradientować border-color, więc padding-box trick — biały gradient wypełnia
+   wnętrze (padding-box), tęczowy maluje pas ramki (border-box); element trzyma
+   border-transparent. Kafelek tęczy (240px, pierwszy kolor == ostatni) przesuwa
+   się o pełny okres → pętla bez szwu. Celowo NIE anim-rainbow: hue-rotate to
+   filtr na całym elemencie, przebarwiałby potworka i tekst karty. */
+.frame-teczowa {
+	border-color: transparent;
+	background:
+		linear-gradient(#fff, #fff) padding-box,
+		linear-gradient(
+			90deg,
+			#f87171,
+			#fbbf24,
+			#4ade80,
+			#38bdf8,
+			#a78bfa,
+			#f472b6,
+			#f87171
+		)
+		border-box;
+	background-size:
+		auto,
+		240px 100%;
+	animation: frame-rainbow-slide 6s linear infinite;
+}
+
+@keyframes frame-rainbow-slide {
+	to {
+		background-position:
+			0 0,
+			240px 0;
+	}
+}
+
 .anim-bounce-slow {
 	animation: bounce-slow 1.8s ease-in-out infinite;
 }

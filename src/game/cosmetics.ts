@@ -11,7 +11,7 @@ import { buildingLevel } from "./village"
 // Czysty moduł: bez losowości, zegara i DOM. Jednokierunkowy import
 // z village.ts (buildingLevel) — bez cyklu.
 
-export type CosmeticSlot = "hat" | "aura" // "frame" zarezerwowane dla planu 014
+export type CosmeticSlot = "hat" | "aura" | "frame"
 export type CosmeticId = string // stabilne kebab-case id, NIGDY nie zmieniać
 
 export interface CosmeticDef {
@@ -20,6 +20,12 @@ export interface CosmeticDef {
 	slot: CosmeticSlot
 	tier: 1 | 2 | 3 // dostępny gdy poziom sklepiku >= tier
 	cost: number
+	// Pola ramek (slot "frame", plan 014) — oprawa karty kolekcjonerskiej:
+	// cardClasses podstawia się za CARD_THEME[rarity].card na kontenerze modala
+	// (rzadkość zostaje czytelna: wstążka RARITY_META.badge i kafle siatki
+	// nietknięte), cornerEmoji to opcjonalne emoji w GÓRNYCH rogach okna z artem.
+	cardClasses?: string
+	cornerEmoji?: string
 }
 
 // Katalog startowy: 12 przedmiotów = 346✨ (tiery 31 + 105 + 210).
@@ -80,6 +86,56 @@ export const COSMETICS: readonly CosmeticDef[] = [
 	},
 	{ id: "aura-teczy", name: "Aura tęczy", slot: "aura", tier: 3, cost: 55 },
 	{ id: "aura-iskier", name: "Aura iskier", slot: "aura", tier: 3, cost: 60 },
+	// Ramki kart kolekcjonerskich (plan 014): oprawa modala posiadanego
+	// potworka, kupowana raz, zakładana per potworek (slot "frame").
+	// PROPOZYCJE do dopracowania (nazwy); id zamrożone (persystowane w zapisie).
+	// Razem 140✨ → suma katalogu 486✨ (testowany przedział [430, 580]).
+	{
+		id: "rama-kwiatki",
+		name: "Ramka w Kwiatki",
+		slot: "frame",
+		tier: 1,
+		cost: 15,
+		cardClasses: "border-rose-300",
+		cornerEmoji: "🌸",
+	},
+	{
+		id: "rama-serduszka",
+		name: "Ramka z Serduszek",
+		slot: "frame",
+		tier: 1,
+		cost: 20,
+		cardClasses: "border-pink-400",
+		cornerEmoji: "💖",
+	},
+	{
+		// złota oprawa = legendarny szyk (anim-glow) dla KAŻDEGO ulubieńca
+		id: "rama-zlota",
+		name: "Złota Rama",
+		slot: "frame",
+		tier: 1,
+		cost: 25,
+		cardClasses: "anim-glow border-amber-400",
+	},
+	{
+		id: "rama-gwiezdna",
+		name: "Gwiezdna Rama",
+		slot: "frame",
+		tier: 2,
+		cost: 30,
+		cardClasses: "border-indigo-400",
+		cornerEmoji: "✨",
+	},
+	{
+		// tęczowy gradient krawędzi: klasa .frame-teczowa w styles.css
+		// (padding-box trick — Tailwind nie umie gradientować border-color)
+		id: "rama-teczowa",
+		name: "Tęczowa Rama",
+		slot: "frame",
+		tier: 3,
+		cost: 50,
+		cardClasses: "frame-teczowa border-transparent",
+	},
 ]
 
 export const COSMETICS_BY_ID: ReadonlyMap<CosmeticId, CosmeticDef> = new Map(

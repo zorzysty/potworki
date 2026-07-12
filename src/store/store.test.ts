@@ -1169,6 +1169,27 @@ describe("sklepik — kosmetyka", () => {
 		expect(game().cosmetics.equipped[FIRST_MONSTER_ID]?.hat).toBeUndefined()
 	})
 
+	test("equipCosmetic: ramka (slot frame, plan 014) per potworek; null zdejmuje; A nie rusza B", () => {
+		suppressAchievements()
+		const frame = COSMETICS.find(
+			(c) => c.slot === "frame",
+		) as (typeof COSMETICS)[number]
+		const monsterB = FIRST_MONSTER_ID + 1
+		useGame.setState({
+			ownedMonsters: {
+				[FIRST_MONSTER_ID]: { hatchedAt: 1 },
+				[monsterB]: { hatchedAt: 2 },
+			},
+			cosmetics: { owned: [frame.id], equipped: {} },
+		})
+		game().equipCosmetic(FIRST_MONSTER_ID, "frame", frame.id)
+		expect(game().cosmetics.equipped[FIRST_MONSTER_ID]?.frame).toBe(frame.id)
+		// założenie na A nie dotyka B (ramka jest per potworek)
+		expect(game().cosmetics.equipped[monsterB]?.frame).toBeUndefined()
+		game().equipCosmetic(FIRST_MONSTER_ID, "frame", null)
+		expect(game().cosmetics.equipped[FIRST_MONSTER_ID]?.frame).toBeUndefined()
+	})
+
 	test("equipCosmetic: NIEKUPIONY przedmiot / NIEPOSIADANY potworek / zły slot → no-op", () => {
 		suppressAchievements()
 		useGame.setState({

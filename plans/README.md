@@ -15,7 +15,7 @@ when a change alters a contract.
 |------|-------|----------|--------|------------|--------|
 | 012  | Wioska Budowniczych — budynki i dekoracje za iskierki (Heroes 3) | P1 | L | — | DONE — branch `feat/012-wioska-budowanie` (217 tests) |
 | 013  | Sklepik — kosmetyka per-potworek (kapelusze/aury przez sloty MonsterStage) | P2 | L | 012 | DONE — branch `feat/012-wioska-budowanie` (276 tests; SAVE_VERSION 10→11, 7. budynek sklepik, katalog 12 kosmetyk, garderoba) |
-| 014  | Ramki kart kolekcjonerskich (przedmioty sklepiku, slot "frame") | P3 | S | 013 | TODO |
+| 014  | Ramki kart kolekcjonerskich (przedmioty sklepiku, slot "frame") | P3 | S | 013 | DONE — branch `feat/012-wioska-budowanie` (279 tests; katalog 12→17, slot "frame", ramka na kontenerze modala karty, zero zmian zapisu) |
 | 015  | Tryb „brakujący czynnik" (`7 × _ = 42`) — trzeci widok tych samych faktów | P2 | L (M bez fazy C) | — | DONE — branch `feat/012-wioska-budowanie` (254 tests; fazy A+B+C w całości, SAVE_VERSION 9→10, potworki 76–79, osiągnięcia 44→46) |
 | 016  | Odwiedziny Strażnika — fabularne rundy powtórkowe przy `needsMaintenance` | P2 | S–M | — | DONE — branch `feat/012-wioska-budowanie` (231 tests) |
 | 017  | Wyprawy potworków — postęp w RUNDACH (nigdy zegar), nagrody ✨ | P3 | M | — | TODO |

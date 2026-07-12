@@ -5,7 +5,12 @@ import { HelpTip } from "../components/HelpTip"
 import { MonsterStage } from "../components/MonsterStage"
 import { CARD_THEME, RARITY_META } from "../components/rarity"
 import type { CosmeticSlot } from "../game/cosmetics"
-import { COSMETICS, equippedFor, isOwned } from "../game/cosmetics"
+import {
+	COSMETICS,
+	COSMETICS_BY_ID,
+	equippedFor,
+	isOwned,
+} from "../game/cosmetics"
 import { RARITY_ORDER } from "../game/rewards"
 import {
 	isDivisionOnly,
@@ -42,6 +47,10 @@ function WardrobeSection({ monsterId }: { monsterId: number }) {
 		{ slot: "hat", label: "Kapelusze" },
 		{ slot: "aura", label: "Aury" },
 	]
+	// Ramki (slot "frame", plan 014) mają własny rządek pod spodem: chip
+	// „Bez ramki" przywraca oprawę rzadkości, chipy noszą nazwę widocznym
+	// tekstem (swatch pokazuje tylko kolor krawędzi).
+	const ownedFrames = ownedItems.filter((c) => c.slot === "frame")
 	return (
 		<div className="w-full rounded-2xl bg-violet-50">
 			<button
@@ -100,6 +109,45 @@ function WardrobeSection({ monsterId }: { monsterId: number }) {
 								</div>
 							)
 						})}
+						{ownedFrames.length > 0 && (
+							<div>
+								{/* PROPOZYCJA do dopracowania — etykieta rządka ramek */}
+								<div className="mb-1 text-xs font-extrabold uppercase tracking-wide text-slate-400">
+									Ramka
+								</div>
+								<div className="flex gap-2 overflow-x-auto pb-1">
+									{/* PROPOZYCJA do dopracowania — „Bez ramki" = oprawa rzadkości */}
+									<button
+										type="button"
+										onClick={() => equipCosmetic(monsterId, "frame", null)}
+										className={`flex h-16 shrink-0 touch-manipulation items-center gap-1.5 rounded-2xl bg-white px-3 text-sm font-extrabold text-slate-500 active:scale-95 ${
+											eq.frame === undefined ? "ring-4 ring-amber-300" : ""
+										}`}
+									>
+										{eq.frame === undefined && <span>✓</span>}
+										<span>Bez ramki</span>
+									</button>
+									{ownedFrames.map((item) => (
+										<button
+											key={item.id}
+											type="button"
+											onClick={() => equipCosmetic(monsterId, "frame", item.id)}
+											className={`flex h-16 shrink-0 touch-manipulation items-center gap-2 rounded-2xl bg-white px-3 active:scale-95 ${
+												eq.frame === item.id ? "ring-4 ring-amber-300" : ""
+											}`}
+										>
+											<span
+												className={`h-8 w-8 shrink-0 rounded-lg border-4 bg-white ${item.cardClasses ?? ""}`}
+											/>
+											<span className="whitespace-nowrap text-sm font-extrabold text-slate-600">
+												{eq.frame === item.id && "✓ "}
+												{item.name}
+											</span>
+										</button>
+									))}
+								</div>
+							</div>
+						)}
 					</div>
 				))}
 		</div>
@@ -135,6 +183,20 @@ export function CollectionScreen() {
 			: true)
 	// Oprawa karty wg rzadkości (ramka/blask całego modala, gradient okna z artem itd.)
 	const cardTheme = selected ? CARD_THEME[selected.rarity] : CARD_THEME.common
+	// Założona ramka (kosmetyka planu 014, slot "frame") podmienia SAMĄ ramkę
+	// modala (cardClasses za cardTheme.card); rzadkość zostaje czytelna przez
+	// wstążkę RARITY_META.badge i nietknięte kafle siatki. Bez ramki wygląd
+	// identyczny jak dotąd. Uwaga: seam to kontener karty, NIE prop `frame`
+	// MonsterStage (okno z artem to tylko jedna strefa karty) — ewentualny
+	// przyszły refactor modala przez MonsterStage ma zachować ramkę karty.
+	const cosmetics = useGame((s) => s.cosmetics)
+	const equippedFrameId = selected
+		? equippedFor(cosmetics, selected.id).frame
+		: undefined
+	const frameDef =
+		selectedOwned && equippedFrameId !== undefined
+			? COSMETICS_BY_ID.get(equippedFrameId)
+			: undefined
 
 	return (
 		<div className="flex min-h-[var(--app-vh)] flex-col gap-4 p-4">
@@ -232,7 +294,7 @@ export function CollectionScreen() {
 					onClick={() => setSelectedId(null)}
 				>
 					<div
-						className={`anim-pop flex max-h-[88vh] w-full max-w-sm flex-col items-center gap-3 overflow-y-auto rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${cardTheme.card}`}
+						className={`anim-pop flex max-h-[88vh] w-full max-w-sm flex-col items-center gap-3 overflow-y-auto rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${frameDef?.cardClasses ?? cardTheme.card}`}
 						onClick={(e) => e.stopPropagation()}
 					>
 						{selectedOwned ? (
@@ -257,6 +319,22 @@ export function CollectionScreen() {
 											<div className="anim-sparkle pointer-events-none absolute right-2 bottom-2 text-xl">
 												✨
 											</div>
+										</>
+									)}
+									{/* rogi założonej ramki — kotwiczone w OKNIE Z ARTEM (jego
+									    własny relative), NIE w kontenerze modala: kontener jest
+									    elementem przewijania (overflow-y-auto), więc rogi
+									    zakotwiczone w nim pływałyby nad opisem; tu odjeżdżają
+									    ze scrollem jak zwykła treść. Bez z-index — wstążka
+									    rzadkości (z-10) zawsze zostaje na wierzchu. */}
+									{frameDef?.cornerEmoji && (
+										<>
+											<span className="pointer-events-none absolute left-1 top-1 text-2xl">
+												{frameDef.cornerEmoji}
+											</span>
+											<span className="pointer-events-none absolute right-1 top-1 text-2xl">
+												{frameDef.cornerEmoji}
+											</span>
 										</>
 									)}
 									{/* wstążka rzadkości */}

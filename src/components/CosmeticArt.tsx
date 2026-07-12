@@ -22,6 +22,35 @@ function EmojiGlyph({ e }: { e: string }) {
 	)
 }
 
+// Miniatura ramki karty (slot "frame", plan 014): pusta ramka w kolorze
+// krawędzi + maleńkie emoji rogów — zapowiada oprawę modala, nie kapelusz.
+function FrameGlyph({ color, e }: { color: string; e?: string }) {
+	return (
+		<g>
+			<rect
+				x={7}
+				y={7}
+				width={34}
+				height={34}
+				rx={9}
+				fill="#fff"
+				stroke={color}
+				strokeWidth={6}
+			/>
+			{e && (
+				<>
+					<text x={11} y={16} textAnchor="middle" fontSize={11}>
+						{e}
+					</text>
+					<text x={37} y={16} textAnchor="middle" fontSize={11}>
+						{e}
+					</text>
+				</>
+			)}
+		</g>
+	)
+}
+
 // Jeden glif = jedna scenka 48×48. Wektory tam, gdzie emoji nie istnieje
 // (czapka z pomponem, wianek, kapelusz czarodzieja, korona lodowa…).
 function Glyph({ id }: { id: CosmeticId }) {
@@ -129,6 +158,38 @@ function Glyph({ id }: { id: CosmeticId }) {
 						<circle cx={38} cy={17} r={2.4} />
 					</g>
 					<circle cx={24} cy={33} r={2.6} fill="#7dd3fc" strokeWidth={1.2} />
+				</g>
+			)
+		case "rama-kwiatki":
+			return <FrameGlyph color="#fda4af" e="🌸" />
+		case "rama-serduszka":
+			return <FrameGlyph color="#f472b6" e="💖" />
+		case "rama-zlota":
+			return <FrameGlyph color="#fbbf24" e="✦" />
+		case "rama-gwiezdna":
+			return <FrameGlyph color="#818cf8" e="✨" />
+		case "rama-teczowa":
+			return (
+				<g>
+					<defs>
+						<linearGradient id="rama-teczowa-grad" x1="0" y1="0" x2="1" y2="1">
+							<stop offset="0%" stopColor="#f87171" />
+							<stop offset="30%" stopColor="#fbbf24" />
+							<stop offset="55%" stopColor="#4ade80" />
+							<stop offset="80%" stopColor="#38bdf8" />
+							<stop offset="100%" stopColor="#a78bfa" />
+						</linearGradient>
+					</defs>
+					<rect
+						x={7}
+						y={7}
+						width={34}
+						height={34}
+						rx={9}
+						fill="#fff"
+						stroke="url(#rama-teczowa-grad)"
+						strokeWidth={6}
+					/>
 				</g>
 			)
 		case "aura-serduszek":
@@ -245,6 +306,8 @@ function AuraFx({ id }: { id: CosmeticId }) {
 // Założone rzeczy potworka (kapelusz na głowie + aura wokół) — do slotu
 // `overlay` MonsterStage. Callerzy komponują ją FRAGMENTEM z nakładką reakcji:
 // overlay={<><EquippedOverlay …/>{reakcja}</>}. Brak wpisów → null (zero DOM).
+// Ramka (slot "frame") celowo NIE tutaj: renderuje ją kontener karty
+// kolekcjonerskiej w CollectionScreen (cardClasses), nie nakładka na potworku.
 export function EquippedOverlay({ monsterId }: { monsterId: number }) {
 	const cosmetics = useGame((s) => s.cosmetics)
 	const eq = equippedFor(cosmetics, monsterId)
