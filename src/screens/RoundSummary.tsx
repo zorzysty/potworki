@@ -4,6 +4,7 @@ import { GateReveal } from "../components/gate"
 import { StarMeter } from "../components/StarMeter"
 import { useGateReveal } from "../components/useGateReveal"
 import { fragmentsForEgg } from "../game/facts"
+import { currentGoal } from "../game/village"
 import { useGame } from "../store/store"
 
 export function RoundSummary() {
@@ -11,6 +12,8 @@ export function RoundSummary() {
 	const pendingEggs = useGame((s) => s.pendingEggs)
 	const eggFragments = useGame((s) => s.eggFragments)
 	const eggsEarned = useGame((s) => s.eggsEarned)
+	const village = useGame((s) => s.village)
+	const iskierki = useGame((s) => s.iskierki)
 	const goTo = useGame((s) => s.goTo)
 	const startRound = useGame((s) => s.startRound)
 
@@ -30,6 +33,9 @@ export function RoundSummary() {
 		lastCreatedIndex !== undefined
 			? (pendingEggs[lastCreatedIndex] ?? null)
 			: null
+	// żołd + postęp do celu budowy: podsumowanie to moment decyzji „jeszcze jedna
+	// runda?" — dziecko widzi, że TA runda przybliżyła cel (iskierki są już po żołdzie)
+	const goal = currentGoal(village)
 
 	return (
 		<div className="flex min-h-dvh flex-col items-center justify-center gap-5 p-6">
@@ -43,6 +49,42 @@ export function RoundSummary() {
 				</div>
 				<StarMeter stars={round.stars} />
 			</div>
+
+			{round.wageEarned > 0 && (
+				<button
+					type="button"
+					onClick={() => goTo("village")}
+					className="anim-fade-up flex w-full max-w-sm touch-manipulation items-center gap-2 rounded-3xl bg-white/90 px-4 py-2.5 shadow-md active:scale-[0.98]"
+				>
+					<span className="whitespace-nowrap text-lg font-extrabold text-amber-500">
+						+{round.wageEarned} ✨
+					</span>
+					{goal ? (
+						<>
+							<span className="text-slate-300">→</span>
+							<span className="truncate text-sm font-extrabold text-grape-dark">
+								{goal.name}
+								{village.goalId !== null && village.goalId === goal.id && " ⭐"}
+							</span>
+							<span className="h-2 min-w-8 flex-1 overflow-hidden rounded-full bg-slate-200">
+								<span
+									className="block h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-400 transition-[width]"
+									style={{
+										width: `${Math.min(100, (iskierki / goal.cost) * 100)}%`,
+									}}
+								/>
+							</span>
+							<span className="whitespace-nowrap text-sm font-extrabold text-amber-500">
+								{Math.min(iskierki, goal.cost)}/{goal.cost}
+							</span>
+						</>
+					) : (
+						<span className="text-sm font-extrabold text-grape-dark">
+							iskierki za rundę!
+						</span>
+					)}
+				</button>
+			)}
 
 			{/* gdy brama otwiera się w tej rundzie, GateReveal (z-50) zasłania całość —
 			    odpalamy animację jajka dopiero po jej zamknięciu, by dziecko ją zobaczyło */}

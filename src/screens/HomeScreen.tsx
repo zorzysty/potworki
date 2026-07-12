@@ -4,6 +4,7 @@ import { Companion } from "../components/Companion"
 import { EggView } from "../components/EggView"
 import { HelpTip } from "../components/HelpTip"
 import { fragmentsForEgg, isMaxStage, unlockedFactors } from "../game/facts"
+import { canAffordSomething } from "../game/village"
 import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
@@ -20,6 +21,9 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const unlockedStage = useGame((s) => s.unlockedStage)
 	const celebratedStage = useGame((s) => s.celebratedStage)
 	const achievements = useGame((s) => s.achievements)
+	const village = useGame((s) => s.village)
+	const iskierki = useGame((s) => s.iskierki)
+	const villageVisited = useGame((s) => s.villageVisited)
 	const mode = useGame((s) => s.mode)
 	const setMode = useGame((s) => s.setMode)
 	const startRound = useGame((s) => s.startRound)
@@ -41,6 +45,9 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const allGatesOpen = isMaxStage(unlockedStage)
 	const unlockedAchievements = Object.keys(achievements).length
 	const hasNewAchievements = Object.values(achievements).some((a) => !a.seen)
+	// badge sesyjny: znika po pierwszej wizycie w wiosce (nie może stać się
+	// tapetą, gdy dochód przegoni wydatki), wraca w nowej sesji jeśli nadal stać
+	const canBuild = !villageVisited && canAffordSomething(village, iskierki)
 
 	return (
 		<div className="flex min-h-dvh flex-col items-center gap-4 p-5 pt-8">
@@ -198,13 +205,20 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 				Moje Potworki 👾 {ownedCount}/{MONSTER_COUNT}
 			</BigButton>
 
-			<BigButton
-				onClick={() => goTo("village")}
-				variant="secondary"
-				className="w-full max-w-xs"
-			>
-				Wioska 🏡
-			</BigButton>
+			<div className="relative w-full max-w-xs">
+				<BigButton
+					onClick={() => goTo("village")}
+					variant="secondary"
+					className="w-full"
+				>
+					Wioska 🏡
+				</BigButton>
+				{canBuild && (
+					<div className="anim-pop absolute -right-2 -top-2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-3 py-0.5 text-sm font-extrabold text-white shadow-lg">
+						✨ stać cię na budowę!
+					</div>
+				)}
+			</div>
 
 			<div className="relative w-full max-w-xs">
 				<BigButton
