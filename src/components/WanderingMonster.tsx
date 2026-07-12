@@ -66,15 +66,20 @@ export function WanderingMonster({
 	params,
 	isCompanion,
 	size = 60,
+	cheerNonce = 0,
 }: {
 	id: number
 	params: WanderParams
 	isCompanion: boolean
 	size?: number
+	// zmiana wartości (>0) → potworek cieszy się jak po dotyku, ale bez dymka
+	// (wspólna radość z nowej budowli w wiosce)
+	cheerNonce?: number
 }) {
-	const [react, setReact] = useState<{ nonce: number; bubble: string } | null>(
-		null,
-	)
+	const [react, setReact] = useState<{
+		nonce: number
+		bubble: string | null
+	} | null>(null)
 	const nonceRef = useRef(0)
 	const lastRef = useRef<string | null>(null)
 
@@ -83,6 +88,12 @@ export function WanderingMonster({
 		const t = setTimeout(() => setReact(null), 1100)
 		return () => clearTimeout(t)
 	}, [react])
+
+	useEffect(() => {
+		if (!cheerNonce) return
+		nonceRef.current += 1
+		setReact({ nonce: nonceRef.current, bubble: null })
+	}, [cheerNonce])
 
 	const onTap = () => {
 		const bubble = pickPhrase(VILLAGE_TAP, lastRef.current)

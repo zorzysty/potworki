@@ -112,9 +112,11 @@ export const BUILDINGS: readonly BuildingDef[] = [
 	},
 ]
 
-// PROPOZYCJE do dopracowania (nazwy dekoracji)
+// PROPOZYCJE do dopracowania (nazwy dekoracji).
+// kwiatki = 5 (nie 4): przy remisie cen automatyczny cel wybiera BUDYNEK
+// (ogródek), więc pierwszy cel świeżego gracza transformuje scenę.
 export const DECORATIONS: readonly DecorationDef[] = [
-	{ id: "kwiatki", name: "Kwiatki", cost: 4 },
+	{ id: "kwiatki", name: "Kwiatki", cost: 5 },
 	{ id: "sciezka", name: "Ścieżka", cost: 5 },
 	{ id: "hustawka", name: "Huśtawka na drzewie", cost: 6 },
 	{ id: "staw", name: "Staw z kaczuszką", cost: 8 },

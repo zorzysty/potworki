@@ -847,14 +847,16 @@ describe("wioska budowniczych", () => {
 		expect(game().round?.wageEarned).toBe(3)
 		expect(game().iskierki).toBe(before + 3)
 
-		// zamek L3: +3 do żołdu (runda 3, ten sam dzień) = 6
+		// zamek L3: +3 do żołdu (runda 3, ten sam dzień) = 6. W tej rundzie domyka
+		// się drugie jajko (próg 14) — jego ewentualna tęcza dodaje 1 iskierkę.
 		useGame.setState({
 			village: { buildings: { zamek: 3 }, decorations: [], goalId: null },
 		})
 		const before3 = game().iskierki
 		playCleanRound()
 		expect(game().round?.wageEarned).toBe(6)
-		expect(game().iskierki).toBe(before3 + 6)
+		const rainbow3 = game().pendingEggs[1]?.quality === "rainbow" ? 1 : 0
+		expect(game().iskierki).toBe(before3 + 6 + rainbow3)
 	})
 
 	test("żołd: wyjście w trakcie rundy nie wypłaca (jak totalRounds)", () => {

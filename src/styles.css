@@ -480,3 +480,22 @@ body {
 		transform: translateX(var(--wander-x, 60px));
 	}
 }
+
+/* ---------- wioska budowniczych ---------- */
+
+/* świetlik przy latarniach (L2+): pulsujące światełko z lekkim dryfem */
+.anim-firefly {
+	animation: firefly 3.4s ease-in-out infinite;
+}
+
+@keyframes firefly {
+	0%,
+	100% {
+		opacity: 0.15;
+		transform: translate(0, 0);
+	}
+	50% {
+		opacity: 0.95;
+		transform: translate(7px, -9px);
+	}
+}
