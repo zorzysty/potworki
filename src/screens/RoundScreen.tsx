@@ -22,10 +22,10 @@ export function RoundScreen({
 
 	const phase = round?.phase
 	useEffect(() => {
-		if (phase !== "correct") return
+		if (phase !== "correct" || paused) return
 		const timer = setTimeout(nextQuestion, 900)
 		return () => clearTimeout(timer)
-	}, [phase, nextQuestion])
+	}, [phase, paused, nextQuestion])
 
 	if (!round) return null
 	if (round.phase === "summary") return <RoundSummary />
