@@ -36,6 +36,19 @@ export function App() {
 		return () => window.removeEventListener("keydown", onKey)
 	}, [])
 
+	// Każdy nowy ekran zaczyna się od GÓRY. Ekrany to maszyna stanów bez
+	// routera, więc przewijany jest CAŁY dokument i pozycja scrolla przeżywa
+	// przełączenie — bez tego wejście z przewiniętego Home w „Moje Potworki"
+	// odsłaniało środek listy zamiast nagłówka. Jedyne miejsce resetu: ekran
+	// zmienia sześć akcji store (`goTo`, `startRound`, `startVisitRound`,
+	// `exitRoundEarly`, `hatchEgg`, `debugReset`), a sam store celowo NIE
+	// dotyka DOM-u (testy chodzą bez przeglądarki). Skok natychmiastowy —
+	// nowy ekran nigdy nie „dojeżdża" na oczach dziecka.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: `screen` to wyzwalacz, nie odczyt
+	useEffect(() => {
+		window.scrollTo(0, 0)
+	}, [screen])
+
 	// przycisk Wstecz przeglądarki/Androida → zawsze do domku, nigdy poza grę
 	useEffect(() => {
 		history.pushState(null, "")
