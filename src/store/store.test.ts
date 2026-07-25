@@ -1283,6 +1283,23 @@ describe("odwiedziny u Strażnika (startVisitRound)", () => {
 		expect(game().achievementStats.visitRoundsCompleted).toBe(1)
 	})
 
+	// ścieżka debug świadomie pomija licznik wizyt i bonus Strażnika — wizyty
+	// są feature'em prawdziwej gry (kontrakt w src/store/CLAUDE.md)
+	test("debugFinishRound nie liczy rundy-wizyty ani nie płaci bonusu Strażnika", () => {
+		suppressAchievements()
+		seedDecayedFacts()
+		useGame.setState({ iskierki: 0 })
+		game().startVisitRound()
+		expect(requireRound().visitStage).toBe(0)
+		game().debugFinishRound(30)
+		const s = game()
+		expect(s.round?.phase).toBe("summary")
+		expect(s.achievementStats.visitRoundsCompleted).toBe(0)
+		// portfel = sam żołd symulacji (+ ewentualne tęczowe), bez VISIT_BONUS
+		const rainbow = s.pendingEggs.filter((e) => e.quality === "rainbow").length
+		expect(s.iskierki).toBe((s.round?.wageEarned ?? 0) + rainbow)
+	})
+
 	test("startVisitRound: visitStage = najsłabszy etap, plan 10 kluczy, pierwsze pytanie z planu, introFactor null", () => {
 		seedDecayedFacts()
 		game().startVisitRound()

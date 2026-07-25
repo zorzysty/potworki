@@ -224,6 +224,38 @@ function settleExpedition(state: SaveState): {
 	}
 }
 
+// Wspólne domknięcie rundy dla trzech ścieżek finalizacji (nextQuestion /
+// debugFinishRound / debugSimulateRound): rozstrzygnięta wyprawa, JEDEN
+// wspólny cap portfela, totalRounds, liczniki dni i wypraw. Rozmyślne RÓŻNICE
+// ścieżek (bonus wizyty, totalStars/perfectRounds, visitRoundsCompleted —
+// tylko realna gra) wchodzą przez argumenty (iskierkiBeforeCap /
+// counterBumps), więc są widoczne w miejscu wywołania. Nowe źródło dochodu
+// lub licznik końca rundy przechodzi TĘDY — nigdy przez edycję jednej ścieżki.
+function roundClosePatch(
+	state: Pick<SaveState, "totalRounds" | "achievementStats">,
+	settled: ReturnType<typeof settleExpedition>,
+	// pełny dochód rundy PRZED capem (bez nagrody wyprawy — tę dolicza helper)
+	iskierkiBeforeCap: number,
+	counterBumps: Partial<AchievementCounters>,
+	now: number,
+) {
+	return {
+		iskierki: Math.min(ISKIERKI_CAP, iskierkiBeforeCap + settled.reward),
+		totalRounds: state.totalRounds + 1,
+		expedition: settled.expedition,
+		achievementStats: bumpDaysPlayed(
+			{
+				...state.achievementStats,
+				...counterBumps,
+				expeditionsCompleted:
+					state.achievementStats.expeditionsCompleted +
+					(settled.expeditionReturn !== null ? 1 : 0),
+			},
+			now,
+		),
+	}
+}
+
 // Pula losowania potworków zależna od trybu jajka (idsByRarityForMode w
 // src/monsters/). Wymarzony ma priorytet tylko, gdy jest w puli trybu jajka —
 // potworek ekskluzywny innego trybu nie może się wykluć „na życzenie" z cudzego
@@ -643,32 +675,24 @@ export const useGame = create<GameState>()(
 					// żołdzie; nagroda dolicza się do tej samej, RAZ capowanej sumy
 					// co żołd i bonus wizyty (dwa niezależne źródła dochodu)
 					const settled = settleExpedition(state)
-					const achievementStats = bumpDaysPlayed(
-						{
-							...state.achievementStats,
-							perfectRounds:
-								state.achievementStats.perfectRounds +
-								(round.stars === MAX_STARS_PER_ROUND ? 1 : 0),
-							expeditionsCompleted:
-								state.achievementStats.expeditionsCompleted +
-								(settled.expeditionReturn !== null ? 1 : 0),
-							// rundy-wizyty liczą się tylko na realnej ścieżce finalizacji
-							// (debugFinishRound świadomie pomija — jak bonus wizyty)
-							visitRoundsCompleted:
-								state.achievementStats.visitRoundsCompleted +
-								(round.visitStage !== null ? 1 : 0),
-						},
-						now,
-					)
 					set({
 						unlockedStage,
-						totalRounds: state.totalRounds + 1,
-						iskierki: Math.min(
-							ISKIERKI_CAP,
-							state.iskierki + wageEarned + visitBonus + settled.reward,
+						...roundClosePatch(
+							state,
+							settled,
+							state.iskierki + wageEarned + visitBonus,
+							{
+								perfectRounds:
+									state.achievementStats.perfectRounds +
+									(round.stars === MAX_STARS_PER_ROUND ? 1 : 0),
+								// rundy-wizyty liczą się tylko na realnej ścieżce finalizacji
+								// (ścieżki debug świadomie pomijają — jak bonus wizyty)
+								visitRoundsCompleted:
+									state.achievementStats.visitRoundsCompleted +
+									(round.visitStage !== null ? 1 : 0),
+							},
+							now,
 						),
-						achievementStats,
-						expedition: settled.expedition,
 						round: {
 							...round,
 							phase: "summary",
@@ -1035,19 +1059,10 @@ export const useGame = create<GameState>()(
 					eggStarBank: o.eggStarBank,
 					eggsEarned: o.eggsEarned,
 					pendingEggs: o.pendingEggs,
-					iskierki: Math.min(ISKIERKI_CAP, o.iskierki + settled.reward),
 					unlockedStage: o.unlockedStage,
-					totalRounds: state.totalRounds + 1,
-					expedition: settled.expedition,
-					achievementStats: bumpDaysPlayed(
-						{
-							...state.achievementStats,
-							expeditionsCompleted:
-								state.achievementStats.expeditionsCompleted +
-								(settled.expeditionReturn !== null ? 1 : 0),
-						},
-						Date.now(),
-					),
+					// o.iskierki niesie już żołd i tęczowe z symulacji; bez bumpów
+					// ścieżkowych (symulacja omija pressConfirm i nie jest rundą-wizytą)
+					...roundClosePatch(state, settled, o.iskierki, {}, Date.now()),
 				})
 				get().checkAchievements()
 			},
@@ -1076,27 +1091,20 @@ export const useGame = create<GameState>()(
 					eggStarBank: o.eggStarBank,
 					eggsEarned: o.eggsEarned,
 					pendingEggs: o.pendingEggs,
-					iskierki: Math.min(ISKIERKI_CAP, o.iskierki + settled.reward),
 					unlockedStage: o.unlockedStage,
-					totalRounds: state.totalRounds + 1,
-					expedition: settled.expedition,
 					// symulacja nie przechodzi przez pressConfirm/nextQuestion, więc liczniki
-					// zdarzeniowe ustawiamy tu wprost — by dało się przetestować z ekranu debug
-					achievementStats: bumpDaysPlayed(
+					// zdarzeniowe ustawiamy tu wprost — by dało się przetestować z ekranu
+					// debug. visitRoundsCompleted ŚWIADOMIE pomijany (jak bonus wizyty) —
+					// rundy-wizyty liczą się tylko na realnej ścieżce finalizacji.
+					...roundClosePatch(
+						state,
+						settled,
+						o.iskierki,
 						{
-							...state.achievementStats,
 							totalStars: state.achievementStats.totalStars + totalStars,
 							perfectRounds:
 								state.achievementStats.perfectRounds +
 								(totalStars === MAX_STARS_PER_ROUND ? 1 : 0),
-							expeditionsCompleted:
-								state.achievementStats.expeditionsCompleted +
-								(settled.expeditionReturn !== null ? 1 : 0),
-							// rundy-wizyty liczą się tylko na realnej ścieżce finalizacji
-							// (debugFinishRound świadomie pomija — jak bonus wizyty)
-							visitRoundsCompleted:
-								state.achievementStats.visitRoundsCompleted +
-								(round.visitStage !== null ? 1 : 0),
 						},
 						Date.now(),
 					),
