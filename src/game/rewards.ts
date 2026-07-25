@@ -130,10 +130,10 @@ export const WISH_COST_NO_DREAM = 10
 // obowiązkowy (bez niego cena przerosłaby cap portfela 999 i przycisk zostałby
 // martwy na zawsze — zamknięta droga, nie wyzwanie), ale gdyby capował cenę,
 // wszystkie bazy zlałyby się w jedną liczbę i premia za rzadkość wymarzonego
-// po cichu by zniknęła. Tak cena maksymalna = baza + dopłata (≤ 230 ✨ < 999),
+// po cichu by zniknęła. Tak cena maksymalna = baza + dopłata (≤ 130 ✨ < 999),
 // a różnice wg rzadkości zostają na zawsze. Gałki strojenia: obie stałe + bazy.
 export const WISH_COST_STEP = 10
-export const WISH_SURCHARGE_MAX = 200
+export const WISH_SURCHARGE_MAX = 100
 
 export function wishEggPrice(base: number, bought: number): number {
 	const surcharge = WISH_COST_STEP * Math.max(0, bought)
