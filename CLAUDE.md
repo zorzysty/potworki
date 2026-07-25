@@ -37,10 +37,11 @@ Jeden store zustand (`src/store/store.ts`) koordynuje całość: ekrany to maszy
 2. Postęp dziecka jest święty: zamrożony seed katalogu potworków (szczegóły w `src/monsters/CLAUDE.md`) i obowiązkowe migracje zapisu (szczegóły w `src/store/CLAUDE.md`).
 3. UI wyłącznie po polsku; tablet-first (duże cele dotykowe, aktywacja na `click`, żadnych natywnych `<input>` — szczegóły w `src/CLAUDE.md`).
 
-## Testowanie w przeglądarce (WSL)
+## Testowanie w przeglądarce
 
-Playwright zawiesza się w tym środowisku. Działa **puppeteer-core** wskazany na headless shell Playwrighta:
-`~/.cache/ms-playwright/chromium_headless_shell-1223/chrome-headless-shell-linux64/chrome-headless-shell` z argami `--no-sandbox --disable-gpu`. Przyciski i potworki gry aktywują się na `click` (model wejścia w `src/CLAUDE.md`); `.click()` puppeteera odpala pełną sekwencję pointer+click, więc działa. Brak fontów emoji w WSL = puste kwadraty na zrzutach (to nie bug).
+Playwright zawiesza się w tym środowisku. Działa **puppeteer-core** wskazany na systemowego chromium: `executablePath: "/usr/bin/chromium"` z argami `--no-sandbox --disable-gpu`. Puppeteera instaluj POZA repem (np. w katalogu tymczasowym sesji: `bun add puppeteer-core`) — nie jest zależnością projektu. Przepis: `bun run dev --port <port>` w tle → `page.goto("http://localhost:<port>/potworki/?debug")` → `localStorage.setItem("potworki-save", …)` z ostemplowanym `version` → ponowny `goto`. Przyciski i potworki gry aktywują się na `click` (model wejścia w `src/CLAUDE.md`); `.click()` puppeteera odpala pełną sekwencję pointer+click, więc działa. Uwaga na dopasowywanie przycisków po tekście — „Wioska" łapie też kartę-zaproszenie Strażnika („Strażnik Wioska Startowa zaprasza…"), celuj w „Wioska 🏡".
+
+**Refaktory czysto prezentacyjne weryfikuj porównaniem DOM przed/po**: zrzuć `outerHTML` interesującego fragmentu, `git stash` w worktree, zrzuć ponownie, zdiffuj — to tańsze i ostrzejsze niż oglądanie zrzutów ekranu (brak fontów emoji potrafi i tak zrobić puste kwadraty).
 
 # DOX framework
 
