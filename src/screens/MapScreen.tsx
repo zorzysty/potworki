@@ -173,8 +173,10 @@ function GuardianBridge({
 	const bridgeOwned = BRIDGE_GUARDIAN_IDS.filter(
 		(id) => id in ownedMonsters,
 	).length
+	// bez overflow-hidden: dymek HelpTip musi wystawać ponad kartę; scena i tak
+	// nie wychodzi poza zaokrąglenia (SVG przycina się do własnego viewportu)
 	return (
-		<div className="relative w-full max-w-sm self-center overflow-hidden rounded-[2.2rem] border-b-8 border-black/10 bg-gradient-to-b from-sky-200 via-sky-300 to-blue-400 px-4 pb-3 pt-3 shadow-lg">
+		<div className="relative w-full max-w-sm self-center rounded-[2.2rem] border-b-8 border-black/10 bg-gradient-to-b from-sky-200 via-sky-300 to-blue-400 px-4 pb-3 pt-3 shadow-lg">
 			<div className="relative z-10 flex items-center justify-center gap-1.5">
 				<span className="rounded-2xl bg-white/90 px-3 py-1 text-[15px] font-extrabold text-fuchsia-600 shadow-sm">
 					🌉 Most Strażników

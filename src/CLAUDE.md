@@ -21,7 +21,7 @@ Ten doc jest właścicielem `App.tsx`, `main.tsx`, `styles.css`, `components/`, 
 - Maks JEDNA proaktywna karta na Home (zaproszenie Strażnika ma pierwszeństwo przed chipem wyprawy); „Graj!" nigdy nie spada niżej. Badge'y wzoru „nowa brama!" gasną po zobaczeniu — zero nagabywania.
 - Karty-modale zamyka wyłącznie ✕ (`components/ModalCloseX`) + tap w tło — bez dolnego „Zamknij" (na długiej karcie bywał poza viewportem). Modale-potwierdzenia (ResetModal) zachowują jawne przyciski — to decyzja.
 - Metadane rzadkości (`RARITY_META`, `CARD_THEME`) w `components/rarity.ts`; style trudności osiągnięć lustrzanie w `components/achievementTier.ts`; pasek celu budowy współdzielony w `components/GoalProgressBar.tsx`; art wioski w `components/village/`.
-- `HelpTip` („?") umieszczać jako rodzeństwo przycisku w `relative` wrapperze — nigdy `<button>` w `<button>`.
+- `HelpTip` („?") umieszczać jako rodzeństwo przycisku w `relative` wrapperze — nigdy `<button>` w `<button>`; dymek jest pozycjonowany absolutnie, więc żaden przodek karty z `HelpTip` nie może mieć `overflow-hidden` (przycina dymek).
 
 ## Work Guidance
 

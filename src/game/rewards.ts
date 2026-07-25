@@ -61,10 +61,10 @@ export const RARITY_ODDS: Record<
 	EggQuality,
 	readonly [number, number, number, number]
 > = {
-	normal: [70, 24, 5, 1],
-	silver: [50, 35, 12, 3],
-	gold: [30, 42, 20, 8],
-	rainbow: [12, 40, 33, 15],
+	normal: [68, 24, 6, 2],
+	silver: [50, 35, 10, 5],
+	gold: [28, 42, 20, 10],
+	rainbow: [10, 40, 30, 20],
 }
 
 export const ISKIERKI_FOR_DUP: Record<Rarity, number> = {
