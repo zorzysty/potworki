@@ -20,7 +20,7 @@ when a change alters a contract.
 | 016  | Odwiedziny Strażnika — fabularne rundy powtórkowe przy `needsMaintenance` | P2 | S–M | — | DONE — branch `feat/012-wioska-budowanie` (231 tests) |
 | 017  | Wyprawy potworków — postęp w RUNDACH (nigdy zegar), nagrody ✨ | P3 | M | — | DONE — branch `feat/012-wioska-budowanie` (307 tests; SAVE_VERSION 11→12, katalog 3 typów wypraw, osiągnięcia 46→48) |
 | 018  | PWA/offline — instalacja na tablecie, gra bez sieci | P2 | S | — | DONE — branch `feat/012-wioska-budowanie` (217 tests; fallback `--app-vh` zastosowany — patrz plan, Step 5) |
-| 019  | Przegląd PROPOZYCJI — nazewnicza runda maintainera (012–018) | P2 | S | 012–018 | TODO — BLOCKED on maintainer's naming decisions (Step 2); parking spot, żeby nie przepadło |
+| 019  | Przegląd PROPOZYCJI — nazewnicza runda maintainera (012–018) | P2 | S | 012–018 | DONE 2026-07-25 — inwentarz w `plans/019-inwentarz.md`, maintainer **zatwierdził wszystko bez zmian**; znaczniki `PROPOZYCJE` zdjęte z `src/` i `vite.config.ts`, konwencja dla przyszłych funkcji zapisana w rocie `CLAUDE.md` |
 | 020  | Symetryczny guard przyjaciel ↔ podróżnik (`setCompanion` podczas wyprawy) | P1 | S | — | DONE — worktree branch `improve/plans-020-027` @ `090133a` (reviewed; 312 tests) |
 | 021  | Pauza wstrzymuje auto-przejście do następnego pytania (timer „correct") | P2 | S | — | DONE — worktree branch `improve/plans-020-027` @ `d52073a` (reviewed; browser-verified incl. mutation check) |
 | 022  | Brama Biome w CI + skrypt `verify` + sprostowanie 48→53 osiągnięć w DOX | P2 | S | — | DONE — worktree branch `improve/plans-020-027` @ `7f9ea07` (reviewed: scope clean, verify green) |

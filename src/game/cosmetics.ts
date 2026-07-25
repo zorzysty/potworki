@@ -16,7 +16,7 @@ export type CosmeticId = string // stabilne kebab-case id, NIGDY nie zmieniać
 
 export interface CosmeticDef {
 	id: CosmeticId
-	name: string // PROPOZYCJE do dopracowania
+	name: string
 	slot: CosmeticSlot
 	tier: 1 | 2 | 3 // dostępny gdy poziom sklepiku >= tier
 	cost: number
@@ -32,7 +32,7 @@ export interface CosmeticDef {
 // Katalog startowy: 11 przedmiotów = 286✨ (tiery 31 + 105 + 150).
 // (aura-iskier wycofana po premierze — v12→v13 zwraca właścicielom 60✨.)
 // Ceny poniżej cen L3 budynków — kapelusz nigdy nie przebija ulepszenia Zamku.
-// PROPOZYCJE do dopracowania (nazwy); id zamrożone (persystowane w zapisie).
+// Nazwy wolno edytować dowolnie; id zamrożone (persystowane w zapisie).
 export const COSMETICS: readonly CosmeticDef[] = [
 	{
 		id: "czapka-z-pomponem",
@@ -89,7 +89,7 @@ export const COSMETICS: readonly CosmeticDef[] = [
 	{ id: "aura-teczy", name: "Aura tęczy", slot: "aura", tier: 3, cost: 55 },
 	// Ramki kart kolekcjonerskich (plan 014): oprawa modala posiadanego
 	// potworka, kupowana raz, zakładana per potworek (slot "frame").
-	// PROPOZYCJE do dopracowania (nazwy); id zamrożone (persystowane w zapisie).
+	// Nazwy wolno edytować dowolnie; id zamrożone (persystowane w zapisie).
 	// Razem 140✨ → suma katalogu 426✨ (testowany przedział [380, 530]).
 	{
 		id: "rama-kwiatki",

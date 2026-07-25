@@ -142,8 +142,8 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 
 			<div className="relative w-full max-w-xs">
 				<div className="flex gap-1.5 rounded-3xl bg-white/50 p-1.5">
-					{/* etykiety trybów: PROPOZYCJE do dopracowania (tokeny mult/div/gap
-					    są kodem i NIE zmieniają się — persystowane w jajkach) */}
+					{/* etykiety trybów — tokeny mult/div/gap są KODEM i nie zmieniają się
+					    (persystowane w jajkach) */}
 					{(
 						[
 							["mult", "× Mnożenie"],
@@ -166,7 +166,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					))}
 				</div>
 				<div className="absolute -right-2 -top-2">
-					{/* PROPOZYCJA do dopracowania — tekst pomocy przełącznika trybów */}
+					{/* tekst pomocy przełącznika trybów */}
 					<HelpTip
 						placement="bottom"
 						align="right"
@@ -191,7 +191,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 						className={guardianOwned ? undefined : "monster-silhouette"}
 					/>
 					<div className="min-w-0 flex-1">
-						{/* PROPOZYCJE do dopracowania — teksty zaproszenia Strażnika */}
+						{/* teksty zaproszenia Strażnika */}
 						<div className="text-base font-extrabold leading-tight text-grape-dark">
 							Strażnik {visitRegion.name} zaprasza cię w odwiedziny!{" "}
 							{visitRegion.emoji}
@@ -262,7 +262,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					className="touch-manipulation flex min-h-16 w-full max-w-xs items-center gap-2 rounded-3xl bg-white/80 px-4 py-2 shadow-md active:scale-95"
 				>
 					<span className="text-xl">🎒</span>
-					{/* PROPOZYCJA do dopracowania — chip postępu wyprawy */}
+					{/* chip postępu wyprawy */}
 					<span className="truncate text-sm font-extrabold text-grape-dark">
 						{travelerName}: {trip.done}/{trip.total} rund
 					</span>

@@ -19,7 +19,7 @@ export interface ExpeditionDef {
 	tropChance: number // 0..1 — szansa na trop (wskazówkę o nieposiadanym potworku)
 }
 
-// PROPOZYCJE do dopracowania — nazwy i opisy dla gracza; id zamrożone
+// Nazwy i opisy dla gracza wolno edytować dowolnie; id zamrożone
 // (persystowane w SaveState.expedition.typeId), zmiana nazw nie dotyka zapisu.
 export const EXPEDITIONS: readonly ExpeditionDef[] = [
 	{

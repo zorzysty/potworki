@@ -42,8 +42,7 @@ export interface DecorationDef {
 	cost: number
 }
 
-// PROPOZYCJE do dopracowania — wszystkie nazwy i opisy dla gracza w jednym
-// miejscu; zmiana nazewnictwa nie dotyka zapisu (id są osobne i zamrożone).
+// Wszystkie nazwy i opisy dla gracza w jednym miejscu; zmiana nazewnictwa nie dotyka zapisu (id są osobne i zamrożone).
 export const BUILDINGS: readonly BuildingDef[] = [
 	{
 		id: "ogrodek",
@@ -117,7 +116,7 @@ export const BUILDINGS: readonly BuildingDef[] = [
 	{
 		id: "sklepik",
 		name: "Sklepik",
-		levelNames: ["Stragan", "Sklepik", "Dom Mody Potworków"], // PROPOZYCJE
+		levelNames: ["Stragan", "Sklepik", "Dom Mody Potworków"],
 		descriptions: [
 			"Kapelusze dla potworków! (Ubierasz w Moich Potworkach.)",
 			"Nowe nakrycia głowy i pierwsze aury!",
@@ -127,7 +126,7 @@ export const BUILDINGS: readonly BuildingDef[] = [
 	},
 ]
 
-// PROPOZYCJE do dopracowania (nazwy dekoracji).
+// Nazwy dekoracji — swobodnie edytowalne; id zamrożone.
 // kwiatki = 5 (nie 4): przy remisie cen automatyczny cel wybiera BUDYNEK
 // (ogródek), więc pierwszy cel świeżego gracza transformuje scenę.
 export const DECORATIONS: readonly DecorationDef[] = [

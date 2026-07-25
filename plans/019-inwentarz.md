@@ -1,13 +1,16 @@
-# Inwentarz PROPOZYCJI — do zatwierdzenia (plan 019, Step 1–2)
+# Inwentarz PROPOZYCJI — zatwierdzony (plan 019)
 
-Stan na `ced517c` (2026-07-25). **Wypełniasz kolumnę „→ nowa wersja";
-puste = ZOSTAJE jak jest.** Nie musisz przechodzić całości naraz — sekcje są
-niezależne, a plan można uruchomić ponownie na tym, co zostawisz puste.
+> **ZAMKNIĘTE 2026-07-25: maintainer przejrzał całość i zatwierdził wszystkie
+> teksty BEZ ZMIAN.** Znaczniki `PROPOZYCJE` zostały zdjęte z `src/` i
+> `vite.config.ts`. Plik zostaje jako zrzut zatwierdzonego stanu tekstów —
+> punkt odniesienia przy następnym przeglądzie. Nic tu nie trzeba wypełniać.
 
-Przy bankach fraz (dymki potworków) nie ma tabeli — edytuj linie wprost,
-skreślaj co nie pasuje, dopisuj swoje.
+Stan na `ced517c` (2026-07-25). Kolumna „→ nowa wersja" jest pusta wszędzie,
+bo taka była decyzja: puste = ZOSTAJE jak jest.
 
-## Zasady bezpieczeństwa (dla wykonawcy, nie dla Ciebie)
+Przy bankach fraz (dymki potworków) nie ma tabeli — teksty są wypisane wprost.
+
+## Zasady bezpieczeństwa (obowiązują przy KAŻDYM następnym przeglądzie)
 
 - Zmieniamy **wyłącznie** pola `name` / `title` / `description` / teksty w JSX.
 - `id` budynków, dekoracji, kosmetyk, wypraw i osiągnięć są **persystowane w

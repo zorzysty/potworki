@@ -69,7 +69,7 @@ function WardrobeSection({ monsterId }: { monsterId: number }) {
 			</button>
 			{open &&
 				(ownedItems.length === 0 ? (
-					// PROPOZYCJA do dopracowania — pusta garderoba prowadzi do Sklepiku
+					// pusta garderoba prowadzi do Sklepiku
 					<div className="px-4 pb-4 text-center text-sm font-bold text-slate-500">
 						Kapelusze kupisz w Sklepiku w Wiosce!
 					</div>
@@ -116,7 +116,7 @@ function WardrobeSection({ monsterId }: { monsterId: number }) {
 						})}
 						{ownedFrames.length > 0 && (
 							<div>
-								{/* PROPOZYCJA do dopracowania — etykieta rządka ramek */}
+								{/* etykieta rządka ramek */}
 								<div className="mb-1 text-xs font-extrabold uppercase tracking-wide text-slate-400">
 									Ramka
 								</div>
@@ -124,7 +124,7 @@ function WardrobeSection({ monsterId }: { monsterId: number }) {
 									    zaznaczenia rysuje się POZA boksem chipa — bez paddingu ze
 									    wszystkich stron obwódka ucina się od góry/boków */}
 								<div className="flex gap-2 overflow-x-auto p-1">
-									{/* PROPOZYCJA do dopracowania — „Bez ramki" = oprawa rzadkości */}
+									{/* „Bez ramki" = oprawa rzadkości */}
 									<button
 										type="button"
 										onClick={() => equipCosmetic(monsterId, "frame", null)}
@@ -217,7 +217,7 @@ function ExpeditionSection({
 			{open &&
 				(isTraveler && progress ? (
 					<div className="flex flex-col gap-2 px-3 pb-3">
-						{/* PROPOZYCJA do dopracowania — status podróżnika */}
+						{/* status podróżnika */}
 						<div className="flex items-center justify-center gap-1.5 rounded-2xl bg-white px-4 py-3 text-lg font-extrabold text-emerald-600">
 							🎒 W drodze: {progress.done}/{progress.total} rund
 						</div>
@@ -230,13 +230,13 @@ function ExpeditionSection({
 						</BigButton>
 					</div>
 				) : monsterId === companionId ? (
-					// PROPOZYCJA do dopracowania — przyjaciel nigdy nie wyjeżdża;
+					// przyjaciel nigdy nie wyjeżdża:
 					// łagodna linijka, nie zablokowany przycisk
 					<div className="px-4 pb-4 text-center text-sm font-bold text-slate-500">
 						Przyjaciel woli zostać z Tobą 💛
 					</div>
 				) : expedition ? (
-					// PROPOZYCJA do dopracowania — ktoś inny jest w drodze
+					// ktoś inny jest w drodze
 					<div className="px-4 pb-4 text-center text-sm font-bold text-slate-500">
 						Ktoś już jest na wyprawie — poczekaj na jego powrót
 					</div>
@@ -466,7 +466,7 @@ function MonsterCard({
 					💛 To Twój przyjaciel
 				</div>
 			) : expedition?.monsterId === monsterId ? (
-				/* PROPOZYCJA do dopracowania — podróżnik nie może teraz
+				/* podróżnik nie może teraz
 				   zostać przyjacielem (guard w store jest źródłem prawdy;
 				   łagodna linijka zamiast martwego przycisku) */
 				<div className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-sky-50 px-4 py-3 text-lg font-extrabold text-sky-600">
@@ -536,7 +536,7 @@ function MonsterCardLocked({
 					➗ Tylko za dzielenie
 				</div>
 			)}
-			{/* PROPOZYCJA — etykieta trybu luki do dopracowania */}
+			{/* etykieta trybu luki */}
 			{isGapOnly(monsterId) && (
 				<div className="rounded-full bg-fuchsia-100 px-4 py-1 text-sm font-extrabold text-fuchsia-600">
 					🧩 Tylko za zgadywanie liczby

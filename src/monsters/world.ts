@@ -109,7 +109,7 @@ export const BRIDGE_ORIGIN = {
 }
 
 // Pochodzenie potworków tylko-luka (tryb „brakujący czynnik"). Trzeci wariant
-// unii pochodzenia (kind "valley"), lustro BRIDGE_ORIGIN. Nazwa = PROPOZYCJA.
+// unii pochodzenia (kind "valley"), lustro BRIDGE_ORIGIN.
 export const VALLEY_ORIGIN = {
 	kind: "valley" as const,
 	name: "Dolina Zagadek",

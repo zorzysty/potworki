@@ -47,7 +47,7 @@ export function RoundScreen({
 						Pytanie {round.index + 1} / {round.total}
 					</div>
 					{visitRegion && (
-						// PROPOZYCJA do dopracowania — pigułka regionu rundy-wizyty
+						// pigułka regionu rundy-wizyty
 						<div className="min-w-0 flex-1 truncate rounded-full bg-white/70 px-3 py-1 text-center text-sm font-extrabold text-grape-dark">
 							{visitRegion.emoji} Odwiedziny: {visitRegion.name}
 						</div>

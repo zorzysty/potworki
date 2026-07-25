@@ -113,7 +113,7 @@ function SklepikStock({
 				Na półkach
 			</div>
 			{justBought && (
-				// PROPOZYCJA do dopracowania — podpowiedź po zakupie
+				// podpowiedź po zakupie
 				<div className="anim-pop rounded-2xl bg-amber-50 px-4 py-2 text-center text-sm font-extrabold text-amber-600">
 					Załóż w Moich Potworkach → Ubierz 🎩
 				</div>

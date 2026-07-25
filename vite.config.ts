@@ -18,7 +18,7 @@ export default defineConfig({
 			injectRegister: "auto", // rejestracja wstrzyknięta w build — zero zmian w src/
 			includeAssets: ["favicon.svg", "apple-touch-icon.png"],
 			manifest: {
-				// PROPOZYCJE do dopracowania (nazwy widoczne przy instalacji)
+				// nazwy widoczne przy instalacji na urządzeniu
 				name: "Potworki",
 				short_name: "Potworki",
 				description: "Zbieraj potworki, ćwicząc mnożenie i dzielenie!",
@@ -29,7 +29,7 @@ export default defineConfig({
 				display: "standalone",
 				orientation: "any",
 				theme_color: "#7c5cf0", // --color-grape (zgodnie z meta w index.html)
-				background_color: "#f5f3ff", // jasny fiolet splash (PROPOZYCJA)
+				background_color: "#f5f3ff", // jasny fiolet splash
 				icons: [
 					{ src: "pwa-192.png", sizes: "192x192", type: "image/png" },
 					{ src: "pwa-512.png", sizes: "512x512", type: "image/png" },

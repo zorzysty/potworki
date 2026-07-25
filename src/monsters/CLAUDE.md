@@ -10,7 +10,7 @@ Deterministyczny katalog 80 potworków (DNA, rzadkości, imiona) i ich rendering
 - `names.ts` — generator polskich imion z sylab (dedupe, honorific dla legendarnych)
 - `parts.tsx` — palety (PALETTES) i części SVG: ciała, oczy, pyszczki, czubki głów, wzory, akcesoria
 - `MonsterSvg.tsx` — kompozycja warstw, gradient tęczowy, sylwetka przez klasę CSS
-- `world.ts` — świat „Krainy Potworków": `REGIONS` (region per etap `STAGES`: nazwa z motywem liczbowym, emoji, blurb, kolor, `guardianId`), `BRIDGE_GUARDIAN_IDS` (most = 72–75), `BRIDGE_ORIGIN`, `VALLEY_ORIGIN` (pochodzenie tylko-luka, nazwa PROPOZYCJA „Dolina Zagadek"), `regionOf(id)` i `originOf(id)` (kraina pochodzenia). Dane statyczne; importuje `STAGES`/`isDivisionOnly`/`isGapOnly`
+- `world.ts` — świat „Krainy Potworków": `REGIONS` (region per etap `STAGES`: nazwa z motywem liczbowym, emoji, blurb, kolor, `guardianId`), `BRIDGE_GUARDIAN_IDS` (most = 72–75), `BRIDGE_ORIGIN`, `VALLEY_ORIGIN` (pochodzenie tylko-luka, nazwa „Dolina Zagadek"), `regionOf(id)` i `originOf(id)` (kraina pochodzenia). Dane statyczne; importuje `STAGES`/`isDivisionOnly`/`isGapOnly`
 - `lore.ts` — `loreFor(id)`: deterministyczny opis (species/blurb/funFact) z DNA; zależy tylko od `catalog.ts`
 
 ## Local Contracts

@@ -512,7 +512,7 @@ export function VillageScreen() {
 						>
 							{showCamp && (
 								<div className="absolute bottom-full right-0 w-max pb-1">
-									{/* PROPOZYCJA do dopracowania — dymek postępu wyprawy */}
+									{/* dymek postępu wyprawy */}
 									<SpeechBubble
 										text={`🎒 ${travelerName}: ${camp.done}/${camp.total} rund`}
 									/>

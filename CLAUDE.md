@@ -123,6 +123,9 @@ Default section order:
 
 When the user requests a durable behavior change, record it here or in the relevant child CLAUDE.md
 
+- **Teksty widoczne dla gracza (PL) redaguje maintainer.** Nie wymyślaj i nie „poprawiaj" nazw, etykiet ani komunikatów z własnej inicjatywy. Nowa funkcja może wprowadzić robocze teksty, ale każdy taki string oznacz komentarzem `PROPOZYCJA`/`PROPOZYCJE` — to sygnał, że czeka na jego decyzję. Przegląd robi się hurtem: wygeneruj inwentarz wszystkich znaczników (wzór: `plans/019-inwentarz.md` — zrzut z modułów + teksty z JSX, kolumna „→ nowa wersja", puste = zostaje), maintainer wypełnia, wykonawca stosuje i zdejmuje znaczniki tylko z zatwierdzonych banków. Partia 012–018 przeszła taki przegląd 2026-07-25 i została **zatwierdzona bez zmian**, dlatego dziś w `src/` nie ma już żadnych znaczników.
+- Etykiety są zawsze osobne od `id`: nazwy budynków/dekoracji/kosmetyk/wypraw/osiągnięć, tytuły i opisy wolno edytować dowolnie, a persystowane `id`, tokeny trybów (`mult`/`div`/`gap`) i klucze `SaveState` — nigdy. Wyjątek z własną procedurą: imiona potworków siedzą w zamrożonym podpisie katalogu (`src/monsters/CLAUDE.md`).
+
 ## Child DOX Index
 
 - [src/CLAUDE.md](src/CLAUDE.md) — cały kod aplikacji: warstwa UI (ekrany, komponenty, wejście, animacje) oraz indeks domen `game/` (logika adaptacyjna i nagrody), `monsters/` (zamrożony katalog potworków), `store/` (persystencja i przepływ gry), `achievements/` (katalog i ocena osiągnięć). Root zachowuje: komendy, deploy, zasady projektowe, testowanie w WSL.

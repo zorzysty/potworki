@@ -1,4 +1,4 @@
-// Teksty przyjaciela — PROPOZYCJE do dopracowania (player-facing PL).
+// Teksty przyjaciela (player-facing PL; zatwierdzone przez maintainera).
 // Rejestr kumpla/rówieśnika. `{imie}` podmieniamy na imię przyjaciela (withName).
 // Formy żeńskie spójne z „Mistrzyni Kolekcji". Kibicowanie w RUNDZIE jest bez tekstu
 // (sam ruch) — tu tylko Home (przyjaciel) i wioska (dowolny mieszkaniec).

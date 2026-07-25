@@ -110,7 +110,7 @@ export function RoundSummary() {
 							size={72}
 							overlay={<EquippedOverlay monsterId={back.monsterId} />}
 						/>
-						{/* PROPOZYCJA do dopracowania — powitanie z wyprawy */}
+						{/* powitanie z wyprawy */}
 						<div className="flex-1 text-lg font-extrabold leading-tight text-grape-dark">
 							Wrócił(a) z wyprawy!{" "}
 							<span className="whitespace-nowrap text-amber-500">
@@ -128,7 +128,7 @@ export function RoundSummary() {
 								className="monster-silhouette"
 							/>
 							<div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-								{/* PROPOZYCJA do dopracowania — tekst tropu */}
+								{/* tekst tropu */}
 								<span className="text-sm font-extrabold leading-tight text-slate-600">
 									Ktoś tajemniczy zostawił ślad!
 								</span>
@@ -182,7 +182,7 @@ export function RoundSummary() {
 						size={48}
 						className={guardianOwned ? undefined : "monster-silhouette"}
 					/>
-					{/* PROPOZYCJA do dopracowania — podziękowanie Strażnika */}
+					{/* podziękowanie Strażnika */}
 					<div className="text-xl font-extrabold leading-tight">
 						Strażnik dziękuje za odwiedziny! 💛 +{VISIT_BONUS} ✨
 					</div>
