@@ -1,5 +1,5 @@
 import confetti from "canvas-confetti"
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { GoalProgressBar } from "../components/GoalProgressBar"
 import { HelpTip } from "../components/HelpTip"
@@ -8,6 +8,21 @@ import { BuildingArt } from "../components/village/BuildingArt"
 import { BuildReveal } from "../components/village/BuildReveal"
 import { BuildSheet, type SheetView } from "../components/village/BuildSheet"
 import { Resident, type ResidentMode } from "../components/village/Resident"
+import {
+	BushArt,
+	CloudArt,
+	GROUND_Y,
+	GrassTuft,
+	MoonArt,
+	PedestalArt,
+	PlotGround,
+	PondArt,
+	RainbowArc,
+	roadXAt,
+	SunArt,
+	Terrain,
+	TreeArt,
+} from "../components/village/Scenery"
 import { WanderingMonster, wanderParams } from "../components/WanderingMonster"
 import type { CosmeticId } from "../game/cosmetics"
 import { expeditionProgress } from "../game/expeditions"
@@ -25,11 +40,14 @@ import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
 
 // ---------------------------------------------------------------------------
-// Kompozycja sceny: pas nieba (słońce, tęcza, poświata latarni) → pas budynków
-// (górna 1/3, 7 działek) → łąka (wędrowcy, ścieżka, dekoracje). Budynki są
-// scenerią, przed którą żyją potworki — nie ikonami na brzegach ekranu.
-// Każdy zakup ZMIENIA scenę (kwiaty na łące, ścieżka, światła), nie tylko
-// dodaje obrazek — patrz plans/012 (zasada 2).
+// Kompozycja sceny: wektorowe niebo (SunArt/MoonArt, CloudArt, RainbowArc pod
+// terenem) → Terrain (warstwowe wzgórza + łąka + droga Ścieżki; viewBox 0..100
+// rozciągnięty na całą scenę = procenty) → działki z podestami PlotGround i
+// zielenią GREENERY na tej samej linii gruntu → łąka (wędrowcy, dekoracje).
+// Budynki są scenerią, przed którą żyją potworki — nie ikonami na brzegach
+// ekranu. Każdy zakup ZMIENIA scenę (kwiaty na łące, droga, staw, światła),
+// nie tylko dodaje obrazek — patrz plans/012 (zasada 2). Sceneria żyje w
+// components/village/Scenery.tsx.
 // ---------------------------------------------------------------------------
 
 // Działki budynków STOJĄ na linii wzgórz: kontener o zerowej wysokości na
@@ -38,7 +56,26 @@ import { useGame } from "../store/store"
 // proporcji ekranu. Szerokość artu proporcjonalna do sceny (clamp: min = cel
 // dotykowy, max = rozmiar tabletowy), więc na szerokim laptopie budynki nie
 // kurczą się do pikseli. z = kolejność w skyline (niżej na zboczu = z przodu).
-const GROUND_LINE_TOP = "47%"
+const GROUND_LINE_TOP = `${GROUND_Y}%` // linia gruntu należy do Scenery (teren + droga startują na niej)
+
+// Działka zamku w liczbach: z nich powstaje i clamp szerokości w PLOTS, i
+// pozycja bramy `gateFor` — droga Ścieżki musi trafiać w bramę na każdym
+// ekranie, a brama WĘDRUJE w procentach sceny: środek przez clamp px/%
+// szerokości, stopa przez dy w px (zależne od wysokości sceny).
+const ZAMEK = { left: 37, minPx: 108, pct: 19, maxPx: 225, dy: 22 }
+function gateFor(sceneW: number, sceneH: number): { x: number; y: number } {
+	const w = Math.min(
+		ZAMEK.maxPx,
+		Math.max(ZAMEK.minPx, (ZAMEK.pct / 100) * sceneW),
+	)
+	return {
+		x: ZAMEK.left + ((w / sceneW) * 100) / 2,
+		// stopa zamku stoi dy px NAD linią gruntu; +8 px zakładki chowa
+		// początek drogi POD artem zamku (budynki mają wyższy z-index)
+		y: GROUND_Y - ((ZAMEK.dy + 8) / sceneH) * 100,
+	}
+}
+
 const PLOTS: Record<
 	BuildingId,
 	{ left: number; width: string; dy: number; z: number }
@@ -48,10 +85,15 @@ const PLOTS: Record<
 	// budynków mieści się na wąskim ekranie bez ściśnięcia (lefts mogą się
 	// nakładać w poziomie, bo rzędy rozdziela wysokość).
 	domki: { left: 0, width: "clamp(76px, 13%, 160px)", dy: 38, z: 1 },
-	"plac-zabaw": { left: 9, width: "clamp(84px, 14%, 172px)", dy: -2, z: 5 },
+	"plac-zabaw": { left: 9, width: "clamp(84px, 14%, 172px)", dy: -8, z: 5 },
 	sklepik: { left: 27, width: "clamp(64px, 9%, 110px)", dy: 40, z: 2 },
-	zamek: { left: 37, width: "clamp(108px, 19%, 225px)", dy: 22, z: 3 },
-	fontanna: { left: 66, width: "clamp(72px, 11%, 128px)", dy: -4, z: 5 },
+	zamek: {
+		left: ZAMEK.left,
+		width: `clamp(${ZAMEK.minPx}px, ${ZAMEK.pct}%, ${ZAMEK.maxPx}px)`,
+		dy: ZAMEK.dy,
+		z: 3,
+	},
+	fontanna: { left: 66, width: "clamp(72px, 11%, 128px)", dy: -10, z: 5 },
 	latarnie: { left: 62, width: "clamp(56px, 8%, 96px)", dy: 42, z: 1 },
 	ogrodek: { left: 85, width: "clamp(64px, 10%, 108px)", dy: 34, z: 2 },
 }
@@ -68,15 +110,16 @@ const RESIDENT_SPOTS: readonly [
 	["fontanna", { leftPct: 68, bottomPct: 45, mode: "doze" }],
 ]
 
-// kwiaty ogródka rozsiane po łące (3 na poziom); e = indeks emoji w palecie poziomu
+// kwiaty ogródka rozsiane po łące (3 na poziom); e = indeks emoji w palecie
+// poziomu; pozycje omijają pas drogi (x ~40–52 przy dole)
 const FLOWER_SPOTS = [
 	{ l: 14, b: 10, e: 0 },
 	{ l: 33, b: 5, e: 1 },
-	{ l: 55, b: 12, e: 2 },
+	{ l: 58, b: 13, e: 2 },
 	{ l: 72, b: 6, e: 0 },
 	{ l: 88, b: 14, e: 1 },
 	{ l: 22, b: 22, e: 2 },
-	{ l: 44, b: 26, e: 0 },
+	{ l: 36, b: 27, e: 0 },
 	{ l: 64, b: 22, e: 1 },
 	{ l: 6, b: 18, e: 2 },
 ]
@@ -86,14 +129,116 @@ const FLOWER_PALETTE: Record<number, string[]> = {
 	3: ["🌺", "🌼", "🌻"],
 }
 
-// ścieżka (dekoracja): kamyki od zamku w dół łąki
-const PEBBLES = [
-	{ l: 49, b: 38 },
-	{ l: 45, b: 31 },
-	{ l: 51, b: 24 },
-	{ l: 46, b: 17 },
-	{ l: 52, b: 10 },
-	{ l: 47, b: 3 },
+// ścieżka (dekoracja): kręta droga w terenie (Terrain road) + płaskie kamienie
+// NA jej osi — lewa liczona w renderze z `roadXAt` (oś należy do Scenery,
+// zależy od zmierzonego gateX), więc kamienie nie zjadą na pobocze; rozmiar
+// rośnie ku dołowi (perspektywa jak szerokość drogi)
+const STEPPING_STONES = [
+	{ b: 44, w: 12 },
+	{ b: 37, w: 14 },
+	{ b: 29, w: 16 },
+	{ b: 21, w: 18 },
+	{ b: 13, w: 21 },
+	{ b: 5, w: 24 },
+]
+
+// roślinność zakotwiczona na linii gruntu jak budynki (kontener działek):
+// drzewa w lukach tylnego rzędu (z=0, za budynkami), krzaki z przodu —
+// budynki toną w zieleni, zamiast wisieć na tle gradientu. `el` to statyczny
+// JSX (moduł): identyczna referencja co render, więc rekonsyliacja jest tania.
+const GREENERY: readonly {
+	left: number
+	width: string
+	dy: number
+	z: number
+	el: React.ReactElement
+}[] = [
+	{
+		left: 22.5,
+		width: "clamp(40px, 6%, 72px)",
+		dy: 44,
+		z: 0,
+		el: <TreeArt variant="mint" />,
+	},
+	{
+		left: 56.5,
+		width: "clamp(36px, 5.5%, 64px)",
+		dy: 46,
+		z: 0,
+		el: <TreeArt variant="spring" />,
+	},
+	{
+		left: 78.5,
+		width: "clamp(40px, 6%, 72px)",
+		dy: 40,
+		z: 0,
+		el: <TreeArt variant="mint" />,
+	},
+	{
+		left: 95.5,
+		width: "clamp(34px, 5%, 60px)",
+		dy: 42,
+		z: 0,
+		el: <TreeArt variant="mint" />,
+	},
+	{ left: 1, width: "clamp(34px, 5%, 56px)", dy: -6, z: 6, el: <BushArt /> },
+	{
+		left: 24.5,
+		width: "clamp(30px, 4.5%, 52px)",
+		dy: -4,
+		z: 4,
+		el: <BushArt />,
+	},
+	{ left: 79, width: "clamp(34px, 5%, 56px)", dy: -8, z: 6, el: <BushArt /> },
+]
+
+// kępki trawy na łące (drobny wypełniacz pustych plam)
+const GRASS_TUFTS = [
+	{ l: 8, b: 28 },
+	{ l: 20, b: 13 },
+	{ l: 31, b: 33 },
+	{ l: 60, b: 27 },
+	{ l: 69, b: 10 },
+	{ l: 84, b: 30 },
+	{ l: 92, b: 8 },
+]
+
+// chmury: pozycja + rozmiar + rytm dryfu (null = fallback 22s z klasy)
+const CLOUDS: readonly {
+	left: string
+	top: string
+	width: number
+	opacity: number
+	dur: string | null
+	delay: string | null
+}[] = [
+	{ left: "18%", top: "6%", width: 84, opacity: 0.95, dur: null, delay: null },
+	{
+		left: "44%",
+		top: "2.5%",
+		width: 60,
+		opacity: 0.7,
+		dur: "34s",
+		delay: "-9s",
+	},
+	{
+		left: "82%",
+		top: "8%",
+		width: 100,
+		opacity: 0.85,
+		dur: "30s",
+		delay: "-16s",
+	},
+]
+
+// gwiazdy nakładki wieczoru
+const NIGHT_STARS = [
+	{ l: "22%", t: "6%", s: "text-sm", d: "0s" },
+	{ l: "36%", t: "12%", s: "text-xs", d: "0.5s" },
+	{ l: "52%", t: "4%", s: "text-base", d: "1.1s" },
+	{ l: "62%", t: "10%", s: "text-xs", d: "0.8s" },
+	{ l: "78%", t: "5%", s: "text-sm", d: "1.6s" },
+	{ l: "90%", t: "13%", s: "text-xs", d: "0.3s" },
 ]
 
 export function VillageScreen() {
@@ -123,6 +268,27 @@ export function VillageScreen() {
 	// wieczór to zabawka (maks latarnie): przełącznik w komponencie, nigdy nie
 	// persystowany i nigdy automatyczny
 	const [evening, setEvening] = useState(false)
+
+	// pomiar sceny → brama zamku w % sceny (środek + stopa): rozmiary działki
+	// w px sprawiają, że brama WĘDRUJE w procentach z rozmiarem ekranu, a droga
+	// Ścieżki ma trafiać w nią wszędzie. Callback ref, nie useEffect — scena
+	// potrafi zamontować się PÓŹNIEJ (pusty stan → pierwszy potworek), a
+	// callback łapie każdy montaż.
+	const [gate, setGate] = useState(() => gateFor(1024, 700))
+	const sceneObserver = useRef<ResizeObserver | null>(null)
+	const sceneRef = useCallback((el: HTMLDivElement | null) => {
+		sceneObserver.current?.disconnect()
+		sceneObserver.current = null
+		if (!el) return
+		const update = () => {
+			if (el.clientWidth && el.clientHeight)
+				setGate(gateFor(el.clientWidth, el.clientHeight))
+		}
+		update()
+		const ro = new ResizeObserver(update)
+		ro.observe(el)
+		sceneObserver.current = ro
+	}, [])
 
 	// Skład wioski liczy CZYSTA `villageRoster` (src/game/village.ts — tam żyją
 	// reguły i ich testy); ekran dokłada tylko to, co jest jego: które działki
@@ -159,6 +325,9 @@ export function VillageScreen() {
 	const ogrodek = buildingLevel(village, "ogrodek")
 	const latarnie = buildingLevel(village, "latarnie")
 	const fontanna = buildingLevel(village, "fontanna")
+	// noc = wieczorna zabawka aktywna; słońce znika dokładnie wtedy, gdy
+	// nakładka z księżycem wchodzi (nigdy oba naraz)
+	const night = evening && latarnie >= MAX_BUILDING_LEVEL
 	const flowerPalette = FLOWER_PALETTE[ogrodek] ?? FLOWER_PALETTE[1]
 	const has = (id: DecorationId) => village.decorations.includes(id)
 	const goal = currentGoal(village)
@@ -286,58 +455,77 @@ export function VillageScreen() {
 				// przebijają arkusza budowy (z-40) ani pełnoekranowych revealów (z-50).
 				// `max-w-5xl mx-auto`: na szerokim laptopie scena jest wyśrodkowaną
 				// dioramą, nie rozciągniętym pustkowiem z malutkimi budynkami.
-				<div className="isolate relative mx-auto w-full max-w-5xl flex-1 overflow-hidden rounded-3xl">
-					{/* niebo — słońce chowa się na wieczór (księżyc przejmuje jego
-					    miejsce w nakładce wieczoru; nigdy oba naraz) */}
-					<div className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-sky-200/70 to-transparent" />
-					{!(evening && latarnie >= MAX_BUILDING_LEVEL) && (
-						<span className="pointer-events-none absolute left-[5%] top-[3%] text-4xl opacity-80">
-							☀️
+				<div
+					ref={sceneRef}
+					className="isolate relative mx-auto w-full max-w-5xl flex-1 overflow-hidden rounded-3xl ring-4 ring-white/40"
+				>
+					{/* niebo: gradient + wektorowe słońce i chmury — słońce chowa się
+					    na wieczór (księżyc przejmuje jego miejsce w nakładce wieczoru;
+					    nigdy oba naraz) */}
+					<div className="pointer-events-none absolute inset-x-0 top-0 h-2/5 bg-gradient-to-b from-sky-300/70 via-sky-200/40 to-transparent" />
+					{!night && (
+						<span className="pointer-events-none absolute left-[4%] top-[3%]">
+							<SunArt />
 						</span>
 					)}
-					<span className="pointer-events-none absolute left-[24%] top-[7%] text-3xl opacity-60">
-						☁️
-					</span>
-					<span className="pointer-events-none absolute right-[14%] top-[4%] text-4xl opacity-50">
-						☁️
-					</span>
+					{CLOUDS.map((c) => (
+						<span
+							key={c.left}
+							className="anim-cloud-drift pointer-events-none absolute"
+							style={{
+								left: c.left,
+								top: c.top,
+								width: c.width,
+								opacity: c.opacity,
+								animationDuration: c.dur ?? undefined,
+								animationDelay: c.delay ?? undefined,
+							}}
+						>
+							<CloudArt />
+						</span>
+					))}
+					{/* tęcza POD terenem (z-1 < z-2): kotwiczona DOŁEM tuż pod grzbietami
+					    wzgórz (bottom 65% = dół łuku na 35% wysokości sceny; grzbiety na
+					    jej szerokości to ~27–33%), więc nogi wyrastają zza terenu, ale
+					    łuk jest schowany ledwie o parę procent — cały widoczny */}
 					{has("tecza") && (
-						<span className="pointer-events-none absolute left-[65%] top-[2%] text-7xl opacity-90">
-							🌈
+						<span
+							className="pointer-events-none absolute bottom-[65%] left-[58%] z-[1] opacity-80"
+							style={{ width: "clamp(170px, 27%, 290px)" }}
+						>
+							<RainbowArc />
 						</span>
 					)}
 
-					{/* wzgórza aż do dołu sceny (bez szwu) — budynki stoją NA nich;
-					    oba zbocza wysokie, żeby kontrastowały z niebem po obu stronach */}
-					<svg
-						className="pointer-events-none absolute inset-x-0 z-[2]"
-						style={{ top: "26%", bottom: 0 }}
-						viewBox="0 0 100 60"
-						preserveAspectRatio="none"
-						aria-hidden="true"
-					>
-						<path
-							d="M0 60 L0 14 Q10 6 22 10 Q36 15 50 5 Q60 -1 72 6 Q86 13 100 8 L100 60 Z"
-							fill="#b5ebcd"
-						/>
-						<path
-							d="M0 60 L0 22 Q16 15 34 19 Q52 24 70 17 Q86 11 100 16 L100 60 Z"
-							fill="#9ce3bc"
-						/>
-					</svg>
-
-					{/* łąka (głębia na wzgórzach) */}
-					<div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-2/5 bg-gradient-to-t from-emerald-300/70 to-transparent" />
+					{/* teren: warstwowe wzgórza + łąka + droga (dekoracja „Ścieżka") */}
+					<div className="pointer-events-none absolute inset-0 z-[2]">
+						<Terrain road={has("sciezka")} gateX={gate.x} gateY={gate.y} />
+					</div>
 
 					{/* efekty sceny (zakupy zmieniają całą scenę, nie tylko działkę) */}
 					<div className="pointer-events-none absolute inset-0 z-[5]">
-						{/* ścieżka: kamyki od zamku przez łąkę */}
+						{/* kępki trawy — stały wypełniacz łąki */}
+						{GRASS_TUFTS.map((t) => (
+							<span
+								key={`${t.l}-${t.b}`}
+								className="absolute"
+								style={{ left: `${t.l}%`, bottom: `${t.b}%`, width: 22 }}
+							>
+								<GrassTuft />
+							</span>
+						))}
+						{/* ścieżka: płaskie kamienie na osi drogi (droga w Terrain) */}
 						{has("sciezka") &&
-							PEBBLES.map((p) => (
+							STEPPING_STONES.map((p) => (
 								<span
-									key={`${p.l}-${p.b}`}
-									className="absolute h-3 w-6 rounded-full bg-amber-100/90 shadow-sm"
-									style={{ left: `${p.l}%`, bottom: `${p.b}%` }}
+									key={p.b}
+									className="absolute -translate-x-1/2 rounded-full bg-[#f4e4b4] shadow-sm"
+									style={{
+										left: `${roadXAt(100 - p.b, gate.x, gate.y)}%`,
+										bottom: `${p.b}%`,
+										width: p.w,
+										height: p.w * 0.42,
+									}}
 								/>
 							))}
 						{/* kwiaty ogródka na łące */}
@@ -385,18 +573,29 @@ export function VillageScreen() {
 						)}
 						{has("staw") && (
 							<span
-								className="absolute flex h-10 w-24 items-center justify-center rounded-full border-2 border-sky-400/40 bg-sky-300/70"
-								style={{ left: "6%", bottom: "5%" }}
+								className="absolute block"
+								style={{
+									left: "3%",
+									bottom: "2%",
+									width: "clamp(110px, 15%, 170px)",
+								}}
 							>
-								<span className="anim-float text-xl">🦆</span>
+								<PondArt />
+								<span className="anim-float absolute left-[30%] top-[2%] text-lg">
+									🦆
+								</span>
 							</span>
 						)}
 						{has("hustawka") && (
 							<span
-								className="absolute text-5xl"
-								style={{ left: "72%", bottom: "18%" }}
+								className="absolute block"
+								style={{
+									left: "70%",
+									bottom: "15%",
+									width: "clamp(52px, 8%, 92px)",
+								}}
 							>
-								🌳
+								<TreeArt variant="spring" swing />
 							</span>
 						)}
 						{has("pomnik") && firstHatchedId !== undefined && (
@@ -410,7 +609,9 @@ export function VillageScreen() {
 									animate={false}
 									className="monster-silhouette opacity-70"
 								/>
-								<span className="-mt-1 h-3 w-12 rounded bg-slate-300/90 shadow-sm" />
+								<span className="-mt-1 block w-14">
+									<PedestalArt />
+								</span>
 							</span>
 						)}
 						{/* Fontanna Marzeń: odbicie wymarzonego potworka w wodzie */}
@@ -435,6 +636,23 @@ export function VillageScreen() {
 						className="pointer-events-none absolute inset-x-0 z-20"
 						style={{ top: GROUND_LINE_TOP }}
 					>
+						{/* zieleń między działkami: te same kotwice co budynki (stopa
+						    przez bottom: dy), więc drzewa STOJĄ na zboczu, nie pływają */}
+						{GREENERY.map((g) => (
+							<span
+								key={g.left}
+								aria-hidden="true"
+								className="absolute block"
+								style={{
+									left: `${g.left}%`,
+									bottom: g.dy,
+									width: g.width,
+									zIndex: g.z,
+								}}
+							>
+								{g.el}
+							</span>
+						))}
 						{BUILDINGS.map((b) => {
 							const level = buildingLevel(village, b.id)
 							const plot = PLOTS[b.id]
@@ -453,12 +671,16 @@ export function VillageScreen() {
 										zIndex: plot.z,
 									}}
 								>
-									<BuildingArt
-										id={b.id}
-										level={Math.max(1, level)}
-										size="100%"
-										silhouette={level === 0}
-									/>
+									{/* podest działki pod stopą artu: wydeptany placyk + cień
+									    kontaktowy — budynek stoi NA łące, nie jest wklejony */}
+									<PlotGround>
+										<BuildingArt
+											id={b.id}
+											level={Math.max(1, level)}
+											size="100%"
+											silhouette={level === 0}
+										/>
+									</PlotGround>
 									{level === 0 && cost !== null && (
 										<span
 											className={`-mt-2 rounded-full px-2.5 py-0.5 text-sm font-extrabold shadow ${
@@ -536,19 +758,21 @@ export function VillageScreen() {
 					)}
 
 					{/* wieczór (zabawka maks latarni): przygasza scenę, latarnie świecą */}
-					{evening && latarnie >= MAX_BUILDING_LEVEL && (
-						<div className="pointer-events-none absolute inset-0 z-[120] bg-gradient-to-b from-indigo-950/60 via-indigo-900/35 to-indigo-950/20">
+					{night && (
+						<div className="pointer-events-none absolute inset-0 z-[120] bg-gradient-to-b from-indigo-950/70 via-indigo-900/40 to-indigo-950/25">
 							{/* księżyc w miejscu słońca (podmiana, nie duet) */}
-							<span className="absolute left-[5%] top-[3%] text-4xl">🌙</span>
-							<span className="anim-sparkle absolute left-[22%] top-[6%] text-sm text-white">
-								✦
+							<span className="absolute left-[4%] top-[3%]">
+								<MoonArt />
 							</span>
-							<span
-								className="anim-sparkle absolute left-[62%] top-[10%] text-xs text-white"
-								style={{ animationDelay: "0.8s" }}
-							>
-								✦
-							</span>
+							{NIGHT_STARS.map((star) => (
+								<span
+									key={star.l}
+									className={`anim-sparkle absolute ${star.s} text-white`}
+									style={{ left: star.l, top: star.t, animationDelay: star.d }}
+								>
+									✦
+								</span>
+							))}
 						</div>
 					)}
 

@@ -549,6 +549,40 @@ body {
 
 /* ---------- wioska budowniczych ---------- */
 
+/* Sylwetka niezbudowanego budynku (BuildingArt): ozdoby oznaczone data-decor
+   (poświaty, iskierki, dym, świetliki) znikają — w filtrze brightness(0)
+   stawałyby się szarymi bańkami i czarnymi kropkami. */
+.bldg-silhouette [data-decor] {
+	display: none;
+}
+
+/* promienie słońca: bardzo wolny obrót HTML-owego wrappera (kompozytor) */
+.anim-sun-spin {
+	animation: sun-spin 48s linear infinite;
+}
+
+@keyframes sun-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* dryf chmur: łagodne tam i z powrotem; 22s to fallback — chmury poza
+   pierwszą różnicują czas inline (animation-duration) */
+.anim-cloud-drift {
+	animation: cloud-drift 22s ease-in-out infinite;
+}
+
+@keyframes cloud-drift {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	50% {
+		transform: translateX(18px);
+	}
+}
+
 /* świetlik przy latarniach (L2+): pulsujące światełko z lekkim dryfem */
 .anim-firefly {
 	animation: firefly 3.4s ease-in-out infinite;

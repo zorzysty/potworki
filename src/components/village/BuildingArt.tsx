@@ -19,7 +19,9 @@ export const DECORATION_EMOJI: Record<DecorationId, string> = {
 	tecza: "🌈",
 }
 
-const OUTLINE = "#5f45c4"
+// kolor konturu idiomu potworków (= --color-grape-dark) — współdzielony ze
+// scenerią wioski (Scenery.tsx importuje stąd)
+export const OUTLINE = "#5f45c4"
 const STONE_LINE = "#ffffff"
 
 // "fill" = wypełnij kontener obiema osiami; viewBox + domyślne
@@ -235,7 +237,7 @@ function ZamekArt({ level, size }: { level: number; size: number | string }) {
 
 			{/* iskierki cytadeli */}
 			{gold && (
-				<g fill="#ffffff">
+				<g data-decor fill="#ffffff">
 					<circle cx={38} cy={50} r={2.2} className="anim-sparkle" />
 					<circle
 						cx={132}
@@ -305,7 +307,7 @@ function DomkiArt({ level, size }: { level: number; size: number | string }) {
 					{/* komin + dymek (od L2 domki są „zamieszkane" na full) */}
 					<rect x={x + 29} y={30} width={7} height={14} fill="#a78bfa" />
 					{level >= 2 && (
-						<g stroke="none" fill="#e2e8f0" opacity={0.8}>
+						<g data-decor stroke="none" fill="#e2e8f0" opacity={0.8}>
 							<circle cx={x + 33} cy={24} r={3} className="anim-float" />
 							<circle
 								cx={x + 36}
@@ -404,7 +406,7 @@ function FontannaArt({
 				))}
 			</g>
 			{/* iskierki na wodzie */}
-			<g fill="#ffffff">
+			<g data-decor fill="#ffffff">
 				<circle cx={38} cy={72} r={2} className="anim-sparkle" />
 				{level >= 2 && (
 					<circle
@@ -448,15 +450,16 @@ function PlacZabawArt({
 				<line x1={134} y1={78} x2={148} y2={78} />
 				<rect x={126} y={20} width={30} height={10} rx={4} fill="#7c5cf0" />
 			</g>
+			{/* profil ślizgu: stromy start, wypłaszczenie przy ziemi */}
 			<path
-				d="M128 30 Q94 46 68 88"
+				d="M128 30 Q100 78 64 86"
 				stroke="#ffd95e"
 				strokeWidth={12}
 				strokeLinecap="round"
 				fill="none"
 			/>
 			<path
-				d="M128 30 Q94 46 68 88"
+				d="M128 30 Q100 78 64 86"
 				stroke="#f59e0b"
 				strokeWidth={3}
 				strokeLinecap="round"
@@ -523,8 +526,10 @@ function LatarnieArt({
 			{lamps.map((x, i) => (
 				<g key={x}>
 					{/* poświata (dwuwarstwowa — naprawdę świeci) */}
-					<circle cx={x} cy={24} r={17} fill="#ffd95e" opacity={0.22} />
-					<circle cx={x} cy={24} r={10} fill="#ffe9a3" opacity={0.4} />
+					<g data-decor>
+						<circle cx={x} cy={24} r={17} fill="#ffd95e" opacity={0.22} />
+						<circle cx={x} cy={24} r={10} fill="#ffe9a3" opacity={0.4} />
+					</g>
 					<g stroke={OUTLINE} strokeWidth={2}>
 						<line x1={x} y1={92} x2={x} y2={34} strokeWidth={4} />
 						{/* stopa i zawijas */}
@@ -542,6 +547,7 @@ function LatarnieArt({
 					{/* świetliki (L2+) */}
 					{level >= 2 && (
 						<circle
+							data-decor
 							cx={x + 13}
 							cy={44 + i * 7}
 							r={1.9}
@@ -644,7 +650,7 @@ function OgrodekArt({ level, size }: { level: number; size: number | string }) {
 				</g>
 			))}
 			{level >= 3 && (
-				<g fill="#ffffff">
+				<g data-decor fill="#ffffff">
 					<circle cx={16} cy={30} r={2} className="anim-sparkle" />
 					<circle
 						cx={86}
@@ -814,6 +820,7 @@ function SklepikArt({ level, size }: { level: number; size: number | string }) {
 					<MiniHat x={59} y={boutique ? 82 : 80} color="#ff5e8a" />
 					{boutique && (
 						<circle
+							data-decor
 							cx={51}
 							cy={64}
 							r={3}
@@ -834,6 +841,7 @@ function SklepikArt({ level, size }: { level: number; size: number | string }) {
 					{/* szyld z kapeluszem (świeci w butiku) */}
 					{boutique && (
 						<circle
+							data-decor
 							cx={88}
 							cy={62}
 							r={11}
@@ -855,7 +863,7 @@ function SklepikArt({ level, size }: { level: number; size: number | string }) {
 
 			{/* iskierki mody (L3) */}
 			{boutique && (
-				<g fill="#ffffff">
+				<g data-decor fill="#ffffff">
 					<circle cx={30} cy={26} r={2} className="anim-sparkle" />
 					<circle
 						cx={102}
@@ -880,6 +888,11 @@ function SklepikArt({ level, size }: { level: number; size: number | string }) {
 // Dispatcher: jeden punkt wejścia dla plotów, arkusza i BuildReveal.
 // `level` 1..3 = zbudowany art; `silhouette` = jednolity cień (niezbudowana
 // działka na scenie / wiersz listy) — filtr inline, odporny na brak klas.
+// Sylwetka gasi WSZYSTKIE ozdoby: grupy oznaczone `data-decor` (poświaty,
+// iskierki, dym, świetliki) chowa reguła `.bldg-silhouette [data-decor]`
+// w styles.css — półprzezroczyste światła w brightness(0) stawałyby się
+// szarymi bańkami/czarnymi kropkami. Nową ozdobę w arcie ZAWSZE oznacz
+// `data-decor`, zamiast dodawać jej własny przełącznik.
 export function BuildingArt({
 	id,
 	level,
@@ -919,6 +932,7 @@ export function BuildingArt({
 	if (!silhouette) return art
 	return (
 		<span
+			className="bldg-silhouette"
 			style={{
 				display: "block",
 				width: "100%",
