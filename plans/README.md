@@ -21,8 +21,86 @@ when a change alters a contract.
 | 017  | Wyprawy potworków — postęp w RUNDACH (nigdy zegar), nagrody ✨ | P3 | M | — | DONE — branch `feat/012-wioska-budowanie` (307 tests; SAVE_VERSION 11→12, katalog 3 typów wypraw, osiągnięcia 46→48) |
 | 018  | PWA/offline — instalacja na tablecie, gra bez sieci | P2 | S | — | DONE — branch `feat/012-wioska-budowanie` (217 tests; fallback `--app-vh` zastosowany — patrz plan, Step 5) |
 | 019  | Przegląd PROPOZYCJI — nazewnicza runda maintainera (012–018) | P2 | S | 012–018 | TODO — BLOCKED on maintainer's naming decisions (Step 2); parking spot, żeby nie przepadło |
+| 020  | Symetryczny guard przyjaciel ↔ podróżnik (`setCompanion` podczas wyprawy) | P1 | S | — | DONE — worktree branch `improve/plans-020-027` @ `090133a` (reviewed; 312 tests) |
+| 021  | Pauza wstrzymuje auto-przejście do następnego pytania (timer „correct") | P2 | S | — | DONE — worktree branch `improve/plans-020-027` @ `d52073a` (reviewed; browser-verified incl. mutation check) |
+| 022  | Brama Biome w CI + skrypt `verify` + sprostowanie 48→53 osiągnięć w DOX | P2 | S | — | DONE — worktree branch `improve/plans-020-027` @ `7f9ea07` (reviewed: scope clean, verify green) |
+| 023  | Test potrójnego capu portfela + test `markGatesCelebrated` + Verification v14 w DOX | P2 | S | — | DONE — worktree branch `improve/plans-020-027` @ `25a2cc1` (reviewed; 314 tests; mutation-checked at 980) |
+| 024  | Wioska — memoizacja wędrowców (toggle UI nie rekonsyliuje 26 SVG) | P3 | S | — | DONE — worktree branch `improve/plans-020-027` @ `1637a63` (reviewed; browser-verified: positions stable, cheer 3/3, tap reactions OK) |
+| 025  | Wspólny helper finalizacji rundy + fix licznika wizyt w `debugFinishRound` | P2 | M | 023 (test net), po 020 | DONE — worktree branch `improve/plans-020-027` @ `bffa3e0` (315 testów; nowy test debug-path mutation-checked; doc-as-written: `debugFinishRound` NIE liczy rund-wizyt) |
+| 026  | Ekstrakcja karty potworka z CollectionScreen (`MonsterCard`/`MonsterCardLocked`) | P3 | M | 020 | DONE — worktree branch `improve/plans-020-027` @ `8334222` (DOM zweryfikowany jako identyczny w headless chromium: 4 karty, w tym posiadany w złotej ramce) |
+| 027  | Wspólny komponent paska celu budowy (VillageScreen + RoundSummary) | P3 | S | — (po 024) | DONE — worktree branch `improve/plans-020-027` @ `fbaca9c` (`components/GoalProgressBar.tsx`; DOM identyczny w obu miejscach) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale).
+
+## Audit 2026-07-12 (branch `feat/012-wioska-budowanie` @ `a0d75aa`) — plans 020–024
+
+Full standard-depth audit of the never-audited plan-012–018 code (all nine
+categories; baseline green: 311 tests, typecheck, `bun audit`, `biome ci`
+all clean). Security: clean (no injection sinks, least-privilege CI, no
+secrets). Initially run non-interactively — plans 020–024 covered the **top 5
+findings by leverage** (skill default); on the maintainer's follow-up
+("add 7–9, implement all") the remaining vetted debt findings graduated to
+plans 025–027:
+
+- 025 ← triplicated round-finalization sequence (the drift it predicted
+  already manifested once: `debugFinishRound` bumps `visitRoundsCompleted`
+  against its own comment and the store DOX contract — 025 fixes it).
+- 026 ← monster-card modal as a ~250-line inline block in
+  `CollectionScreen.tsx`.
+- 027 ← duplicated goal-progress-bar markup (VillageScreen ≈ RoundSummary,
+  already cosmetically drifted).
+
+## Coordination notes (020–027)
+
+All eight are save-shape-neutral (zero `SAVE_VERSION` changes). Execution
+order (binding for a sequential run — later plans' drift checks anchor at
+`a0d75aa` and explicitly whitelist earlier plans' footprints):
+
+**022 → 020 → 023 → 021 → 024 → 025 → 026 → 027**
+
+- 022 first: daje `bun run verify` pozostałym executorom.
+- 020 przed 023/025/026 (dotyka `store.ts` + friend button w
+  `CollectionScreen`).
+- 023 przed 025 (potrójny cap = siatka bezpieczeństwa refaktoru).
+- 024 przed 027 (oba w `VillageScreen`, rozłączne linie).
+
+### Stan wykonania — ZMERGOWANE do `main` 2026-07-25 (`75cc704`)
+
+Wykonanie w izolowanym worktree `.claude/worktrees/improve-exec`, branch
+**`improve/plans-020-027`** (bazowany na `a0d75aa` = ówczesny `main`).
+Wszystkie osiem planów zrobione, w porządku wykonania: 022 (`7f9ea07`) →
+020 (`090133a`) → 023 (`25a2cc1`) → 021 (`d52073a`) → 024 (`1637a63`) →
+025 (`bffa3e0`) → 026 (`8334222`) → 027 (`fbaca9c`). Po każdym `bun run
+verify` zielony — końcowo **315 testów**, typecheck 0, biome czysty.
+Zapis (`SAVE_VERSION`) nietknięty przez cały ciąg.
+
+Weryfikacja behawioralna w headless chromium (`/usr/bin/chromium` +
+puppeteer-core; ścieżka playwrighta z roota `CLAUDE.md` w tym środowisku
+już nie istnieje): 021 i 024 wcześniej, a dla refaktorów prezentacyjnych
+026/027 — **porównanie DOM przed/po** (stash dance w worktree), zero
+różnic na 4 kartach potworka (w tym posiadany w złotej ramce z kapeluszem)
+oraz na obu paskach celu budowy.
+
+- **025**: doc-as-written — `debugFinishRound` przestał liczyć
+  `visitRoundsCompleted` (bumpował wbrew własnemu komentarzowi i
+  kontraktowi w `src/store/CLAUDE.md`). Maintainer może zawetować w
+  review: alternatywa to zostawić bump i zmienić komentarz + DOX, jeśli
+  chce testowalności osiągnięć wizyt z ekranu debug. Nowy test ścieżki
+  debug mutation-checked (przywrócenie bumpa = test czerwony).
+- **Zmergowane** (fast-forward) do `main` @ `75cc704`; worktree
+  `.claude/worktrees/improve-exec` usunięty. Poza planami weszły w tej samej
+  serii: reset scrolla przy zmianie ekranu, progresja cen Jajka Życzeń
+  (sufit dopłaty 100 ✨), guard pauzy na fizycznej klawiaturze, poprawki z
+  `/code-review` i przebieg `/simplify` (m.in. `villageRoster` wyniesiony do
+  `src/game/village.ts`). Stan na `main`: 335 testów, `bun run verify`
+  zielony, `SAVE_VERSION` nietknięty (14). **Niewypchnięte** — deploy na
+  GitHub Pages odpali się dopiero po `git push`.
+- Uwaga na przyszłe worktree pod `.claude/worktrees/`: biome przerywa z
+  „nested root configuration", bo widzi drugi `biome.json` pod rootem —
+  `bun run verify` w głównym checkoucie działa dopiero po usunięciu
+  worktree (albo po dopisaniu `.claude` do ignorów w `biome.json`).
+- Uwaga: w stashu repo leży PRZEDsesyjny `stash@{0} „rescued: workflow
+  plan-018 WIP…"` — nietknięty, należy do maintainera.
 
 ## Dependency & coordination notes (013–018)
 
@@ -102,17 +180,49 @@ Condensed from the 2026-06 audits; full rationale in git history of this file:
 - **Test for the play-again button** — it only re-invokes the exhaustively
   tested `startRound()`.
 
+From the 2026-07-12 audit:
+
+- **Shared `spend()` helper for buildVillage/buyDecoration/buyCosmetic/
+  buyWishEgg** — the guard+deduct+checkAchievements envelope repeats 4×,
+  but the guards genuinely diverge (tier check, max-level, dedupe);
+  extracting only the 3-line envelope doesn't pay for itself. Revisit only
+  if a cross-cutting change (e.g. "coins spent" counter) actually lands.
+- **Pre-commit hooks** — low value for a single-maintainer repo once the
+  CI Biome gate (plan 022) exists.
+- **React component tests** — zero exist by documented strategy (pure
+  logic tested, UI verified via `?debug` + puppeteer); re-confirmed as the
+  right tradeoff given the clean logic/UI split.
+
 ## Direction findings (not planned — maintainer's call)
 
-- **Save export/import (cross-device).** Progress is per-device; `SaveState`
-  is versioned + serializable; `safeStorage` exists.
-- **Parent/teacher progress view.** `DebugScreen` already computes the
-  mastery table; a PIN-gated read-only screen is mostly presentation.
-- **Validate the reward economy after the 76-monster + division expansion.**
-  `rarityOf` spans new id blocks while `RARITY_ODDS` stayed fixed; the
-  `simulateRoundOutcome` harness could measure dup/iskierki pacing.
-  (Plan 012 adds a wage income + village sink — re-measure after it lands.)
-- **Audio feedback** for the reward loop (needs mute/autoplay UX).
+Refreshed by the 2026-07-12 audit; ordered by (grounding × payoff)/effort:
+
+- **Ship the wired-but-empty `background` cosmetic slot ("tła").**
+  `MonsterStage` already renders a `background` slot (zero callers today),
+  the shop/wardrobe UI already iterates the catalog per slot, and
+  ROADMAP.md names "tła (slot `background`)" as the un-built fast-follow.
+  Mostly catalog entries + art + a "Tło" wardrobe row; no save-shape
+  change beyond the existing `equipped` map. Effort S; the cheapest
+  append-friendly iskierki sink available.
+- **Reward-economy validation — NOW RIPE.** The old "re-measure after 012
+  lands" condition is satisfied and then some: wage income (012), 426✨ of
+  cosmetics prices (013/014), visit bonus (016) and expedition income
+  (017) all landed. The pure `simulateRoundOutcome` harness exists;
+  a spike scripting it over N rounds would answer dup-rate / ✨-per-round
+  / rounds-to-afford-a-cosmetic before any retune. Effort M (measure
+  first; retune only if data warrants).
+- **Parent progress view.** `DebugScreen` already renders the full
+  per-fact mastery table and `adaptive.ts` exposes the aggregations; a
+  gated (PIN/long-press) read-only, parent-legible presentation (color
+  bands, not floats) is mostly presentation work. Effort S–M.
+- **„Pasek więzi" (bond meter).** Named in ROADMAP.md as the un-built
+  fast-follow of the companion layer; no bond state exists today. Needs a
+  new persisted per-monster counter (migration) and careful design so it
+  only ever grows (no guilt/decay — root principle). Effort M; the
+  fuzziest of the four — design spike first.
+- **Save export/import (cross-device)** and **audio feedback** — still
+  parked; nothing new. (PWA landing made the tablet the home device,
+  lowering export/import urgency.)
 
 (Per-monster cosmetics + card frames graduated to plans 013/014; story-framed
 review, a third mode, expeditions and PWA to 015–018.)
