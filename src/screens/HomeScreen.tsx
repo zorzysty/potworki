@@ -193,7 +193,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					<div className="min-w-0 flex-1">
 						{/* teksty zaproszenia Strażnika */}
 						<div className="text-base font-extrabold leading-tight text-grape-dark">
-							Strażnik {visitRegion.name} zaprasza cię w odwiedziny!{" "}
+							Strażnik {visitRegion.nameGenitive} zaprasza cię w odwiedziny!{" "}
 							{visitRegion.emoji}
 						</div>
 						<div className="mt-0.5 text-sm font-bold text-slate-500">

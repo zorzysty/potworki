@@ -22,6 +22,15 @@ describe("REGIONS", () => {
 		expect(REGIONS.length).toBe(STAGES.length)
 	})
 
+	test("każdy region ma dopełniacz nazwy do zdania o Strażniku", () => {
+		for (const r of REGIONS) {
+			expect(r.nameGenitive.length).toBeGreaterThan(0)
+			// dopełniacz MUSI się różnić od mianownika — inaczej ktoś dopisał region
+			// kopiując `name` i zaproszenie znów brzmi „Strażnik Wioska Startowa…"
+			expect(r.nameGenitive).not.toBe(r.name)
+		}
+	})
+
 	test("stage = indeks, factor = STAGES[stage][0]", () => {
 		REGIONS.forEach((r, i) => {
 			expect(r.stage).toBe(i)

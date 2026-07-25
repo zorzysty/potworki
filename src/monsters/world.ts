@@ -10,6 +10,10 @@ export interface Region {
 	stage: number // indeks w STAGES
 	factor: number // STAGES[stage][0] (etap 0: zestaw bazowy, factor=1)
 	name: string
+	// Dopełniacz nazwy — „Strażnik {nameGenitive} zaprasza…" na Home. Mianownik
+	// w tym zdaniu brzmi obco po polsku, a polszczyzna nie odmienia się regułą,
+	// więc formę trzymamy obok nazwy zamiast ją generować.
+	nameGenitive: string
 	emoji: string
 	blurb: string
 	color: string // klasy Tailwind na plakietkę nazwy (literały — skanowane przez JIT)
@@ -29,6 +33,7 @@ export const REGIONS: readonly Region[] = [
 		stage: 0,
 		factor: 1,
 		name: "Wioska Startowa",
+		nameGenitive: "Wioski Startowej",
 		emoji: "🏡",
 		blurb: "Tu zaczyna się Twoja przygoda — dom pierwszych potworków.",
 		color: "bg-violet-100 text-violet-600",
@@ -39,6 +44,7 @@ export const REGIONS: readonly Region[] = [
 		stage: 1,
 		factor: 3,
 		name: "Trójkątna Piramida",
+		nameGenitive: "Trójkątnej Piramidy",
 		emoji: "🔺",
 		blurb: "Piramida o trzech ścianach, gdzie wszystko układa się trójkami.",
 		color: "bg-orange-100 text-orange-600",
@@ -49,6 +55,7 @@ export const REGIONS: readonly Region[] = [
 		stage: 2,
 		factor: 4,
 		name: "Kraina Czterolistnej Koniczyny",
+		nameGenitive: "Krainy Czterolistnej Koniczyny",
 		emoji: "🍀",
 		blurb: "Łąki pełne koniczyn, gdzie wszystko rośnie czwórkami.",
 		color: "bg-sky-100 text-sky-600",
@@ -59,6 +66,7 @@ export const REGIONS: readonly Region[] = [
 		stage: 3,
 		factor: 6,
 		name: "Sześciokątne Plastry Miodu",
+		nameGenitive: "Sześciokątnych Plastrów Miodu",
 		emoji: "🍯",
 		blurb: "Sześciokątne plastry brzęczące od pracowitych potworków.",
 		color: "bg-amber-100 text-amber-600",
@@ -69,6 +77,7 @@ export const REGIONS: readonly Region[] = [
 		stage: 4,
 		factor: 9,
 		name: "Dziewięciogwiezdna Przystań",
+		nameGenitive: "Dziewięciogwiezdnej Przystani",
 		emoji: "🌟",
 		blurb: "Przystań pod dziewięcioma gwiazdami, skąd widać cały świat.",
 		color: "bg-indigo-100 text-indigo-600",
@@ -79,6 +88,7 @@ export const REGIONS: readonly Region[] = [
 		stage: 5,
 		factor: 7,
 		name: "Tęczowy Most Siedmiu Barw",
+		nameGenitive: "Tęczowego Mostu Siedmiu Barw",
 		emoji: "🌈",
 		blurb: "Most z siedmiu barw tęczy, lśniący po każdym deszczu.",
 		color: "bg-pink-100 text-pink-600",
@@ -89,6 +99,7 @@ export const REGIONS: readonly Region[] = [
 		stage: 6,
 		factor: 8,
 		name: "Ósemkowa Spirala Nieskończoności",
+		nameGenitive: "Ósemkowej Spirali Nieskończoności",
 		emoji: "♾️",
 		blurb: "Niekończąca się spirala ósemek, która kręci się bez końca.",
 		color: "bg-fuchsia-100 text-fuchsia-600",
