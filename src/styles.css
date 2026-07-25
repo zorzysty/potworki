@@ -39,6 +39,14 @@ body {
 	overscroll-behavior: none;
 }
 
+/* Płótno pod aplikacją NIE może być białe: Firefox na Androidzie przy chowaniu
+   paska narzędzi odsłania pas płótna html poniżej layout viewportu (layout ma
+   tam stałą wysokość „z paskiem") — biały pas wyglądał jak ucięty ekran. Kolor
+   z palety tła ekranów, więc pas się wtapia. */
+html {
+	background-color: #ede9fe;
+}
+
 body {
 	font-family: var(--font-display);
 	-webkit-tap-highlight-color: transparent;
@@ -46,26 +54,27 @@ body {
 	user-select: none;
 }
 
-/* PWA standalone: odsuń UI od notcha i home-indicatora (viewport-fit=cover
-   w index.html). W przeglądarce chrome robi to za nas — blok celowo scoped.
-   --app-vh = bezpieczna wysokość viewportu: ekrany używają min-h-[var(--app-vh)]
-   zamiast min-h-dvh, bo dvh mierzy PEŁNY viewport i padding body robiłby
-   trwały scroll o sumę insetów (zweryfikowane realnymi env() przez CDP). */
+/* Insety systemowe (notch, pasek gestów, home indicator; viewport-fit=cover
+   w index.html) obsługiwane ZAWSZE, nie tylko w standalone: Chrome na Androidzie
+   (edge-to-edge) i Safari raportują env() także w zwykłej karcie — bez odjęcia
+   dół strony (keypad rundy, most na mapie) chował się pod paskiem gestów.
+   W przeglądarkach, które same odsuwają UI, env() = 0 i całość jest no-opem.
+   Padding insetów siedzi na kontenerze tła w App.tsx (border-box + min-h-dvh,
+   więc pasy insetów mają kolor tła ekranu, nie biel body), NIE na body.
+   --app-vh = bezpieczna wysokość viewportu: ekrany używają min-h-[var(--app-vh)],
+   nigdy min-h-dvh/svh. Baza = min(100svh, --vvh): svh to wysokość przy
+   WIDOCZNYM pasku przeglądarki, a --vvh to REALNY pomiar visualViewport.height
+   z main.tsx — Firefox na Androidzie trzyma layout (i potrafi liczyć jednostki
+   viewportu) w rozmiarze „bez paska" (bugzilla 1586144), przez co ekran rundy
+   był za wysoki i keypad lądował pod paskiem; pomiar JS nie kłamie nigdzie.
+   Koszt w Chrome: przy schowanym pasku zostaje u dołu mały zapas, zamalowany
+   gradientem kontenera tła (min-h-dvh) — niewidoczny. */
 :root {
-	--app-vh: 100dvh;
-}
-@media (display-mode: standalone) {
-	:root {
-		--app-vh: calc(
-			100dvh -
-			env(safe-area-inset-top) -
-			env(safe-area-inset-bottom)
-		);
-	}
-	body {
-		padding: env(safe-area-inset-top) env(safe-area-inset-right)
-			env(safe-area-inset-bottom) env(safe-area-inset-left);
-	}
+	--app-vh: calc(
+		min(100svh, var(--vvh, 100svh)) -
+		env(safe-area-inset-top, 0px) -
+		env(safe-area-inset-bottom, 0px)
+	);
 }
 
 /* ---------- animacje potworków (wnętrza SVG) ---------- */

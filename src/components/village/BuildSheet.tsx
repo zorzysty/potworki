@@ -360,7 +360,7 @@ export function BuildSheet({
 				onClick={onClose}
 				className="absolute inset-0 bg-slate-900/40"
 			/>
-			<div className="relative max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl">
+			<div className="relative max-h-[calc(var(--app-vh)*0.92)] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl">
 				<div className="mb-3 flex items-center justify-between">
 					{view.kind === "building" ? (
 						<button

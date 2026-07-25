@@ -72,7 +72,11 @@ export function App() {
 						: "bg-gradient-to-b from-violet-200 via-fuchsia-100 to-amber-50"
 
 	return (
-		<div className={`min-h-[var(--app-vh)] ${background}`}>
+		// min-h-dvh + padding insetów (border-box): tło maluje CAŁY ekran, także
+		// pod paskiem gestów/notchem, a treść (content-box = --app-vh) ich unika
+		<div
+			className={`min-h-dvh ${background} pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]`}
+		>
 			<div className="mx-auto min-h-[var(--app-vh)] max-w-lg land:max-w-none">
 				{screen === "home" && <HomeScreen debugEnabled={DEBUG_ENABLED} />}
 				{screen === "round" && <RoundScreen debugEnabled={DEBUG_ENABLED} />}
