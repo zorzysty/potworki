@@ -11,9 +11,9 @@ import {
 	RARITY_ODDS,
 	rollWish,
 	WISH_COST,
-	WISH_COST_MAX,
 	WISH_COST_NO_DREAM,
 	WISH_COST_STEP,
+	WISH_SURCHARGE_MAX,
 	wishEggPrice,
 } from "./rewards"
 
@@ -33,12 +33,26 @@ describe("wishEggPrice", () => {
 		)
 	})
 
-	test("sufit trzyma cenę w zasięgu portfela (cap 999)", () => {
-		expect(wishEggPrice(WISH_COST.legendary, 999)).toBe(WISH_COST_MAX)
-		expect(WISH_COST_MAX).toBeLessThanOrEqual(ISKIERKI_CAP)
-		// sufit musi być powyżej każdej bazy, inaczej progresja nie zadziała
-		for (const base of Object.values(WISH_COST))
-			expect(WISH_COST_MAX).toBeGreaterThan(base)
+	test("sufit dopłaty trzyma cenę w zasięgu portfela (cap 999)", () => {
+		for (const base of Object.values(WISH_COST)) {
+			expect(wishEggPrice(base, 999)).toBe(base + WISH_SURCHARGE_MAX)
+			expect(wishEggPrice(base, 999)).toBeLessThanOrEqual(ISKIERKI_CAP)
+		}
+	})
+
+	test("premia za rzadkość NIE znika po wejściu w sufit", () => {
+		// sufit ogranicza dopłatę, nie cenę końcową — gdyby capował cenę,
+		// wszystkie bazy zlałyby się w jedną liczbę i wymarzony legendarny
+		// kosztowałby tyle co brak wymarzonego
+		for (const bought of [17, 25, 500]) {
+			expect(wishEggPrice(WISH_COST.legendary, bought)).toBe(
+				wishEggPrice(WISH_COST_NO_DREAM, bought) +
+					(WISH_COST.legendary - WISH_COST_NO_DREAM),
+			)
+			expect(wishEggPrice(WISH_COST.legendary, bought)).toBeGreaterThan(
+				wishEggPrice(WISH_COST_NO_DREAM, bought),
+			)
+		}
 	})
 })
 

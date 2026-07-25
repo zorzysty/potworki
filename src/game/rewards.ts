@@ -126,15 +126,18 @@ export const WISH_COST_NO_DREAM = 10
 
 // Progresja: każde KOLEJNE Jajko Życzeń kosztuje o `WISH_COST_STEP` więcej niż
 // poprzednie — jajko ma zostać wielkim życzeniem, nie zakupem co dwie rundy.
-// `WISH_COST_MAX` to sufit: bez niego cena przebiłaby cap portfela (999) i
-// przycisk zostałby martwy na zawsze — a to zamknięta droga, nie wyzwanie.
-// Oba to gałki strojenia ekonomii; progresja liczy się od bazy właściwej dla
-// wymarzonego (rzadkość) albo bez niego, więc struktura cen zostaje.
+// `WISH_SURCHARGE_MAX` ogranicza samą DOPŁATĘ, nie cenę końcową: sufit jest
+// obowiązkowy (bez niego cena przerosłaby cap portfela 999 i przycisk zostałby
+// martwy na zawsze — zamknięta droga, nie wyzwanie), ale gdyby capował cenę,
+// wszystkie bazy zlałyby się w jedną liczbę i premia za rzadkość wymarzonego
+// po cichu by zniknęła. Tak cena maksymalna = baza + dopłata (≤ 230 ✨ < 999),
+// a różnice wg rzadkości zostają na zawsze. Gałki strojenia: obie stałe + bazy.
 export const WISH_COST_STEP = 10
-export const WISH_COST_MAX = 200
+export const WISH_SURCHARGE_MAX = 200
 
 export function wishEggPrice(base: number, bought: number): number {
-	return Math.min(WISH_COST_MAX, base + WISH_COST_STEP * Math.max(0, bought))
+	const surcharge = WISH_COST_STEP * Math.max(0, bought)
+	return base + Math.min(WISH_SURCHARGE_MAX, surcharge)
 }
 
 function rollTier(

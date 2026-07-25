@@ -10,9 +10,9 @@ import {
 	ISKIERKI_CAP,
 	ISKIERKI_FOR_DUP,
 	WISH_COST,
-	WISH_COST_MAX,
 	WISH_COST_NO_DREAM,
 	WISH_COST_STEP,
+	WISH_SURCHARGE_MAX,
 } from "../game/rewards"
 import { BUILDINGS, DECORATIONS } from "../game/village"
 import {
@@ -471,8 +471,8 @@ describe("buyWishEgg — ekonomia", () => {
 		useGame.setState({
 			achievementStats: { ...game().achievementStats, wishEggsBought: 500 },
 		})
-		expect(wishEggCost(game())).toBe(WISH_COST_MAX)
-		expect(WISH_COST_MAX).toBeLessThanOrEqual(ISKIERKI_CAP)
+		expect(wishEggCost(game())).toBe(WISH_COST_NO_DREAM + WISH_SURCHARGE_MAX)
+		expect(wishEggCost(game())).toBeLessThanOrEqual(ISKIERKI_CAP)
 	})
 
 	test("wish egg hatches unowned dream", () => {

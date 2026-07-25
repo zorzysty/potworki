@@ -41,7 +41,7 @@ export function App() {
 	// przełączenie — bez tego wejście z przewiniętego Home w „Moje Potworki"
 	// odsłaniało środek listy zamiast nagłówka. Jedyne miejsce resetu: ekran
 	// zmienia sześć akcji store (`goTo`, `startRound`, `startVisitRound`,
-	// `exitRoundEarly`, `hatchEgg`, `debugReset`), a sam store celowo NIE
+	// `exitRoundEarly`, `buyWishEgg`, `debugReset`), a sam store celowo NIE
 	// dotyka DOM-u (testy chodzą bez przeglądarki). Skok natychmiastowy —
 	// nowy ekran nigdy nie „dojeżdża" na oczach dziecka.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: `screen` to wyzwalacz, nie odczyt

@@ -247,10 +247,12 @@ function roundClosePatch(
 		achievementStats: bumpDaysPlayed(
 			{
 				...state.achievementStats,
-				...counterBumps,
 				expeditionsCompleted:
 					state.achievementStats.expeditionsCompleted +
 					(settled.expeditionReturn !== null ? 1 : 0),
+				// counterBumps NA KOŃCU: kontrakt mówi, że różnice ścieżek wchodzą
+				// tędy, więc muszą móc nadpisać także domyślny bump wypraw
+				...counterBumps,
 			},
 			now,
 		),
