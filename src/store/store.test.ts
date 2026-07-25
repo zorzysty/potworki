@@ -6,7 +6,14 @@ import { emptyStats, stageFacts, VISIT_BONUS } from "../game/adaptive"
 import { COSMETICS } from "../game/cosmetics"
 import { EXPEDITIONS_BY_ID } from "../game/expeditions"
 import type { FactKey } from "../game/facts"
-import { ISKIERKI_FOR_DUP, WISH_COST_NO_DREAM } from "../game/rewards"
+import {
+	ISKIERKI_CAP,
+	ISKIERKI_FOR_DUP,
+	WISH_COST,
+	WISH_COST_MAX,
+	WISH_COST_NO_DREAM,
+	WISH_COST_STEP,
+} from "../game/rewards"
 import { BUILDINGS, DECORATIONS } from "../game/village"
 import {
 	DIVISION_ONLY_IDS,
@@ -431,6 +438,43 @@ describe("buyWishEgg — ekonomia", () => {
 		expect(game().screen).toBe("hatch")
 	})
 
+	test("progresja ceny: każde kolejne jajko o WISH_COST_STEP droższe", () => {
+		suppressAchievements()
+		const cena = () => wishEggCost(game())
+		expect(cena()).toBe(WISH_COST_NO_DREAM)
+		// trzy zakupy pod rząd — za każdym razem płacimy dokładnie tyle, ile
+		// pokazuje wishEggCost, a stawka rośnie o krok
+		for (let i = 0; i < 3; i++) {
+			const oczekiwana = WISH_COST_NO_DREAM + WISH_COST_STEP * i
+			expect(cena()).toBe(oczekiwana)
+			useGame.setState({ iskierki: oczekiwana })
+			game().buyWishEgg()
+			expect(game().iskierki).toBe(0)
+			expect(game().pendingEggs.length).toBe(i + 1)
+		}
+		expect(cena()).toBe(WISH_COST_NO_DREAM + WISH_COST_STEP * 3)
+	})
+
+	test("progresja dolicza się do bazy wymarzonego (rzadkość zostaje)", () => {
+		suppressAchievements()
+		const legendaryId = IDS_BY_RARITY.legendary[0]
+		if (legendaryId === undefined) throw new Error("brak legendarnych")
+		game().setDreamMonster(legendaryId)
+		expect(wishEggCost(game())).toBe(WISH_COST.legendary)
+		useGame.setState({
+			achievementStats: { ...game().achievementStats, wishEggsBought: 2 },
+		})
+		expect(wishEggCost(game())).toBe(WISH_COST.legendary + 2 * WISH_COST_STEP)
+	})
+
+	test("cena ma sufit — nie przebija capu portfela (przycisk nie umiera)", () => {
+		useGame.setState({
+			achievementStats: { ...game().achievementStats, wishEggsBought: 500 },
+		})
+		expect(wishEggCost(game())).toBe(WISH_COST_MAX)
+		expect(WISH_COST_MAX).toBeLessThanOrEqual(ISKIERKI_CAP)
+	})
+
 	test("wish egg hatches unowned dream", () => {
 		const legendaryId = IDS_BY_RARITY.legendary[0]
 		if (legendaryId === undefined) throw new Error("brak legendarnych")
@@ -717,10 +761,10 @@ describe("tryb luki", () => {
 	test("wymarzony tylko-luka nie podbija ceny Jajka Życzeń (liczony jak bez dreamu)", () => {
 		// jajko życzeń losuje z puli mnożeniowej → tylko-luka go nie dotyczy
 		game().setDreamMonster(76)
-		const { dreamMonsterId, ownedMonsters } = game()
-		expect(wishEggCost({ dreamMonsterId, ownedMonsters })).toBe(
-			WISH_COST_NO_DREAM,
-		)
+		const { dreamMonsterId, ownedMonsters, achievementStats } = game()
+		expect(
+			wishEggCost({ dreamMonsterId, ownedMonsters, achievementStats }),
+		).toBe(WISH_COST_NO_DREAM)
 	})
 
 	test("jajka mult i div NIGDY nie wykluwają tylko-luka", () => {

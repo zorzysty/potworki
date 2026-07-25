@@ -10,7 +10,37 @@ import {
 	qualityOdds,
 	RARITY_ODDS,
 	rollWish,
+	WISH_COST,
+	WISH_COST_MAX,
+	WISH_COST_NO_DREAM,
+	WISH_COST_STEP,
+	wishEggPrice,
 } from "./rewards"
+
+describe("wishEggPrice", () => {
+	test("pierwsze jajko = baza, każde kolejne o krok drożej", () => {
+		expect(wishEggPrice(WISH_COST_NO_DREAM, 0)).toBe(WISH_COST_NO_DREAM)
+		for (let bought = 1; bought <= 5; bought++)
+			expect(wishEggPrice(WISH_COST_NO_DREAM, bought)).toBe(
+				WISH_COST_NO_DREAM + WISH_COST_STEP * bought,
+			)
+	})
+
+	test("progresja zachowuje strukturę cen wg rzadkości wymarzonego", () => {
+		expect(wishEggPrice(WISH_COST.legendary, 3)).toBe(
+			wishEggPrice(WISH_COST.common, 3) +
+				(WISH_COST.legendary - WISH_COST.common),
+		)
+	})
+
+	test("sufit trzyma cenę w zasięgu portfela (cap 999)", () => {
+		expect(wishEggPrice(WISH_COST.legendary, 999)).toBe(WISH_COST_MAX)
+		expect(WISH_COST_MAX).toBeLessThanOrEqual(ISKIERKI_CAP)
+		// sufit musi być powyżej każdej bazy, inaczej progresja nie zadziała
+		for (const base of Object.values(WISH_COST))
+			expect(WISH_COST_MAX).toBeGreaterThan(base)
+	})
+})
 
 describe("qualityOdds", () => {
 	test("every row sums to 100", () => {

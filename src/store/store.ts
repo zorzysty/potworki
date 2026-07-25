@@ -46,6 +46,7 @@ import {
 	rollWish,
 	WISH_COST,
 	WISH_COST_NO_DREAM,
+	wishEggPrice,
 } from "../game/rewards"
 import { dayStamp } from "../game/time"
 import type { BuildingId, DecorationId } from "../game/village"
@@ -276,21 +277,29 @@ function rollContext(state: SaveState, mode: GameMode) {
 	}
 }
 
+// Cena Jajka Życzeń = baza (wg wymarzonego) + progresja za już kupione.
+// Licznik `wishEggsBought` żyje w `achievementStats` i znaczy dokładnie „ile
+// jajek życzeń kupiono" — używamy go zamiast dokładać bliźniacze pole do
+// zapisu (zero zmian kształtu `SaveState`, zero migracji). Skutek uboczny jest
+// zamierzony: kto już kupował, płaci od razu wyższą stawkę.
 export function wishEggCost(
-	state: Pick<SaveState, "dreamMonsterId" | "ownedMonsters">,
+	state: Pick<
+		SaveState,
+		"dreamMonsterId" | "ownedMonsters" | "achievementStats"
+	>,
 ): number {
 	const dream = state.dreamMonsterId
 	// jajko życzeń losuje z puli mnożeniowej → wymarzony ekskluzywny dla innego
 	// trybu (tylko-dzielenie / tylko-luka) go nie dotyczy (zdobywa się go realną
 	// grą w swoim trybie), więc liczymy jak bez dreamu
-	if (
+	const base =
 		dream === null ||
 		dream in state.ownedMonsters ||
 		isDivisionOnly(dream) ||
 		isGapOnly(dream)
-	)
-		return WISH_COST_NO_DREAM
-	return WISH_COST[rarityOf(dream)]
+			? WISH_COST_NO_DREAM
+			: WISH_COST[rarityOf(dream)]
+	return wishEggPrice(base, state.achievementStats.wishEggsBought)
 }
 
 // localStorage opakowany w try/catch (tryb prywatny Safari rzuca na setItem);

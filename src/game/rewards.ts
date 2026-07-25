@@ -115,6 +115,7 @@ export function addEggFragment(
 		created: { quality, mode },
 	}
 }
+// Cena BAZOWA pierwszego Jajka Życzeń (dalej rośnie — patrz wishEggPrice).
 export const WISH_COST: Record<Rarity, number> = {
 	common: 10,
 	rare: 10,
@@ -122,6 +123,19 @@ export const WISH_COST: Record<Rarity, number> = {
 	legendary: 30,
 }
 export const WISH_COST_NO_DREAM = 10
+
+// Progresja: każde KOLEJNE Jajko Życzeń kosztuje o `WISH_COST_STEP` więcej niż
+// poprzednie — jajko ma zostać wielkim życzeniem, nie zakupem co dwie rundy.
+// `WISH_COST_MAX` to sufit: bez niego cena przebiłaby cap portfela (999) i
+// przycisk zostałby martwy na zawsze — a to zamknięta droga, nie wyzwanie.
+// Oba to gałki strojenia ekonomii; progresja liczy się od bazy właściwej dla
+// wymarzonego (rzadkość) albo bez niego, więc struktura cen zostaje.
+export const WISH_COST_STEP = 10
+export const WISH_COST_MAX = 200
+
+export function wishEggPrice(base: number, bought: number): number {
+	return Math.min(WISH_COST_MAX, base + WISH_COST_STEP * Math.max(0, bought))
+}
 
 function rollTier(
 	odds: readonly [number, number, number, number],

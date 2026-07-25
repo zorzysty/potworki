@@ -579,11 +579,13 @@ export function CollectionScreen() {
 	const buyWishEgg = useGame((s) => s.buyWishEgg)
 	const goTo = useGame((s) => s.goTo)
 	const cosmetics = useGame((s) => s.cosmetics)
+	// cena Jajka Życzeń rośnie z każdym kupionym (licznik w achievementStats)
+	const achievementStats = useGame((s) => s.achievementStats)
 	const [selectedId, setSelectedId] = useState<number | null>(null)
 
 	const ownedCount = Object.keys(ownedMonsters).length
 	const allOwned = ownedCount === MONSTER_COUNT
-	const cost = wishEggCost({ dreamMonsterId, ownedMonsters })
+	const cost = wishEggCost({ dreamMonsterId, ownedMonsters, achievementStats })
 	const selected = selectedId !== null ? MONSTERS[selectedId] : undefined
 	const selectedOwned =
 		selectedId !== null ? ownedMonsters[selectedId] : undefined
