@@ -125,6 +125,7 @@ When the user requests a durable behavior change, record it here or in the relev
 
 - **Teksty widoczne dla gracza (PL) redaguje maintainer.** Nie wymyślaj i nie „poprawiaj" istniejących nazw, etykiet ani komunikatów z własnej inicjatywy. Nowa funkcja wprowadza swoje teksty wprost, bez żadnych znaczników — dawny proces `PROPOZYCJA`/przegląd hurtem został wycofany 2026-07-25 na życzenie maintainera i nie wraca.
 - Etykiety są zawsze osobne od `id`: nazwy budynków/dekoracji/kosmetyk/wypraw/osiągnięć, tytuły i opisy wolno edytować dowolnie, a persystowane `id`, tokeny trybów (`mult`/`div`/`gap`) i klucze `SaveState` — nigdy. Wyjątek z własną procedurą: imiona potworków siedzą w zamrożonym podpisie katalogu (`src/monsters/CLAUDE.md`).
+- **Commit messages zawsze po angielsku** (conventional commits, np. `feat(map): …`); polskie nazwy własne gry (ekrany, mechaniki, „Kraina Potworków") mogą zostać w treści.
 
 ## Child DOX Index
 
