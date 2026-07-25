@@ -110,6 +110,18 @@ Default section order:
 - Delete stale notes instead of explaining history
 - Trim obvious statements, repeated rules, misplaced detail, and warnings for risks that no longer exist
 
+## Próg treści (zasada tego repo)
+
+CLAUDE.md dokumentuje **kontrakty, nie implementację**. Wpis zasługuje na miejsce tylko, gdy spełnia co najmniej jedno:
+
+- **łamie się bez ostrzeżenia**: niezmiennik, którego nie wykryje `bun run verify` (zamrożone seedy/`id`, obowiązek migracji zapisu, zasady projektowe typu „szybkość tylko nagradza");
+- **decyzja niewidoczna w kodzie**: *dlaczego* coś jest zrobione tak, a nie inaczej, albo czego celowo nie robimy (odrzucone podejście z powodem);
+- **wskazuje właściciela**: gdzie żyje dany typ logiki, jednym wierszem — żeby nowy kod trafił we właściwe miejsce.
+
+NIE należą tu: opisy działania komponentów i funkcji, szczegóły CSS/animacji/layoutu, liczby strojenia, wyliczanki przypadków testowych (testy dokumentują się same — wystarczy komenda), historia zmian, numery planów i poszczególnych migracji (żyją w `plans/` i `schema.ts`). Jeśli coś da się odczytać z kodu lub testów w miejscu pracy — nie powielaj tego w docu.
+
+Forma: jeden wiersz na kontrakt; child doc ma się mieścić na ~jednym ekranie (orientacyjnie ≤50 linii). Wpis, który potrzebuje akapitu, zwykle opisuje implementację — przenieś treść do komentarza w kodzie, a w docu zostaw jedną linijkę z decyzją.
+
 ## Closeout
 
 1. Re-check changed paths against the DOX chain
