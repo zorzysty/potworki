@@ -1,7 +1,7 @@
 import { STAGES } from "../game/facts"
 import { isDivisionOnly, isGapOnly } from "./catalog"
 
-// Świat „Krainy Potworków": każdemu etapowi odblokowań (STAGES) odpowiada region
+// „Mapa Świata": każdemu etapowi odblokowań (STAGES) odpowiada region
 // z nazwą o motywie liczbowym wprowadzanego czynnika i potworkiem-strażnikiem.
 // Dane statyczne, czysto prezentacyjne — nie wchodzą do zapisu ani do DNA katalogu.
 

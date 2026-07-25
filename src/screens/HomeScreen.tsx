@@ -309,7 +309,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					variant="secondary"
 					className="w-full"
 				>
-					Kraina Potworków {allGatesOpen ? "👑" : "🗺️"}
+					Mapa Świata {allGatesOpen ? "👑" : "🗺️"}
 				</BigButton>
 				{hasNewGate && (
 					<div className="anim-pop absolute -right-2 -top-2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-3 py-0.5 text-sm font-extrabold text-white shadow-lg">

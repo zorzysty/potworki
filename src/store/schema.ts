@@ -108,7 +108,7 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 		const pending = Array.isArray(s.pendingEggs) ? s.pendingEggs.length : 0
 		return { ...s, eggsEarned: owned + pending }
 	},
-	// v2→v3: dodano celebratedStage (mapa „Kraina Potworków"). Ustawiamy na bieżący
+	// v2→v3: dodano celebratedStage (mapa „Mapa Świata"). Ustawiamy na bieżący
 	// unlockedStage, żeby obecni gracze nie dostali animacji dla już otwartych bram.
 	2: (state) => {
 		const s = state as Record<string, unknown>

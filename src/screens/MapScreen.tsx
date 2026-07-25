@@ -372,7 +372,7 @@ export function MapScreen() {
 					←
 				</button>
 				<div className="text-2xl font-extrabold text-grape-dark">
-					Kraina Potworków 🗺️
+					Mapa Świata 🗺️
 				</div>
 				<HelpTip
 					placement="bottom"
