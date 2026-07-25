@@ -1,6 +1,7 @@
 import { BigButton } from "../components/BigButton"
 import { EquippedOverlay } from "../components/CosmeticArt"
 import { EggReward } from "../components/EggReward"
+import { GoalProgressBar } from "../components/GoalProgressBar"
 import { GateReveal } from "../components/gate"
 import { MonsterStage } from "../components/MonsterStage"
 import { RARITY_META } from "../components/rarity"
@@ -83,21 +84,11 @@ export function RoundSummary() {
 					{goal ? (
 						<>
 							<span className="text-slate-300">→</span>
-							<span className="truncate text-sm font-extrabold text-grape-dark">
-								{goal.name}
-								{village.goalId !== null && village.goalId === goal.id && " ⭐"}
-							</span>
-							<span className="h-2 min-w-8 flex-1 overflow-hidden rounded-full bg-slate-200">
-								<span
-									className="block h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-400 transition-[width]"
-									style={{
-										width: `${Math.min(100, (iskierki / goal.cost) * 100)}%`,
-									}}
-								/>
-							</span>
-							<span className="whitespace-nowrap text-sm font-extrabold text-amber-500">
-								{Math.min(iskierki, goal.cost)}/{goal.cost}
-							</span>
+							<GoalProgressBar
+								goal={goal}
+								iskierki={iskierki}
+								starred={village.goalId !== null && village.goalId === goal.id}
+							/>
 						</>
 					) : (
 						<span className="text-sm font-extrabold text-grape-dark">

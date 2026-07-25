@@ -1,6 +1,7 @@
 import confetti from "canvas-confetti"
 import { useMemo, useState } from "react"
 import { BigButton } from "../components/BigButton"
+import { GoalProgressBar } from "../components/GoalProgressBar"
 import { HelpTip } from "../components/HelpTip"
 import { SpeechBubble } from "../components/SpeechBubble"
 import { BuildingArt } from "../components/village/BuildingArt"
@@ -268,21 +269,12 @@ export function VillageScreen() {
 						}
 						className="flex min-w-0 flex-1 touch-manipulation items-center gap-2 rounded-full bg-white/85 px-4 py-2 shadow-sm active:scale-[0.98]"
 					>
-						<span className="truncate text-sm font-extrabold text-grape-dark">
-							Cel: {goal.name}
-							{village.goalId !== null && village.goalId === goal.id && " ⭐"}
-						</span>
-						<span className="h-2 min-w-8 flex-1 overflow-hidden rounded-full bg-slate-200">
-							<span
-								className="block h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-400 transition-[width]"
-								style={{
-									width: `${Math.min(100, (iskierki / goal.cost) * 100)}%`,
-								}}
-							/>
-						</span>
-						<span className="whitespace-nowrap text-sm font-extrabold text-amber-500">
-							{Math.min(iskierki, goal.cost)}/{goal.cost}
-						</span>
+						<GoalProgressBar
+							goal={goal}
+							iskierki={iskierki}
+							starred={village.goalId !== null && village.goalId === goal.id}
+							prefix="Cel: "
+						/>
 					</button>
 				) : (
 					<div className="flex-1 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-4 py-2 text-center text-sm font-extrabold text-white shadow-sm">
