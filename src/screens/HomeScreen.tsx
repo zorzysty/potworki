@@ -208,52 +208,33 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 				</button>
 			)}
 
-			<div className="relative w-full max-w-xs">
+			{/* CTA wyklucia pojawia się TYLKO gdy czekają jajka (jedyna droga do
+			    ekranu hatch z Home); stały status fragmentów jajka mieszka w
+			    przycisku „Moje Potworki" poniżej */}
+			{firstEgg && (
 				<button
 					type="button"
-					onClick={() => pendingEggs.length > 0 && goTo("hatch")}
-					className="touch-manipulation flex w-full items-center justify-between rounded-3xl bg-white/80 px-5 py-3 shadow-md active:scale-95"
+					onClick={() => goTo("hatch")}
+					className="touch-manipulation flex min-h-16 w-full max-w-xs select-none items-center justify-center gap-3 rounded-3xl border-b-4 border-orange-500 bg-gradient-to-b from-amber-300 to-orange-400 px-5 py-3 text-2xl font-extrabold text-white shadow-lg shadow-orange-300/40 transition-transform active:scale-95"
 				>
-					<div className="text-xl font-extrabold text-slate-600">
-						🪺 Gniazdo
+					<div
+						className="anim-wobble"
+						style={{
+							animationIterationCount: "infinite",
+							animationDuration: "1.4s",
+						}}
+					>
+						<EggView quality={firstEgg.quality} size={36} />
 					</div>
-					{firstEgg ? (
-						<div className="flex items-center gap-2">
-							<div
-								className="anim-wobble"
-								style={{
-									animationIterationCount: "infinite",
-									animationDuration: "1.4s",
-								}}
-							>
-								<EggView quality={firstEgg.quality} size={36} />
-							</div>
-							<div className="rounded-full bg-bubblegum px-3 py-0.5 text-lg font-extrabold text-white">
-								{pendingEggs.length}
-							</div>
-						</div>
-					) : (
-						<div className="flex items-center gap-2">
-							<div className="h-3 w-24 overflow-hidden rounded-full bg-slate-200">
-								<div
-									className="h-full rounded-full bg-amber-400 transition-[width]"
-									style={{ width: `${(eggFragments / eggThreshold) * 100}%` }}
-								/>
-							</div>
-							<span className="text-sm font-bold text-slate-400">
-								{eggFragments}/{eggThreshold}
-							</span>
-						</div>
+					{/* PROPOZYCJA: etykieta CTA wyklucia na Home (zapożyczona z RoundSummary) */}
+					<span>Wykluj jajko!</span>
+					{pendingEggs.length > 1 && (
+						<span className="rounded-full bg-white/90 px-3 py-0.5 text-lg text-orange-500">
+							{pendingEggs.length}
+						</span>
 					)}
 				</button>
-				<div className="absolute -right-2 -top-2">
-					<HelpTip
-						placement="bottom"
-						align="right"
-						text="Tu czekają twoje jajka. Kiedy pasek się zapełni, do gniazda wskoczy nowe jajko. Stuknij gniazdo, żeby wykluć potworka!"
-					/>
-				</div>
-			</div>
+			)}
 
 			{trip && (
 				<button
@@ -275,13 +256,39 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 				</button>
 			)}
 
-			<BigButton
-				onClick={() => goTo("collection")}
-				variant="secondary"
-				className="w-full max-w-xs"
-			>
-				Moje Potworki 👾 {ownedCount}/{MONSTER_COUNT}
-			</BigButton>
+			<div className="relative w-full max-w-xs">
+				<BigButton
+					onClick={() => goTo("collection")}
+					variant="secondary"
+					className="w-full"
+				>
+					<div>
+						Moje Potworki 👾 {ownedCount}/{MONSTER_COUNT}
+					</div>
+					{/* stały status fragmentów jajka (🪺 + pasek + x/y) — zawsze
+					    widoczny, także gdy jajka już czekają w gnieździe */}
+					<div className="mt-1.5 flex items-center gap-2">
+						<span className="text-base leading-none">🪺</span>
+						<span className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
+							<span
+								className="block h-full rounded-full bg-amber-400 transition-[width]"
+								style={{ width: `${(eggFragments / eggThreshold) * 100}%` }}
+							/>
+						</span>
+						<span className="text-xs font-bold text-slate-400">
+							{eggFragments}/{eggThreshold}
+						</span>
+					</div>
+				</BigButton>
+				<div className="absolute -right-2 -top-2">
+					{/* PROPOZYCJA: tekst pomocy przeniesiony z dawnego wiersza gniazda */}
+					<HelpTip
+						placement="bottom"
+						align="right"
+						text="W środku znajdziesz wszystkie swoje potworki. Pasek na dole pokazuje, ile brakuje do nowego jajka — kiedy się zapełni, pojawi się przycisk do wyklucia!"
+					/>
+				</div>
+			</div>
 
 			<div className="relative w-full max-w-xs">
 				<BigButton
