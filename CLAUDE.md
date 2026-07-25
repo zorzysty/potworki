@@ -25,7 +25,7 @@ Linter i formatter: **biome** (konfiguracja w `biome.json` — wcięcia tabami, 
 
 Weryfikacja: `bun test` (testy jednostkowe logiki gry i katalogu potworków), `bun run typecheck`, `bun run check`, ekran debug (`?debug` w URL → link „debug" na ekranie głównym: tabela mastery, galeria 80 potworków, przełącznik trybu, przyciski oszukiwania) oraz ręczny click-through.
 
-Deploy: push do `main` → GitHub Actions uruchamia `bun test` i `biome ci` (blokują deploy przy błędzie), buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`. Build emituje service worker PWA (`vite-plugin-pwa` w `vite.config.ts`, `registerType: "autoUpdate"`: po deployu appka aktualizuje się sama przy pierwszym uruchomieniu online; offline działa z precache całego builda) — appka jest instalowalna z ekranu głównego (manifest `scope`/`start_url` MUSZĄ siedzieć pod `/potworki/`; nazwy w manifeście to PROPOZYCJE).
+Deploy: push do `main` → GitHub Actions uruchamia `bun test` i `biome ci` (blokują deploy przy błędzie), buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`. Build emituje service worker PWA (`vite-plugin-pwa` w `vite.config.ts`, `registerType: "autoUpdate"`: po deployu appka aktualizuje się sama przy pierwszym uruchomieniu online; offline działa z precache całego builda) — appka jest instalowalna z ekranu głównego (manifest `scope`/`start_url` MUSZĄ siedzieć pod `/potworki/`).
 
 ## Architektura (przegląd)
 
@@ -123,7 +123,7 @@ Default section order:
 
 When the user requests a durable behavior change, record it here or in the relevant child CLAUDE.md
 
-- **Teksty widoczne dla gracza (PL) redaguje maintainer.** Nie wymyślaj i nie „poprawiaj" nazw, etykiet ani komunikatów z własnej inicjatywy. Nowa funkcja może wprowadzić robocze teksty, ale każdy taki string oznacz komentarzem `PROPOZYCJA`/`PROPOZYCJE` — to sygnał, że czeka na jego decyzję. Przegląd robi się hurtem: wygeneruj inwentarz wszystkich znaczników (wzór: `plans/019-inwentarz.md` — zrzut z modułów + teksty z JSX, kolumna „→ nowa wersja", puste = zostaje), maintainer wypełnia, wykonawca stosuje i zdejmuje znaczniki tylko z zatwierdzonych banków. Partia 012–018 przeszła taki przegląd 2026-07-25 i została **zatwierdzona bez zmian**. Aktualnie w `src/` czekają znaczniki z przebudowy gniazda na Home (`HomeScreen`: etykieta CTA „Wykluj jajko!" + tekst HelpTip).
+- **Teksty widoczne dla gracza (PL) redaguje maintainer.** Nie wymyślaj i nie „poprawiaj" istniejących nazw, etykiet ani komunikatów z własnej inicjatywy. Nowa funkcja wprowadza swoje teksty wprost, bez żadnych znaczników — dawny proces `PROPOZYCJA`/przegląd hurtem został wycofany 2026-07-25 na życzenie maintainera i nie wraca.
 - Etykiety są zawsze osobne od `id`: nazwy budynków/dekoracji/kosmetyk/wypraw/osiągnięć, tytuły i opisy wolno edytować dowolnie, a persystowane `id`, tokeny trybów (`mult`/`div`/`gap`) i klucze `SaveState` — nigdy. Wyjątek z własną procedurą: imiona potworków siedzą w zamrożonym podpisie katalogu (`src/monsters/CLAUDE.md`).
 
 ## Child DOX Index

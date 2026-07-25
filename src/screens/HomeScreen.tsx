@@ -226,7 +226,6 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					>
 						<EggView quality={firstEgg.quality} size={36} />
 					</div>
-					{/* PROPOZYCJA: etykieta CTA wyklucia na Home (zapożyczona z RoundSummary) */}
 					<span>Wykluj jajko!</span>
 					{pendingEggs.length > 1 && (
 						<span className="rounded-full bg-white/90 px-3 py-0.5 text-lg text-orange-500">
@@ -281,7 +280,6 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					</div>
 				</BigButton>
 				<div className="absolute -right-2 -top-2">
-					{/* PROPOZYCJA: tekst pomocy przeniesiony z dawnego wiersza gniazda */}
 					<HelpTip
 						placement="bottom"
 						align="right"
