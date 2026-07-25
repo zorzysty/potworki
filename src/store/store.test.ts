@@ -22,6 +22,7 @@ import {
 	IDS_BY_RARITY,
 	rarityOf,
 } from "../monsters/catalog"
+import { SAVE_KEYS } from "./schema"
 import { mergePersisted, useGame, wishEggCost } from "./store"
 
 const game = () => useGame.getState()
@@ -799,6 +800,74 @@ describe("nawigacja", () => {
 		game().startRound()
 		game().goTo("collection")
 		expect(game().round).toBeNull()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Pauza: przerwa wycisza KAŻDE wejście (keypad zasłania nakładka, klawiaturę
+// z App.tsx — te guardy). Przerwa nigdy nie może czegokolwiek kosztować.
+// ---------------------------------------------------------------------------
+
+describe("pauza", () => {
+	test("w pauzie pressDigit/pressBackspace/pressConfirm nic nie robią", () => {
+		game().startRound()
+		// wpisana, jeszcze niezatwierdzona odpowiedź (setState, żeby auto-submit
+		// nie zatwierdził jej sam przy jednocyfrowym wyniku)
+		const r = requireRound()
+		useGame.setState({ round: { ...r, answer: "7" } })
+		const factsBefore = JSON.stringify(game().facts)
+		game().setPaused(true)
+
+		game().pressDigit(2)
+		expect(requireRound().answer).toBe("7")
+		game().pressBackspace()
+		expect(requireRound().answer).toBe("7")
+		game().pressConfirm()
+		// żadnej oceny odpowiedzi: faza, gwiazdki i mastery nietknięte
+		expect(requireRound().phase).toBe("answering")
+		expect(requireRound().stars).toBe(0)
+		expect(JSON.stringify(game().facts)).toBe(factsBefore)
+		expect(game().eggFragments).toBe(0)
+	})
+
+	test("po wznowieniu wejście znów działa", () => {
+		game().startRound()
+		// backspace (nigdy nie zatwierdza) — asercja niezależna od tego, ile
+		// cyfr ma wynik wylosowanego pytania, więc auto-submit nie zaburza testu
+		const r = requireRound()
+		useGame.setState({ round: { ...r, answer: "77" } })
+		game().setPaused(true)
+		game().pressBackspace()
+		expect(requireRound().answer).toBe("77")
+		game().setPaused(false)
+		game().pressBackspace()
+		expect(requireRound().answer).toBe("7")
+	})
+
+	test("pauza nie przecieka: startRound i wyjście z rundy ją czyszczą", () => {
+		game().startRound()
+		game().setPaused(true)
+		game().exitRoundEarly()
+		expect(game().paused).toBe(false)
+
+		game().startRound()
+		game().setPaused(true)
+		game().goTo("home")
+		expect(game().paused).toBe(false)
+
+		useGame.setState({ paused: true })
+		game().startRound()
+		expect(game().paused).toBe(false)
+
+		useGame.setState({ paused: true })
+		game().startVisitRound()
+		expect(game().paused).toBe(false)
+	})
+
+	test("pauza jest efemeryczna — nie trafia do zapisu", () => {
+		game().startRound()
+		game().setPaused(true)
+		expect(SAVE_KEYS).not.toContain("paused" as never)
 	})
 })
 

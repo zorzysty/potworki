@@ -135,8 +135,17 @@ interface GameState extends SaveState {
 	// efemeryczne: czy w tej sesji odwiedzono wioskę — gasi badge „stać cię!" na Home
 	// do końca sesji (badge nie może stać się tapetą, gdy dochód przegoni wydatki)
 	villageVisited: boolean
+	// efemeryczna PAUZA rundy. Mieszka w store, a nie w RoundScreen, bo przerwa
+	// musi wyciszyć KAŻDE wejście — nakładka zasłania keypad, ale globalny
+	// `keydown` w App.tsx żyje obok niej i bez tego wpisywałby cyfry (auto-submit
+	// zatwierdzałby odpowiedzi w trakcie przerwy, a błędna połowi mastery — kara
+	// za przerwę, wprost przeciw zasadzie „nigdy nie karze"). Guard siedzi w
+	// akcjach `pressDigit`/`pressBackspace`/`pressConfirm` — store jest źródłem
+	// prawdy, jak przy przyjacielu i wyprawie.
+	paused: boolean
 
 	goTo: (screen: Screen) => void
+	setPaused: (paused: boolean) => void
 	setMode: (mode: GameMode) => void
 	startRound: () => void
 	startVisitRound: () => void
@@ -379,15 +388,20 @@ export const useGame = create<GameState>()(
 			mode: "mult",
 			achievementQueue: [],
 			villageVisited: false,
+			paused: false,
 
 			// stan rundy żyje tylko na ekranie rundy; wejście do wioski gasi
-			// sesyjny badge „stać cię!" na Home
+			// sesyjny badge „stać cię!" na Home. Pauza znika razem z rundą —
+			// nigdy nie może przeciec na następną (wyciszyłaby jej wejście).
 			goTo: (screen) =>
 				set((s) => ({
 					screen,
 					round: screen === "round" ? s.round : null,
+					paused: screen === "round" ? s.paused : false,
 					villageVisited: s.villageVisited || screen === "village",
 				})),
+
+			setPaused: (paused) => set({ paused }),
 
 			setMode: (mode) => set({ mode }),
 
@@ -412,6 +426,7 @@ export const useGame = create<GameState>()(
 					pickNextFact(state.facts, stage, [], Math.random)
 				set({
 					screen: "round",
+					paused: false,
 					round: {
 						mode,
 						introFactor,
@@ -474,6 +489,7 @@ export const useGame = create<GameState>()(
 				}
 				set({
 					screen: "round",
+					paused: false,
 					round: {
 						mode: "mult",
 						introFactor: null,
@@ -499,8 +515,12 @@ export const useGame = create<GameState>()(
 				})
 			},
 
+			// Pauza wycisza wejście u ŹRÓDŁA: nakładka zasłania keypad, ale globalny
+			// `keydown` w App.tsx jej nie widzi — bez tego guardu klawisz w trakcie
+			// przerwy wpisywałby cyfrę i auto-submit zatwierdzałby odpowiedź.
 			pressDigit: (digit) => {
-				const { round } = get()
+				const { round, paused } = get()
+				if (paused) return
 				if (!round || (round.phase !== "answering" && round.phase !== "wrong"))
 					return
 				if (round.answer.length >= 3) return
@@ -512,7 +532,8 @@ export const useGame = create<GameState>()(
 			},
 
 			pressBackspace: () => {
-				const { round } = get()
+				const { round, paused } = get()
+				if (paused) return
 				if (!round || (round.phase !== "answering" && round.phase !== "wrong"))
 					return
 				set({ round: { ...round, answer: round.answer.slice(0, -1) } })
@@ -521,6 +542,7 @@ export const useGame = create<GameState>()(
 			pressConfirm: () => {
 				const state = get()
 				const { round } = state
+				if (state.paused) return
 				if (!round || round.answer === "") return
 				const q = round.question
 				const expected = expectedAnswer(q, round.mode)
@@ -761,7 +783,7 @@ export const useGame = create<GameState>()(
 
 			// „Koniec na dziś": fragmenty, mastery i eggStarBank już zapisane (commit
 			// per odpowiedź), jajka mają już finalny kolor; runda nie liczy się do totalRounds
-			exitRoundEarly: () => set({ round: null, screen: "home" }),
+			exitRoundEarly: () => set({ round: null, screen: "home", paused: false }),
 
 			// wykluwa wybrane jajko (gracz wybiera kolejność w gnieździe); domyślnie pierwsze
 			hatchEgg: (index = 0) => {
@@ -1182,6 +1204,7 @@ export const useGame = create<GameState>()(
 					mode: "mult",
 					achievementQueue: [],
 					villageVisited: false,
+					paused: false,
 				}),
 		}),
 		{

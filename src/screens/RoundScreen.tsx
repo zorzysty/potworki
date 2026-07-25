@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { BigButton } from "../components/BigButton"
 import { CheerCompanion } from "../components/Companion"
 import { Keypad } from "../components/Keypad"
@@ -18,7 +18,10 @@ export function RoundScreen({
 	const nextQuestion = useGame((s) => s.nextQuestion)
 	const exitRoundEarly = useGame((s) => s.exitRoundEarly)
 	const debugFinishRound = useGame((s) => s.debugFinishRound)
-	const [paused, setPaused] = useState(false)
+	// pauza żyje w store: nakładka zasłania keypad, ale globalny `keydown`
+	// w App.tsx jej nie widzi — guard musi być przy akcjach (patrz store/)
+	const paused = useGame((s) => s.paused)
+	const setPaused = useGame((s) => s.setPaused)
 
 	const phase = round?.phase
 	useEffect(() => {
