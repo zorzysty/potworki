@@ -12,6 +12,7 @@ import {
 	WISH_COST,
 	WISH_COST_NO_DREAM,
 	WISH_COST_STEP,
+	WISH_PRICE_FLOOR,
 	WISH_SURCHARGE_MAX,
 } from "../game/rewards"
 import { BUILDINGS, DECORATIONS } from "../game/village"
@@ -436,7 +437,38 @@ describe("hatchEgg — gwarancje", () => {
 })
 
 describe("buyWishEgg — ekonomia", () => {
+	// studnia życzeń: kupno wymaga fontanny L1+ (L1 = zniżka 0, ceny bazowe)
+	const buildFontanna = (level = 1) =>
+		useGame.setState({
+			village: {
+				buildings: { fontanna: level },
+				decorations: [],
+				goalId: null,
+			},
+		})
+
+	test("bez fontanny kupno to ciche no-op (studnia życzeń zamknięta)", () => {
+		game().debugAddIskierki(999)
+		game().buyWishEgg()
+		expect(game().iskierki).toBe(999)
+		expect(game().pendingEggs.length).toBe(0)
+	})
+
+	test("zniżka fontanny: L2 −5, L3 −10 z podłogą ceny (nigdy za darmo)", () => {
+		// bez wymarzonego: baza 10 — przy L3 podłoga łapie (10−10 → 5, nie 0)
+		buildFontanna(2)
+		expect(wishEggCost(game())).toBe(WISH_COST_NO_DREAM - 5)
+		buildFontanna(3)
+		expect(wishEggCost(game())).toBe(WISH_PRICE_FLOOR)
+		// premia za rzadkość wymarzonego przeżywa zniżkę (30−10=20 > podłoga)
+		const legendaryId = IDS_BY_RARITY.legendary[0]
+		if (legendaryId === undefined) throw new Error("brak legendarnych")
+		game().setDreamMonster(legendaryId)
+		expect(wishEggCost(game())).toBe(WISH_COST.legendary - 10)
+	})
+
 	test("za mało iskierek — brak efektu", () => {
+		buildFontanna()
 		const legendaryId = IDS_BY_RARITY.legendary[0]
 		if (legendaryId === undefined) throw new Error("brak legendarnych")
 		game().setDreamMonster(legendaryId)
@@ -449,6 +481,7 @@ describe("buyWishEgg — ekonomia", () => {
 
 	test("dokładna kwota — odejmuje koszt, pcha jajko wish, screen hatch", () => {
 		suppressAchievements()
+		buildFontanna()
 		const legendaryId = IDS_BY_RARITY.legendary[0]
 		if (legendaryId === undefined) throw new Error("brak legendarnych")
 		game().setDreamMonster(legendaryId)
@@ -462,6 +495,7 @@ describe("buyWishEgg — ekonomia", () => {
 
 	test("progresja ceny: każde kolejne jajko o WISH_COST_STEP droższe", () => {
 		suppressAchievements()
+		buildFontanna()
 		const cena = () => wishEggCost(game())
 		expect(cena()).toBe(WISH_COST_NO_DREAM)
 		// trzy zakupy pod rząd — za każdym razem płacimy dokładnie tyle, ile
@@ -498,6 +532,7 @@ describe("buyWishEgg — ekonomia", () => {
 	})
 
 	test("wish egg hatches unowned dream", () => {
+		buildFontanna()
 		const legendaryId = IDS_BY_RARITY.legendary[0]
 		if (legendaryId === undefined) throw new Error("brak legendarnych")
 		game().setDreamMonster(legendaryId)
@@ -783,9 +818,9 @@ describe("tryb luki", () => {
 	test("wymarzony tylko-luka nie podbija ceny Jajka Życzeń (liczony jak bez dreamu)", () => {
 		// jajko życzeń losuje z puli mnożeniowej → tylko-luka go nie dotyczy
 		game().setDreamMonster(76)
-		const { dreamMonsterId, ownedMonsters, achievementStats } = game()
+		const { dreamMonsterId, ownedMonsters, achievementStats, village } = game()
 		expect(
-			wishEggCost({ dreamMonsterId, ownedMonsters, achievementStats }),
+			wishEggCost({ dreamMonsterId, ownedMonsters, achievementStats, village }),
 		).toBe(WISH_COST_NO_DREAM)
 	})
 
@@ -1507,11 +1542,43 @@ describe("wyprawy potworków", () => {
 			game().nextQuestion()
 		}
 	}
+	// posiadane potworki + Mega Plac Zabaw (L3) — brama wypraw otwarta,
+	// żeby testy mechaniki wysyłki/rozstrzygnięcia nie potykały się o gating
 	const ownSome = () =>
 		useGame.setState({
 			ownedMonsters: { 0: { hatchedAt: 0 }, 1: { hatchedAt: 1 } },
+			village: {
+				buildings: { "plac-zabaw": 3 },
+				decorations: [],
+				goalId: null,
+			},
 		})
 	const zwiadReward = EXPEDITIONS_BY_ID.get("zwiad")?.rewardIskierki as number
+
+	test("sendExpedition: brama Placu Zabaw — typ ponad poziom budynku to no-op", () => {
+		useGame.setState({
+			ownedMonsters: { 0: { hatchedAt: 0 } },
+			village: {
+				buildings: { "plac-zabaw": 1 },
+				decorations: [],
+				goalId: null,
+			},
+		})
+		// L1 otwiera tylko Zwiad
+		game().sendExpedition(0, "wielka")
+		expect(game().expedition).toBeNull()
+		game().sendExpedition(0, "wyprawa")
+		expect(game().expedition).toBeNull()
+		game().sendExpedition(0, "zwiad")
+		expect(game().expedition?.typeId).toBe("zwiad")
+		// bez placu w ogóle — nawet Zwiad czeka na budowę
+		useGame.setState({
+			expedition: null,
+			village: { buildings: {}, decorations: [], goalId: null },
+		})
+		game().sendExpedition(0, "zwiad")
+		expect(game().expedition).toBeNull()
+	})
 
 	test("sendExpedition: ustawia stan z roundsAtStart === totalRounds", () => {
 		suppressAchievements()

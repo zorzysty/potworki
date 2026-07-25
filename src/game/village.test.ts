@@ -14,6 +14,8 @@ import {
 	villageCap,
 	villageRoster,
 	villageValue,
+	wishEggDiscount,
+	wishEggUnlocked,
 } from "./village"
 
 const village = (over: Partial<VillageState> = {}): VillageState => ({
@@ -122,14 +124,48 @@ describe("roundWage", () => {
 		expect(roundWage(village({ buildings: { zamek: 1 } }), 0, false)).toBe(2)
 		expect(roundWage(village({ buildings: { zamek: 3 } }), 30, true)).toBe(7)
 	})
+	test("ogródek (poranna rosa) dolicza poziom TYLKO do pierwszej rundy dnia", () => {
+		expect(roundWage(village({ buildings: { ogrodek: 3 } }), 0, true)).toBe(5)
+		expect(roundWage(village({ buildings: { ogrodek: 1 } }), 0, true)).toBe(3)
+		// kolejne rundy dnia: rosa już zebrana — bez bonusu
+		expect(roundWage(village({ buildings: { ogrodek: 3 } }), 0, false)).toBe(1)
+		// maks żołdu: baza+dobra+perfekcja+zamek3+dzień+rosa3 = 10
+		expect(
+			roundWage(village({ buildings: { zamek: 3, ogrodek: 3 } }), 30, true),
+		).toBe(10)
+	})
 })
 
 describe("villageCap", () => {
-	test("14 / 18 / 22 / 26 dla domków 0–3", () => {
-		expect(villageCap(village())).toBe(14)
-		expect(villageCap(village({ buildings: { domki: 1 } }))).toBe(18)
-		expect(villageCap(village({ buildings: { domki: 2 } }))).toBe(22)
-		expect(villageCap(village({ buildings: { domki: 3 } }))).toBe(26)
+	test("8 / 12 / 16 / 20 dla domków 0–3", () => {
+		expect(villageCap(village())).toBe(8)
+		expect(villageCap(village({ buildings: { domki: 1 } }))).toBe(12)
+		expect(villageCap(village({ buildings: { domki: 2 } }))).toBe(16)
+		expect(villageCap(village({ buildings: { domki: 3 } }))).toBe(20)
+	})
+})
+
+describe("fontanna — studnia życzeń", () => {
+	test("odblokowanie Jajka Życzeń od L1", () => {
+		expect(wishEggUnlocked(village())).toBe(false)
+		expect(wishEggUnlocked(village({ buildings: { fontanna: 1 } }))).toBe(true)
+		expect(wishEggUnlocked(village({ buildings: { fontanna: 3 } }))).toBe(true)
+	})
+	test("zniżka rośnie z poziomem (niemalejąca, 0 przy braku fontanny)", () => {
+		const discounts = [0, 1, 2, 3].map((level) =>
+			wishEggDiscount(
+				village(level === 0 ? {} : { buildings: { fontanna: level } }),
+			),
+		)
+		expect(discounts[0]).toBe(0)
+		for (let i = 1; i < discounts.length; i++) {
+			expect(discounts[i] as number).toBeGreaterThanOrEqual(
+				discounts[i - 1] as number,
+			)
+		}
+		// zniżka nie może przebić podłogi ceny bez sensu: maks zniżka poniżej
+		// najtańszej bazy Jajka Życzeń plus podłoga pilnowana w store
+		expect(discounts[3] as number).toBeGreaterThan(0)
 	})
 })
 
@@ -151,11 +187,11 @@ describe("villageRoster", () => {
 			...over,
 		})
 
-	test("pokazuje NAJNOWSZYCH do limitu (cap 14 przy pustej wiosce)", () => {
+	test("pokazuje NAJNOWSZYCH do limitu (cap 8 przy pustej wiosce)", () => {
 		const r = roster(20)
 		expect(r.ownedIds.length).toBe(20)
-		expect(r.wanderIds.length).toBe(14)
-		// najnowszy (id 19) jest, najstarsi (0–5) wypadli
+		expect(r.wanderIds.length).toBe(8)
+		// najnowszy (id 19) jest, najstarsi wypadli
 		expect(r.wanderIds).toContain(19)
 		expect(r.wanderIds).not.toContain(0)
 	})
@@ -170,7 +206,7 @@ describe("villageRoster", () => {
 		// id 0 to najstarszy — bez tej reguły wypadłby przy 20 posiadanych
 		const r = roster(20, { companionId: 0 })
 		expect(r.wanderIds).toContain(0)
-		expect(r.wanderIds.length).toBe(14)
+		expect(r.wanderIds.length).toBe(8)
 	})
 
 	test("przyjaciel na wyprawie nie wraca tylnymi drzwiami", () => {

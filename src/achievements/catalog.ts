@@ -223,7 +223,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 	{
 		id: "jajko-zyczen",
 		title: "Spełnione życzenie",
-		description: "Wyczaruj Jajko Życzeń.",
+		description: "Wyczaruj Jajko Życzeń przy Fontannie.",
 		icon: "🌟",
 		difficulty: "medium",
 		progress: ({ counters }) => ({
@@ -568,7 +568,8 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 	{
 		id: "pierwsza-wyprawa",
 		title: "Pierwsza wyprawa",
-		description: "Wyślij potworka na wyprawę i przywitaj go po powrocie.",
+		description:
+			"Zbuduj Plac Zabaw, wyślij potworka na wyprawę i przywitaj go po powrocie.",
 		icon: "🎒",
 		difficulty: "easy",
 		progress: ({ counters }) => ({

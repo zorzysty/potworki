@@ -119,7 +119,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 							<HelpTip
 								placement="bottom"
 								align="right"
-								text="To potworek, o którym marzysz. Teraz częściej będzie się wykluwał, a Jajko Życzeń (w „Moich Potworkach”) da ci dokładnie jego. Stuknij obrazek, żeby go obejrzeć."
+								text="To potworek, o którym marzysz. Teraz częściej będzie się wykluwał, a Jajko Życzeń (w „Moich Potworkach”, gdy zbudujesz Fontannę w Wiosce) da ci dokładnie jego. Stuknij obrazek, żeby go obejrzeć."
 							/>
 						</div>
 					</div>

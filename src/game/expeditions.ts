@@ -8,6 +8,8 @@
 // wartości. Dźwignie cięcia przy zbyt hojnej ekonomii (kolejno): połowa
 // rewardIskierki → trop tylko na `wielka` → dłuższe durationRounds.
 
+import { buildingLevel, type VillageState } from "./village"
+
 export type ExpeditionTypeId = "zwiad" | "wyprawa" | "wielka"
 
 export interface ExpeditionDef {
@@ -17,6 +19,10 @@ export interface ExpeditionDef {
 	durationRounds: number // ukończone rundy do powrotu
 	rewardIskierki: number
 	tropChance: number // 0..1 — szansa na trop (wskazówkę o nieposiadanym potworku)
+	// Wymagany poziom Placu Zabaw (wzór sklepik→tier kosmetyki): potworki
+	// trenują kondycję, zanim ruszą w drogę. Jawne pole zamiast indeksu w
+	// katalogu — dopisany kiedyś 4. typ musi dostać osiągalny próg świadomie.
+	requiredPlacZabaw: number
 }
 
 // Nazwy i opisy dla gracza wolno edytować dowolnie; id zamrożone
@@ -29,6 +35,7 @@ export const EXPEDITIONS: readonly ExpeditionDef[] = [
 		durationRounds: 3,
 		rewardIskierki: 4,
 		tropChance: 0,
+		requiredPlacZabaw: 1,
 	},
 	{
 		id: "wyprawa",
@@ -37,6 +44,7 @@ export const EXPEDITIONS: readonly ExpeditionDef[] = [
 		durationRounds: 7,
 		rewardIskierki: 12,
 		tropChance: 0.25,
+		requiredPlacZabaw: 2,
 	},
 	{
 		id: "wielka",
@@ -45,6 +53,7 @@ export const EXPEDITIONS: readonly ExpeditionDef[] = [
 		durationRounds: 12,
 		rewardIskierki: 25,
 		tropChance: 1,
+		requiredPlacZabaw: 3,
 	},
 ]
 
@@ -65,6 +74,17 @@ export interface ExpeditionState {
 function defOf(typeId: ExpeditionTypeId): ExpeditionDef {
 	// defensywny fallback (id są zamrożone, więc w praktyce zawsze trafia)
 	return EXPEDITIONS_BY_ID.get(typeId) ?? (EXPEDITIONS[0] as ExpeditionDef)
+}
+
+// Plac Zabaw = brama wypraw (import jednokierunkowy z village.ts — wzór
+// cosmetics.ts): typ dostępny, gdy poziom budynku ≥ requiredPlacZabaw.
+// Dotyczy WYSYŁANIA — wyprawa już w drodze zawsze dochodzi do końca
+// (rozstrzygnięcie i zawrócenie nie sprawdzają bramy; postęp jest święty).
+export function expeditionUnlocked(
+	v: VillageState,
+	typeId: ExpeditionTypeId,
+): boolean {
+	return buildingLevel(v, "plac-zabaw") >= defOf(typeId).requiredPlacZabaw
 }
 
 // Postęp wyprawy: ile ukończonych rund minęło od wysłania (clamp 0..cel).

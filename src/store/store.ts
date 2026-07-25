@@ -20,6 +20,7 @@ import { simulateRoundOutcome } from "../game/debug"
 import type { ExpeditionTypeId } from "../game/expeditions"
 import {
 	EXPEDITIONS_BY_ID,
+	expeditionUnlocked,
 	isExpeditionDone,
 	resolveExpedition,
 } from "../game/expeditions"
@@ -57,6 +58,8 @@ import {
 	MAX_BUILDING_LEVEL,
 	nextLevelCost,
 	roundWage,
+	wishEggDiscount,
+	wishEggUnlocked,
 } from "../game/village"
 import {
 	FIRST_MONSTER_ID,
@@ -313,7 +316,7 @@ function rollContext(state: SaveState, mode: GameMode) {
 export function wishEggCost(
 	state: Pick<
 		SaveState,
-		"dreamMonsterId" | "ownedMonsters" | "achievementStats"
+		"dreamMonsterId" | "ownedMonsters" | "achievementStats" | "village"
 	>,
 ): number {
 	const dream = state.dreamMonsterId
@@ -327,7 +330,13 @@ export function wishEggCost(
 		isGapOnly(dream)
 			? WISH_COST_NO_DREAM
 			: WISH_COST[rarityOf(dream)]
-	return wishEggPrice(base, state.achievementStats.wishEggsBought)
+	// zniżka fontanny (studnia życzeń) schodzi z ceny końcowej; podłogę
+	// WISH_PRICE_FLOOR egzekwuje samo wishEggPrice (rewards.ts)
+	return wishEggPrice(
+		base,
+		state.achievementStats.wishEggsBought,
+		wishEggDiscount(state.village),
+	)
 }
 
 // localStorage opakowany w try/catch (tryb prywatny Safari rzuca na setItem);
@@ -879,6 +888,9 @@ export const useGame = create<GameState>()(
 				if (!(monsterId in state.ownedMonsters)) return
 				if (monsterId === state.companionId) return
 				if (!EXPEDITIONS_BY_ID.has(typeId)) return
+				// brama Placu Zabaw dotyczy tylko wysłania — wyprawa w drodze
+				// zawsze dochodzi do końca (rozstrzygnięcie nie sprawdza bramy)
+				if (!expeditionUnlocked(state.village, typeId)) return
 				set({
 					expedition: { monsterId, typeId, roundsAtStart: state.totalRounds },
 				})
@@ -890,6 +902,8 @@ export const useGame = create<GameState>()(
 
 			buyWishEgg: () => {
 				const state = get()
+				// studnia życzeń: Jajko Życzeń kupuje się przy fontannie (L1+)
+				if (!wishEggUnlocked(state.village)) return
 				const cost = wishEggCost(state)
 				if (state.iskierki < cost) return
 				set({

@@ -6,9 +6,11 @@ import {
 	EXPEDITIONS_BY_ID,
 	type ExpeditionState,
 	expeditionProgress,
+	expeditionUnlocked,
 	isExpeditionDone,
 	resolveExpedition,
 } from "./expeditions"
+import { INITIAL_VILLAGE, MAX_BUILDING_LEVEL } from "./village"
 
 const trip = (over: Partial<ExpeditionState> = {}): ExpeditionState => ({
 	monsterId: 0,
@@ -34,6 +36,33 @@ describe("katalog wypraw — integralność", () => {
 				expect(e.rewardIskierki).toBeGreaterThan(prev.rewardIskierki)
 			}
 		}
+	})
+	test("brama Placu Zabaw: progi osiągalne (1..MAX) i niemalejące z długością", () => {
+		for (let i = 0; i < EXPEDITIONS.length; i++) {
+			const e = EXPEDITIONS[i] as (typeof EXPEDITIONS)[number]
+			expect(e.requiredPlacZabaw).toBeGreaterThanOrEqual(1)
+			expect(e.requiredPlacZabaw).toBeLessThanOrEqual(MAX_BUILDING_LEVEL)
+			if (i > 0) {
+				const prev = EXPEDITIONS[i - 1] as (typeof EXPEDITIONS)[number]
+				expect(e.requiredPlacZabaw).toBeGreaterThanOrEqual(
+					prev.requiredPlacZabaw,
+				)
+			}
+		}
+		// pierwszy budynek musi coś otwierać — inaczej L1 nie ma nagrody
+		expect(EXPEDITIONS[0]?.requiredPlacZabaw).toBe(1)
+	})
+	test("expeditionUnlocked: poziom placu odblokowuje kolejne typy", () => {
+		const withPlac = (level: number) => ({
+			...INITIAL_VILLAGE,
+			buildings: level === 0 ? {} : { "plac-zabaw": level },
+		})
+		expect(expeditionUnlocked(withPlac(0), "zwiad")).toBe(false)
+		expect(expeditionUnlocked(withPlac(1), "zwiad")).toBe(true)
+		expect(expeditionUnlocked(withPlac(1), "wyprawa")).toBe(false)
+		expect(expeditionUnlocked(withPlac(2), "wyprawa")).toBe(true)
+		expect(expeditionUnlocked(withPlac(2), "wielka")).toBe(false)
+		expect(expeditionUnlocked(withPlac(3), "wielka")).toBe(true)
 	})
 	test("każdy typ ma niepuste teksty i tropChance w 0..1", () => {
 		for (const e of EXPEDITIONS) {

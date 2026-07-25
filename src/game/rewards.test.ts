@@ -13,6 +13,7 @@ import {
 	WISH_COST,
 	WISH_COST_NO_DREAM,
 	WISH_COST_STEP,
+	WISH_PRICE_FLOOR,
 	WISH_SURCHARGE_MAX,
 	wishEggPrice,
 } from "./rewards"
@@ -30,6 +31,20 @@ describe("wishEggPrice", () => {
 		expect(wishEggPrice(WISH_COST.legendary, 3)).toBe(
 			wishEggPrice(WISH_COST.common, 3) +
 				(WISH_COST.legendary - WISH_COST.common),
+		)
+	})
+
+	test("zniżka (fontanna) schodzi z ceny końcowej, podłoga trzyma cenę > 0", () => {
+		expect(wishEggPrice(WISH_COST_NO_DREAM, 0, 5)).toBe(WISH_COST_NO_DREAM - 5)
+		// baza 10 − zniżka 10 → podłoga, nigdy za darmo
+		expect(wishEggPrice(WISH_COST_NO_DREAM, 0, 10)).toBe(WISH_PRICE_FLOOR)
+		// premia za rzadkość wymarzonego przeżywa zniżkę
+		expect(wishEggPrice(WISH_COST.legendary, 0, 10)).toBe(
+			WISH_COST.legendary - 10,
+		)
+		// bez zniżki (domyślny parametr) cena jak dotąd
+		expect(wishEggPrice(WISH_COST_NO_DREAM, 2)).toBe(
+			WISH_COST_NO_DREAM + 2 * WISH_COST_STEP,
 		)
 	})
 

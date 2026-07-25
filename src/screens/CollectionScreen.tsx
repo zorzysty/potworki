@@ -12,8 +12,13 @@ import {
 	equippedFor,
 	isOwned,
 } from "../game/cosmetics"
-import { EXPEDITIONS, expeditionProgress } from "../game/expeditions"
+import {
+	EXPEDITIONS,
+	expeditionProgress,
+	expeditionUnlocked,
+} from "../game/expeditions"
 import { RARITY_ORDER } from "../game/rewards"
+import { buildingLevel, wishEggUnlocked } from "../game/village"
 import {
 	isDivisionOnly,
 	isGapOnly,
@@ -177,6 +182,7 @@ function ExpeditionSection({
 	const expedition = useGame((s) => s.expedition)
 	const totalRounds = useGame((s) => s.totalRounds)
 	const companionId = useGame((s) => s.companionId)
+	const village = useGame((s) => s.village)
 	const sendExpedition = useGame((s) => s.sendExpedition)
 	const recallExpedition = useGame((s) => s.recallExpedition)
 	const [open, setOpen] = useState(false)
@@ -211,7 +217,7 @@ function ExpeditionSection({
 				<HelpTip
 					placement="top"
 					align="right"
-					text="Wyślij potworka na wyprawę! Każda ukończona runda przybliża go do powrotu — wróci z iskierkami ✨. W każdej chwili możesz go zawrócić, nic się nie stanie."
+					text="Wyślij potworka na wyprawę! Każda ukończona runda przybliża go do powrotu — wróci z iskierkami ✨. Kolejne wyprawy otwiera Plac Zabaw w Wiosce. W każdej chwili możesz go zawrócić, nic się nie stanie."
 				/>
 			</div>
 			{open &&
@@ -242,34 +248,58 @@ function ExpeditionSection({
 					</div>
 				) : (
 					<div className="flex flex-col gap-2 px-3 pb-3">
-						{EXPEDITIONS.map((def) => (
-							<button
-								key={def.id}
-								type="button"
-								onClick={() => {
-									sendExpedition(monsterId, def.id)
-									onSent()
-								}}
-								className="flex min-h-16 touch-manipulation flex-col items-start justify-center gap-0.5 rounded-2xl bg-white px-4 py-2 text-left active:scale-[0.98]"
-							>
-								<span className="flex w-full items-baseline justify-between gap-2">
-									<span className="text-lg font-extrabold text-grape-dark">
-										{def.name}
-									</span>
-									<span className="whitespace-nowrap text-sm font-extrabold text-slate-500">
-										{def.durationRounds} rund ·{" "}
-										<span className="text-amber-500">
-											+{def.rewardIskierki} ✨
+						{EXPEDITIONS.map((def) => {
+							const unlocked = expeditionUnlocked(village, def.id)
+							// treść wiersza WSPÓLNA dla obu gałęzi — typ zablokowany bramą
+							// Placu Zabaw to zajawka (wzór półek Sklepiku): nazwa i nagroda
+							// w pełnym kontraście, chip kieruje do budowy, nigdy ton błędu
+							const row = (
+								<>
+									<span className="flex w-full items-baseline justify-between gap-2">
+										<span className="text-lg font-extrabold text-grape-dark">
+											{def.name}
 										</span>
-										{/* podpowiedź tropu tylko dla pewniaka (wielka) */}
-										{def.tropChance >= 1 && " · 🔍 trop!"}
+										<span className="whitespace-nowrap text-sm font-extrabold text-slate-500">
+											{def.durationRounds} rund ·{" "}
+											<span className="text-amber-500">
+												+{def.rewardIskierki} ✨
+											</span>
+											{/* podpowiedź tropu tylko dla pewniaka (wielka) */}
+											{def.tropChance >= 1 && " · 🔍 trop!"}
+										</span>
 									</span>
-								</span>
-								<span className="text-xs font-bold text-slate-400">
-									{def.description}
-								</span>
-							</button>
-						))}
+									<span className="text-xs font-bold text-slate-400">
+										{def.description}
+									</span>
+									{!unlocked && (
+										<span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-extrabold text-sky-600">
+											{buildingLevel(village, "plac-zabaw") === 0
+												? "Zbuduj Plac Zabaw w Wiosce! 🔒"
+												: "Ulepsz Plac Zabaw! 🔒"}
+										</span>
+									)}
+								</>
+							)
+							const rowClass =
+								"flex min-h-16 flex-col items-start justify-center gap-0.5 rounded-2xl px-4 py-2"
+							return unlocked ? (
+								<button
+									key={def.id}
+									type="button"
+									onClick={() => {
+										sendExpedition(monsterId, def.id)
+										onSent()
+									}}
+									className={`${rowClass} touch-manipulation bg-white text-left active:scale-[0.98]`}
+								>
+									{row}
+								</button>
+							) : (
+								<div key={def.id} className={`${rowClass} bg-white/60`}>
+									{row}
+								</div>
+							)
+						})}
 					</div>
 				))}
 		</div>
@@ -567,7 +597,7 @@ function MonsterCardLocked({
 					<HelpTip
 						placement="top"
 						align="right"
-						text="Zaznacz potworka, o którym marzysz. Będzie na ciebie czekał — częściej będzie się wykluwał, a Jajko Życzeń da ci dokładnie jego. Możesz mieć tylko jednego wymarzonego naraz."
+						text="Zaznacz potworka, o którym marzysz. Będzie na ciebie czekał — częściej będzie się wykluwał, a Jajko Życzeń (przy Fontannie w Wiosce) da ci dokładnie jego. Możesz mieć tylko jednego wymarzonego naraz."
 					/>
 				</div>
 			)}
@@ -582,13 +612,19 @@ export function CollectionScreen() {
 	const buyWishEgg = useGame((s) => s.buyWishEgg)
 	const goTo = useGame((s) => s.goTo)
 	const cosmetics = useGame((s) => s.cosmetics)
+	const village = useGame((s) => s.village)
 	// cena Jajka Życzeń rośnie z każdym kupionym (licznik w achievementStats)
 	const achievementStats = useGame((s) => s.achievementStats)
 	const [selectedId, setSelectedId] = useState<number | null>(null)
 
 	const ownedCount = Object.keys(ownedMonsters).length
 	const allOwned = ownedCount === MONSTER_COUNT
-	const cost = wishEggCost({ dreamMonsterId, ownedMonsters, achievementStats })
+	// studnia życzeń: bez fontanny przycisk kupna ustępuje zajawce (fontanna →
+	// Wioska), a ceny nie ma czego liczyć
+	const wishUnlocked = wishEggUnlocked(village)
+	const cost = wishUnlocked
+		? wishEggCost({ dreamMonsterId, ownedMonsters, achievementStats, village })
+		: 0
 	const selected = selectedId !== null ? MONSTERS[selectedId] : undefined
 	const selectedOwned =
 		selectedId !== null ? ownedMonsters[selectedId] : undefined
@@ -611,7 +647,7 @@ export function CollectionScreen() {
 					<HelpTip
 						placement="bottom"
 						align="right"
-						text="To twoje iskierki ✨. Dostajesz je, gdy z jajka wykluje się potworek, którego już masz. Uzbieraj ich dość, a kupisz Jajko Życzeń!"
+						text="To twoje iskierki ✨. Dostajesz je, gdy z jajka wykluje się potworek, którego już masz. Uzbieraj ich dość, a przy Fontannie kupisz Jajko Życzeń!"
 					/>
 					<div className="rounded-full bg-white/80 px-4 py-2 text-lg font-extrabold text-amber-500 shadow">
 						✨ {iskierki}
@@ -619,25 +655,39 @@ export function CollectionScreen() {
 				</div>
 			</div>
 
-			{iskierki > 0 && !allOwned && (
+			{/* Jedno rusztowanie dla obu stanów studni życzeń. Zajawka fontanny
+			    (aspiracja jak zablokowane półki Sklepiku, nigdy ton błędu) NIE
+			    zależy od portfela — to jedyne miejsce tłumaczące związek
+			    Fontanna→Jajko Życzeń; przycisk kupna jak dotąd tylko przy >0 ✨. */}
+			{!allOwned && (!wishUnlocked || iskierki > 0) && (
 				<div className="mx-auto flex w-full max-w-sm items-center gap-2">
 					<BigButton
-						onClick={buyWishEgg}
+						onClick={wishUnlocked ? buyWishEgg : () => goTo("village")}
 						variant="secondary"
-						disabled={iskierki < cost}
-						className="flex-1 py-3 text-xl"
+						disabled={wishUnlocked && iskierki < cost}
+						className={`flex-1 py-3 ${wishUnlocked ? "text-xl" : "text-lg"}`}
 					>
-						Jajko Życzeń 🌟 — {cost} ✨
-						{dreamMonsterId !== null &&
-							!(dreamMonsterId in ownedMonsters) &&
-							!isDivisionOnly(dreamMonsterId) &&
-							!isGapOnly(dreamMonsterId) &&
-							" (wymarzony!)"}
+						{wishUnlocked ? (
+							<>
+								Jajko Życzeń 🌟 — {cost} ✨
+								{dreamMonsterId !== null &&
+									!(dreamMonsterId in ownedMonsters) &&
+									!isDivisionOnly(dreamMonsterId) &&
+									!isGapOnly(dreamMonsterId) &&
+									" (wymarzony!)"}
+							</>
+						) : (
+							"Jajko Życzeń 🌟 — zbuduj Fontannę! ⛲"
+						)}
 					</BigButton>
 					<HelpTip
 						placement="bottom"
 						align="right"
-						text="Kupujesz je za iskierki ✨. Masz wymarzonego potworka? Dostaniesz dokładnie jego — na pewno! Nie masz? Wykluje się jakiś nowy potworek, którego jeszcze nie masz. (Sam wymarzony jest za darmo i tylko sprawia, że zwykłe jajka częściej wykluwają właśnie jego.)"
+						text={
+							wishUnlocked
+								? "Kupujesz je za iskierki ✨. Masz wymarzonego potworka? Dostaniesz dokładnie jego — na pewno! Nie masz? Wykluje się jakiś nowy potworek, którego jeszcze nie masz. (Sam wymarzony jest za darmo i tylko sprawia, że zwykłe jajka częściej wykluwają właśnie jego.)"
+								: "Jajko Życzeń kupisz przy Fontannie: wrzucasz iskierki ✨ i wypowiadasz życzenie. Zbuduj Fontannę w Wiosce, a studnia życzeń ruszy!"
+						}
 					/>
 				</div>
 			)}

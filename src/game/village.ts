@@ -49,9 +49,9 @@ export const BUILDINGS: readonly BuildingDef[] = [
 		name: "Ogródek",
 		levelNames: ["Ogródek", "Ogród", "Ogród Cudów"],
 		descriptions: [
-			"Na łące zakwitną kwiatki!",
-			"Przylecą motylki!",
-			"Wyrosną tęczowe kwiaty!",
+			"Na łące zakwitną kwiatki! Rano zbiorą rosę: +1 ✨ do pierwszej rundy dnia.",
+			"Przylecą motylki! Poranna rosa: +2 ✨ do pierwszej rundy dnia.",
+			"Wyrosną tęczowe kwiaty! Poranna rosa: +3 ✨ do pierwszej rundy dnia.",
 		],
 		costs: [5, 15, 40],
 	},
@@ -60,9 +60,9 @@ export const BUILDINGS: readonly BuildingDef[] = [
 		name: "Plac Zabaw",
 		levelNames: ["Zjeżdżalnia", "Plac Zabaw", "Mega Plac Zabaw"],
 		descriptions: [
-			"Potworki będą zjeżdżać ze zjeżdżalni!",
-			"Dojdzie huśtawka dla potworków!",
-			"Trampolina — hop, hop!",
+			"Potworki będą zjeżdżać ze zjeżdżalni — wytrenowane ruszą na Zwiad!",
+			"Dojdzie huśtawka dla potworków — otworzy się Wyprawa!",
+			"Trampolina — hop, hop! Otworzy się Wielka Wyprawa z tropem!",
 		],
 		costs: [10, 30, 70],
 	},
@@ -93,9 +93,9 @@ export const BUILDINGS: readonly BuildingDef[] = [
 		name: "Fontanna",
 		levelNames: ["Fontanna", "Lśniąca Fontanna", "Fontanna Marzeń"],
 		descriptions: [
-			"Woda zacznie się skrzyć iskierkami.",
-			"Potworki będą drzemać przy pluskającej wodzie.",
-			"W wodzie odbije się potworek, o którym marzysz!",
+			"Woda zacznie się skrzyć — wrzucisz iskierki, pomyślisz życzenie: Jajko Życzeń!",
+			"Potworki będą drzemać przy wodzie, a Jajko Życzeń stanieje o 5 ✨!",
+			"W wodzie odbije się potworek, o którym marzysz — Jajko Życzeń stanieje o 10 ✨!",
 		],
 		costs: [20, 50, 120],
 	},
@@ -183,7 +183,10 @@ export const WAGE_GOOD_ROUND_STARS = 15
 // + 1 za pierwszą ukończoną rundę dnia (nagradza obecność; NIGDY nie ma
 //   streaka ani kary za przerwę). Ten składnik wycinamy PIERWSZY, gdyby
 //   ekonomia okazała się zbyt hojna — stąd osobna flaga.
-// Zakres 1..7; cap portfela (ISKIERKI_CAP) egzekwuje store.
+// + poziom ogródka (0–3) — „poranna rosa": dolicza się WYŁĄCZNIE do pierwszej
+//   rundy dnia (kwiaty zbierają rosę przez noc). Jak bonus dnia: bez streaka,
+//   przerwa niczego nie zabiera.
+// Zakres 1..10; cap portfela (ISKIERKI_CAP) egzekwuje store.
 export function roundWage(
 	v: VillageState,
 	stars: number,
@@ -194,14 +197,16 @@ export function roundWage(
 		(stars >= WAGE_GOOD_ROUND_STARS ? 1 : 0) +
 		(stars >= MAX_STARS_PER_ROUND ? 1 : 0) +
 		buildingLevel(v, "zamek") +
-		(firstRoundToday ? 1 : 0)
+		(firstRoundToday ? 1 + buildingLevel(v, "ogrodek") : 0)
 	)
 }
 
 // Limit wędrowców renderowanych w wiosce: baza + 4 za każdy poziom domków
-// (14/18/22/26). Baza = strojenie wydajności tabletu (do 76 animowanych SVG
-// to za dużo), bonus domków = widoczny perk kolekcji.
-export const BASE_VILLAGE_CAP = 14
+// (8/12/16/20). Baza celowo NISKA (obniżona z 14), by perk domków był widoczny
+// już przy średniej kolekcji — nic nie znika z kolekcji, po prostu mniej
+// potworków naraz spaceruje, dopóki nie mają gdzie mieszkać. Górna granica to
+// też strojenie wydajności tabletu (kilkadziesiąt animowanych SVG to za dużo).
+export const BASE_VILLAGE_CAP = 8
 export const CAP_PER_DOMKI_LEVEL = 4
 
 // Kto stoi w wiosce i w jakiej roli — czysta reguła domenowa (ekran dokłada
@@ -257,6 +262,20 @@ export function villageRoster(
 
 export function villageCap(v: VillageState): number {
 	return BASE_VILLAGE_CAP + CAP_PER_DOMKI_LEVEL * buildingLevel(v, "domki")
+}
+
+// Fontanna = studnia życzeń: L1 odblokowuje kupno Jajka Życzeń, L2/L3 dają
+// zniżkę od jego ceny (indeks tabeli = poziom fontanny). Zniżka schodzi z ceny
+// KOŃCOWEJ (baza + progresja), a podłogi pilnuje WISH_PRICE_FLOOR w
+// rewards.ts — jajko nigdy nie staje się darmowe. Gałki strojenia tutaj.
+export const FONTANNA_WISH_DISCOUNT: readonly number[] = [0, 0, 5, 10]
+
+export function wishEggUnlocked(v: VillageState): boolean {
+	return buildingLevel(v, "fontanna") >= 1
+}
+
+export function wishEggDiscount(v: VillageState): number {
+	return FONTANNA_WISH_DISCOUNT[buildingLevel(v, "fontanna")] ?? 0
 }
 
 export interface VillageGoal {

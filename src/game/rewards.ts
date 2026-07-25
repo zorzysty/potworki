@@ -135,9 +135,23 @@ export const WISH_COST_NO_DREAM = 10
 export const WISH_COST_STEP = 10
 export const WISH_SURCHARGE_MAX = 100
 
-export function wishEggPrice(base: number, bought: number): number {
+// Podłoga ceny PO zniżce fontanny (wysokość zniżki w village.ts): jajko
+// nigdy nie jest darmowe — życzenie ma kosztować choć garść iskierek, inaczej
+// pierwsze jajko bez wymarzonego (baza 10) przy Fontannie Marzeń (−10)
+// spadłoby do zera. Podłoga siedzi WEWNĄTRZ wishEggPrice, żeby żaden
+// przyszły konsument ceny nie mógł jej zgubić.
+export const WISH_PRICE_FLOOR = 5
+
+export function wishEggPrice(
+	base: number,
+	bought: number,
+	discount = 0,
+): number {
 	const surcharge = WISH_COST_STEP * Math.max(0, bought)
-	return base + Math.min(WISH_SURCHARGE_MAX, surcharge)
+	return Math.max(
+		WISH_PRICE_FLOOR,
+		base + Math.min(WISH_SURCHARGE_MAX, surcharge) - discount,
+	)
 }
 
 function rollTier(
