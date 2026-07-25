@@ -87,7 +87,7 @@ export function RoundSummary() {
 							<GoalProgressBar
 								goal={goal}
 								iskierki={iskierki}
-								starred={village.goalId !== null && village.goalId === goal.id}
+								goalId={village.goalId}
 							/>
 						</>
 					) : (

@@ -1,21 +1,24 @@
 import type { VillageGoal } from "../game/village"
 
 // Pasek celu budowy: nazwa (+⭐ gdy to cel wybrany przez dziecko) + pasek
-// postępu + x/y. Czysto prezentacyjny — caller daje goal/iskierki/starred i
+// postępu + x/y. Czysto prezentacyjny — caller daje goal/iskierki/goalId i
 // własny wrapper (button z nawigacją); separator i prefiks „Cel: " to sprawa
 // callera. Współdzielą go nagłówek Wioski i chip żołdu w podsumowaniu rundy,
-// więc nowe stany postępu celu dopisujemy TU (obie powierzchnie razem).
+// więc nowe stany postępu celu dopisujemy TU (obie powierzchnie razem) —
+// z „czy to cel dziecka" włącznie: caller podaje surowe `village.goalId`,
+// porównanie żyje w jednym miejscu.
 export function GoalProgressBar({
 	goal,
 	iskierki,
-	starred,
+	goalId,
 	prefix,
 }: {
 	goal: VillageGoal
 	iskierki: number
-	starred: boolean
+	goalId: string | null
 	prefix?: string
 }) {
+	const starred = goalId === goal.id
 	return (
 		<>
 			<span className="truncate text-sm font-extrabold text-grape-dark">

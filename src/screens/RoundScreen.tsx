@@ -18,9 +18,9 @@ export function RoundScreen({
 	const nextQuestion = useGame((s) => s.nextQuestion)
 	const exitRoundEarly = useGame((s) => s.exitRoundEarly)
 	const debugFinishRound = useGame((s) => s.debugFinishRound)
-	// pauza żyje w store: nakładka zasłania keypad, ale globalny `keydown`
-	// w App.tsx jej nie widzi — guard musi być przy akcjach (patrz store/)
-	const paused = useGame((s) => s.paused)
+	// pauza jest polem RUNDY (ginie razem z nią); wejście wycisza guard
+	// w akcjach store — nakładka zasłania tylko keypad, patrz store/
+	const paused = round?.paused ?? false
 	const setPaused = useGame((s) => s.setPaused)
 
 	const phase = round?.phase

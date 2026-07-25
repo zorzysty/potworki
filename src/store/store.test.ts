@@ -64,6 +64,27 @@ beforeEach(() => game().debugReset())
 // Testy ekonomii (iskierki za duplikaty/Jajko Życzeń) izolujemy od nagród za
 // osiągnięcia — pre-odblokowanie wszystkich sprawia, że checkAchievements nic nie
 // dosypuje. Osiągnięcia mają własne testy w sekcji „osiągnięcia".
+// Podupadłe starsze tabliczki na etapie 2: baza (etap 0) najsłabsza (0.2),
+// ×3 (etap 1) mocniejsza (0.4) → visitStage wskazuje etap 0 (średnia starszych
+// 4/15 ≈ 0.27 < MAINTAIN_THRESHOLD). Jedno źródło strojenia dla wszystkich
+// testów rundy-wizyty — inaczej kopie rozjeżdżają się przy zmianie progu.
+function seedDecayedFacts() {
+	const facts: Partial<Record<FactKey, FactStats>> = {}
+	for (const f of stageFacts(0))
+		facts[f.key] = { ...emptyStats(), attempts: 1, mastery: 0.2 }
+	for (const f of stageFacts(1))
+		facts[f.key] = { ...emptyStats(), attempts: 1, mastery: 0.4 }
+	useGame.setState({ facts, unlockedStage: 2 })
+}
+
+function playVisitRoundClean() {
+	game().startVisitRound()
+	for (let i = 0; i < 10; i++) {
+		answer(true)
+		game().nextQuestion()
+	}
+}
+
 function suppressAchievements() {
 	const all: Record<string, { unlockedAt: number; seen: boolean }> = {}
 	for (const a of ACHIEVEMENTS) all[a.id] = { unlockedAt: 0, seen: true }
@@ -844,30 +865,33 @@ describe("pauza", () => {
 		expect(requireRound().answer).toBe("7")
 	})
 
-	test("pauza nie przecieka: startRound i wyjście z rundy ją czyszczą", () => {
+	test("pauza nie przecieka na następną rundę (ginie razem z rundą)", () => {
+		// pauza jest polem RoundState, więc każde wyjście z rundy ją zabiera,
+		// a każdy start buduje świeżą rundę — bez ręcznego zerowania
 		game().startRound()
 		game().setPaused(true)
 		game().exitRoundEarly()
-		expect(game().paused).toBe(false)
-
+		expect(game().round).toBeNull()
 		game().startRound()
+		expect(requireRound().paused).toBe(false)
+
 		game().setPaused(true)
 		game().goTo("home")
-		expect(game().paused).toBe(false)
-
-		useGame.setState({ paused: true })
-		game().startRound()
-		expect(game().paused).toBe(false)
-
-		useGame.setState({ paused: true })
 		game().startVisitRound()
-		expect(game().paused).toBe(false)
+		expect(requireRound().paused).toBe(false)
 	})
 
-	test("pauza jest efemeryczna — nie trafia do zapisu", () => {
+	test("setPaused poza rundą to no-op (nie tworzy stanu znikąd)", () => {
+		game().goTo("home")
+		game().setPaused(true)
+		expect(game().round).toBeNull()
+	})
+
+	test("pauza jest efemeryczna — RoundState nie jest persystowany", () => {
 		game().startRound()
 		game().setPaused(true)
-		expect(SAVE_KEYS).not.toContain("paused" as never)
+		expect(requireRound().paused).toBe(true)
+		expect(SAVE_KEYS).not.toContain("round" as never)
 	})
 })
 
@@ -1361,26 +1385,6 @@ describe("sklepik — kosmetyka", () => {
 // ---------------------------------------------------------------------------
 
 describe("odwiedziny u Strażnika (startVisitRound)", () => {
-	// Podupadłe starsze tabliczki na etapie 2: baza (etap 0) najsłabsza (0.2),
-	// ×3 (etap 1) mocniejsza (0.4) → zaproszenie wskazuje etap 0
-	// (średnia starszych 4/15 ≈ 0.27 < MAINTAIN_THRESHOLD)
-	function seedDecayedFacts() {
-		const facts: Partial<Record<FactKey, FactStats>> = {}
-		for (const f of stageFacts(0))
-			facts[f.key] = { ...emptyStats(), attempts: 1, mastery: 0.2 }
-		for (const f of stageFacts(1))
-			facts[f.key] = { ...emptyStats(), attempts: 1, mastery: 0.4 }
-		useGame.setState({ facts, unlockedStage: 2 })
-	}
-
-	const playVisitRoundClean = () => {
-		game().startVisitRound()
-		for (let i = 0; i < 10; i++) {
-			answer(true)
-			game().nextQuestion()
-		}
-	}
-
 	test("visitRoundsCompleted: rośnie po rundzie-wizycie, nie po zwykłej", () => {
 		suppressAchievements()
 		seedDecayedFacts()
@@ -1620,20 +1624,11 @@ describe("wyprawy potworków", () => {
 		game().sendExpedition(0, "zwiad")
 		playCleanRound() // runda 1 — zwiad jeszcze w drodze
 		playCleanRound() // runda 2 — zwiad jeszcze w drodze
-		// stare tabliczki podupadły → visitStage != null (lokalna kopia
-		// seedDecayedFacts z sekcji „odwiedziny u Strażnika")
-		const facts: Partial<Record<FactKey, FactStats>> = {}
-		for (const f of stageFacts(0))
-			facts[f.key] = { ...emptyStats(), attempts: 1, mastery: 0.2 }
-		for (const f of stageFacts(1))
-			facts[f.key] = { ...emptyStats(), attempts: 1, mastery: 0.4 }
-		useGame.setState({ facts, unlockedStage: 2, iskierki: 998 })
+		// stare tabliczki podupadły → visitStage != null
+		seedDecayedFacts()
+		useGame.setState({ iskierki: 998 })
 		// runda 3: wizyta u Strażnika + rozstrzygnięcie zwiadu w JEDNEJ finalizacji
-		game().startVisitRound()
-		for (let i = 0; i < 10; i++) {
-			answer(true)
-			game().nextQuestion()
-		}
+		playVisitRoundClean()
 		const s = game()
 		// wszystkie trzy źródła weszły do JEDNEGO Math.min:
 		expect(s.round?.visitStage).not.toBeNull()

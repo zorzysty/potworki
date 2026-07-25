@@ -12,6 +12,7 @@ import {
 	roundWage,
 	type VillageState,
 	villageCap,
+	villageRoster,
 	villageValue,
 } from "./village"
 
@@ -129,6 +130,85 @@ describe("villageCap", () => {
 		expect(villageCap(village({ buildings: { domki: 1 } }))).toBe(18)
 		expect(villageCap(village({ buildings: { domki: 2 } }))).toBe(22)
 		expect(villageCap(village({ buildings: { domki: 3 } }))).toBe(26)
+	})
+})
+
+describe("villageRoster", () => {
+	// n potworków, każdy z rosnącym hatchedAt (id 0 najstarszy)
+	const owned = (n: number) =>
+		Object.fromEntries(
+			Array.from({ length: n }, (_, i) => [i, { hatchedAt: 1000 + i }]),
+		)
+	const roster = (
+		n: number,
+		over: Partial<Parameters<typeof villageRoster>[2]> = {},
+		v = village(),
+	) =>
+		villageRoster(owned(n), v, {
+			travelerId: null,
+			companionId: null,
+			residentSpots: 0,
+			...over,
+		})
+
+	test("pokazuje NAJNOWSZYCH do limitu (cap 14 przy pustej wiosce)", () => {
+		const r = roster(20)
+		expect(r.ownedIds.length).toBe(20)
+		expect(r.wanderIds.length).toBe(14)
+		// najnowszy (id 19) jest, najstarsi (0–5) wypadli
+		expect(r.wanderIds).toContain(19)
+		expect(r.wanderIds).not.toContain(0)
+	})
+
+	test("podróżnik na wyprawie jest NIEOBECNY (tłumaczy go obóz)", () => {
+		const r = roster(5, { travelerId: 4 })
+		expect(r.wanderIds).not.toContain(4)
+		expect(r.wanderIds.length).toBe(4)
+	})
+
+	test("przyjaciel wchodzi zawsze, nawet gdy limit go wypycha", () => {
+		// id 0 to najstarszy — bez tej reguły wypadłby przy 20 posiadanych
+		const r = roster(20, { companionId: 0 })
+		expect(r.wanderIds).toContain(0)
+		expect(r.wanderIds.length).toBe(14)
+	})
+
+	test("przyjaciel na wyprawie nie wraca tylnymi drzwiami", () => {
+		// guard store'a nie dopuszcza tej pary, ale reguła nie może na nim polegać
+		const r = roster(5, { companionId: 3, travelerId: 3 })
+		expect(r.wanderIds).not.toContain(3)
+		expect(r.residentIds).not.toContain(3)
+	})
+
+	test("mieszkańcy z KOŃCA listy, przyjaciel zostaje wędrowcem", () => {
+		const r = roster(5, { companionId: 4, residentSpots: 2 })
+		expect(r.residentIds.length).toBe(2)
+		// przyjaciel (najnowszy, początek listy) wędruje
+		expect(r.wanderIds).toContain(4)
+		expect(r.residentIds).not.toContain(4)
+		// mieszkańcy i wędrowcy nie zachodzą na siebie i pokrywają całość
+		expect([...r.residentIds, ...r.wanderIds].sort()).toEqual(
+			[0, 1, 2, 3, 4].sort(),
+		)
+	})
+
+	test("zawsze zostaje co najmniej jeden wędrowiec (pusta łąka wygląda na bug)", () => {
+		const r = roster(2, { residentSpots: 5 })
+		expect(r.wanderIds.length).toBeGreaterThanOrEqual(1)
+	})
+
+	test("pusta kolekcja → pusto, bez wyjątków", () => {
+		const r = roster(0, { residentSpots: 3 })
+		expect(r.ownedIds).toEqual([])
+		expect(r.residentIds).toEqual([])
+		expect(r.wanderIds).toEqual([])
+	})
+
+	test("domki podnoszą limit pokazywanych (perk kolekcji)", () => {
+		const r = roster(30, {}, village({ buildings: { domki: 3 } }))
+		expect(r.wanderIds.length).toBe(
+			villageCap(village({ buildings: { domki: 3 } })),
+		)
 	})
 })
 

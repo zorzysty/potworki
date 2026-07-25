@@ -276,6 +276,13 @@ function ExpeditionSection({
 	)
 }
 
+// Powłoka karty (przewijalny kontener modala) jest WSPÓLNA dla obu gałęzi —
+// różni je tylko klasa ramki, więc klasy siedzą w jednym miejscu: strojenie
+// wysokości/scrolla karty (max-h + overflow-y) było już raz dopasowywane i
+// nie może się rozjechać między posiadanym a nieposiadanym.
+const CARD_SHELL =
+	"flex max-h-[88vh] w-full flex-col items-center gap-3 overflow-y-auto rounded-[2rem] border-4 bg-white p-5 shadow-2xl"
+
 // Karta kolekcjonerska POSIADANEGO potworka: strefy okno z artem → baner →
 // opis → mini-staty → ciekawostka → przyjaciel → Ubierz 🎩 → Wyprawa 🎒
 // (kolejność sekcji binding w plans/README.md „Shared-surface governance”).
@@ -296,7 +303,11 @@ function MonsterCard({
 	const unlockedStage = useGame((s) => s.unlockedStage)
 	const cosmetics = useGame((s) => s.cosmetics)
 
+	// caller renderuje kartę tylko dla posiadanego istniejącego potworka
+	// (guard PRZED pochodnymi — dalej `monster` jest już pewny)
 	const monster = MONSTERS[monsterId]
+	if (!monster || !owned) return null
+
 	// Paszport: krainę nazywamy wyłącznie gdy odblokowana (inaczej zdradziłaby
 	// przyszłą tabliczkę → „tajemnica tabliczki”).
 	const lore = loreFor(monsterId)
@@ -305,7 +316,7 @@ function MonsterCard({
 		origin !== null &&
 		(origin.kind === "region" ? origin.stage <= unlockedStage : true)
 	// Oprawa karty wg rzadkości (ramka/blask całego modala, gradient okna z artem itd.)
-	const cardTheme = monster ? CARD_THEME[monster.rarity] : CARD_THEME.common
+	const cardTheme = CARD_THEME[monster.rarity]
 	// Założona ramka (kosmetyka planu 014, slot "frame") podmienia SAMĄ ramkę
 	// modala (cardClasses za cardTheme.card); rzadkość zostaje czytelna przez
 	// wstążkę RARITY_META.badge i nietknięte kafle siatki. Bez ramki wygląd
@@ -318,13 +329,8 @@ function MonsterCard({
 			? COSMETICS_BY_ID.get(equippedFrameId)
 			: undefined
 
-	// caller renderuje kartę tylko dla posiadanego istniejącego potworka
-	if (!monster || !owned) return null
-
 	return (
-		<div
-			className={`flex max-h-[88vh] w-full flex-col items-center gap-3 overflow-y-auto rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${frameDef?.cardClasses ?? cardTheme.card}`}
-		>
+		<div className={`${CARD_SHELL} ${frameDef?.cardClasses ?? cardTheme.card}`}>
 			{/* ===== OKNO Z ARTEM — bohater karty ===== */}
 			{/* shrink-0: okno ma overflow-hidden (min-height liczy się jako 0),
 			    więc bez tego flexbox ściska JE zamiast przewijać dłuższą kartę
@@ -508,14 +514,11 @@ function MonsterCardLocked({
 	const dreamMonsterId = useGame((s) => s.dreamMonsterId)
 	const setDreamMonster = useGame((s) => s.setDreamMonster)
 	const monster = MONSTERS[monsterId]
-	const cardTheme = monster ? CARD_THEME[monster.rarity] : CARD_THEME.common
-
 	if (!monster) return null
+	const cardTheme = CARD_THEME[monster.rarity]
 
 	return (
-		<div
-			className={`flex max-h-[88vh] w-full flex-col items-center gap-3 overflow-y-auto rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${cardTheme.card}`}
-		>
+		<div className={`${CARD_SHELL} ${cardTheme.card}`}>
 			<MonsterSvg
 				id={monsterId}
 				size={180}

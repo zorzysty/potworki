@@ -104,6 +104,14 @@ export interface RoundState {
 	eggsCreated: number[] // indeksy w pendingEggs utworzone w tej rundzie (kolor jajka jest finalny już od utworzenia)
 	unlockedThisRound: boolean
 	wageEarned: number // żołd przyznany przy finalizacji (faza summary); 0 do końca rundy
+	// PAUZA („Przerwa ⏸"): siedzi na rundzie, nie obok niej — ginie razem z nią,
+	// więc nie da się jej przenieść na następną rundę (żadne zerowanie w akcjach
+	// nawigacji). Wycisza wejście u źródła: guardy w pressDigit/pressBackspace/
+	// pressConfirm. Nakładka RoundScreen zasłania tylko keypad, a globalny
+	// `keydown` w App.tsx żyje obok niej — bez guardu wpisywałby cyfry, a
+	// auto-submit zatwierdzałby odpowiedzi (błędna połowi mastery: kara za
+	// przerwę, wprost przeciw zasadzie roota „nigdy nie karze").
+	paused: boolean
 	// runda-wizyta u Strażnika: etap odwiedzanej (najsłabszej starszej) tabliczki —
 	// wybiera region/Strażnika i włącza podziękowanie (+VISIT_BONUS ✨) przy finalizacji.
 	// Efemeryczne (RoundState nie jest persystowany). null = zwykła runda.
@@ -135,14 +143,6 @@ interface GameState extends SaveState {
 	// efemeryczne: czy w tej sesji odwiedzono wioskę — gasi badge „stać cię!" na Home
 	// do końca sesji (badge nie może stać się tapetą, gdy dochód przegoni wydatki)
 	villageVisited: boolean
-	// efemeryczna PAUZA rundy. Mieszka w store, a nie w RoundScreen, bo przerwa
-	// musi wyciszyć KAŻDE wejście — nakładka zasłania keypad, ale globalny
-	// `keydown` w App.tsx żyje obok niej i bez tego wpisywałby cyfry (auto-submit
-	// zatwierdzałby odpowiedzi w trakcie przerwy, a błędna połowi mastery — kara
-	// za przerwę, wprost przeciw zasadzie „nigdy nie karze"). Guard siedzi w
-	// akcjach `pressDigit`/`pressBackspace`/`pressConfirm` — store jest źródłem
-	// prawdy, jak przy przyjacielu i wyprawie.
-	paused: boolean
 
 	goTo: (screen: Screen) => void
 	setPaused: (paused: boolean) => void
@@ -234,37 +234,54 @@ function settleExpedition(state: SaveState): {
 	}
 }
 
+// Liczniki zdarzeniowe podbijane o DELTĘ (lastPlayedDay nie jest liczbą i ma
+// własny mechanizm — bumpDaysPlayed).
+type CounterDeltas = Partial<
+	Record<
+		{
+			[K in keyof AchievementCounters]: AchievementCounters[K] extends number
+				? K
+				: never
+		}[keyof AchievementCounters],
+		number
+	>
+>
+
 // Wspólne domknięcie rundy dla trzech ścieżek finalizacji (nextQuestion /
 // debugFinishRound / debugSimulateRound): rozstrzygnięta wyprawa, JEDEN
 // wspólny cap portfela, totalRounds, liczniki dni i wypraw. Rozmyślne RÓŻNICE
 // ścieżek (bonus wizyty, totalStars/perfectRounds, visitRoundsCompleted —
-// tylko realna gra) wchodzą przez argumenty (iskierkiBeforeCap /
-// counterBumps), więc są widoczne w miejscu wywołania. Nowe źródło dochodu
-// lub licznik końca rundy przechodzi TĘDY — nigdy przez edycję jednej ścieżki.
+// tylko realna gra) wchodzą przez argumenty, więc są widoczne w miejscu
+// wywołania. `counterDeltas` to PRZYROSTY (ile dołożyć), nie wartości: ścieżki
+// nie muszą znać bazy, a delta na liczniku, który helper podbija sam (wyprawy),
+// SUMUJE się zamiast go po cichu nadpisać. Nowe źródło dochodu lub licznik
+// końca rundy przechodzi TĘDY — nigdy przez edycję jednej ścieżki.
 function roundClosePatch(
 	state: Pick<SaveState, "totalRounds" | "achievementStats">,
 	settled: ReturnType<typeof settleExpedition>,
 	// pełny dochód rundy PRZED capem (bez nagrody wyprawy — tę dolicza helper)
 	iskierkiBeforeCap: number,
-	counterBumps: Partial<AchievementCounters>,
+	counterDeltas: CounterDeltas,
 	now: number,
 ) {
+	const stats = { ...state.achievementStats }
+	const deltas: CounterDeltas = {
+		...counterDeltas,
+		expeditionsCompleted:
+			(counterDeltas.expeditionsCompleted ?? 0) +
+			(settled.expeditionReturn !== null ? 1 : 0),
+	}
+	for (const [key, delta] of Object.entries(deltas) as [
+		keyof CounterDeltas,
+		number,
+	][]) {
+		stats[key] = stats[key] + delta
+	}
 	return {
 		iskierki: Math.min(ISKIERKI_CAP, iskierkiBeforeCap + settled.reward),
 		totalRounds: state.totalRounds + 1,
 		expedition: settled.expedition,
-		achievementStats: bumpDaysPlayed(
-			{
-				...state.achievementStats,
-				expeditionsCompleted:
-					state.achievementStats.expeditionsCompleted +
-					(settled.expeditionReturn !== null ? 1 : 0),
-				// counterBumps NA KOŃCU: kontrakt mówi, że różnice ścieżek wchodzą
-				// tędy, więc muszą móc nadpisać także domyślny bump wypraw
-				...counterBumps,
-			},
-			now,
-		),
+		achievementStats: bumpDaysPlayed(stats, now),
 	}
 }
 
@@ -388,20 +405,21 @@ export const useGame = create<GameState>()(
 			mode: "mult",
 			achievementQueue: [],
 			villageVisited: false,
-			paused: false,
 
 			// stan rundy żyje tylko na ekranie rundy; wejście do wioski gasi
-			// sesyjny badge „stać cię!" na Home. Pauza znika razem z rundą —
-			// nigdy nie może przeciec na następną (wyciszyłaby jej wejście).
+			// sesyjny badge „stać cię!" na Home
 			goTo: (screen) =>
 				set((s) => ({
 					screen,
 					round: screen === "round" ? s.round : null,
-					paused: screen === "round" ? s.paused : false,
 					villageVisited: s.villageVisited || screen === "village",
 				})),
 
-			setPaused: (paused) => set({ paused }),
+			// pauza jest polem rundy, więc ginie razem z nią (patrz RoundState)
+			setPaused: (paused) => {
+				const { round } = get()
+				if (round) set({ round: { ...round, paused } })
+			},
 
 			setMode: (mode) => set({ mode }),
 
@@ -426,9 +444,9 @@ export const useGame = create<GameState>()(
 					pickNextFact(state.facts, stage, [], Math.random)
 				set({
 					screen: "round",
-					paused: false,
 					round: {
 						mode,
+						paused: false,
 						introFactor,
 						plan,
 						planPos: 1,
@@ -489,9 +507,9 @@ export const useGame = create<GameState>()(
 				}
 				set({
 					screen: "round",
-					paused: false,
 					round: {
 						mode: "mult",
+						paused: false,
 						introFactor: null,
 						plan,
 						planPos: 1,
@@ -519,10 +537,9 @@ export const useGame = create<GameState>()(
 			// `keydown` w App.tsx jej nie widzi — bez tego guardu klawisz w trakcie
 			// przerwy wpisywałby cyfrę i auto-submit zatwierdzałby odpowiedź.
 			pressDigit: (digit) => {
-				const { round, paused } = get()
-				if (paused) return
-				if (!round || (round.phase !== "answering" && round.phase !== "wrong"))
-					return
+				const { round } = get()
+				if (!round || round.paused) return
+				if (round.phase !== "answering" && round.phase !== "wrong") return
 				if (round.answer.length >= 3) return
 				const answer = round.answer + String(digit)
 				set({ round: { ...round, answer } })
@@ -532,18 +549,16 @@ export const useGame = create<GameState>()(
 			},
 
 			pressBackspace: () => {
-				const { round, paused } = get()
-				if (paused) return
-				if (!round || (round.phase !== "answering" && round.phase !== "wrong"))
-					return
+				const { round } = get()
+				if (!round || round.paused) return
+				if (round.phase !== "answering" && round.phase !== "wrong") return
 				set({ round: { ...round, answer: round.answer.slice(0, -1) } })
 			},
 
 			pressConfirm: () => {
 				const state = get()
 				const { round } = state
-				if (state.paused) return
-				if (!round || round.answer === "") return
+				if (!round || round.paused || round.answer === "") return
 				const q = round.question
 				const expected = expectedAnswer(q, round.mode)
 				const correct = Number(round.answer) === expected
@@ -715,14 +730,10 @@ export const useGame = create<GameState>()(
 							settled,
 							state.iskierki + wageEarned + visitBonus,
 							{
-								perfectRounds:
-									state.achievementStats.perfectRounds +
-									(round.stars === MAX_STARS_PER_ROUND ? 1 : 0),
+								perfectRounds: round.stars === MAX_STARS_PER_ROUND ? 1 : 0,
 								// rundy-wizyty liczą się tylko na realnej ścieżce finalizacji
 								// (ścieżki debug świadomie pomijają — jak bonus wizyty)
-								visitRoundsCompleted:
-									state.achievementStats.visitRoundsCompleted +
-									(round.visitStage !== null ? 1 : 0),
+								visitRoundsCompleted: round.visitStage !== null ? 1 : 0,
 							},
 							now,
 						),
@@ -783,7 +794,7 @@ export const useGame = create<GameState>()(
 
 			// „Koniec na dziś": fragmenty, mastery i eggStarBank już zapisane (commit
 			// per odpowiedź), jajka mają już finalny kolor; runda nie liczy się do totalRounds
-			exitRoundEarly: () => set({ round: null, screen: "home", paused: false }),
+			exitRoundEarly: () => set({ round: null, screen: "home" }),
 
 			// wykluwa wybrane jajko (gracz wybiera kolejność w gnieździe); domyślnie pierwsze
 			hatchEgg: (index = 0) => {
@@ -1134,10 +1145,8 @@ export const useGame = create<GameState>()(
 						settled,
 						o.iskierki,
 						{
-							totalStars: state.achievementStats.totalStars + totalStars,
-							perfectRounds:
-								state.achievementStats.perfectRounds +
-								(totalStars === MAX_STARS_PER_ROUND ? 1 : 0),
+							totalStars,
+							perfectRounds: totalStars === MAX_STARS_PER_ROUND ? 1 : 0,
 						},
 						Date.now(),
 					),
@@ -1204,7 +1213,6 @@ export const useGame = create<GameState>()(
 					mode: "mult",
 					achievementQueue: [],
 					villageVisited: false,
-					paused: false,
 				}),
 		}),
 		{

@@ -18,7 +18,7 @@ import {
 	currentGoal,
 	MAX_BUILDING_LEVEL,
 	nextLevelCost,
-	villageCap,
+	villageRoster,
 } from "../game/village"
 import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
@@ -124,63 +124,37 @@ export function VillageScreen() {
 	// persystowany i nigdy automatyczny
 	const [evening, setEvening] = useState(false)
 
-	// Łańcuch pochodnych wędrowców/mieszkańców + stabilne obiekty `params` w JEDNYM
-	// useMemo — memo(WanderingMonster) widzi te same referencje, więc przełączniki
-	// UI wioski (evening/sheet/showCamp) nie rekonsyliują ~26 drzew SVG. Deps =
-	// dokładnie te wycinki store, które łańcuch czyta (referencyjnie stabilne).
-	const {
-		ownedIds,
-		ownedCount,
-		activeSpots,
-		residentCount,
-		residentIds,
-		wanderers,
-	} = useMemo(() => {
-		const ownedIds = Object.keys(ownedMonsters).map(Number)
-		const ownedCount = ownedIds.length
-
-		// najnowsi do limitu (limit rośnie z domkami), ale przyjaciel zawsze w komplecie
-		const cap = villageCap(village)
-		const sorted = [...ownedIds].sort(
-			(a, b) =>
-				(ownedMonsters[b]?.hatchedAt ?? 0) - (ownedMonsters[a]?.hatchedAt ?? 0),
-		)
-		// podróżnik na wyprawie jest NIEOBECNY w wiosce — jego nieobecność wyjaśnia
-		// obóz 🏕️ na skraju łąki (bez niego zniknięcie wyglądałoby na zgubę/bug)
-		const travelers = sorted.filter((id) => id !== expedition?.monsterId)
-		let shown = travelers.slice(0, cap)
-		if (
-			companionId !== null &&
-			companionId in ownedMonsters &&
-			!shown.includes(companionId)
-		) {
-			shown = [companionId, ...shown.slice(0, cap - 1)]
-		}
-
-		// mieszkańcy: budynki z RESIDENT_SPOTS przygarniają potworki z końca listy
-		// (przyjaciel — początek listy — zawsze zostaje wędrowcem)
-		const activeSpots = RESIDENT_SPOTS.filter(
-			([id]) => buildingLevel(village, id) >= 1,
-		)
-		const residentCount = Math.min(
-			activeSpots.length,
-			Math.max(0, shown.length - 1),
-		)
-		const residentIds = shown.slice(shown.length - residentCount)
-		const wanderIds = shown.slice(0, shown.length - residentCount)
-		const wanderers = wanderIds.map((id, i) => ({
-			id,
-			params: wanderParams(id, i),
-		}))
-		return {
-			ownedIds,
-			ownedCount,
-			activeSpots,
-			residentCount,
-			residentIds,
-			wanderers,
-		}
-	}, [ownedMonsters, village, expedition, companionId])
+	// Skład wioski liczy CZYSTA `villageRoster` (src/game/village.ts — tam żyją
+	// reguły i ich testy); ekran dokłada tylko to, co jest jego: które działki
+	// mają mieszkańca (pozycje) i parametry animacji wędrówki. Całość w JEDNYM
+	// useMemo — memo(WanderingMonster) widzi te same referencje, więc
+	// przełączniki UI (evening/sheet/showCamp) nie rekonsyliują ~26 drzew SVG.
+	// Deps = dokładnie te wycinki store, które łańcuch czyta (stabilne).
+	const { ownedIds, ownedCount, activeSpots, residentIds, wanderers } =
+		useMemo(() => {
+			const activeSpots = RESIDENT_SPOTS.filter(
+				([id]) => buildingLevel(village, id) >= 1,
+			)
+			const { ownedIds, residentIds, wanderIds } = villageRoster(
+				ownedMonsters,
+				village,
+				{
+					travelerId: expedition?.monsterId ?? null,
+					companionId,
+					residentSpots: activeSpots.length,
+				},
+			)
+			return {
+				ownedIds,
+				ownedCount: ownedIds.length,
+				activeSpots,
+				residentIds,
+				wanderers: wanderIds.map((id, i) => ({
+					id,
+					params: wanderParams(id, i),
+				})),
+			}
+		}, [ownedMonsters, village, expedition, companionId])
 
 	const ogrodek = buildingLevel(village, "ogrodek")
 	const latarnie = buildingLevel(village, "latarnie")
@@ -272,7 +246,7 @@ export function VillageScreen() {
 						<GoalProgressBar
 							goal={goal}
 							iskierki={iskierki}
-							starred={village.goalId !== null && village.goalId === goal.id}
+							goalId={village.goalId}
 							prefix="Cel: "
 						/>
 					</button>
@@ -502,7 +476,7 @@ export function VillageScreen() {
 					</div>
 
 					{/* mieszkańcy przy budynkach */}
-					{activeSpots.slice(0, residentCount).map(([, spot], i) => {
+					{activeSpots.slice(0, residentIds.length).map(([, spot], i) => {
 						const id = residentIds[i]
 						if (id === undefined) return null
 						return (

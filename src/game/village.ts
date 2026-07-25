@@ -205,6 +205,57 @@ export function roundWage(
 export const BASE_VILLAGE_CAP = 14
 export const CAP_PER_DOMKI_LEVEL = 4
 
+// Kto stoi w wiosce i w jakiej roli — czysta reguła domenowa (ekran dokłada
+// tylko pozycje działek i parametry animacji). Kolejność decyzji:
+// 1. podróżnik na wyprawie jest NIEOBECNY (jego brak wyjaśnia obóz 🏕️ — bez
+//    tego zniknięcie wyglądałoby na zgubę),
+// 2. pokazujemy NAJNOWSZYCH do `villageCap`, ale przyjaciel wchodzi zawsze
+//    (jest bohaterem Home — nie może wypaść z wioski przez limit),
+// 3. mieszkańcy to potworki z KOŃCA listy (przyjaciel siedzi na początku, więc
+//    zawsze zostaje wędrowcem), tylu ilu jest wolnych działek; reszta wędruje.
+export interface VillageRoster {
+	ownedIds: number[]
+	residentIds: number[]
+	wanderIds: number[]
+}
+
+export function villageRoster(
+	ownedMonsters: Readonly<Record<number, { hatchedAt: number }>>,
+	v: VillageState,
+	opts: {
+		travelerId: number | null
+		companionId: number | null
+		residentSpots: number
+	},
+): VillageRoster {
+	const ownedIds = Object.keys(ownedMonsters).map(Number)
+	const cap = villageCap(v)
+	const sorted = [...ownedIds].sort(
+		(a, b) =>
+			(ownedMonsters[b]?.hatchedAt ?? 0) - (ownedMonsters[a]?.hatchedAt ?? 0),
+	)
+	const present = sorted.filter((id) => id !== opts.travelerId)
+	let shown = present.slice(0, cap)
+	const { companionId } = opts
+	if (
+		companionId !== null &&
+		companionId in ownedMonsters &&
+		companionId !== opts.travelerId &&
+		!shown.includes(companionId)
+	) {
+		shown = [companionId, ...shown.slice(0, cap - 1)]
+	}
+	const residentCount = Math.min(
+		opts.residentSpots,
+		Math.max(0, shown.length - 1),
+	)
+	return {
+		ownedIds,
+		residentIds: shown.slice(shown.length - residentCount),
+		wanderIds: shown.slice(0, shown.length - residentCount),
+	}
+}
+
 export function villageCap(v: VillageState): number {
 	return BASE_VILLAGE_CAP + CAP_PER_DOMKI_LEVEL * buildingLevel(v, "domki")
 }
