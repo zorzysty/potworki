@@ -54,4 +54,13 @@ export default defineConfig({
 			devOptions: { enabled: false },
 		}),
 	],
+	server: {
+		// Testowanie z tabletu: `bun run dev --host` i wejście po IP albo nazwie
+		// z sieci prywatnej (np. Tailscale). Vite domyślnie odrzuca nieznane
+		// nagłówki Host, więc bez tego tablet dostaje „Blocked request".
+		// `true` zamiast konkretnej nazwy CELOWO — repo jest publiczne, a nazwa
+		// hosta z tailnetu nie ma po co lądować na GitHubie. Dotyczy wyłącznie
+		// dev servera (build i GitHub Pages nie mają z tym nic wspólnego).
+		allowedHosts: true,
+	},
 })
