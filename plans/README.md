@@ -204,13 +204,12 @@ Refreshed by the 2026-07-12 audit; ordered by (grounding × payoff)/effort:
   Mostly catalog entries + art + a "Tło" wardrobe row; no save-shape
   change beyond the existing `equipped` map. Effort S; the cheapest
   append-friendly iskierki sink available.
-- **Reward-economy validation — NOW RIPE.** The old "re-measure after 012
-  lands" condition is satisfied and then some: wage income (012), 426✨ of
-  cosmetics prices (013/014), visit bonus (016) and expedition income
-  (017) all landed. The pure `simulateRoundOutcome` harness exists;
-  a spike scripting it over N rounds would answer dup-rate / ✨-per-round
-  / rounds-to-afford-a-cosmetic before any retune. Effort M (measure
-  first; retune only if data warrants).
+- **Reward-economy validation — DONE 2026-07-25 (static analysis):** findings
+  with goal-time estimates and prioritized problems live in
+  [`plans/028-analiza-ekonomii.md`](028-analiza-ekonomii.md) — awaiting the
+  maintainer's decisions before any retune plans are written. A
+  `simulateRoundOutcome` N-round simulation spike remains a possible
+  follow-up to firm up the numbers.
 - **Parent progress view.** `DebugScreen` already renders the full
   per-fact mastery table and `adaptive.ts` exposes the aggregations; a
   gated (PIN/long-press) read-only, parent-legible presentation (color
