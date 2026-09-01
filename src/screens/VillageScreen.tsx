@@ -7,6 +7,7 @@ import { SpeechBubble } from "../components/SpeechBubble"
 import { BuildingArt } from "../components/village/BuildingArt"
 import { BuildReveal } from "../components/village/BuildReveal"
 import { BuildSheet, type SheetView } from "../components/village/BuildSheet"
+import { layoutGreenery, layoutPlots } from "../components/village/layout"
 import { Resident, type ResidentMode } from "../components/village/Resident"
 import {
 	BirdsArt,
@@ -61,62 +62,23 @@ import { useGame } from "../store/store"
 
 // Działki budynków STOJĄ na linii wzgórz: kontener o zerowej wysokości na
 // GROUND_LINE_TOP, każdy plot kotwiczy stopę przez bottom (dy = uniesienie na
-// zboczu; zamek na szczycie) — żadnego pływania w powietrzu niezależnie od
-// proporcji ekranu. Szerokość artu proporcjonalna do sceny (clamp: min = cel
-// dotykowy, max = rozmiar tabletowy), więc na szerokim laptopie budynki nie
-// kurczą się do pikseli. z = kolejność w skyline (niżej na zboczu = z przodu).
+// zboczu) — żadnego pływania w powietrzu niezależnie od proporcji ekranu.
+// Pozycje i rozmiary w px liczy CZYSTA `layoutPlots` (components/village/
+// layout.ts) ze zmierzonego rozmiaru sceny: dwa rzędy z przesunięciem, bez
+// nakładania na żadnej szerokości. Z działki zamku wynika brama (start drogi).
 const GROUND_LINE_TOP = `${GROUND_Y}%` // linia gruntu należy do Scenery (teren + droga startują na niej)
 
-// Działka zamku w liczbach: z nich powstaje i clamp szerokości w PLOTS, i
-// pozycja bramy `gateFor` — droga Ścieżki musi trafiać w bramę na każdym
-// ekranie, a brama WĘDRUJE w procentach sceny: środek przez clamp px/%
-// szerokości, stopa przez dy w px (zależne od wysokości sceny).
-const ZAMEK = { left: 36, minPx: 120, pct: 23, maxPx: 270, dy: 22 }
-function gateFor(sceneW: number, sceneH: number): { x: number; y: number } {
-	const w = Math.min(
-		ZAMEK.maxPx,
-		Math.max(ZAMEK.minPx, (ZAMEK.pct / 100) * sceneW),
-	)
-	return {
-		x: ZAMEK.left + ((w / sceneW) * 100) / 2,
-		// stopa zamku stoi dy px NAD linią gruntu; +8 px zakładki chowa
-		// początek drogi POD artem zamku (budynki mają wyższy z-index)
-		y: GROUND_Y - ((ZAMEK.dy + 8) / sceneH) * 100,
-	}
-}
-
-const PLOTS: Record<
-	BuildingId,
-	{ left: number; width: string; dy: number; z: number }
-> = {
-	// SKYLINE W DWÓCH RZĘDACH (zygzak): tylny rząd stoi WYŻEJ na zboczu
-	// (dy ~+36, mniejszy, z-tyłu), przedni na linii gruntu — dzięki temu 7
-	// budynków mieści się na wąskim ekranie bez ściśnięcia (lefts mogą się
-	// nakładać w poziomie, bo rzędy rozdziela wysokość).
-	domki: { left: -1, width: "clamp(86px, 16%, 190px)", dy: 38, z: 1 },
-	"plac-zabaw": { left: 8, width: "clamp(92px, 16%, 196px)", dy: -8, z: 5 },
-	sklepik: { left: 25, width: "clamp(72px, 11%, 130px)", dy: 40, z: 2 },
-	zamek: {
-		left: ZAMEK.left,
-		width: `clamp(${ZAMEK.minPx}px, ${ZAMEK.pct}%, ${ZAMEK.maxPx}px)`,
-		dy: ZAMEK.dy,
-		z: 3,
-	},
-	fontanna: { left: 65, width: "clamp(80px, 13%, 150px)", dy: -10, z: 5 },
-	latarnie: { left: 61, width: "clamp(60px, 9%, 108px)", dy: 42, z: 1 },
-	ogrodek: { left: 84, width: "clamp(72px, 12%, 130px)", dy: 34, z: 2 },
-}
-
 // mieszkańcy: zbudowany budynek przyciąga jednego z pokazywanych potworków
-// (deterministycznie: najstarsi z listy) — wioska jest zamieszkana, nie umeblowana
+// (deterministycznie: najstarsi z listy) — wioska jest zamieszkana, nie
+// umeblowana. Pozycja względem działki: dx = ułamek szerokości od środka.
 const RESIDENT_SPOTS: readonly [
 	BuildingId,
-	{ leftPct: number; bottomPct: number; mode: ResidentMode },
+	{ dx: number; mode: ResidentMode },
 ][] = [
-	["domki", { leftPct: 7, bottomPct: 50, mode: "doze" }],
-	["plac-zabaw", { leftPct: 24, bottomPct: 46, mode: "play" }],
-	["zamek", { leftPct: 47, bottomPct: 49, mode: "guard" }],
-	["fontanna", { leftPct: 68, bottomPct: 45, mode: "doze" }],
+	["domki", { dx: 0, mode: "doze" }],
+	["plac-zabaw", { dx: -0.3, mode: "play" }],
+	["zamek", { dx: 0.05, mode: "guard" }],
+	["fontanna", { dx: 0.3, mode: "doze" }],
 ]
 
 // kwiaty ogródka rozsiane po łące (3 na poziom); e = indeks emoji w palecie
@@ -149,77 +111,6 @@ const STEPPING_STONES = [
 	{ b: 21, w: 18 },
 	{ b: 13, w: 21 },
 	{ b: 5, w: 24 },
-]
-
-// roślinność zakotwiczona na linii gruntu jak budynki (kontener działek):
-// drzewa w lukach tylnego rzędu (z=0, za budynkami), krzaki z przodu —
-// budynki toną w zieleni, zamiast wisieć na tle gradientu. `el` to statyczny
-// JSX (moduł): identyczna referencja co render, więc rekonsyliacja jest tania.
-const GREENERY: readonly {
-	left: number
-	width: string
-	dy: number
-	z: number
-	el: React.ReactElement
-}[] = [
-	{
-		left: 22.5,
-		width: "clamp(40px, 6%, 72px)",
-		dy: 44,
-		z: 0,
-		el: <TreeArt variant="mint" />,
-	},
-	{
-		left: 56.5,
-		width: "clamp(36px, 5.5%, 64px)",
-		dy: 46,
-		z: 0,
-		el: <TreeArt variant="spring" />,
-	},
-	{
-		left: 78.5,
-		width: "clamp(40px, 6%, 72px)",
-		dy: 40,
-		z: 0,
-		el: <TreeArt variant="mint" />,
-	},
-	{
-		left: 95.5,
-		width: "clamp(34px, 5%, 60px)",
-		dy: 42,
-		z: 0,
-		el: <TreeArt variant="mint" />,
-	},
-	{
-		left: 33.5,
-		width: "clamp(30px, 4.5%, 52px)",
-		dy: 50,
-		z: 0,
-		el: <TreeArt variant="blossom" />,
-	},
-	{
-		left: 71,
-		width: "clamp(32px, 5%, 56px)",
-		dy: 48,
-		z: 0,
-		el: <TreeArt variant="spring" />,
-	},
-	{
-		left: 12,
-		width: "clamp(30px, 4.5%, 52px)",
-		dy: 52,
-		z: 0,
-		el: <TreeArt variant="blossom" />,
-	},
-	{ left: 1, width: "clamp(34px, 5%, 56px)", dy: -6, z: 6, el: <BushArt /> },
-	{
-		left: 24.5,
-		width: "clamp(30px, 4.5%, 52px)",
-		dy: -4,
-		z: 4,
-		el: <BushArt />,
-	},
-	{ left: 79, width: "clamp(34px, 5%, 56px)", dy: -8, z: 6, el: <BushArt /> },
 ]
 
 // kępki trawy na łące (drobny wypełniacz pustych plam)
@@ -304,7 +195,7 @@ export function VillageScreen() {
 	// Ścieżki ma trafiać w nią wszędzie. Callback ref, nie useEffect — scena
 	// potrafi zamontować się PÓŹNIEJ (pusty stan → pierwszy potworek), a
 	// callback łapie każdy montaż.
-	const [gate, setGate] = useState(() => gateFor(1024, 700))
+	const [scene, setScene] = useState({ w: 1024, h: 700 })
 	const sceneObserver = useRef<ResizeObserver | null>(null)
 	const sceneRef = useCallback((el: HTMLDivElement | null) => {
 		sceneObserver.current?.disconnect()
@@ -312,13 +203,24 @@ export function VillageScreen() {
 		if (!el) return
 		const update = () => {
 			if (el.clientWidth && el.clientHeight)
-				setGate(gateFor(el.clientWidth, el.clientHeight))
+				setScene({ w: el.clientWidth, h: el.clientHeight })
 		}
 		update()
 		const ro = new ResizeObserver(update)
 		ro.observe(el)
 		sceneObserver.current = ro
 	}, [])
+	const plots = useMemo(() => layoutPlots(scene.w, scene.h), [scene])
+	const greenery = useMemo(
+		() => layoutGreenery(plots, scene.w),
+		[plots, scene.w],
+	)
+	// brama zamku w % sceny: środek działki + stopa; +8 px zakładki chowa
+	// początek drogi POD artem zamku (budynki mają wyższy z-index)
+	const gate = {
+		x: ((plots.zamek.left + plots.zamek.width / 2) / scene.w) * 100,
+		y: GROUND_Y - ((plots.zamek.dy + 8) / scene.h) * 100,
+	}
 
 	// Skład wioski liczy CZYSTA `villageRoster` (src/game/village.ts — tam żyją
 	// reguły i ich testy); ekran dokłada tylko to, co jest jego: które działki
@@ -664,20 +566,6 @@ export function VillageScreen() {
 								</span>
 							</span>
 						)}
-						{/* Fontanna Marzeń: odbicie wymarzonego potworka w wodzie */}
-						{fontanna >= MAX_BUILDING_LEVEL && dreamMonsterId !== null && (
-							<span
-								className="absolute opacity-25"
-								style={{ left: "65.5%", top: "46%", transform: "scaleY(-1)" }}
-							>
-								<MonsterSvg
-									id={dreamMonsterId}
-									size={28}
-									animate={false}
-									className="monster-silhouette"
-								/>
-							</span>
-						)}
 					</div>
 
 					{/* pas budynków: kontener o zerowej wysokości NA linii wzgórz —
@@ -686,26 +574,30 @@ export function VillageScreen() {
 						className="pointer-events-none absolute inset-x-0 z-20"
 						style={{ top: GROUND_LINE_TOP }}
 					>
-						{/* zieleń między działkami: te same kotwice co budynki (stopa
+						{/* zieleń w lukach działek: te same kotwice co budynki (stopa
 						    przez bottom: dy), więc drzewa STOJĄ na zboczu, nie pływają */}
-						{GREENERY.map((g) => (
+						{greenery.map((g, i) => (
 							<span
-								key={g.left}
+								key={`${g.kind}-${i}`}
 								aria-hidden="true"
 								className="absolute block"
 								style={{
-									left: `${g.left}%`,
+									left: g.left,
 									bottom: g.dy,
 									width: g.width,
 									zIndex: g.z,
 								}}
 							>
-								{g.el}
+								{g.kind === "tree" ? (
+									<TreeArt variant={g.variant} />
+								) : (
+									<BushArt />
+								)}
 							</span>
 						))}
 						{BUILDINGS.map((b) => {
 							const level = buildingLevel(village, b.id)
-							const plot = PLOTS[b.id]
+							const plot = plots[b.id]
 							const cost = nextLevelCost(village, b.id)
 							return (
 								<button
@@ -715,7 +607,7 @@ export function VillageScreen() {
 									aria-label={`${b.name}${level === 0 ? " (do zbudowania)" : ""}`}
 									className="pointer-events-auto absolute flex min-h-16 min-w-16 touch-manipulation flex-col items-center active:scale-95"
 									style={{
-										left: `${plot.left}%`,
+										left: plot.left,
 										bottom: plot.dy,
 										width: plot.width,
 										zIndex: plot.z,
@@ -731,6 +623,27 @@ export function VillageScreen() {
 											silhouette={level === 0}
 										/>
 									</PlotGround>
+									{/* Fontanna Marzeń: odbicie wymarzonego potworka w wodzie
+									    (dolna ćwiartka artu = basen) */}
+									{b.id === "fontanna" &&
+										fontanna >= MAX_BUILDING_LEVEL &&
+										dreamMonsterId !== null && (
+											<span
+												className="pointer-events-none absolute left-1/2 opacity-30"
+												style={{
+													bottom: "12%",
+													width: "26%",
+													transform: "translateX(-50%) scaleY(-1)",
+												}}
+											>
+												<MonsterSvg
+													id={dreamMonsterId}
+													size="100%"
+													animate={false}
+													className="monster-silhouette"
+												/>
+											</span>
+										)}
 									{level === 0 && cost !== null && (
 										<span
 											className={`-mt-2 rounded-full px-2.5 py-0.5 text-sm font-extrabold shadow ${
@@ -748,15 +661,18 @@ export function VillageScreen() {
 					</div>
 
 					{/* mieszkańcy przy budynkach */}
-					{activeSpots.slice(0, residentIds.length).map(([, spot], i) => {
+					{activeSpots.slice(0, residentIds.length).map(([bid, spot], i) => {
 						const id = residentIds[i]
 						if (id === undefined) return null
+						const plot = plots[bid]
+						// stoi przed budynkiem, tuż pod jego stopą (tył rzędu = na zboczu)
+						const cx = plot.left + plot.width / 2 + spot.dx * plot.width - 27
 						return (
 							<Resident
 								key={id}
 								id={id}
-								leftPct={spot.leftPct}
-								bottomPct={spot.bottomPct}
+								leftPct={(cx / scene.w) * 100}
+								bottomPct={100 - GROUND_Y + ((plot.dy - 46) / scene.h) * 100}
 								mode={spot.mode}
 								cheerNonce={cheerNonce}
 							/>

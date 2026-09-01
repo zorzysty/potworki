@@ -1360,8 +1360,14 @@ function LatarnieArt({
 	level: number
 	size: number | string
 }) {
-	const lamps = Array.from({ length: level }, (_, i) => 24 + i * 34)
-	const vbWidth = 48 + (level - 1) * 34
+	// stały viewBox (szerokość alei L3): L1/L2 to mniej latarni wyśrodkowanych
+	// w tym samym pudle — wysokość artu nie zależy od poziomu (układ działek
+	// liczy proporcje z jednego viewBoxu)
+	const vbWidth = 116
+	const lamps = Array.from(
+		{ length: level },
+		(_, i) => vbWidth / 2 + (i - (level - 1) / 2) * 34,
+	)
 	const line = MAT.plum.line
 	return (
 		<svg
@@ -1369,7 +1375,7 @@ function LatarnieArt({
 			style={svgStyle(size)}
 			aria-hidden="true"
 		>
-			<GroundShadow cx={vbWidth / 2} cy={97} rx={vbWidth / 2 - 4} />
+			<GroundShadow cx={vbWidth / 2} cy={97} rx={10 + level * 17} />
 			{lamps.map((x, i) => (
 				<g key={x}>
 					{/* poświata (dwuwarstwowa — naprawdę świeci) */}
