@@ -9,17 +9,26 @@ import { BuildReveal } from "../components/village/BuildReveal"
 import { BuildSheet, type SheetView } from "../components/village/BuildSheet"
 import { Resident, type ResidentMode } from "../components/village/Resident"
 import {
+	BirdsArt,
 	BushArt,
+	ButterflyArt,
 	CloudArt,
+	DuckArt,
+	FlowerArt,
+	type FlowerKind,
 	GROUND_Y,
 	GrassTuft,
+	MeadowTexture,
 	MoonArt,
 	PedestalArt,
 	PlotGround,
 	PondArt,
 	RainbowArc,
+	RoadArt,
 	roadXAt,
+	SparkleArt,
 	SunArt,
+	TentArt,
 	Terrain,
 	TreeArt,
 } from "../components/village/Scenery"
@@ -62,7 +71,7 @@ const GROUND_LINE_TOP = `${GROUND_Y}%` // linia gruntu należy do Scenery (teren
 // pozycja bramy `gateFor` — droga Ścieżki musi trafiać w bramę na każdym
 // ekranie, a brama WĘDRUJE w procentach sceny: środek przez clamp px/%
 // szerokości, stopa przez dy w px (zależne od wysokości sceny).
-const ZAMEK = { left: 37, minPx: 108, pct: 19, maxPx: 225, dy: 22 }
+const ZAMEK = { left: 36, minPx: 120, pct: 23, maxPx: 270, dy: 22 }
 function gateFor(sceneW: number, sceneH: number): { x: number; y: number } {
 	const w = Math.min(
 		ZAMEK.maxPx,
@@ -84,18 +93,18 @@ const PLOTS: Record<
 	// (dy ~+36, mniejszy, z-tyłu), przedni na linii gruntu — dzięki temu 7
 	// budynków mieści się na wąskim ekranie bez ściśnięcia (lefts mogą się
 	// nakładać w poziomie, bo rzędy rozdziela wysokość).
-	domki: { left: 0, width: "clamp(76px, 13%, 160px)", dy: 38, z: 1 },
-	"plac-zabaw": { left: 9, width: "clamp(84px, 14%, 172px)", dy: -8, z: 5 },
-	sklepik: { left: 27, width: "clamp(64px, 9%, 110px)", dy: 40, z: 2 },
+	domki: { left: -1, width: "clamp(86px, 16%, 190px)", dy: 38, z: 1 },
+	"plac-zabaw": { left: 8, width: "clamp(92px, 16%, 196px)", dy: -8, z: 5 },
+	sklepik: { left: 25, width: "clamp(72px, 11%, 130px)", dy: 40, z: 2 },
 	zamek: {
 		left: ZAMEK.left,
 		width: `clamp(${ZAMEK.minPx}px, ${ZAMEK.pct}%, ${ZAMEK.maxPx}px)`,
 		dy: ZAMEK.dy,
 		z: 3,
 	},
-	fontanna: { left: 66, width: "clamp(72px, 11%, 128px)", dy: -10, z: 5 },
-	latarnie: { left: 62, width: "clamp(56px, 8%, 96px)", dy: 42, z: 1 },
-	ogrodek: { left: 85, width: "clamp(64px, 10%, 108px)", dy: 34, z: 2 },
+	fontanna: { left: 65, width: "clamp(80px, 13%, 150px)", dy: -10, z: 5 },
+	latarnie: { left: 61, width: "clamp(60px, 9%, 108px)", dy: 42, z: 1 },
+	ogrodek: { left: 84, width: "clamp(72px, 12%, 130px)", dy: 34, z: 2 },
 }
 
 // mieszkańcy: zbudowany budynek przyciąga jednego z pokazywanych potworków
@@ -123,10 +132,10 @@ const FLOWER_SPOTS = [
 	{ l: 64, b: 22, e: 1 },
 	{ l: 6, b: 18, e: 2 },
 ]
-const FLOWER_PALETTE: Record<number, string[]> = {
-	1: ["🌷", "🌼", "🌷"],
-	2: ["🌷", "🌼", "🌻"],
-	3: ["🌺", "🌼", "🌻"],
+const FLOWER_PALETTE: Record<number, FlowerKind[]> = {
+	1: ["tulip", "daisy", "tulip"],
+	2: ["tulip", "daisy", "sunflower"],
+	3: ["bell", "daisy", "sunflower"],
 }
 
 // ścieżka (dekoracja): kręta droga w terenie (Terrain road) + płaskie kamienie
@@ -180,6 +189,27 @@ const GREENERY: readonly {
 		dy: 42,
 		z: 0,
 		el: <TreeArt variant="mint" />,
+	},
+	{
+		left: 33.5,
+		width: "clamp(30px, 4.5%, 52px)",
+		dy: 50,
+		z: 0,
+		el: <TreeArt variant="blossom" />,
+	},
+	{
+		left: 71,
+		width: "clamp(32px, 5%, 56px)",
+		dy: 48,
+		z: 0,
+		el: <TreeArt variant="spring" />,
+	},
+	{
+		left: 12,
+		width: "clamp(30px, 4.5%, 52px)",
+		dy: 52,
+		z: 0,
+		el: <TreeArt variant="blossom" />,
 	},
 	{ left: 1, width: "clamp(34px, 5%, 56px)", dy: -6, z: 6, el: <BushArt /> },
 	{
@@ -457,17 +487,23 @@ export function VillageScreen() {
 				// dioramą, nie rozciągniętym pustkowiem z malutkimi budynkami.
 				<div
 					ref={sceneRef}
-					className="isolate relative mx-auto w-full max-w-5xl flex-1 overflow-hidden rounded-3xl ring-4 ring-white/40"
+					className="isolate relative mx-auto w-full max-w-5xl flex-1 overflow-hidden rounded-3xl bg-[linear-gradient(180deg,#5eb0f3_0%,#97cff9_16%,#d3ecfc_28%,#fff0d4_36%,#dcefe3_44%)] ring-4 ring-white/40"
 				>
-					{/* niebo: gradient + wektorowe słońce i chmury — słońce chowa się
-					    na wieczór (księżyc przejmuje jego miejsce w nakładce wieczoru;
-					    nigdy oba naraz) */}
-					<div className="pointer-events-none absolute inset-x-0 top-0 h-2/5 bg-gradient-to-b from-sky-300/70 via-sky-200/40 to-transparent" />
+					{/* niebo: gradient na kontenerze (błękit → jasny, ciepły
+					    horyzont pod górami) + wektorowe słońce, ptaki i chmury —
+					    słońce chowa się na wieczór (księżyc przejmuje jego miejsce
+					    w nakładce wieczoru; nigdy oba naraz) */}
 					{!night && (
-						<span className="pointer-events-none absolute left-[4%] top-[3%]">
+						<span className="pointer-events-none absolute left-[3%] top-[2%]">
 							<SunArt />
 						</span>
 					)}
+					<span
+						className="pointer-events-none absolute left-[60%] top-[12%]"
+						style={{ width: "clamp(40px, 6%, 70px)" }}
+					>
+						<BirdsArt />
+					</span>
 					{CLOUDS.map((c) => (
 						<span
 							key={c.left}
@@ -484,14 +520,13 @@ export function VillageScreen() {
 							<CloudArt />
 						</span>
 					))}
-					{/* tęcza POD terenem (z-1 < z-2): kotwiczona DOŁEM tuż pod grzbietami
-					    wzgórz (bottom 65% = dół łuku na 35% wysokości sceny; grzbiety na
-					    jej szerokości to ~27–33%), więc nogi wyrastają zza terenu, ale
-					    łuk jest schowany ledwie o parę procent — cały widoczny */}
+					{/* tęcza POD terenem (z-1 < z-2): kotwiczona DOŁEM w paśmie gór
+					    (bottom 74% = dół łuku na 26% wysokości sceny; szczyty gór sięgają
+					    ~16–28%), więc nogi wyrastają zza gór, a łuk jest cały widoczny */}
 					{has("tecza") && (
 						<span
-							className="pointer-events-none absolute bottom-[65%] left-[58%] z-[1] opacity-80"
-							style={{ width: "clamp(170px, 27%, 290px)" }}
+							className="pointer-events-none absolute bottom-[74%] left-[56%] z-[1] opacity-80"
+							style={{ width: "clamp(170px, 30%, 320px)" }}
 						>
 							<RainbowArc />
 						</span>
@@ -499,7 +534,9 @@ export function VillageScreen() {
 
 					{/* teren: warstwowe wzgórza + łąka + droga (dekoracja „Ścieżka") */}
 					<div className="pointer-events-none absolute inset-0 z-[2]">
-						<Terrain road={has("sciezka")} gateX={gate.x} gateY={gate.y} />
+						<Terrain />
+						<MeadowTexture />
+						{has("sciezka") && <RoadArt gateX={gate.x} gateY={gate.y} />}
 					</div>
 
 					{/* efekty sceny (zakupy zmieniają całą scenę, nie tylko działkę) */}
@@ -532,43 +569,56 @@ export function VillageScreen() {
 						{FLOWER_SPOTS.slice(0, ogrodek * 3).map((f) => (
 							<span
 								key={`${f.l}-${f.b}`}
-								className="absolute text-xl"
-								style={{ left: `${f.l}%`, bottom: `${f.b}%` }}
+								className="absolute block"
+								style={{ left: `${f.l}%`, bottom: `${f.b}%`, width: 22 }}
 							>
-								{flowerPalette?.[f.e] ?? "🌼"}
+								<FlowerArt kind={flowerPalette?.[f.e] ?? "daisy"} />
 							</span>
 						))}
 						{ogrodek >= 2 && (
 							<>
 								<span
-									className="anim-float absolute text-lg"
-									style={{ left: "36%", bottom: "36%" }}
+									className="anim-float absolute block"
+									style={{ left: "36%", bottom: "36%", width: 22 }}
 								>
-									🦋
+									<ButterflyArt />
 								</span>
 								<span
-									className="anim-float absolute text-base"
-									style={{ left: "70%", bottom: "30%", animationDelay: "1.2s" }}
+									className="anim-float absolute block"
+									style={{
+										left: "70%",
+										bottom: "30%",
+										width: 18,
+										animationDelay: "1.2s",
+									}}
 								>
-									🦋
+									<ButterflyArt color="#9b7cf6" />
 								</span>
 							</>
 						)}
 						{ogrodek >= 3 && (
 							<span
-								className="anim-sparkle absolute text-base"
-								style={{ left: "45%", bottom: "8%" }}
+								className="anim-sparkle absolute block"
+								style={{ left: "45%", bottom: "8%", width: 18 }}
 							>
-								✨
+								<SparkleArt />
 							</span>
 						)}
 						{/* dekoracje jednorazowe */}
 						{has("kwiatki") && (
 							<span
-								className="absolute text-xl"
+								className="absolute flex items-end gap-0.5"
 								style={{ left: "58%", bottom: "4%" }}
 							>
-								🌼🌸🌼
+								<span className="block w-5">
+									<FlowerArt kind="daisy" />
+								</span>
+								<span className="block w-6">
+									<FlowerArt kind="tulip" color="#ff8fb0" />
+								</span>
+								<span className="block w-5">
+									<FlowerArt kind="daisy" />
+								</span>
 							</span>
 						)}
 						{has("staw") && (
@@ -581,8 +631,8 @@ export function VillageScreen() {
 								}}
 							>
 								<PondArt />
-								<span className="anim-float absolute left-[30%] top-[2%] text-lg">
-									🦆
+								<span className="anim-float absolute left-[26%] top-[8%] block w-[22%]">
+									<DuckArt />
 								</span>
 							</span>
 						)}
@@ -746,7 +796,9 @@ export function VillageScreen() {
 								aria-label={`${travelerName} jest na wyprawie — pokaż postęp`}
 								className="flex min-h-16 min-w-16 touch-manipulation flex-col items-center active:scale-95"
 							>
-								<span className="text-4xl drop-shadow">🏕️</span>
+								<span className="block w-14 drop-shadow">
+									<TentArt />
+								</span>
 								<MonsterSvg
 									id={expedition.monsterId}
 									size={36}
@@ -775,6 +827,10 @@ export function VillageScreen() {
 							))}
 						</div>
 					)}
+
+					{/* winieta: miękki cień przy krawędziach — scena jest dioramą,
+					    nie płaskim wypełnieniem; nad wszystkim prócz nakładki wieczoru */}
+					<div className="pointer-events-none absolute inset-0 z-[110] rounded-3xl shadow-[inset_0_0_48px_rgba(30,58,42,0.16)]" />
 
 					{ownedCount === MONSTER_COUNT && (
 						<div className="anim-pop absolute left-1/2 top-2 z-[130] -translate-x-1/2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-5 py-2 text-lg font-extrabold text-white shadow-lg">

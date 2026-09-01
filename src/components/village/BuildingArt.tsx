@@ -1,14 +1,17 @@
-import type { CSSProperties } from "react"
+import type { CSSProperties, ReactNode } from "react"
 import { useId } from "react"
 import type { BuildingId, DecorationId } from "../../game/village"
+import { FlowerGlyph } from "./Scenery"
 
 // Art budynków wioski: poziom = WIDOCZNY wzrost (rozmiar, wieże, światła) —
 // żadnych kropek-poziomów; arkusz budowy pokazuje „poziom X/3" tekstem.
-// Ręczne SVG w idiomie potworków (gradienty z palety, zaokrąglenia, gruby
-// kontur). `size` może być liczbą (px) lub stringiem CSS ("100%") — wysokość
-// wynika z viewBox. Sylwetka (silhouette) = jednolity ciemny cień budynku
-// (filtr inline, niezależny od klas Tailwinda) — czytelna aspiracja à la
-// Heroes 3, nie wyblakły obrazek.
+// Ręczne SVG w idiomie potworków: gradient materiału, kontur w ciemniejszym
+// tonie TEGO materiału (jak palety potworków), bryła przez stałe światło
+// z lewej góry (cieniowany prawy bok / prawa połowa dachu), cień kontaktowy
+// na gruncie. `size` może być liczbą (px) lub stringiem CSS ("100%") —
+// wysokość wynika z viewBox. Sylwetka (silhouette) = jednolity ciemny cień
+// budynku (filtr inline, niezależny od klas Tailwinda) — czytelna
+// aspiracja à la Heroes 3, nie wyblakły obrazek.
 
 export const DECORATION_EMOJI: Record<DecorationId, string> = {
 	kwiatki: "🌼",
@@ -18,11 +21,6 @@ export const DECORATION_EMOJI: Record<DecorationId, string> = {
 	pomnik: "🗿",
 	tecza: "🌈",
 }
-
-// kolor konturu idiomu potworków (= --color-grape-dark) — współdzielony ze
-// scenerią wioski (Scenery.tsx importuje stąd)
-export const OUTLINE = "#5f45c4"
-const STONE_LINE = "#ffffff"
 
 // "fill" = wypełnij kontener obiema osiami; viewBox + domyślne
 // preserveAspectRatio (meet) skalują rysunek bez zniekształceń — jedyny
@@ -38,57 +36,264 @@ function svgStyle(size: number | string): CSSProperties {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Materiały: [jasny, ciemny] gradient + cień boku + kontur
+// ---------------------------------------------------------------------------
+type Mat = { light: string; dark: string; shade: string; line: string }
+const MAT = {
+	stone: {
+		light: "#f1ecff",
+		dark: "#c9bff4",
+		shade: "#a394ea",
+		line: "#6b52c9",
+	},
+	gold: {
+		light: "#fff4c6",
+		dark: "#f6c94f",
+		shade: "#dea62a",
+		line: "#b07a12",
+	},
+	cream: {
+		light: "#fff9ea",
+		dark: "#f8dcab",
+		shade: "#e3b877",
+		line: "#b5823f",
+	},
+	wood: {
+		light: "#e0b06c",
+		dark: "#b07a3e",
+		shade: "#8a5a28",
+		line: "#6b4318",
+	},
+	rose: {
+		light: "#ffa3bf",
+		dark: "#e9517f",
+		shade: "#c43a68",
+		line: "#a02b55",
+	},
+	plum: {
+		light: "#b19cff",
+		dark: "#7c5cf0",
+		shade: "#5f45c4",
+		line: "#4a33a3",
+	},
+	teal: {
+		light: "#93e3d9",
+		dark: "#41b9aa",
+		shade: "#2f9488",
+		line: "#227067",
+	},
+	grey: {
+		light: "#eef0f7",
+		dark: "#c9cfe0",
+		shade: "#a3abc4",
+		line: "#7a839f",
+	},
+} satisfies Record<string, Mat>
+type MatName = keyof typeof MAT
+
+const GLASS = "#ffe58a"
+const GLASS_OFF = "#dcd6fb"
+const SHADOW = "#1e3a2a"
+
+// gradienty materiałów: jedna definicja na SVG, id per instancja (useId)
+function MatDefs({ uid, names }: { uid: string; names: MatName[] }) {
+	return (
+		<defs>
+			{names.map((n) => (
+				<linearGradient
+					key={n}
+					id={`m-${n}-${uid}`}
+					x1="0"
+					y1="0"
+					x2="0"
+					y2="1"
+				>
+					<stop offset="0%" stopColor={MAT[n].light} />
+					<stop offset="100%" stopColor={MAT[n].dark} />
+				</linearGradient>
+			))}
+		</defs>
+	)
+}
+const fillOf = (uid: string, n: MatName) => `url(#m-${n}-${uid})`
+
+// cień kontaktowy na gruncie
+function GroundShadow({ cx, cy, rx }: { cx: number; cy: number; rx: number }) {
+	return (
+		<ellipse
+			cx={cx}
+			cy={cy}
+			rx={rx}
+			ry={rx * 0.09 + 1.5}
+			fill={SHADOW}
+			opacity={0.14}
+		/>
+	)
+}
+
 // chorągiewka na iglicy (Heroes lubi proporczyki)
 function Pennant({
 	x,
 	y,
 	flip = false,
+	color = "#ffd95e",
 }: {
 	x: number
 	y: number
 	flip?: boolean
+	color?: string
 }) {
-	const dir = flip ? -14 : 14
+	const dir = flip ? -13 : 13
 	return (
 		<g>
 			<line
 				x1={x}
 				y1={y}
 				x2={x}
-				y2={y - 12}
-				stroke={OUTLINE}
-				strokeWidth={1.6}
+				y2={y - 13}
+				stroke="#6b4318"
+				strokeWidth={1.5}
+				strokeLinecap="round"
 			/>
 			<path
-				d={`M${x} ${y - 12} l${dir} 3.5 l${-dir} 3.5 Z`}
-				fill="#ffd95e"
-				stroke={OUTLINE}
-				strokeWidth={1}
+				d={`M${x} ${y - 13} l${dir} 3.5 l${-dir} 3.5 Z`}
+				fill={color}
+				stroke="#b07a12"
+				strokeWidth={0.9}
+				strokeLinejoin="round"
 			/>
 		</g>
 	)
 }
 
-// okno łukowe
-function ArchWindow({
-	x,
+// okno łukowe z krzyżem szprosów i parapetem
+function ArchWin({
+	cx,
 	y,
 	w = 10,
 	lit,
+	line,
 }: {
-	x: number
+	cx: number
 	y: number
 	w?: number
 	lit: boolean
+	line: string
+}) {
+	const h = w * 1.45
+	const top = y - h
+	return (
+		<g>
+			<path
+				d={`M${cx - w / 2} ${y} v-${h - w / 2} a${w / 2} ${w / 2} 0 0 1 ${w} 0 v${h - w / 2} Z`}
+				fill={lit ? GLASS : GLASS_OFF}
+				stroke={line}
+				strokeWidth={1.4}
+			/>
+			<g stroke={line} strokeWidth={0.9} opacity={0.6}>
+				<line x1={cx} y1={top + 2} x2={cx} y2={y} />
+				<line
+					x1={cx - w / 2}
+					y1={y - h / 2 + 1}
+					x2={cx + w / 2}
+					y2={y - h / 2 + 1}
+				/>
+			</g>
+			{lit && (
+				<rect
+					x={cx - w / 2 + 1.5}
+					y={top + 2}
+					width={w / 2 - 1.5}
+					height={h / 2 - 3}
+					fill="#ffffff"
+					opacity={0.45}
+				/>
+			)}
+			<rect
+				x={cx - w / 2 - 1.5}
+				y={y - 0.5}
+				width={w + 3}
+				height={2.2}
+				rx={0.8}
+				fill={MAT.grey.light}
+				stroke={line}
+				strokeWidth={0.9}
+			/>
+		</g>
+	)
+}
+
+// okrągłe okienko (domki)
+function RoundWin({
+	cx,
+	cy,
+	r = 4.5,
+	lit,
+	line,
+}: {
+	cx: number
+	cy: number
+	r?: number
+	lit: boolean
+	line: string
+}) {
+	return (
+		<g>
+			<circle
+				cx={cx}
+				cy={cy}
+				r={r}
+				fill={lit ? GLASS : GLASS_OFF}
+				stroke={line}
+				strokeWidth={1.4}
+			/>
+			<g stroke={line} strokeWidth={0.9} opacity={0.6}>
+				<line x1={cx - r} y1={cy} x2={cx + r} y2={cy} />
+				<line x1={cx} y1={cy - r} x2={cx} y2={cy + r} />
+			</g>
+			{lit && (
+				<circle
+					cx={cx - r * 0.35}
+					cy={cy - r * 0.35}
+					r={r * 0.3}
+					fill="#ffffff"
+					opacity={0.5}
+				/>
+			)}
+		</g>
+	)
+}
+
+// drzwi łukowe z deskami i gałką
+function Door({
+	cx,
+	y,
+	w = 14,
+	mat = "plum",
+	line,
+}: {
+	cx: number
+	y: number
+	w?: number
+	mat?: MatName
+	line: string
 }) {
 	const h = w * 1.5
 	return (
-		<path
-			d={`M${x - w / 2} ${y + h / 2} v-${h / 2} a${w / 2} ${w / 2} 0 0 1 ${w} 0 v${h / 2} Z`}
-			fill={lit ? "#ffd95e" : "#ede9fe"}
-			stroke={OUTLINE}
-			strokeWidth={1.4}
-		/>
+		<g>
+			<path
+				d={`M${cx - w / 2} ${y} v-${h - w / 2} a${w / 2} ${w / 2} 0 0 1 ${w} 0 v${h - w / 2} Z`}
+				fill={MAT[mat].dark}
+				stroke={line}
+				strokeWidth={1.4}
+			/>
+			<g stroke={MAT[mat].light} strokeWidth={0.9} opacity={0.5}>
+				<line x1={cx - w / 4} y1={y - h + w / 2 + 1} x2={cx - w / 4} y2={y} />
+				<line x1={cx + w / 4} y1={y - h + w / 2 + 1} x2={cx + w / 4} y2={y} />
+			</g>
+			<circle cx={cx + w / 4 - 0.5} cy={y - h / 2.6} r={1.3} fill="#ffd95e" />
+		</g>
 	)
 }
 
@@ -98,23 +303,26 @@ function Crenels({
 	y,
 	width,
 	fill,
+	line,
 }: {
 	x: number
 	y: number
 	width: number
 	fill: string
+	line: string
 }) {
-	const n = Math.max(2, Math.round(width / 14))
+	const n = Math.max(2, Math.round(width / 13))
 	const step = width / (n * 2 - 1)
 	return (
-		<g stroke={OUTLINE} strokeWidth={1.6}>
+		<g stroke={line} strokeWidth={1.5} strokeLinejoin="round">
 			{Array.from({ length: n }, (_, i) => (
 				<rect
 					key={i}
 					x={x + i * step * 2}
-					y={y}
+					y={y - 7}
 					width={step}
-					height={8}
+					height={9}
+					rx={1}
 					fill={fill}
 				/>
 			))}
@@ -122,234 +330,640 @@ function Crenels({
 	)
 }
 
+// fugi kamienia w prostokącie: poziome spoiny + przesunięte pionowe
+function Masonry({
+	x,
+	y,
+	w,
+	h,
+	color,
+	step = 12,
+}: {
+	x: number
+	y: number
+	w: number
+	h: number
+	color: string
+	step?: number
+}) {
+	const rows = Math.floor(h / step)
+	return (
+		<g stroke={color} strokeWidth={1} opacity={0.22}>
+			{Array.from({ length: rows }, (_, r) => {
+				const yy = y + (r + 1) * step
+				if (yy >= y + h - 2) return null
+				const off = r % 2 ? step : step / 2
+				const ticks: ReactNode[] = []
+				for (let xx = x + off; xx < x + w - 2; xx += step * 1.6) {
+					ticks.push(<line key={xx} x1={xx} y1={yy - step} x2={xx} y2={yy} />)
+				}
+				return (
+					<g key={r}>
+						<line x1={x + 1} y1={yy} x2={x + w - 1} y2={yy} />
+						{ticks}
+					</g>
+				)
+			})}
+		</g>
+	)
+}
+
+// pionowa cylindryczna wieża: korpus (cień z prawej = zaokrąglenie), fugi,
+// blanki lub stożkowy dach z gontem
+function Tower({
+	uid,
+	cx,
+	w,
+	top,
+	bottom,
+	mat,
+	roof,
+	roofH,
+	flag,
+	lit,
+	crenel,
+}: {
+	uid: string
+	cx: number
+	w: number
+	top: number
+	bottom: number
+	mat: MatName
+	roof: MatName
+	roofH: number
+	flag?: boolean
+	lit: boolean
+	crenel?: boolean
+}) {
+	const m = MAT[mat]
+	const r = MAT[roof]
+	const x = cx - w / 2
+	const eave = w + 10
+	return (
+		<g>
+			<rect
+				x={x}
+				y={top}
+				width={w}
+				height={bottom - top}
+				rx={2}
+				fill={fillOf(uid, mat)}
+				stroke={m.line}
+				strokeWidth={1.8}
+			/>
+			<rect
+				x={x + w * 0.68}
+				y={top + 1}
+				width={w * 0.3}
+				height={bottom - top - 2}
+				rx={1.5}
+				fill={m.shade}
+				opacity={0.35}
+			/>
+			<rect
+				x={x + 1.5}
+				y={top + 1}
+				width={w * 0.14}
+				height={bottom - top - 2}
+				rx={1}
+				fill="#ffffff"
+				opacity={0.28}
+			/>
+			<Masonry x={x} y={top} w={w} h={bottom - top} color={m.line} />
+			{crenel ? (
+				<Crenels
+					x={x - 3}
+					y={top}
+					width={w + 6}
+					fill={fillOf(uid, mat)}
+					line={m.line}
+				/>
+			) : (
+				<g>
+					{/* okap */}
+					<rect
+						x={cx - eave / 2}
+						y={top - 3}
+						width={eave}
+						height={5}
+						rx={2}
+						fill={r.dark}
+						stroke={r.line}
+						strokeWidth={1.4}
+					/>
+					<path
+						d={`M${cx - eave / 2 + 1} ${top - 3} L${cx} ${top - roofH} L${cx + eave / 2 - 1} ${top - 3} Z`}
+						fill={fillOf(uid, roof)}
+						stroke={r.line}
+						strokeWidth={1.8}
+						strokeLinejoin="round"
+					/>
+					<path
+						d={`M${cx} ${top - roofH} L${cx + eave / 2 - 1} ${top - 3} L${cx} ${top - 3} Z`}
+						fill={r.shade}
+						opacity={0.32}
+					/>
+					{/* rzędy gontu */}
+					<g fill="none" stroke={r.line} strokeWidth={0.9} opacity={0.35}>
+						<path
+							d={`M${cx - eave * 0.22} ${top - roofH * 0.55} Q${cx} ${top - roofH * 0.5} ${cx + eave * 0.22} ${top - roofH * 0.55}`}
+						/>
+						<path
+							d={`M${cx - eave * 0.36} ${top - roofH * 0.28} Q${cx} ${top - roofH * 0.22} ${cx + eave * 0.36} ${top - roofH * 0.28}`}
+						/>
+					</g>
+					<circle
+						cx={cx}
+						cy={top - roofH}
+						r={2.2}
+						fill="#ffd95e"
+						stroke="#b07a12"
+						strokeWidth={0.9}
+					/>
+					{flag && <Pennant x={cx} y={top - roofH - 1} />}
+				</g>
+			)}
+			<ArchWin
+				cx={cx}
+				y={top + (bottom - top) * 0.55}
+				w={Math.min(12, w * 0.32)}
+				lit={lit}
+				line={m.line}
+			/>
+		</g>
+	)
+}
+
+// ---------------------------------------------------------------------------
+// Zamek: L1 wieżyczka z bramką · L2 donżon + 2 wieże + mur · L3 złota cytadela
+// ---------------------------------------------------------------------------
 function ZamekArt({ level, size }: { level: number; size: number | string }) {
 	const uid = useId()
 	const gold = level >= 3
-	const wall = `url(#zamek-w-${uid})`
-	const roof = `url(#zamek-r-${uid})`
+	const mat: MatName = gold ? "gold" : "stone"
+	const m = MAT[mat]
+	const lit = gold
+	const foot = 168
 	return (
-		// viewBox zaczyna się na y=-20: dach złotego donżonu (apex y=-4) i jego
-		// proporczyk (do y=-16) wystają ponad y=0 — bez marginesu szczyt się ucina
-		<svg viewBox="0 -20 170 152" style={svgStyle(size)} aria-hidden="true">
-			<defs>
-				<linearGradient id={`zamek-w-${uid}`} x1="0" y1="0" x2="0" y2="1">
-					{gold ? (
-						<>
-							<stop offset="0%" stopColor="#ffedb0" />
-							<stop offset="100%" stopColor="#eeb42f" />
-						</>
-					) : (
-						<>
-							<stop offset="0%" stopColor="#cabcfd" />
-							<stop offset="100%" stopColor="#8b6cf5" />
-						</>
-					)}
-				</linearGradient>
-				<linearGradient id={`zamek-r-${uid}`} x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0%" stopColor="#ff8fb0" />
-					<stop offset="100%" stopColor="#e84a7a" />
-				</linearGradient>
-			</defs>
+		// viewBox zaczyna się na y=-16: iglica i proporczyk złotego donżonu
+		// wystają ponad y=0 — bez marginesu szczyt się ucina
+		<svg viewBox="0 -16 190 192" style={svgStyle(size)} aria-hidden="true">
+			<MatDefs uid={uid} names={[mat, "rose", "plum"]} />
+			<GroundShadow
+				cx={95}
+				cy={foot + 3}
+				rx={gold ? 88 : level >= 2 ? 66 : 42}
+			/>
 
-			{/* cień pod budowlą */}
-			<ellipse cx={85} cy={128} rx={62} ry={4} fill="#1e293b" opacity={0.08} />
-
-			{/* skrajne baszty (tylko L3 — cytadela) */}
+			{/* skrajne baszty cytadeli (L3) — za murem */}
 			{gold && (
-				<g stroke={OUTLINE} strokeWidth={1.8}>
-					<rect x={6} y={88} width={18} height={40} rx={2} fill={wall} />
-					<path d="M2 88 L15 70 L28 88 Z" fill={roof} />
-					<rect x={146} y={88} width={18} height={40} rx={2} fill={wall} />
-					<path d="M142 88 L155 70 L168 88 Z" fill={roof} />
-				</g>
-			)}
-
-			{/* boczne wieże + mury (od L2) */}
-			{level >= 2 && (
-				<g stroke={OUTLINE} strokeWidth={2}>
-					{/* mury łączące (za wieżami) */}
-					<rect
-						x={40}
-						y={92}
-						width={90}
-						height={36}
-						fill={wall}
-						opacity={0.92}
+				<g>
+					<Tower
+						uid={uid}
+						cx={16}
+						w={24}
+						top={96}
+						bottom={foot}
+						mat={mat}
+						roof="rose"
+						roofH={26}
+						lit={lit}
 					/>
-					<Crenels x={40} y={86} width={90} fill={wall} />
-					{/* wieże */}
-					<rect x={24} y={62} width={28} height={66} rx={3} fill={wall} />
-					<rect x={118} y={62} width={28} height={66} rx={3} fill={wall} />
-					<path d="M18 62 L38 34 L58 62 Z" fill={roof} />
-					<path d="M112 62 L132 34 L152 62 Z" fill={roof} />
-					<Pennant x={38} y={34} flip />
-					<Pennant x={132} y={34} />
-					<ArchWindow x={38} y={84} lit={gold} />
-					<ArchWindow x={132} y={84} lit={gold} />
-					{/* pasy kamienia */}
-					<g stroke={STONE_LINE} strokeOpacity={0.3} strokeWidth={1.4}>
-						<line x1={26} y1={96} x2={50} y2={96} />
-						<line x1={120} y1={96} x2={144} y2={96} />
-					</g>
+					<Tower
+						uid={uid}
+						cx={174}
+						w={24}
+						top={96}
+						bottom={foot}
+						mat={mat}
+						roof="rose"
+						roofH={26}
+						lit={lit}
+					/>
+					{/* girlandy proporczyków między basztami */}
+					<path
+						d="M28 88 Q60 104 95 92 Q130 104 162 88"
+						fill="none"
+						stroke="#6b4318"
+						strokeWidth={1.2}
+					/>
+					{[40, 58, 76, 95, 114, 132, 150].map((x, i) => (
+						<path
+							key={x}
+							d={`M${x} ${94 + Math.sin((i / 6) * Math.PI) * 6} l3.5 7 l-7 0 Z`}
+							fill={i % 2 ? "#ff6b9a" : "#ffd95e"}
+							stroke="#a02b55"
+							strokeWidth={0.7}
+						/>
+					))}
 				</g>
 			)}
 
-			{/* wieża główna (zawsze) — donżon */}
-			<g stroke={OUTLINE} strokeWidth={2}>
-				<rect
-					x={64}
-					y={gold ? 26 : 40}
-					width={42}
-					height={gold ? 76 : 62}
-					rx={3}
-					fill={wall}
-				/>
-				<Crenels x={62} y={gold ? 20 : 34} width={46} fill={wall} />
-				<path
-					d={gold ? "M56 20 L85 -4 L114 20 Z" : "M56 34 L85 12 L114 34 Z"}
-					fill={roof}
-				/>
-				{/* pasy kamienia */}
-				<g stroke={STONE_LINE} strokeOpacity={0.3} strokeWidth={1.4}>
-					<line x1={66} y1={gold ? 56 : 66} x2={104} y2={gold ? 56 : 66} />
-					<line x1={66} y1={gold ? 80 : 84} x2={104} y2={gold ? 80 : 84} />
+			{/* donżon (zawsze) — za wieżami bocznymi */}
+			<Tower
+				uid={uid}
+				cx={95}
+				w={level >= 2 ? 52 : 46}
+				top={gold ? 30 : level >= 2 ? 48 : 66}
+				bottom={foot}
+				mat={mat}
+				roof="rose"
+				roofH={gold ? 44 : 34}
+				flag
+				lit={lit}
+			/>
+			{/* drugie okno donżonu (L2+) */}
+			{level >= 2 && (
+				<ArchWin cx={95} y={gold ? 78 : 92} w={12} lit={lit} line={m.line} />
+			)}
+
+			{/* wieże boczne + mur kurtynowy (L2+) */}
+			{level >= 2 && (
+				<g>
+					<rect
+						x={44}
+						y={118}
+						width={102}
+						height={foot - 118}
+						fill={fillOf(uid, mat)}
+						stroke={m.line}
+						strokeWidth={1.8}
+					/>
+					<Masonry x={44} y={118} w={102} h={foot - 118} color={m.line} />
+					<Crenels
+						x={44}
+						y={118}
+						width={102}
+						fill={fillOf(uid, mat)}
+						line={m.line}
+					/>
+					<Tower
+						uid={uid}
+						cx={46}
+						w={34}
+						top={gold ? 66 : 80}
+						bottom={foot}
+						mat={mat}
+						roof="rose"
+						roofH={30}
+						flag
+						lit={lit}
+					/>
+					<Tower
+						uid={uid}
+						cx={144}
+						w={34}
+						top={gold ? 66 : 80}
+						bottom={foot}
+						mat={mat}
+						roof="rose"
+						roofH={30}
+						flag
+						lit={lit}
+					/>
 				</g>
-			</g>
-			<Pennant x={85} y={gold ? -4 : 12} />
-			<ArchWindow x={85} y={gold ? 44 : 58} w={12} lit={gold} />
+			)}
 
 			{/* przedni mur z bramą (zawsze — nawet Wieżyczka ma wejście) */}
-			<g stroke={OUTLINE} strokeWidth={2}>
-				<rect x={52} y={100} width={66} height={28} fill={wall} />
-				<Crenels x={52} y={94} width={66} fill={wall} />
-				<path
-					d="M72 128 v-14 a13 13 0 0 1 26 0 v14 Z"
-					fill="#4c1d95"
-					opacity={0.9}
+			<g>
+				<rect
+					x={level >= 2 ? 60 : 56}
+					y={128}
+					width={level >= 2 ? 70 : 78}
+					height={foot - 128}
+					fill={fillOf(uid, mat)}
+					stroke={m.line}
+					strokeWidth={1.8}
 				/>
-				{/* deski bramy */}
-				<g stroke="#c4b5fd" strokeWidth={1} opacity={0.5}>
-					<line x1={79} y1={110} x2={79} y2={128} />
-					<line x1={85} y1={106} x2={85} y2={128} />
-					<line x1={91} y1={110} x2={91} y2={128} />
+				<rect
+					x={level >= 2 ? 112 : 116}
+					y={129}
+					width={level >= 2 ? 17 : 17}
+					height={foot - 130}
+					fill={m.shade}
+					opacity={0.3}
+				/>
+				<Masonry
+					x={level >= 2 ? 60 : 56}
+					y={128}
+					w={level >= 2 ? 70 : 78}
+					h={foot - 128}
+					color={m.line}
+				/>
+				<Crenels
+					x={level >= 2 ? 60 : 56}
+					y={128}
+					width={level >= 2 ? 70 : 78}
+					fill={fillOf(uid, mat)}
+					line={m.line}
+				/>
+				{/* brama: kamienne obramienie + ciemny łuk + kratownica */}
+				<path
+					d="M77 168 v-20 a18 18 0 0 1 36 0 v20 Z"
+					fill={m.shade}
+					opacity={0.5}
+				/>
+				<path
+					d="M80 168 v-18 a15 15 0 0 1 30 0 v18 Z"
+					fill="#3b2a6b"
+					stroke={m.line}
+					strokeWidth={1.4}
+				/>
+				<g stroke="#8b7ad8" strokeWidth={1} opacity={0.55}>
+					<line x1={88} y1={140} x2={88} y2={168} />
+					<line x1={95} y1={136} x2={95} y2={168} />
+					<line x1={102} y1={140} x2={102} y2={168} />
+					<line x1={81} y1={150} x2={109} y2={150} />
+					<line x1={81} y1={160} x2={109} y2={160} />
+				</g>
+				{/* pochodnie przy bramie */}
+				<g>
+					<line
+						x1={72}
+						y1={140}
+						x2={72}
+						y2={150}
+						stroke="#6b4318"
+						strokeWidth={1.8}
+						strokeLinecap="round"
+					/>
+					<line
+						x1={118}
+						y1={140}
+						x2={118}
+						y2={150}
+						stroke="#6b4318"
+						strokeWidth={1.8}
+						strokeLinecap="round"
+					/>
+					<g data-decor>
+						<circle cx={72} cy={137} r={5} fill="#ffb03d" opacity={0.3} />
+						<circle cx={118} cy={137} r={5} fill="#ffb03d" opacity={0.3} />
+					</g>
+					<path
+						d="M69.5 140 Q72 130 74.5 140 Z"
+						fill="#ffb03d"
+						stroke="#e0641c"
+						strokeWidth={0.8}
+					/>
+					<path
+						d="M115.5 140 Q118 130 120.5 140 Z"
+						fill="#ffb03d"
+						stroke="#e0641c"
+						strokeWidth={0.8}
+					/>
 				</g>
 			</g>
 
 			{/* iskierki cytadeli */}
 			{gold && (
 				<g data-decor fill="#ffffff">
-					<circle cx={38} cy={50} r={2.2} className="anim-sparkle" />
+					<circle cx={46} cy={50} r={2.2} className="anim-sparkle" />
 					<circle
-						cx={132}
+						cx={144}
 						cy={48}
 						r={1.9}
 						className="anim-sparkle"
 						style={{ animationDelay: "0.6s" }}
 					/>
 					<circle
-						cx={85}
-						cy={8}
+						cx={95}
+						cy={-6}
 						r={2.4}
 						className="anim-sparkle"
 						style={{ animationDelay: "1.1s" }}
 					/>
 					<circle
-						cx={15}
-						cy={80}
+						cx={16}
+						cy={84}
 						r={1.7}
 						className="anim-sparkle"
 						style={{ animationDelay: "1.6s" }}
 					/>
+					<circle
+						cx={174}
+						cy={86}
+						r={1.7}
+						className="anim-sparkle"
+						style={{ animationDelay: "0.3s" }}
+					/>
 				</g>
 			)}
 		</svg>
+	)
+}
+
+// ---------------------------------------------------------------------------
+// Domki: chatki w 3/4 (front + cieniowany bok), muru pruskiego przybywa
+// z poziomem, dym z kominów od L2, girlanda nad miasteczkiem (L3)
+// ---------------------------------------------------------------------------
+function Cottage({
+	uid,
+	x,
+	lit,
+	timber,
+	roof,
+	smoke,
+}: {
+	uid: string
+	x: number
+	lit: boolean
+	timber: boolean
+	roof: MatName
+	smoke: boolean
+}) {
+	const m = MAT.cream
+	const r = MAT[roof]
+	const foot = 92
+	const top = 56
+	return (
+		<g>
+			{/* bok (prawy, w cieniu) */}
+			<path
+				d={`M${x + 38} ${top} L${x + 50} ${top - 6} L${x + 50} ${foot - 6} L${x + 38} ${foot} Z`}
+				fill={m.dark}
+				stroke={m.line}
+				strokeWidth={1.6}
+				strokeLinejoin="round"
+			/>
+			<path
+				d={`M${x + 38} ${top} L${x + 50} ${top - 6} L${x + 50} ${foot - 6} L${x + 38} ${foot} Z`}
+				fill={m.shade}
+				opacity={0.45}
+			/>
+			{/* front */}
+			<rect
+				x={x}
+				y={top}
+				width={38}
+				height={foot - top}
+				fill={fillOf(uid, "cream")}
+				stroke={m.line}
+				strokeWidth={1.6}
+			/>
+			{/* podmurówka */}
+			<rect
+				x={x}
+				y={foot - 6}
+				width={38}
+				height={6}
+				fill={MAT.grey.dark}
+				stroke={m.line}
+				strokeWidth={1.2}
+			/>
+			{timber && (
+				<g
+					stroke={MAT.wood.shade}
+					strokeWidth={2}
+					strokeLinecap="round"
+					opacity={0.85}
+				>
+					<line x1={x + 3} y1={top + 2} x2={x + 3} y2={foot - 7} />
+					<line x1={x + 35} y1={top + 2} x2={x + 35} y2={foot - 7} />
+					<line x1={x + 3} y1={top + 18} x2={x + 35} y2={top + 18} />
+					<line x1={x + 3} y1={top + 18} x2={x + 12} y2={top + 3} />
+					<line x1={x + 35} y1={top + 18} x2={x + 26} y2={top + 3} />
+				</g>
+			)}
+			{/* dach: bok (ciemniejszy, z gontem) + szczyt frontowy */}
+			<path
+				d={`M${x + 19} ${top - 26} L${x + 31} ${top - 32} L${x + 54} ${top - 6} L${x + 42} ${top} Z`}
+				fill={r.shade}
+				stroke={r.line}
+				strokeWidth={1.6}
+				strokeLinejoin="round"
+			/>
+			<g stroke={r.light} strokeWidth={0.9} opacity={0.35} fill="none">
+				<path d={`M${x + 24} ${top - 20} L${x + 36} ${top - 26}`} />
+				<path d={`M${x + 31} ${top - 12} L${x + 43} ${top - 18}`} />
+				<path d={`M${x + 38} ${top - 4} L${x + 50} ${top - 10}`} />
+			</g>
+			<path
+				d={`M${x - 4} ${top + 1} L${x + 19} ${top - 26} L${x + 42} ${top + 1} Z`}
+				fill={fillOf(uid, roof)}
+				stroke={r.line}
+				strokeWidth={1.8}
+				strokeLinejoin="round"
+			/>
+			<path
+				d={`M${x + 19} ${top - 26} L${x + 42} ${top + 1} L${x + 19} ${top + 1} Z`}
+				fill={r.shade}
+				opacity={0.25}
+			/>
+			<rect
+				x={x - 5}
+				y={top - 1}
+				width={48}
+				height={3.5}
+				rx={1.5}
+				fill={r.dark}
+				stroke={r.line}
+				strokeWidth={1.2}
+			/>
+			{/* komin + dym */}
+			<rect
+				x={x + 26}
+				y={top - 22}
+				width={7}
+				height={12}
+				fill={MAT.grey.dark}
+				stroke={MAT.grey.line}
+				strokeWidth={1.2}
+			/>
+			<rect
+				x={x + 25}
+				y={top - 24}
+				width={9}
+				height={3}
+				rx={1}
+				fill={MAT.grey.light}
+				stroke={MAT.grey.line}
+				strokeWidth={1.2}
+			/>
+			{smoke && (
+				<g data-decor fill="#ffffff" opacity={0.8}>
+					<circle cx={x + 30} cy={top - 30} r={3} className="anim-float" />
+					<circle
+						cx={x + 33}
+						cy={top - 38}
+						r={2.2}
+						className="anim-float"
+						style={{ animationDelay: "0.9s" }}
+					/>
+				</g>
+			)}
+			{/* drzwi + okno + skrzynka z kwiatami */}
+			<Door cx={x + 12} y={foot - 6} w={12} line={m.line} />
+			<RoundWin cx={x + 28} cy={top + 12} lit={lit} line={m.line} />
+			<rect
+				x={x + 22}
+				y={top + 26}
+				width={13}
+				height={4}
+				rx={1}
+				fill={MAT.wood.dark}
+				stroke={MAT.wood.line}
+				strokeWidth={1}
+			/>
+			<g>
+				<circle cx={x + 25} cy={top + 25} r={2} fill="#ff6b9a" />
+				<circle cx={x + 29} cy={top + 24} r={2} fill="#ffd95e" />
+				<circle cx={x + 33} cy={top + 25} r={2} fill="#ff6b9a" />
+			</g>
+		</g>
 	)
 }
 
 function DomkiArt({ level, size }: { level: number; size: number | string }) {
 	const uid = useId()
-	const xs = level === 1 ? [52] : level === 2 ? [20, 84] : [0, 52, 104]
+	const xs = level === 1 ? [56] : level === 2 ? [22, 90] : [4, 58, 112]
+	const roofs: MatName[] = ["plum", "rose", "teal"]
 	return (
-		<svg viewBox="0 0 148 92" style={svgStyle(size)} aria-hidden="true">
-			<defs>
-				<linearGradient id={`dom-b-${uid}`} x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0%" stopColor="#fef3c7" />
-					<stop offset="100%" stopColor="#fbbf77" />
-				</linearGradient>
-				<linearGradient id={`dom-r-${uid}`} x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0%" stopColor="#8b6cf5" />
-					<stop offset="100%" stopColor="#6d4fd8" />
-				</linearGradient>
-			</defs>
-			<ellipse cx={74} cy={89} rx={64} ry={3.5} fill="#1e293b" opacity={0.08} />
-			{/* chorągiewki nad miasteczkiem (L3) */}
+		<svg viewBox="0 0 170 100" style={svgStyle(size)} aria-hidden="true">
+			<MatDefs uid={uid} names={["cream", "plum", "rose", "teal"]} />
+			<GroundShadow
+				cx={85}
+				cy={95}
+				rx={level === 1 ? 34 : level === 2 ? 60 : 82}
+			/>
+			{/* girlanda nad miasteczkiem (L3) */}
 			{level >= 3 && (
 				<g>
 					<path
-						d="M6 26 Q74 12 142 26"
-						stroke={OUTLINE}
-						strokeWidth={1.5}
+						d="M8 22 Q85 6 162 22"
+						stroke="#6b4318"
+						strokeWidth={1.3}
 						fill="none"
 					/>
-					{[22, 48, 74, 100, 126].map((x, i) => (
+					{[24, 48, 72, 96, 120, 144].map((x, i) => (
 						<path
 							key={x}
-							d={`M${x} ${20 - (i % 2) * 2} l4.5 9 l-10 -1 Z`}
-							fill={i % 2 ? "#ff5e8a" : "#ffd95e"}
-							stroke={OUTLINE}
-							strokeWidth={1}
+							d={`M${x} ${18 - Math.sin((i / 5) * Math.PI) * 5} l4 8 l-9 -1 Z`}
+							fill={i % 2 ? "#ff6b9a" : "#ffd95e"}
+							stroke="#a02b55"
+							strokeWidth={0.8}
 						/>
 					))}
 				</g>
 			)}
 			{xs.map((x, i) => (
-				<g key={x} stroke={OUTLINE} strokeWidth={2} strokeLinejoin="round">
-					{/* komin + dymek (od L2 domki są „zamieszkane" na full) */}
-					<rect x={x + 29} y={30} width={7} height={14} fill="#a78bfa" />
-					{level >= 2 && (
-						<g data-decor stroke="none" fill="#e2e8f0" opacity={0.8}>
-							<circle cx={x + 33} cy={24} r={3} className="anim-float" />
-							<circle
-								cx={x + 36}
-								cy={17}
-								r={2.2}
-								className="anim-float"
-								style={{ animationDelay: "0.9s" }}
-							/>
-						</g>
-					)}
-					<rect
-						x={x + 4}
-						y={50}
-						width={36}
-						height={38}
-						rx={3}
-						fill={`url(#dom-b-${uid})`}
-					/>
-					<path
-						d={`M${x - 2} 52 L${x + 22} 28 L${x + 46} 52 Z`}
-						fill={`url(#dom-r-${uid})`}
-					/>
-					{/* drzwi z gałką + okrągłe okno */}
-					<path
-						d={`M${x + 15} 88 v-13 a7 7 0 0 1 14 0 v13 Z`}
-						fill="#7c5cf0"
-						opacity={0.85}
-					/>
-					<circle cx={x + 26} cy={80} r={1.3} fill="#ffd95e" stroke="none" />
-					<circle
-						cx={x + 22}
-						cy={58}
-						r={4.5}
-						fill={i === 0 || level >= 2 ? "#ffd95e" : "#ede9fe"}
-						strokeWidth={1.4}
-					/>
-				</g>
+				<Cottage
+					key={x}
+					uid={uid}
+					x={x}
+					lit={i === 0 || level >= 2}
+					timber={level >= 2}
+					roof={roofs[(i + level) % 3] ?? "plum"}
+					smoke={level >= 2}
+				/>
 			))}
 		</svg>
 	)
 }
 
+// ---------------------------------------------------------------------------
+// Fontanna: kamienna misa z blokami, dwie czasze, łuki wody z jasnym rdzeniem
+// ---------------------------------------------------------------------------
 function FontannaArt({
 	level,
 	size,
@@ -359,78 +973,148 @@ function FontannaArt({
 }) {
 	const uid = useId()
 	const rainbow = level >= 3
+	const g = MAT.grey
 	return (
-		<svg viewBox="0 0 110 96" style={svgStyle(size)} aria-hidden="true">
+		<svg viewBox="0 0 120 100" style={svgStyle(size)} aria-hidden="true">
+			<MatDefs uid={uid} names={["grey"]} />
 			<defs>
-				<linearGradient id={`font-w-${uid}`} x1="0" y1="0" x2="1" y2="0">
+				<linearGradient id={`fw-${uid}`} x1="0" y1="0" x2="1" y2="0">
 					{rainbow ? (
 						<>
-							<stop offset="0%" stopColor="#7dd3fc" />
-							<stop offset="50%" stopColor="#c4b5fd" />
-							<stop offset="100%" stopColor="#f9a8d4" />
+							<stop offset="0%" stopColor="#8fdcff" />
+							<stop offset="50%" stopColor="#d4c6ff" />
+							<stop offset="100%" stopColor="#ffb3d1" />
 						</>
 					) : (
 						<>
-							<stop offset="0%" stopColor="#7dd3fc" />
-							<stop offset="100%" stopColor="#38bdf8" />
+							<stop offset="0%" stopColor="#9fe1ff" />
+							<stop offset="100%" stopColor="#4cb8ee" />
 						</>
 					)}
 				</linearGradient>
 			</defs>
-			<ellipse cx={55} cy={92} rx={48} ry={3.5} fill="#1e293b" opacity={0.08} />
-			{/* strugi wody */}
-			<g stroke="#38bdf8" strokeWidth={3.5} strokeLinecap="round" fill="none">
-				<path d="M55 26 C43 34 39 50 37 70" />
-				<path d="M55 26 C67 34 71 50 73 70" />
-				{level >= 2 && (
-					<>
-						<path d="M55 24 C55 40 55 54 55 62" />
-						<path d="M55 28 C48 38 45 52 44 66" strokeWidth={2.2} />
-						<path d="M55 28 C62 38 65 52 66 66" strokeWidth={2.2} />
-					</>
-				)}
+			<GroundShadow cx={60} cy={95} rx={50} />
+			{/* strugi wody: ciemniejszy obrys + jasny rdzeń */}
+			{[
+				"M60 22 C46 30 42 48 40 66",
+				"M60 22 C74 30 78 48 80 66",
+				...(level >= 2
+					? [
+							"M60 20 C60 36 60 50 60 58",
+							"M60 24 C52 34 49 50 48 64",
+							"M60 24 C68 34 71 50 72 64",
+						]
+					: []),
+			].map((d, i) => (
+				<g key={d} fill="none" strokeLinecap="round">
+					<path d={d} stroke="#3d93c9" strokeWidth={i < 2 ? 4.2 : 3} />
+					<path d={d} stroke="#c9f0ff" strokeWidth={i < 2 ? 1.6 : 1.1} />
+				</g>
+			))}
+			{/* kolumna z dwiema czaszami */}
+			<g stroke={g.line} strokeWidth={1.6}>
+				<rect x={54} y={40} width={12} height={34} fill={fillOf(uid, "grey")} />
+				<rect
+					x={62}
+					y={41}
+					width={4}
+					height={32}
+					fill={g.shade}
+					opacity={0.4}
+					stroke="none"
+				/>
+				<ellipse cx={60} cy={41} rx={17} ry={5.5} fill={g.light} />
+				<path
+					d="M43 41 a17 5.5 0 0 0 34 0 v3 a17 6 0 0 1 -34 0 Z"
+					fill={g.dark}
+				/>
+				<ellipse
+					cx={60}
+					cy={40}
+					rx={12}
+					ry={3}
+					fill="#9fe1ff"
+					stroke="none"
+					opacity={0.9}
+				/>
+				<rect x={56} y={26} width={8} height={14} fill={fillOf(uid, "grey")} />
+				<ellipse cx={60} cy={26} rx={9} ry={3} fill={g.light} />
+				<circle cx={60} cy={19} r={4.5} fill="#bfe9ff" />
 			</g>
-			{/* górna czasza + postument */}
-			<g stroke={OUTLINE} strokeWidth={2}>
-				<circle cx={55} cy={21} r={5} fill="#bae6fd" />
-				<ellipse cx={55} cy={40} rx={17} ry={5.5} fill="#e2e8f0" />
-				<rect x={49} y={40} width={12} height={28} fill="#cbd5e1" />
-				{/* basen z kamienną obwódką */}
-				<ellipse cx={55} cy={76} rx={44} ry={14} fill="#e2e8f0" />
-				<ellipse cx={55} cy={73} rx={36} ry={10} fill={`url(#font-w-${uid})`} />
+			{/* basen: cembrowina z bloków + woda */}
+			<g stroke={g.line} strokeWidth={1.6}>
+				<ellipse cx={60} cy={80} rx={50} ry={13} fill={g.dark} />
+				<path
+					d="M10 80 a50 13 0 0 0 100 0 v6 a50 13 0 0 1 -100 0 Z"
+					fill={g.shade}
+					opacity={0.5}
+					stroke="none"
+				/>
+				<ellipse cx={60} cy={78} rx={46} ry={11} fill={fillOf(uid, "grey")} />
+				<ellipse
+					cx={60}
+					cy={77}
+					rx={38}
+					ry={8}
+					fill={`url(#fw-${uid})`}
+					stroke="#3d93c9"
+				/>
 			</g>
-			{/* ząbki kamiennej cembrowiny */}
-			<g stroke={OUTLINE} strokeWidth={1} opacity={0.35}>
-				{[20, 34, 48, 62, 76, 90].map((x) => (
-					<line key={x} x1={x} y1={84} x2={x + 3} y2={88} />
+			{/* bloki cembrowiny */}
+			<g stroke={g.line} strokeWidth={0.9} opacity={0.35}>
+				{[18, 30, 42, 54, 66, 78, 90, 102].map((x) => (
+					<line key={x} x1={x} y1={87} x2={x + 2} y2={92} />
 				))}
 			</g>
-			{/* iskierki na wodzie */}
+			{/* falki i bliki na wodzie */}
+			<g
+				fill="none"
+				stroke="#ffffff"
+				strokeWidth={1.2}
+				strokeLinecap="round"
+				opacity={0.75}
+			>
+				<path d="M30 76 q5 -1.5 10 0" />
+				<path d="M78 79 q6 -1.5 12 0" />
+			</g>
 			<g data-decor fill="#ffffff">
-				<circle cx={38} cy={72} r={2} className="anim-sparkle" />
+				<circle cx={40} cy={74} r={2} className="anim-sparkle" />
 				{level >= 2 && (
 					<circle
-						cx={70}
-						cy={74}
+						cx={80}
+						cy={76}
 						r={2.2}
 						className="anim-sparkle"
 						style={{ animationDelay: "0.7s" }}
 					/>
 				)}
 				{rainbow && (
-					<circle
-						cx={55}
-						cy={69}
-						r={2.4}
-						className="anim-sparkle"
-						style={{ animationDelay: "1.3s" }}
-					/>
+					<>
+						<circle
+							cx={60}
+							cy={72}
+							r={2.4}
+							className="anim-sparkle"
+							style={{ animationDelay: "1.3s" }}
+						/>
+						<circle
+							cx={60}
+							cy={10}
+							r={2}
+							className="anim-sparkle"
+							style={{ animationDelay: "0.4s" }}
+						/>
+					</>
 				)}
 			</g>
 		</svg>
 	)
 }
 
+// ---------------------------------------------------------------------------
+// Plac zabaw: wieżyczka zjeżdżalni z daszkiem + ślizg z burtą, piaskownica;
+// L2 huśtawka na A-ramie, L3 trampolina
+// ---------------------------------------------------------------------------
 function PlacZabawArt({
 	level,
 	size,
@@ -438,68 +1122,237 @@ function PlacZabawArt({
 	level: number
 	size: number | string
 }) {
+	const uid = useId()
 	return (
-		<svg viewBox="0 0 160 96" style={svgStyle(size)} aria-hidden="true">
-			<ellipse cx={80} cy={92} rx={70} ry={3.5} fill="#1e293b" opacity={0.08} />
-			{/* zjeżdżalnia (zawsze): kolorowa wieżyczka + ślizg */}
-			<g stroke={OUTLINE} strokeWidth={2.5} strokeLinecap="round">
-				<line x1={134} y1={90} x2={134} y2={28} />
-				<line x1={148} y1={90} x2={148} y2={28} />
-				<line x1={134} y1={46} x2={148} y2={46} />
-				<line x1={134} y1={62} x2={148} y2={62} />
-				<line x1={134} y1={78} x2={148} y2={78} />
-				<rect x={126} y={20} width={30} height={10} rx={4} fill="#7c5cf0" />
+		<svg viewBox="0 0 170 104" style={svgStyle(size)} aria-hidden="true">
+			<MatDefs uid={uid} names={["plum", "rose", "teal", "wood"]} />
+			<GroundShadow cx={85} cy={99} rx={76} />
+			{/* piaskownica pod zjeżdżalnią */}
+			<ellipse
+				cx={110}
+				cy={92}
+				rx={44}
+				ry={7}
+				fill="#f3e2b3"
+				stroke="#d9c08a"
+				strokeWidth={1.2}
+			/>
+			{/* wieżyczka zjeżdżalni */}
+			<g stroke={MAT.wood.line} strokeWidth={2} strokeLinecap="round">
+				<line
+					x1={140}
+					y1={94}
+					x2={140}
+					y2={40}
+					stroke={MAT.wood.dark}
+					strokeWidth={4}
+				/>
+				<line
+					x1={158}
+					y1={94}
+					x2={158}
+					y2={40}
+					stroke={MAT.wood.dark}
+					strokeWidth={4}
+				/>
+				{[52, 64, 76, 88].map((y) => (
+					<line
+						key={y}
+						x1={140}
+						y1={y}
+						x2={158}
+						y2={y}
+						stroke={MAT.wood.dark}
+						strokeWidth={2.4}
+					/>
+				))}
 			</g>
-			{/* profil ślizgu: stromy start, wypłaszczenie przy ziemi */}
+			<rect
+				x={128}
+				y={36}
+				width={38}
+				height={8}
+				rx={2}
+				fill={fillOf(uid, "wood")}
+				stroke={MAT.wood.line}
+				strokeWidth={1.6}
+			/>
+			{/* daszek namiotowy */}
 			<path
-				d="M128 30 Q100 78 64 86"
-				stroke="#ffd95e"
-				strokeWidth={12}
+				d="M124 36 L147 14 L170 36 Z"
+				fill={fillOf(uid, "rose")}
+				stroke={MAT.rose.line}
+				strokeWidth={1.8}
+				strokeLinejoin="round"
+			/>
+			<path d="M147 14 L170 36 L147 36 Z" fill={MAT.rose.shade} opacity={0.3} />
+			<Pennant x={147} y={14} color="#ffd95e" />
+			{/* ślizg: burty + rynna z blikiem */}
+			<path
+				d="M130 42 Q104 84 66 92"
+				stroke={MAT.plum.line}
+				strokeWidth={15}
 				strokeLinecap="round"
 				fill="none"
 			/>
 			<path
-				d="M128 30 Q100 78 64 86"
-				stroke="#f59e0b"
+				d="M130 42 Q104 84 66 92"
+				stroke={MAT.plum.dark}
+				strokeWidth={11}
+				strokeLinecap="round"
+				fill="none"
+			/>
+			<path
+				d="M130 42 Q104 84 66 92"
+				stroke="#ffd95e"
+				strokeWidth={6}
+				strokeLinecap="round"
+				fill="none"
+			/>
+			<path
+				d="M128 44 Q104 82 70 90"
+				stroke="#fff3b8"
+				strokeWidth={1.6}
+				strokeLinecap="round"
+				fill="none"
+				opacity={0.8}
+			/>
+			{/* podpora ślizgu */}
+			<line
+				x1={96}
+				y1={76}
+				x2={96}
+				y2={94}
+				stroke={MAT.wood.dark}
 				strokeWidth={3}
 				strokeLinecap="round"
-				fill="none"
-				strokeDasharray="2 10"
-				opacity={0.7}
 			/>
-			{/* huśtawka (L2+) */}
+			{/* huśtawka (L2+) — A-rama */}
 			{level >= 2 && (
-				<g stroke={OUTLINE} strokeWidth={2.5} strokeLinecap="round">
-					<line x1={6} y1={90} x2={20} y2={30} stroke="#ff5e8a" />
-					<line x1={54} y1={90} x2={40} y2={30} stroke="#ff5e8a" />
-					<line x1={6} y1={90} x2={20} y2={30} strokeOpacity={0.35} />
-					<line x1={54} y1={90} x2={40} y2={30} strokeOpacity={0.35} />
-					<line x1={16} y1={30} x2={44} y2={30} />
-					<line x1={25} y1={30} x2={25} y2={64} strokeWidth={1.6} />
-					<line x1={37} y1={30} x2={37} y2={64} strokeWidth={1.6} />
-					<rect x={20} y={64} width={22} height={6} rx={3} fill="#ff5e8a" />
+				<g strokeLinecap="round">
+					<path
+						d="M6 94 L22 30 M40 94 L24 30"
+						stroke={MAT.rose.dark}
+						strokeWidth={4}
+						fill="none"
+					/>
+					<path
+						d="M6 94 L22 30 M40 94 L24 30"
+						stroke={MAT.rose.line}
+						strokeWidth={1.2}
+						fill="none"
+						opacity={0.5}
+					/>
+					<line
+						x1={14}
+						y1={30}
+						x2={60}
+						y2={30}
+						stroke={MAT.plum.dark}
+						strokeWidth={4}
+					/>
+					<line
+						x1={14}
+						y1={30}
+						x2={60}
+						y2={30}
+						stroke={MAT.plum.line}
+						strokeWidth={1.2}
+						opacity={0.5}
+					/>
+					<path
+						d="M52 94 L58 30 M64 94 L60 30"
+						stroke={MAT.rose.dark}
+						strokeWidth={4}
+						fill="none"
+					/>
+					<line
+						x1={30}
+						y1={30}
+						x2={30}
+						y2={66}
+						stroke="#6b4318"
+						strokeWidth={1.6}
+					/>
+					<line
+						x1={44}
+						y1={30}
+						x2={44}
+						y2={66}
+						stroke="#6b4318"
+						strokeWidth={1.6}
+					/>
+					<rect
+						x={25}
+						y={65}
+						width={24}
+						height={6}
+						rx={3}
+						fill={fillOf(uid, "teal")}
+						stroke={MAT.teal.line}
+						strokeWidth={1.4}
+					/>
 				</g>
 			)}
 			{/* trampolina (L3) */}
 			{level >= 3 && (
-				<g stroke={OUTLINE} strokeWidth={2}>
-					<line x1={72} y1={90} x2={78} y2={78} />
-					<line x1={118} y1={90} x2={112} y2={78} />
-					<ellipse cx={95} cy={76} rx={26} ry={8} fill="#8b6cf5" />
+				<g>
+					<line
+						x1={74}
+						y1={94}
+						x2={80}
+						y2={80}
+						stroke={MAT.grey.line}
+						strokeWidth={2.4}
+						strokeLinecap="round"
+					/>
+					<line
+						x1={124}
+						y1={94}
+						x2={118}
+						y2={80}
+						stroke={MAT.grey.line}
+						strokeWidth={2.4}
+						strokeLinecap="round"
+					/>
 					<ellipse
-						cx={95}
-						cy={74}
-						rx={20}
+						cx={99}
+						cy={78}
+						rx={27}
+						ry={8}
+						fill={MAT.plum.dark}
+						stroke={MAT.plum.line}
+						strokeWidth={1.8}
+					/>
+					<ellipse
+						cx={99}
+						cy={76.5}
+						rx={21}
 						ry={5}
-						fill="#c4b5fd"
+						fill={fillOf(uid, "plum")}
+						stroke={MAT.plum.line}
 						strokeWidth={1.2}
 					/>
+					<g data-decor fill="#ffffff">
+						<circle cx={84} cy={62} r={2} className="anim-sparkle" />
+						<circle
+							cx={114}
+							cy={58}
+							r={1.8}
+							className="anim-sparkle"
+							style={{ animationDelay: "0.8s" }}
+						/>
+					</g>
 				</g>
 			)}
 		</svg>
 	)
 }
 
+// ---------------------------------------------------------------------------
+// Latarnie: kuty słup na cokole, latarenka z daszkiem, ciepła poświata;
+// L2+ świetliki
+// ---------------------------------------------------------------------------
 function LatarnieArt({
 	level,
 	size,
@@ -509,47 +1362,105 @@ function LatarnieArt({
 }) {
 	const lamps = Array.from({ length: level }, (_, i) => 24 + i * 34)
 	const vbWidth = 48 + (level - 1) * 34
+	const line = MAT.plum.line
 	return (
 		<svg
-			viewBox={`0 0 ${vbWidth} 96`}
+			viewBox={`0 0 ${vbWidth} 100`}
 			style={svgStyle(size)}
 			aria-hidden="true"
 		>
-			<ellipse
-				cx={vbWidth / 2}
-				cy={93}
-				rx={vbWidth / 2 - 4}
-				ry={3}
-				fill="#1e293b"
-				opacity={0.08}
-			/>
+			<GroundShadow cx={vbWidth / 2} cy={97} rx={vbWidth / 2 - 4} />
 			{lamps.map((x, i) => (
 				<g key={x}>
 					{/* poświata (dwuwarstwowa — naprawdę świeci) */}
 					<g data-decor>
-						<circle cx={x} cy={24} r={17} fill="#ffd95e" opacity={0.22} />
-						<circle cx={x} cy={24} r={10} fill="#ffe9a3" opacity={0.4} />
+						<circle cx={x} cy={24} r={19} fill="#ffd95e" opacity={0.2} />
+						<circle cx={x} cy={24} r={11} fill="#ffe9a3" opacity={0.45} />
 					</g>
-					<g stroke={OUTLINE} strokeWidth={2}>
-						<line x1={x} y1={92} x2={x} y2={34} strokeWidth={4} />
-						{/* stopa i zawijas */}
+					{/* cokół */}
+					<path
+						d={`M${x - 8} 96 h16 l-3 -6 h-10 Z`}
+						fill={MAT.grey.dark}
+						stroke={MAT.grey.line}
+						strokeWidth={1.4}
+						strokeLinejoin="round"
+					/>
+					{/* słup z pierścieniami */}
+					<line
+						x1={x}
+						y1={90}
+						x2={x}
+						y2={34}
+						stroke={MAT.plum.shade}
+						strokeWidth={4.4}
+						strokeLinecap="round"
+					/>
+					<line
+						x1={x - 1}
+						y1={88}
+						x2={x - 1}
+						y2={36}
+						stroke="#ffffff"
+						strokeWidth={1}
+						opacity={0.35}
+						strokeLinecap="round"
+					/>
+					<g fill={MAT.plum.dark} stroke={line} strokeWidth={1}>
+						<rect x={x - 3.5} y={80} width={7} height={3} rx={1} />
+						<rect x={x - 3.5} y={44} width={7} height={3} rx={1} />
+					</g>
+					{/* zawijas */}
+					<path
+						d={`M${x} 46 q9 -1 9 -9`}
+						fill="none"
+						stroke={line}
+						strokeWidth={1.8}
+						strokeLinecap="round"
+					/>
+					{/* latarenka: korpus szklany + ramki + daszek */}
+					<g stroke={line} strokeWidth={1.6} strokeLinejoin="round">
+						<path d={`M${x - 7} 32 h14 l-2 -14 h-10 Z`} fill="#fff6d0" />
 						<path
-							d={`M${x - 8} 92 h16`}
-							strokeWidth={3}
-							strokeLinecap="round"
+							d={`M${x - 7} 32 h14 l1 2 h-16 Z`}
+							fill={MAT.plum.dark}
+							strokeWidth={1.2}
 						/>
-						<path d={`M${x} 44 q8 0 8 -7`} fill="none" strokeWidth={1.8} />
-						{/* latarenka */}
-						<path d={`M${x - 7} 30 h14 l-2 -12 h-10 Z`} fill="#fff7d6" />
-						<path d={`M${x - 6} 14 L${x} 8 L${x + 6} 14`} fill="#7c5cf0" />
-						<circle cx={x} cy={24} r={2.6} fill="#ffb020" stroke="none" />
+						<path
+							d={`M${x - 8} 18 L${x} 9 L${x + 8} 18 Z`}
+							fill={MAT.plum.dark}
+						/>
+						<path
+							d={`M${x} 9 L${x + 8} 18 L${x} 18 Z`}
+							fill={MAT.plum.shade}
+							opacity={0.5}
+							stroke="none"
+						/>
 					</g>
+					<line
+						x1={x}
+						y1={18}
+						x2={x}
+						y2={32}
+						stroke={line}
+						strokeWidth={0.8}
+						opacity={0.5}
+					/>
+					<circle
+						cx={x}
+						cy={9}
+						r={1.6}
+						fill="#ffd95e"
+						stroke="#b07a12"
+						strokeWidth={0.8}
+					/>
+					<ellipse cx={x} cy={25} rx={2.8} ry={3.4} fill="#ffb020" />
+					<ellipse cx={x} cy={24} rx={1.3} ry={1.8} fill="#fff6d0" />
 					{/* świetliki (L2+) */}
 					{level >= 2 && (
 						<circle
 							data-decor
 							cx={x + 13}
-							cy={44 + i * 7}
+							cy={46 + i * 7}
 							r={1.9}
 							fill="#fff3b0"
 							className="anim-firefly"
@@ -562,115 +1473,184 @@ function LatarnieArt({
 	)
 }
 
+// ---------------------------------------------------------------------------
+// Ogródek: grządka w drewnianej skrzyni (front + bok), płotek, kwiaty
+// z listkami; L2 konewka i motylek, L3 pergola z pnączem i iskierki
+// ---------------------------------------------------------------------------
 function OgrodekArt({ level, size }: { level: number; size: number | string }) {
 	const uid = useId()
-	// kwiaty: tulipan / słonecznik / dzwonek — więcej i barwniej z poziomem
-	const flowers: { x: number; kind: number }[] = [
-		{ x: 22, kind: 0 },
-		{ x: 50, kind: 1 },
-		{ x: 78, kind: 0 },
+	const flowers: {
+		x: number
+		kind: "tulip" | "daisy" | "sunflower" | "bell"
+		s: number
+	}[] = [
+		{ x: 24, kind: "tulip", s: 1 },
+		{ x: 50, kind: "sunflower", s: 1.15 },
+		{ x: 76, kind: "tulip", s: 1 },
 		...(level >= 2
 			? [
-					{ x: 36, kind: 2 },
-					{ x: 64, kind: 2 },
+					{ x: 37, kind: "bell" as const, s: 0.95 },
+					{ x: 63, kind: "daisy" as const, s: 0.95 },
 				]
 			: []),
 		...(level >= 3
 			? [
-					{ x: 10, kind: 1 },
-					{ x: 90, kind: 1 },
+					{ x: 12, kind: "daisy" as const, s: 0.9 },
+					{ x: 88, kind: "bell" as const, s: 0.9 },
 				]
 			: []),
 	]
-	const petal = ["#ff5e8a", "#ffd95e", "#8b6cf5"]
 	return (
-		<svg viewBox="0 0 100 72" style={svgStyle(size)} aria-hidden="true">
-			<defs>
-				<linearGradient id={`ogr-${uid}`} x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0%" stopColor="#d9a45f" />
-					<stop offset="100%" stopColor="#a9743a" />
-				</linearGradient>
-			</defs>
-			<ellipse cx={50} cy={69} rx={46} ry={3} fill="#1e293b" opacity={0.08} />
-			{/* płotek sztachetowy */}
-			<g stroke={OUTLINE} strokeWidth={1.6}>
-				{[6, 21, 36, 51, 66, 81, 94].map((x) => (
+		<svg viewBox="0 0 110 80" style={svgStyle(size)} aria-hidden="true">
+			<MatDefs uid={uid} names={["wood", "cream"]} />
+			<GroundShadow cx={55} cy={76} rx={50} />
+			{/* pergola (L3) */}
+			{level >= 3 && (
+				<g>
 					<path
-						key={x}
-						d={`M${x - 2.5} 62 v-20 l2.5 -4 l2.5 4 v20 Z`}
-						fill="#fff7ed"
+						d="M14 62 V22 Q14 10 30 10 H80 Q96 10 96 22 V62"
+						fill="none"
+						stroke={MAT.wood.dark}
+						strokeWidth={3.5}
+						strokeLinecap="round"
 					/>
-				))}
-				<line x1={2} y1={48} x2={98} y2={48} stroke="#f3ddc3" strokeWidth={4} />
-				<line x1={2} y1={48} x2={98} y2={48} strokeWidth={1.2} />
-			</g>
-			{/* grządka */}
-			<ellipse
-				cx={50}
-				cy={62}
-				rx={47}
-				ry={8}
-				fill={`url(#ogr-${uid})`}
-				stroke={OUTLINE}
-				strokeWidth={1.6}
-			/>
-			{/* kwiaty */}
-			{flowers.map(({ x, kind }, i) => (
-				<g key={`${x}-${i}`} stroke={OUTLINE} strokeWidth={1.2}>
-					<line
-						x1={x}
-						y1={58}
-						x2={x}
-						y2={40}
-						stroke="#3f9e5f"
+					<path
+						d="M14 62 V22 Q14 10 30 10 H80 Q96 10 96 22 V62"
+						fill="none"
+						stroke={MAT.wood.line}
+						strokeWidth={1}
+						opacity={0.5}
+					/>
+					{/* pnącze z kwiatkami */}
+					<path
+						d="M18 40 Q14 28 24 16 Q40 8 60 12 Q80 8 92 22 Q96 32 92 42"
+						fill="none"
+						stroke="#5bb96f"
 						strokeWidth={2}
 					/>
-					{kind === 1 ? (
-						<>
-							{[0, 60, 120, 180, 240, 300].map((deg) => (
-								<ellipse
-									key={deg}
-									cx={x}
-									cy={33}
-									rx={3}
-									ry={6}
-									fill={petal[1]}
-									transform={`rotate(${deg} ${x} 36)`}
-									stroke="none"
-								/>
-							))}
-							<circle cx={x} cy={36} r={4} fill="#a9743a" />
-						</>
-					) : (
-						<path
-							d={`M${x - 5} 40 q-2 -10 5 -10 q7 0 5 10 Z`}
-							fill={petal[kind === 2 ? 2 : 0]}
+					{[
+						[22, 24],
+						[34, 12],
+						[58, 11],
+						[82, 14],
+						[93, 30],
+					].map(([x, y]) => (
+						<circle
+							key={`${x}-${y}`}
+							cx={x}
+							cy={y}
+							r={2.4}
+							fill="#ff8fb0"
+							stroke="#c9508a"
+							strokeWidth={0.8}
 						/>
-					)}
+					))}
+					<g data-decor fill="#ffffff">
+						<circle cx={26} cy={30} r={1.8} className="anim-sparkle" />
+						<circle
+							cx={86}
+							cy={24}
+							r={1.8}
+							className="anim-sparkle"
+							style={{ animationDelay: "0.8s" }}
+						/>
+					</g>
 				</g>
-			))}
-			{level >= 3 && (
-				<g data-decor fill="#ffffff">
-					<circle cx={16} cy={30} r={2} className="anim-sparkle" />
-					<circle
-						cx={86}
-						cy={26}
-						r={1.8}
-						className="anim-sparkle"
-						style={{ animationDelay: "0.8s" }}
+			)}
+			{/* płotek sztachetowy z tyłu */}
+			<g stroke={MAT.cream.line} strokeWidth={1.3} strokeLinejoin="round">
+				{[6, 20, 34, 48, 62, 76, 90, 104].map((x) => (
+					<path
+						key={x}
+						d={`M${x - 2.5} 60 v-16 l2.5 -4 l2.5 4 v16 Z`}
+						fill={fillOf(uid, "cream")}
 					/>
+				))}
+				<line
+					x1={2}
+					y1={49}
+					x2={108}
+					y2={49}
+					stroke={MAT.cream.dark}
+					strokeWidth={3.5}
+				/>
+				<line x1={2} y1={49} x2={108} y2={49} strokeWidth={1} />
+			</g>
+			{/* skrzynia grządki: bok + front + ziemia */}
+			<path
+				d="M8 74 L4 68 H98 L102 74 Z"
+				fill={MAT.wood.light}
+				stroke={MAT.wood.line}
+				strokeWidth={1.3}
+				strokeLinejoin="round"
+			/>
+			<path d="M4 58 H98 V68 H4 Z" fill="#8a5a3a" />
+			<rect
+				x={4}
+				y={62}
+				width={94}
+				height={8}
+				rx={1.5}
+				fill={fillOf(uid, "wood")}
+				stroke={MAT.wood.line}
+				strokeWidth={1.4}
+			/>
+			<rect
+				x={80}
+				y={63}
+				width={17}
+				height={6}
+				fill={MAT.wood.shade}
+				opacity={0.35}
+			/>
+			<line
+				x1={6}
+				y1={64}
+				x2={96}
+				y2={64}
+				stroke="#ffffff"
+				strokeWidth={0.8}
+				opacity={0.35}
+			/>
+			<ellipse cx={51} cy={60} rx={45} ry={4} fill="#7a4a24" />
+			{/* kwiaty */}
+			{flowers.map(({ x, kind, s }) => (
+				<FlowerGlyph key={x} kind={kind} x={x} y={60} scale={s} />
+			))}
+			{/* konewka (L2) */}
+			{level >= 2 && (
+				<g stroke={MAT.teal.line} strokeWidth={1.3} strokeLinejoin="round">
+					<rect
+						x={92}
+						y={66}
+						width={12}
+						height={9}
+						rx={2}
+						fill={MAT.teal.dark}
+					/>
+					<path
+						d="M92 68 L84 63"
+						fill="none"
+						strokeWidth={2}
+						strokeLinecap="round"
+					/>
+					<path d="M104 68 q6 1 3 7" fill="none" />
+					<circle cx={83} cy={62.5} r={2} fill={MAT.teal.light} />
 				</g>
 			)}
 		</svg>
 	)
 }
 
-// pasiasty daszek sklepiku (markiza z falbanką) — znak firmowy straganu/butiku
+// ---------------------------------------------------------------------------
+// Sklepik: L1 stragan (lada, skrzynki, markiza) · L2 sklepik z witryną ·
+// L3 dwupiętrowy Dom Mody z lampionami i świecącym szyldem
+// ---------------------------------------------------------------------------
 function Awning({
 	x,
 	y,
 	w,
-	h = 13,
+	h = 12,
 }: {
 	x: number
 	y: number
@@ -680,7 +1660,7 @@ function Awning({
 	const n = 5
 	const step = w / n
 	return (
-		<g stroke={OUTLINE} strokeWidth={1.6}>
+		<g stroke={MAT.rose.line} strokeWidth={1.5}>
 			<rect x={x} y={y} width={w} height={h} rx={3} fill="#ff8fb0" />
 			{Array.from({ length: Math.floor(n / 2) }, (_, i) => (
 				<rect
@@ -693,7 +1673,15 @@ function Awning({
 					stroke="none"
 				/>
 			))}
-			{/* falbanka: zwisające półkola w rytmie pasków */}
+			<rect
+				x={x}
+				y={y}
+				width={w}
+				height={h * 0.35}
+				fill="#ffffff"
+				opacity={0.3}
+				stroke="none"
+			/>
 			{Array.from({ length: n }, (_, i) => (
 				<path
 					key={`f${i}`}
@@ -706,7 +1694,6 @@ function Awning({
 	)
 }
 
-// mini-kapelusz na wystawie (towar sklepiku)
 function MiniHat({
 	x,
 	y,
@@ -717,9 +1704,27 @@ function MiniHat({
 	color?: string
 }) {
 	return (
-		<g stroke={OUTLINE} strokeWidth={1.3}>
+		<g stroke="#4a33a3" strokeWidth={1.2} strokeLinejoin="round">
 			<rect x={x - 5} y={y - 10} width={10} height={9} rx={1.5} fill={color} />
 			<rect x={x - 8} y={y - 2} width={16} height={3.2} rx={1.6} fill={color} />
+			<rect
+				x={x - 5}
+				y={y - 5}
+				width={10}
+				height={1.8}
+				fill="#ffd95e"
+				stroke="none"
+			/>
+		</g>
+	)
+}
+
+function Crate({ x, y }: { x: number; y: number }) {
+	return (
+		<g stroke={MAT.wood.line} strokeWidth={1.2} strokeLinejoin="round">
+			<rect x={x} y={y} width={14} height={11} rx={1} fill={MAT.wood.light} />
+			<line x1={x} y1={y + 5.5} x2={x + 14} y2={y + 5.5} />
+			<line x1={x + 7} y1={y} x2={x + 7} y2={y + 11} />
 		</g>
 	)
 }
@@ -727,154 +1732,307 @@ function MiniHat({
 function SklepikArt({ level, size }: { level: number; size: number | string }) {
 	const uid = useId()
 	const boutique = level >= 3
+	const m = MAT.cream
 	return (
-		<svg viewBox="0 0 130 104" style={svgStyle(size)} aria-hidden="true">
-			<defs>
-				<linearGradient id={`skl-w-${uid}`} x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0%" stopColor="#fef3c7" />
-					<stop offset="100%" stopColor="#fbbf77" />
-				</linearGradient>
-				<linearGradient id={`skl-c-${uid}`} x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0%" stopColor="#d9a45f" />
-					<stop offset="100%" stopColor="#a9743a" />
-				</linearGradient>
-			</defs>
-			<ellipse
-				cx={65}
-				cy={100}
-				rx={54}
-				ry={3.5}
-				fill="#1e293b"
-				opacity={0.08}
-			/>
+		<svg viewBox="0 0 150 116" style={svgStyle(size)} aria-hidden="true">
+			<MatDefs uid={uid} names={["cream", "wood", "rose", "plum"]} />
+			<GroundShadow cx={75} cy={112} rx={level === 1 ? 52 : 62} />
 
 			{level === 1 ? (
-				// L1 stragan: lada z desek, słupki, pasiasty daszek, kapelusze na ladzie
-				<g stroke={OUTLINE} strokeWidth={2}>
-					<line x1={33} y1={70} x2={33} y2={30} strokeWidth={3} />
-					<line x1={97} y1={70} x2={97} y2={30} strokeWidth={3} />
-					<rect
-						x={28}
-						y={70}
-						width={74}
-						height={28}
-						rx={3}
-						fill={`url(#skl-c-${uid})`}
+				// L1 stragan: lada z desek (front + bok), słupki, markiza, towar
+				<g>
+					<line
+						x1={36}
+						y1={80}
+						x2={36}
+						y2={34}
+						stroke={MAT.wood.dark}
+						strokeWidth={3.5}
+						strokeLinecap="round"
 					/>
-					<g stroke="#f3ddc3" strokeOpacity={0.6} strokeWidth={1.4}>
-						<line x1={30} y1={79} x2={100} y2={79} />
-						<line x1={30} y1={88} x2={100} y2={88} />
+					<line
+						x1={112}
+						y1={80}
+						x2={112}
+						y2={34}
+						stroke={MAT.wood.dark}
+						strokeWidth={3.5}
+						strokeLinecap="round"
+					/>
+					<path
+						d="M114 78 L124 72 L124 102 L114 108 Z"
+						fill={MAT.wood.shade}
+						stroke={MAT.wood.line}
+						strokeWidth={1.4}
+						strokeLinejoin="round"
+					/>
+					<rect
+						x={30}
+						y={78}
+						width={84}
+						height={30}
+						rx={2}
+						fill={fillOf(uid, "wood")}
+						stroke={MAT.wood.line}
+						strokeWidth={1.6}
+					/>
+					<g stroke={MAT.wood.line} strokeWidth={0.9} opacity={0.35}>
+						<line x1={32} y1={88} x2={112} y2={88} />
+						<line x1={32} y1={98} x2={112} y2={98} />
 					</g>
-					<MiniHat x={50} y={68} />
-					<MiniHat x={80} y={68} color="#ff5e8a" />
-					<Awning x={22} y={24} w={86} />
+					<rect
+						x={30}
+						y={78}
+						width={84}
+						height={4}
+						fill="#ffffff"
+						opacity={0.3}
+					/>
+					{/* towar */}
+					<MiniHat x={54} y={76} />
+					<MiniHat x={90} y={76} color="#ff5e8a" />
+					<Crate x={8} y={97} />
+					<Crate x={128} y={97} />
+					<circle
+						cx={15}
+						cy={95}
+						r={3.5}
+						fill="#ff6b6b"
+						stroke="#a02b55"
+						strokeWidth={0.9}
+					/>
+					<circle
+						cx={135}
+						cy={95}
+						r={3.5}
+						fill="#ffd23f"
+						stroke="#b07a12"
+						strokeWidth={0.9}
+					/>
+					<Awning x={24} y={26} w={100} />
 				</g>
 			) : (
 				// L2 sklepik / L3 butik: budynek z witryną, markizą i szyldem
-				<g stroke={OUTLINE} strokeWidth={2}>
+				<g>
+					{/* bok (prawy, w cieniu) */}
+					<path
+						d={`M124 ${boutique ? 20 : 46} L136 ${boutique ? 14 : 40} L136 102 L124 108 Z`}
+						fill={m.shade}
+						opacity={0.9}
+						stroke={m.line}
+						strokeWidth={1.6}
+						strokeLinejoin="round"
+					/>
 					{/* piętro butiku (L3) */}
 					{boutique && (
-						<>
+						<g>
 							<rect
-								x={32}
-								y={16}
-								width={66}
-								height={30}
-								rx={3}
-								fill={`url(#skl-w-${uid})`}
+								x={26}
+								y={20}
+								width={98}
+								height={32}
+								fill={fillOf(uid, "cream")}
+								stroke={m.line}
+								strokeWidth={1.6}
 							/>
-							<circle cx={48} cy={30} r={5} fill="#ffd95e" strokeWidth={1.4} />
-							<circle cx={82} cy={30} r={5} fill="#ffd95e" strokeWidth={1.4} />
-							<Pennant x={65} y={4} />
-						</>
+							<ArchWin cx={50} y={44} w={12} lit line={m.line} />
+							<ArchWin cx={100} y={44} w={12} lit line={m.line} />
+							{/* balkonik */}
+							<rect
+								x={64}
+								y={40}
+								width={22}
+								height={3}
+								rx={1}
+								fill={MAT.wood.dark}
+								stroke={MAT.wood.line}
+								strokeWidth={1}
+							/>
+							<g stroke={MAT.plum.line} strokeWidth={1.1}>
+								{[67, 71, 75, 79, 83].map((x) => (
+									<line key={x} x1={x} y1={30} x2={x} y2={40} />
+								))}
+								<line x1={65} y1={30} x2={85} y2={30} strokeWidth={1.6} />
+							</g>
+							<ArchWin cx={75} y={40} w={12} lit line={m.line} />
+						</g>
 					)}
-					{/* dach nad parterem */}
+					{/* dach: bok + front */}
 					<path
 						d={
 							boutique
-								? "M24 16 L65 2 L106 16 L106 20 L24 20 Z"
-								: "M22 40 L65 22 L108 40 L108 44 L22 44 Z"
+								? "M75 4 L88 -2 L140 14 L124 20 Z"
+								: "M75 28 L88 22 L140 40 L124 46 Z"
 						}
-						fill="#e84a7a"
+						fill={MAT.rose.shade}
+						stroke={MAT.rose.line}
+						strokeWidth={1.6}
+						strokeLinejoin="round"
 					/>
+					<path
+						d={boutique ? "M22 20 L75 4 L128 20 Z" : "M20 46 L75 28 L130 46 Z"}
+						fill={fillOf(uid, "rose")}
+						stroke={MAT.rose.line}
+						strokeWidth={1.8}
+						strokeLinejoin="round"
+					/>
+					<path
+						d={boutique ? "M75 4 L128 20 L75 20 Z" : "M75 28 L130 46 L75 46 Z"}
+						fill={MAT.rose.shade}
+						opacity={0.25}
+					/>
+					<rect
+						x={20}
+						y={boutique ? 18 : 44}
+						width={110}
+						height={4}
+						rx={1.5}
+						fill={MAT.rose.dark}
+						stroke={MAT.rose.line}
+						strokeWidth={1.2}
+					/>
+					{boutique && <Pennant x={75} y={4} color="#ff6b9a" />}
 					{/* parter */}
 					<rect
 						x={26}
-						y={boutique ? 46 : 42}
-						width={78}
-						height={boutique ? 52 : 56}
-						rx={3}
-						fill={`url(#skl-w-${uid})`}
-					/>
-					{/* witryna z towarem: kapelusze rosną z poziomem mody */}
-					<rect
-						x={34}
-						y={boutique ? 58 : 56}
-						width={34}
-						height={26}
-						rx={2.5}
-						fill="#ede9fe"
+						y={boutique ? 52 : 48}
+						width={98}
+						height={boutique ? 56 : 60}
+						fill={fillOf(uid, "cream")}
+						stroke={m.line}
 						strokeWidth={1.6}
 					/>
-					<MiniHat x={44} y={boutique ? 82 : 80} />
-					<MiniHat x={59} y={boutique ? 82 : 80} color="#ff5e8a" />
+					<rect
+						x={26}
+						y={102}
+						width={98}
+						height={6}
+						fill={MAT.grey.dark}
+						stroke={m.line}
+						strokeWidth={1.2}
+					/>
+					{/* witryna z towarem */}
+					<rect
+						x={34}
+						y={boutique ? 66 : 62}
+						width={40}
+						height={28}
+						rx={2.5}
+						fill="#e9e3ff"
+						stroke={m.line}
+						strokeWidth={1.5}
+					/>
+					<rect
+						x={36}
+						y={boutique ? 68 : 64}
+						width={14}
+						height={12}
+						fill="#ffffff"
+						opacity={0.45}
+					/>
+					<line
+						x1={36}
+						y1={boutique ? 88 : 84}
+						x2={72}
+						y2={boutique ? 88 : 84}
+						stroke={MAT.wood.dark}
+						strokeWidth={2}
+					/>
+					<MiniHat x={46} y={boutique ? 88 : 84} />
+					<MiniHat x={62} y={boutique ? 88 : 84} color="#ff5e8a" />
 					{boutique && (
 						<circle
 							data-decor
-							cx={51}
-							cy={64}
-							r={3}
+							cx={54}
+							cy={72}
+							r={2.6}
 							fill="#ffd95e"
-							strokeWidth={1.2}
+							stroke="#b07a12"
+							strokeWidth={1}
 							className="anim-sparkle"
 						/>
 					)}
-					{/* drzwi z gałką */}
-					<path
-						d={`M80 98 v-16 a8 8 0 0 1 16 0 v16 Z`}
-						fill="#7c5cf0"
-						opacity={0.85}
-					/>
-					<circle cx={93} cy={90} r={1.3} fill="#ffd95e" stroke="none" />
-					{/* markiza nad witryną */}
-					<Awning x={30} y={boutique ? 48 : 46} w={42} h={11} />
-					{/* szyld z kapeluszem (świeci w butiku) */}
+					<Awning x={30} y={boutique ? 54 : 50} w={48} h={11} />
+					{/* drzwi + szyld z kapeluszem */}
+					<Door cx={104} y={102} w={16} line={m.line} />
 					{boutique && (
 						<circle
 							data-decor
-							cx={88}
-							cy={62}
-							r={11}
+							cx={104}
+							cy={72}
+							r={13}
 							fill="#ffd95e"
-							opacity={0.25}
-							stroke="none"
+							opacity={0.28}
 						/>
 					)}
-					<circle
-						cx={88}
-						cy={62}
-						r={8}
-						fill={boutique ? "#ffd95e" : "#fff7ed"}
-						strokeWidth={1.6}
+					<line
+						x1={104}
+						y1={60}
+						x2={104}
+						y2={64}
+						stroke={MAT.wood.line}
+						strokeWidth={1.4}
 					/>
-					<MiniHat x={88} y={66} color="#5f45c4" />
+					<circle
+						cx={104}
+						cy={72}
+						r={8.5}
+						fill={boutique ? "#ffd95e" : "#fff7ed"}
+						stroke={m.line}
+						strokeWidth={1.5}
+					/>
+					<MiniHat x={104} y={76} color="#5f45c4" />
+					{/* lampiony butiku */}
+					{boutique && (
+						<g>
+							{[30, 120].map((x) => (
+								<g key={x}>
+									<line
+										x1={x}
+										y1={52}
+										x2={x}
+										y2={58}
+										stroke={MAT.wood.line}
+										strokeWidth={1.2}
+									/>
+									<circle
+										data-decor
+										cx={x}
+										cy={62}
+										r={7}
+										fill="#ffb03d"
+										opacity={0.3}
+									/>
+									<ellipse
+										cx={x}
+										cy={62}
+										rx={3.2}
+										ry={4.2}
+										fill="#ffb03d"
+										stroke="#b07a12"
+										strokeWidth={1}
+									/>
+								</g>
+							))}
+						</g>
+					)}
 				</g>
 			)}
 
 			{/* iskierki mody (L3) */}
 			{boutique && (
 				<g data-decor fill="#ffffff">
-					<circle cx={30} cy={26} r={2} className="anim-sparkle" />
+					<circle cx={30} cy={30} r={2} className="anim-sparkle" />
 					<circle
-						cx={102}
-						cy={34}
+						cx={118}
+						cy={36}
 						r={1.8}
 						className="anim-sparkle"
 						style={{ animationDelay: "0.7s" }}
 					/>
 					<circle
-						cx={65}
-						cy={12}
+						cx={75}
+						cy={-6}
 						r={2.2}
 						className="anim-sparkle"
 						style={{ animationDelay: "1.3s" }}
