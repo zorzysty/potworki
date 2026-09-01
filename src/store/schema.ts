@@ -3,11 +3,16 @@ import type { CosmeticsState } from "../game/cosmetics"
 import { INITIAL_COSMETICS } from "../game/cosmetics"
 import type { ExpeditionState } from "../game/expeditions"
 import type { FactKey } from "../game/facts"
-import { ISKIERKI_CAP, type PendingEgg } from "../game/rewards"
+import {
+	INITIAL_LEGENDARY_PITY,
+	ISKIERKI_CAP,
+	type LegendaryPity,
+	type PendingEgg,
+} from "../game/rewards"
 import type { VillageState } from "../game/village"
 import { INITIAL_VILLAGE } from "../game/village"
 
-export const SAVE_VERSION = 14
+export const SAVE_VERSION = 15
 
 // Wpis ledgera osiągnięć. `seen` jak celebratedStage: false → badge „nowe!" na Home,
 // czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen).
@@ -48,6 +53,7 @@ export interface SaveState {
 	eggStarBank: number // suma gwiazdek zebranych przy budowie bieżącego jajka; decyduje o jego kolorze przy domknięciu
 	eggsEarned: number // ile jajek z fragmentów już powstało — steruje progiem (fragmentsForEgg)
 	pendingEggs: PendingEgg[]
+	legendaryPity: LegendaryPity // jajka z rund od ostatniego legendarnego, per tryb (rewards.ts)
 	dreamMonsterId: number | null
 	companionId: number | null // ulubiony przyjaciel (siedzi na ekranie głównym, kibicuje); osobny od dreamMonsterId
 	totalRounds: number
@@ -70,6 +76,7 @@ export const INITIAL_SAVE: SaveState = {
 	eggStarBank: 0,
 	eggsEarned: 0,
 	pendingEggs: [],
+	legendaryPity: INITIAL_LEGENDARY_PITY,
 	dreamMonsterId: null,
 	companionId: null,
 	totalRounds: 0,
@@ -264,6 +271,12 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 			achievementStats: { ...stats, visitRoundsCompleted: 0 },
 		}
 	},
+	// v14→v15: licznik pity legendarnych per tryb — historii jajek nie da się
+	// odtworzyć wstecz, start od zera (nie nadrabiamy).
+	14: (state) => ({
+		...(state as Record<string, unknown>),
+		legendaryPity: INITIAL_LEGENDARY_PITY,
+	}),
 }
 
 export function migrateSave(state: unknown, fromVersion: number): unknown {

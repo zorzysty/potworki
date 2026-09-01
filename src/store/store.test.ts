@@ -9,6 +9,7 @@ import type { FactKey } from "../game/facts"
 import {
 	ISKIERKI_CAP,
 	ISKIERKI_FOR_DUP,
+	LEGENDARY_PITY_EVERY,
 	WISH_COST,
 	WISH_COST_NO_DREAM,
 	WISH_COST_STEP,
@@ -436,6 +437,40 @@ describe("hatchEgg — gwarancje", () => {
 		const lh = game().lastHatch
 		expect(lh?.isDream).toBe(true)
 		expect(game().dreamMonsterId).toBeNull()
+	})
+})
+
+describe("pity legendarnych per tryb", () => {
+	test("12 jajek z dzielenia bez legendarnego = gwarantowany legendarny tylko-dzielenie", () => {
+		suppressAchievements()
+		// pierwszy potworek (gwarantowany) poza licznikiem
+		useGame.setState({
+			ownedMonsters: { [FIRST_MONSTER_ID]: { hatchedAt: 1 } },
+		})
+		game().setMode("div")
+		for (let i = 0; i < LEGENDARY_PITY_EVERY; i++) {
+			game().debugAddEgg("normal")
+			game().hatchEgg(0)
+		}
+		const legendaries = Object.keys(game().ownedMonsters)
+			.map(Number)
+			.filter((id) => rarityOf(id) === "legendary")
+		expect(legendaries.length).toBeGreaterThanOrEqual(1)
+		// jajka dzieleniowe widzą tylko legendarne bazowe + tylko-dzielenie
+		for (const id of legendaries) expect(GAP_ONLY_IDS.has(id)).toBe(false)
+	})
+
+	test("Jajko Życzeń nie rusza licznika", () => {
+		suppressAchievements()
+		useGame.setState({
+			ownedMonsters: { [FIRST_MONSTER_ID]: { hatchedAt: 1 } },
+			legendaryPity: { mult: 4, div: 0, gap: 0 },
+			village: { buildings: { fontanna: 1 }, decorations: [], goalId: null },
+		})
+		game().debugAddIskierki(50)
+		game().buyWishEgg()
+		game().hatchEgg(0)
+		expect(game().legendaryPity.mult).toBe(4)
 	})
 })
 

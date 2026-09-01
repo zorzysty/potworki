@@ -207,8 +207,31 @@ function pickInTier(tier: Rarity, ctx: RollContext): number {
 	return pool[Math.floor(rand() * pool.length)] as number
 }
 
-export function rollMonster(quality: EggQuality, ctx: RollContext): number {
-	return pickInTier(rollTier(RARITY_ODDS[quality], ctx.rand), ctx)
+// Ochrona przed pechem („pity"): `pity` = jajka z rund od ostatniego legendarnego
+// w tym trybie; na progu następne gwarantuje tier legendarny, o ile pula trybu ma
+// jeszcze nieposiadanego legendarnego — bez tego gwarancja dawałaby duplikaty.
+// 12 ≈ szansa legendarnego ×~3 w najgorszym razie; zamienia loterię w cel.
+export const LEGENDARY_PITY_EVERY = 12
+export type LegendaryPity = Record<GameMode, number>
+export const INITIAL_LEGENDARY_PITY: LegendaryPity = { mult: 0, div: 0, gap: 0 }
+
+export function rollMonsterWithPity(
+	quality: EggQuality,
+	ctx: RollContext,
+	pity: number,
+): { id: number; pity: number } {
+	let tier = rollTier(RARITY_ODDS[quality], ctx.rand)
+	if (
+		tier !== "legendary" &&
+		pity + 1 >= LEGENDARY_PITY_EVERY &&
+		ctx.idsByRarity.legendary.some((id) => !ctx.owned.has(id))
+	) {
+		tier = "legendary"
+	}
+	return {
+		id: pickInTier(tier, ctx),
+		pity: tier === "legendary" ? 0 : pity + 1,
+	}
 }
 
 // Jajko Życzeń: z wymarzonym → dokładnie on; bez → losowy NIEPOSIADANY (złote szanse,
@@ -221,7 +244,6 @@ export function rollWish(ctx: RollContext): number {
 	const available = RARITY_ORDER.filter((tier) =>
 		idsByRarity[tier].some((id) => !owned.has(id)),
 	)
-	if (available.length === 0) return rollMonster("gold", ctx)
 	const odds = RARITY_ODDS.gold
 	const weights = available.map((tier) => odds[RARITY_ORDER.indexOf(tier)] ?? 0)
 	const total = weights.reduce((s, w) => s + w, 0)
@@ -234,5 +256,6 @@ export function rollWish(ctx: RollContext): number {
 			return unowned[Math.floor(rand() * unowned.length)] as number
 		}
 	}
-	return rollMonster("gold", ctx) // siatka na dryf zmiennoprzecinkowy
+	// pula wyczerpana (available puste) albo dryf zmiennoprzecinkowy → duplikat
+	return pickInTier(rollTier(odds, rand), ctx)
 }

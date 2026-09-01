@@ -12,6 +12,7 @@ export function DebugScreen() {
 	const celebratedStage = useGame((s) => s.celebratedStage)
 	const totalRounds = useGame((s) => s.totalRounds)
 	const eggsEarned = useGame((s) => s.eggsEarned)
+	const legendaryPity = useGame((s) => s.legendaryPity)
 	const village = useGame((s) => s.village)
 	const wishEggsBought = useGame((s) => s.achievementStats.wishEggsBought)
 	const mode = useGame((s) => s.mode)
@@ -36,7 +37,8 @@ export function DebugScreen() {
 			</button>
 			<div className="my-2 font-bold">
 				etap: {unlockedStage} | uczczony: {celebratedStage} | rundy:{" "}
-				{totalRounds} | iskierki: {iskierki} | jajka: {eggsEarned}
+				{totalRounds} | iskierki: {iskierki} | jajka: {eggsEarned} | pity ×÷_:{" "}
+				{legendaryPity.mult}/{legendaryPity.div}/{legendaryPity.gap}
 			</div>
 			{/* pacing ekonomii wioski: wydane ≈ wartość wioski + koszty jajek życzeń,
 			    zarobione ≈ wydane + portfel — obserwacja balansu bez nowych liczników */}

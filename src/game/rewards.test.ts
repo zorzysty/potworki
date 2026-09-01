@@ -6,9 +6,11 @@ import {
 	eggQuality,
 	eggQualityScore,
 	ISKIERKI_CAP,
+	LEGENDARY_PITY_EVERY,
 	QUALITY_ORDER,
 	qualityOdds,
 	RARITY_ODDS,
+	rollMonsterWithPity,
 	rollWish,
 	WISH_COST,
 	WISH_COST_NO_DREAM,
@@ -251,15 +253,50 @@ describe("addEggFragment", () => {
 	})
 })
 
+// wspólna mini-pula dla testów losowania (rollMonsterWithPity, rollWish)
+const idsByRarity = {
+	common: [0, 1, 2],
+	rare: [3, 4],
+	epic: [5],
+	legendary: [6, 7],
+}
+const rarityOf = (id: number) =>
+	id <= 2 ? "common" : id <= 4 ? "rare" : id === 5 ? "epic" : "legendary"
+
+describe("rollMonsterWithPity", () => {
+	const ctx = (owned: number[]) => ({
+		idsByRarity,
+		owned: new Set(owned),
+		dreamId: null,
+		rarityOf,
+		rand: () => 0, // rollTier → zawsze common
+	})
+	test("poniżej progu: zwykły los, licznik rośnie", () => {
+		const r = rollMonsterWithPity("normal", ctx([]), 3)
+		expect(rarityOf(r.id)).toBe("common")
+		expect(r.pity).toBe(4)
+	})
+	test("na progu: gwarantowany legendarny, licznik wraca do zera", () => {
+		const r = rollMonsterWithPity("normal", ctx([]), LEGENDARY_PITY_EVERY - 1)
+		expect(rarityOf(r.id)).toBe("legendary")
+		expect(r.pity).toBe(0)
+	})
+	test("brak nieposiadanych legendarnych w puli: pity nie wymusza tieru", () => {
+		const r = rollMonsterWithPity("normal", ctx([6, 7]), 50)
+		expect(rarityOf(r.id)).toBe("common")
+	})
+	test("naturalny legendarny też zeruje licznik", () => {
+		const r = rollMonsterWithPity(
+			"normal",
+			{ ...ctx([]), rand: () => 0.999 },
+			5,
+		)
+		expect(rarityOf(r.id)).toBe("legendary")
+		expect(r.pity).toBe(0)
+	})
+})
+
 describe("rollWish", () => {
-	const idsByRarity = {
-		common: [0, 1, 2],
-		rare: [3, 4],
-		epic: [5],
-		legendary: [6],
-	}
-	const rarityOf = (id: number) =>
-		id <= 2 ? "common" : id <= 4 ? "rare" : id === 5 ? "epic" : "legendary"
 	test("returns dream when set and unowned", () => {
 		const ctx = {
 			idsByRarity,
@@ -285,7 +322,7 @@ describe("rollWish", () => {
 		}
 	})
 	test("pula wyczerpana → zwykłe losowanie (duplikat), nigdy brak potworka", () => {
-		const owned = new Set<number>([0, 1, 2, 3, 4, 5, 6])
+		const owned = new Set<number>([0, 1, 2, 3, 4, 5, 6, 7])
 		const got = rollWish({
 			idsByRarity,
 			owned,

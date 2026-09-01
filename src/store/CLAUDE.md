@@ -23,7 +23,7 @@ Pojedynczy store zustand: koordynacja przepływu gry (runda, wyklucie, nawigacja
 - `wishEggsBought` (`achievementStats`) jest ŹRÓDŁEM CENY Jajka Życzeń — nie zerować i nie przenosić bez zmiany cennika.
 - Osiągnięcia: ocena czysta w `src/achievements/`; store odblokowuje i płaci (`checkAchievements` po akcjach zmieniających stan → toast; `reconcileAchievements` cicho raz przy starcie) oraz podbija liczniki zdarzeniowe wprost w akcjach.
 - Ścieżki debug świadomie pomijają bonus wizyty i licznik `visitRoundsCompleted` — wizyty to feature prawdziwej gry.
-- `safeStorage`: try/catch wokół localStorage (prywatny tryb Safari rzuca na setItem → fallback in-memory), uszkodzony JSON = brak zapisu. Custom `mergePersisted` deep-merguje zagnieżdżone rekordy (`achievementStats`, `village`, `cosmetics`) — sieć bezpieczeństwa po dev-HMR, NIE zamiennik migracji.
+- `safeStorage`: try/catch wokół localStorage (prywatny tryb Safari rzuca na setItem → fallback in-memory), uszkodzony JSON = brak zapisu. Custom `mergePersisted` deep-merguje zagnieżdżone rekordy (`achievementStats`, `village`, `cosmetics`, `legendaryPity`) — sieć bezpieczeństwa po dev-HMR, NIE zamiennik migracji.
 - Mechanika kolejki rundy żyje tutaj (nie w `src/game/`): powtórka błędnego pytania na `index+3`, max 12 pytań, poprawna powtórka capowana do 1★ — 30/30 wymaga rundy bez pomyłek.
 
 ## Verification

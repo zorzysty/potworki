@@ -345,6 +345,12 @@ describe("migrateSave", () => {
 		expect(bare.iskierki).toBe(3)
 	})
 
+	test("v14→v15: legendaryPity startuje od zera dla każdego trybu", () => {
+		const r = migrateSave({ iskierki: 3 }, 14) as Record<string, unknown>
+		expect(r.legendaryPity).toEqual({ mult: 0, div: 0, gap: 0 })
+		expect(r.iskierki).toBe(3)
+	})
+
 	test("fallback: brak unlockedStage → celebratedStage === 0", () => {
 		const result = migrateSave({}, 2) as Record<string, unknown>
 		expect(result.celebratedStage).toBe(0)
@@ -372,6 +378,7 @@ describe("INITIAL_SAVE shape-lock", () => {
 			"expedition",
 			"facts",
 			"iskierki",
+			"legendaryPity",
 			"ownedMonsters",
 			"pendingEggs",
 			"totalRounds",

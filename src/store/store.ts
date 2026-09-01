@@ -43,7 +43,7 @@ import {
 	addEggFragment,
 	ISKIERKI_CAP,
 	ISKIERKI_FOR_DUP,
-	rollMonster,
+	rollMonsterWithPity,
 	rollWish,
 	WISH_COST,
 	WISH_COST_NO_DREAM,
@@ -396,25 +396,17 @@ export function mergePersisted(
 	current: GameState,
 ): GameState {
 	const p = (persisted ?? {}) as Partial<GameState>
-	return {
-		...current,
-		...p,
-		achievementStats: {
-			...current.achievementStats,
-			...(p.achievementStats ?? {}),
-		},
-		// ta sama siatka bezpieczeństwa dla wioski (zapis v9 bez pola po dev-HMR
-		// nie może dać undefined.buildings)
-		village: {
-			...current.village,
-			...(p.village ?? {}),
-		},
-		// ...i dla garderoby (zapis v10 bez pola nie może dać undefined.owned)
-		cosmetics: {
-			...current.cosmetics,
-			...(p.cosmetics ?? {}),
-		},
+	const merged = { ...current, ...p }
+	// zagnieżdżone rekordy: zapis bez pola (po dev-HMR) nie może dać undefined.x
+	for (const k of [
+		"achievementStats",
+		"village",
+		"cosmetics",
+		"legendaryPity",
+	] as const) {
+		merged[k] = { ...current[k], ...(p[k] ?? {}) } as never
 	}
+	return merged
 }
 
 export const useGame = create<GameState>()(
@@ -833,17 +825,28 @@ export const useGame = create<GameState>()(
 							}
 						: state.achievementStats
 				const ctx = rollContext(state, egg.mode)
+				// pity tylko dla jajek z rund (Jajko Życzeń i gwarantowany pierwszy
+				// potworek nie ruszają licznika trybu)
+				const pityRoll =
+					egg.quality !== "wish" && ctx.owned.size > 0
+						? rollMonsterWithPity(
+								egg.quality,
+								ctx,
+								state.legendaryPity[egg.mode],
+							)
+						: null
 				const monsterId =
-					egg.quality === "wish"
-						? rollWish(ctx)
-						: ctx.owned.size === 0
-							? FIRST_MONSTER_ID
-							: rollMonster(egg.quality, ctx)
+					pityRoll?.id ??
+					(egg.quality === "wish" ? rollWish(ctx) : FIRST_MONSTER_ID)
+				const legendaryPity = pityRoll
+					? { ...state.legendaryPity, [egg.mode]: pityRoll.pity }
+					: state.legendaryPity
 				const pendingEggs = state.pendingEggs.filter((_, i) => i !== index)
 				if (monsterId in state.ownedMonsters) {
 					const gained = ISKIERKI_FOR_DUP[rarityOf(monsterId)]
 					set({
 						pendingEggs,
+						legendaryPity,
 						iskierki: Math.min(ISKIERKI_CAP, state.iskierki + gained),
 						achievementStats,
 						lastHatch: {
@@ -857,6 +860,7 @@ export const useGame = create<GameState>()(
 					const isDream = state.dreamMonsterId === monsterId
 					set({
 						pendingEggs,
+						legendaryPity,
 						ownedMonsters: {
 							...state.ownedMonsters,
 							[monsterId]: { hatchedAt: Date.now() },

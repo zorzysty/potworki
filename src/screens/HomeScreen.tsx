@@ -277,7 +277,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 							/>
 						</span>
 						<span className="text-xs font-bold text-slate-400">
-							{eggFragments}/{eggThreshold}
+							{Math.min(eggFragments, eggThreshold)}/{eggThreshold}
 						</span>
 					</div>
 				</BigButton>
