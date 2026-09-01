@@ -1,4 +1,10 @@
-import { type CSSProperties, useEffect, useState } from "react"
+import {
+	type CSSProperties,
+	type MouseEvent,
+	useEffect,
+	useRef,
+	useState,
+} from "react"
 import {
 	ACHIEVEMENTS,
 	type AchievementCtx,
@@ -22,35 +28,42 @@ interface AchievementRow {
 	unlockedAt: number
 }
 
-// ile trwa rozbłysk iskierek po odbiorze (zgrane z .anim-claim-burst w styles.css)
-const CLAIM_BURST_MS = 900
-// kierunki lotu iskierek (kąty co 45°)
-const BURST_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315]
+// Lot iskierek po odbiorze (zgrane z .anim-claim-fly w styles.css): rozprysk z kafla,
+// potem lot do licznika w nagłówku. Licznik podskakuje z nową wartością, gdy dolecą.
+const FLY_MS = 1600
+const FLY_STAGGER_MS = 100
+const FLY_COUNT = 8
+const FLY_TOTAL_MS = FLY_MS + FLY_STAGGER_MS * (FLY_COUNT - 1)
+
+interface Flight {
+	id: string
+	x: number // środek kafla (viewport)
+	y: number
+	dx: number // wektor do licznika iskierek
+	dy: number
+	from: number // stan licznika przed odbiorem (pokazywany do przylotu iskierek)
+	landed: boolean
+}
 
 export function AchievementsScreen() {
 	const state = useGame((s) => s)
-	const {
-		achievements,
-		iskierki,
-		goTo,
-		markAchievementsSeen,
-		claimAchievement,
-		debugReset,
-	} = state
+	const { achievements, iskierki, goTo, claimAchievement, debugReset } = state
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [confirmReset, setConfirmReset] = useState(false)
-	// id osiągnięcia, nad którym właśnie rozbłyskują odebrane iskierki
-	const [burstId, setBurstId] = useState<string | null>(null)
+	const counterRef = useRef<HTMLDivElement>(null)
+	const [flight, setFlight] = useState<Flight | null>(null)
+	// dwa etapy: przylot (licznik podskakuje) → sprzątnięcie warstwy lotu
 	useEffect(() => {
-		if (!burstId) return
-		const t = setTimeout(() => setBurstId(null), CLAIM_BURST_MS)
+		if (!flight) return
+		const t = flight.landed
+			? setTimeout(() => setFlight(null), FLY_TOTAL_MS - FLY_MS)
+			: setTimeout(
+					() => setFlight((f) => (f ? { ...f, landed: true } : f)),
+					FLY_MS,
+				)
 		return () => clearTimeout(t)
-	}, [burstId])
-
-	// wejście na ekran = osiągnięcia „zobaczone" → znika badge na Home (idempotentne)
-	useEffect(() => {
-		markAchievementsSeen()
-	}, [markAchievementsSeen])
+	}, [flight])
+	const shownIskierki = flight && !flight.landed ? flight.from : iskierki
 
 	const ctx: AchievementCtx = { save: state, counters: state.achievementStats }
 
@@ -106,10 +119,11 @@ export function AchievementsScreen() {
 						text="To twoje osiągnięcia 🏅. Zdobywasz je za różne sukcesy w grze — a za każde dostajesz iskierki ✨! Pasek pokazuje, jak blisko jesteś."
 					/>
 					<div
-						key={iskierki}
-						className={`rounded-full bg-white/80 px-4 py-2 text-lg font-extrabold text-amber-500 shadow ${burstId ? "anim-pop" : ""}`}
+						ref={counterRef}
+						key={shownIskierki}
+						className={`rounded-full bg-white/80 px-4 py-2 text-lg font-extrabold text-amber-500 shadow ${flight?.landed ? "anim-pop" : ""}`}
 					>
-						✨ {iskierki}
+						✨ {shownIskierki}
 					</div>
 				</div>
 			</div>
@@ -118,12 +132,23 @@ export function AchievementsScreen() {
 				{rows.map(({ def, progress, unlocked, claimable }) => {
 					const tier = TIER_META[def.difficulty]
 					const shown = Math.min(progress.current, progress.target)
-					const bursting = burstId === def.id
-					// tap na nieodebrane = odbiór iskierek (rozbłysk), na resztę = karta szczegółu
+					// tap na nieodebrane = odbiór iskierek (lot do licznika), na resztę = karta szczegółu
 					const onClick = claimable
-						? () => {
+						? (e: MouseEvent<HTMLButtonElement>) => {
+								const r = e.currentTarget.getBoundingClientRect()
+								const c = counterRef.current?.getBoundingClientRect() ?? r
+								const x = r.left + r.width / 2
+								const y = r.top + r.height / 2
+								setFlight({
+									id: def.id,
+									x,
+									y,
+									dx: c.left + c.width / 2 - x,
+									dy: c.top + c.height / 2 - y,
+									from: iskierki,
+									landed: false,
+								})
 								claimAchievement(def.id)
-								setBurstId(def.id)
 							}
 						: () => setSelectedId(def.id)
 					return (
@@ -131,21 +156,8 @@ export function AchievementsScreen() {
 							key={def.id}
 							type="button"
 							onClick={onClick}
-							className={`relative touch-manipulation flex items-center gap-3 rounded-2xl border-4 p-3 text-left shadow-sm transition-transform active:scale-95 ${claimable ? "anim-claim-ready border-amber-400 bg-amber-50" : unlocked ? `bg-white/80 ${tier.border}` : "border-slate-300 bg-white/80 opacity-70"}`}
+							className={`touch-manipulation flex items-center gap-3 rounded-2xl border-4 p-3 text-left shadow-sm transition-transform active:scale-95 ${claimable ? "anim-claim-ready border-amber-400 bg-amber-50" : unlocked ? `bg-white/80 ${tier.border}` : "border-slate-300 bg-white/80 opacity-70"}`}
 						>
-							{bursting && (
-								<div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center overflow-visible">
-									{BURST_ANGLES.map((deg) => (
-										<span
-											key={deg}
-											className="anim-claim-burst absolute text-2xl"
-											style={{ "--burst-angle": `${deg}deg` } as CSSProperties}
-										>
-											✨
-										</span>
-									))}
-								</div>
-							)}
 							<div
 								className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-3xl ${unlocked ? "" : "grayscale"}`}
 							>
@@ -192,6 +204,36 @@ export function AchievementsScreen() {
 			>
 				Zacznij od nowa
 			</button>
+
+			{/* warstwa lotu iskierek: fixed POZA kaflami (transform kafla w :active
+			    uczyniłby go containing blockiem dla fixed) */}
+			{flight && (
+				<div
+					className="pointer-events-none fixed z-[70]"
+					style={{ left: flight.x, top: flight.y }}
+				>
+					{Array.from({ length: FLY_COUNT }, (_, i) => {
+						const a = (i / FLY_COUNT) * 2 * Math.PI
+						return (
+							<span
+								key={i}
+								className="anim-claim-fly absolute text-2xl"
+								style={
+									{
+										"--sx": `${Math.cos(a) * 44}px`,
+										"--sy": `${Math.sin(a) * 44}px`,
+										"--fx": `${flight.dx}px`,
+										"--fy": `${flight.dy}px`,
+										animationDelay: `${i * FLY_STAGGER_MS}ms`,
+									} as CSSProperties
+								}
+							>
+								✨
+							</span>
+						)
+					})}
+				</div>
+			)}
 
 			{selected && (
 				<AchievementModal row={selected} onClose={() => setSelectedId(null)} />

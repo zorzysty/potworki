@@ -453,18 +453,26 @@ body {
 	}
 }
 
-/* rozbłysk po odbiorze: iskierka leci od środka kafla pod kątem --burst-angle i gaśnie */
-.anim-claim-burst {
-	animation: claim-burst 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+/* odbiór: iskierka rozpryskuje się z kafla (--sx/--sy), potem leci do licznika (--fx/--fy) */
+.anim-claim-fly {
+	animation: claim-fly 1.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+	margin: -0.5em 0 0 -0.5em; /* środek glifu w punkcie startu */
 }
 
-@keyframes claim-burst {
+@keyframes claim-fly {
 	0% {
-		transform: rotate(var(--burst-angle)) translateX(0) scale(0.4);
+		transform: translate(0, 0) scale(0.4);
+		opacity: 0;
+	}
+	30% {
+		transform: translate(var(--sx), var(--sy)) scale(1.3);
+		opacity: 1;
+	}
+	90% {
 		opacity: 1;
 	}
 	100% {
-		transform: rotate(var(--burst-angle)) translateX(120px) scale(1.4);
+		transform: translate(var(--fx), var(--fy)) scale(0.5);
 		opacity: 0;
 	}
 }

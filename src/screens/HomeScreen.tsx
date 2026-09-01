@@ -51,7 +51,9 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const hasNewGate = unlockedStage > celebratedStage
 	const allGatesOpen = isMaxStage(unlockedStage)
 	const unlockedAchievements = Object.keys(achievements).length
-	const hasNewAchievements = Object.values(achievements).some((a) => !a.seen)
+	// badge trwa, dopóki są iskierki do odbioru (wyjątek od „gaśnie po zobaczeniu":
+	// to odbiór nagrody, nie zajawka)
+	const hasNewAchievements = Object.values(achievements).some((a) => !a.claimed)
 	// badge sesyjny: znika po pierwszej wizycie w wiosce (nie może stać się
 	// tapetą, gdy dochód przegoni wydatki), wraca w nowej sesji jeśli nadal stać
 	const canBuild = !villageVisited && canAffordSomething(village, iskierki)

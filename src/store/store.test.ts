@@ -92,12 +92,8 @@ function playVisitRoundClean() {
 }
 
 function suppressAchievements() {
-	const all: Record<
-		string,
-		{ unlockedAt: number; seen: boolean; claimed: boolean }
-	> = {}
-	for (const a of ACHIEVEMENTS)
-		all[a.id] = { unlockedAt: 0, seen: true, claimed: true }
+	const all: Record<string, { unlockedAt: number; claimed: boolean }> = {}
+	for (const a of ACHIEVEMENTS) all[a.id] = { unlockedAt: 0, claimed: true }
 	useGame.setState({ achievements: all })
 }
 
@@ -1080,7 +1076,6 @@ describe("osiągnięcia", () => {
 		expect(s.round?.stars).toBe(30)
 		expect(s.achievementStats.perfectRounds).toBe(1)
 		expect(s.achievements["bez-pomylki"]).toBeDefined()
-		expect(s.achievements["bez-pomylki"]?.seen).toBe(false)
 		expect(s.achievements["bez-pomylki"]?.claimed).toBe(false)
 		expect(s.achievements["pierwsza-runda"]).toBeDefined()
 	})
@@ -1145,19 +1140,18 @@ describe("osiągnięcia", () => {
 		expect(Object.keys(game().achievements).length).toBe(count)
 	})
 
-	test("reconcileAchievements: odblokowuje zasłużone po cichu (seen:true), iskierki do odbioru", () => {
+	test("reconcileAchievements: odblokowuje zasłużone po cichu, iskierki do odbioru", () => {
 		// ustawiamy stan z pominięciem checkAchievements (bezpośredni setState)
 		useGame.setState({ totalRounds: 1, achievements: {}, iskierki: 0 })
 		game().reconcileAchievements()
 		const s = game()
 		expect(s.achievements["pierwsza-runda"]).toBeDefined()
-		expect(s.achievements["pierwsza-runda"]?.seen).toBe(true)
 		expect(s.achievements["pierwsza-runda"]?.claimed).toBe(false)
 		expect(s.iskierki).toBe(0)
 	})
 
 	test("checkAchievements wrzuca zdobyte do kolejki toastów; shift je zdejmuje", () => {
-		game().debugOwnRarity("common") // odblokowuje kilka osiągnięć (seen:false)
+		game().debugOwnRarity("common") // odblokowuje kilka osiągnięć
 		const q = game().achievementQueue
 		expect(q.length).toBeGreaterThan(0)
 		expect(q).toContain("pierwszy-potwor")
@@ -1178,13 +1172,6 @@ describe("osiągnięcia", () => {
 		game().reconcileAchievements()
 		expect(game().achievements["pierwsza-runda"]).toBeDefined()
 		expect(game().achievementQueue).toEqual([])
-	})
-
-	test("markAchievementsSeen czyści flagę 'nowe'", () => {
-		game().debugOwnRarity("common") // odblokowuje kolekcja-5 itd. z seen:false
-		expect(Object.values(game().achievements).some((a) => !a.seen)).toBe(true)
-		game().markAchievementsSeen()
-		expect(Object.values(game().achievements).every((a) => a.seen)).toBe(true)
 	})
 
 	const playCleanRound = () => {

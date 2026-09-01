@@ -72,7 +72,7 @@ import {
 	MONSTERS,
 	rarityOf,
 } from "../monsters/catalog"
-import type { AchievementCounters, AchievementEntry, SaveState } from "./schema"
+import type { AchievementCounters, SaveState } from "./schema"
 import { INITIAL_SAVE, migrateSave, SAVE_KEYS, SAVE_VERSION } from "./schema"
 
 export type Screen =
@@ -179,7 +179,6 @@ interface GameState extends SaveState {
 	markGatesCelebrated: () => void
 	checkAchievements: () => void
 	claimAchievement: (id: string) => void
-	markAchievementsSeen: () => void
 	reconcileAchievements: () => void
 	shiftAchievementToast: () => void
 
@@ -1044,7 +1043,7 @@ export const useGame = create<GameState>()(
 			markGatesCelebrated: () =>
 				set((s) => ({ celebratedStage: s.unlockedStage })),
 
-			// Sprawdza i odblokowuje świeżo spełnione osiągnięcia (badge „nowe!" → seen:false).
+			// Sprawdza i odblokowuje świeżo spełnione osiągnięcia (badge „nowe!" do odbioru).
 			// Iskierek NIE wypłaca — odbiera je claimAchievement. Wołane na końcu akcji
 			// zmieniających stan. Idempotentne: te już w ledgerze są pomijane (alreadyUnlocked).
 			checkAchievements: () => {
@@ -1057,7 +1056,7 @@ export const useGame = create<GameState>()(
 				const now = Date.now()
 				const achievements = { ...s.achievements }
 				for (const id of newlyUnlocked)
-					achievements[id] = { unlockedAt: now, seen: false, claimed: false }
+					achievements[id] = { unlockedAt: now, claimed: false }
 				set({
 					achievements,
 					// kolejka toastów „zdobyte!" (efemeryczna) — pokazuje je AchievementToast.
@@ -1089,18 +1088,7 @@ export const useGame = create<GameState>()(
 			shiftAchievementToast: () =>
 				set((s) => ({ achievementQueue: s.achievementQueue.slice(1) })),
 
-			// Czyści badge „nowe osiągnięcie!" na Home (wejście na ekran osiągnięć).
-			// Idempotentne — bezpieczne na podwójny montaż StrictMode.
-			markAchievementsSeen: () => {
-				const current = get().achievements
-				if (!Object.values(current).some((a) => !a.seen)) return
-				const achievements: Record<string, AchievementEntry> = {}
-				for (const [id, e] of Object.entries(current))
-					achievements[id] = e.seen ? e : { ...e, seen: true }
-				set({ achievements })
-			},
-
-			// Jak checkAchievements, ale po cichu (seen:true) — przy starcie sesji odblokowuje
+			// Jak checkAchievements, ale bez toastów — przy starcie sesji odblokowuje
 			// osiągnięcia, które dziecko już spełnia (po wdrożeniu funkcji / migracji v5→v6),
 			// bez lawiny powiadomień; iskierki czekają do odbioru (postęp dziecka jest święty).
 			reconcileAchievements: () => {
@@ -1113,7 +1101,7 @@ export const useGame = create<GameState>()(
 				const now = Date.now()
 				const achievements = { ...s.achievements }
 				for (const id of newlyUnlocked)
-					achievements[id] = { unlockedAt: now, seen: true, claimed: false }
+					achievements[id] = { unlockedAt: now, claimed: false }
 				set({ achievements })
 			},
 

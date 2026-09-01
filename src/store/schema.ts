@@ -12,14 +12,12 @@ import {
 import type { VillageState } from "../game/village"
 import { INITIAL_VILLAGE } from "../game/village"
 
-export const SAVE_VERSION = 16
+export const SAVE_VERSION = 17
 
-// Wpis ledgera osiągnięć. `seen` jak celebratedStage: false → badge „nowe!" na Home,
-// czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen). `claimed`: iskierki
-// za osiągnięcie NIE wpadają same — dziecko odbiera je tapnięciem na ekranie osiągnięć.
+// Wpis ledgera osiągnięć. `claimed`: iskierki za osiągnięcie NIE wpadają same — dziecko
+// odbiera je tapnięciem na ekranie osiągnięć; do tego czasu Home pokazuje badge.
 export interface AchievementEntry {
 	unlockedAt: number
-	seen: boolean
 	claimed: boolean
 }
 
@@ -290,6 +288,19 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 		const achievements: Record<string, unknown> = {}
 		for (const [id, e] of Object.entries(prev))
 			achievements[id] = { ...e, claimed: true }
+		return { ...s, achievements }
+	},
+	// v16→v17: badge na Home patrzy na `claimed` (znika dopiero po odbiorze) — flaga
+	// `seen` („zobaczone") wycofana.
+	16: (state) => {
+		const s = state as Record<string, unknown>
+		const prev =
+			s.achievements && typeof s.achievements === "object"
+				? (s.achievements as Record<string, Record<string, unknown>>)
+				: {}
+		const achievements: Record<string, unknown> = {}
+		for (const [id, { seen: _seen, ...e }] of Object.entries(prev))
+			achievements[id] = e
 		return { ...s, achievements }
 	},
 }

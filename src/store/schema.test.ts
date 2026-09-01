@@ -358,12 +358,31 @@ describe("migrateSave", () => {
 		) as { achievements: Record<string, Record<string, unknown>> }
 		expect(r.achievements["pierwsza-runda"]).toEqual({
 			unlockedAt: 1,
-			seen: true,
 			claimed: true,
 		})
 		const bare = migrateSave({ iskierki: 3 }, 15) as Record<string, unknown>
 		expect(bare.achievements).toEqual({})
 		expect(bare.iskierki).toBe(3)
+	})
+
+	test("v16→v17: zdejmuje flagę seen, claimed zachowane", () => {
+		const r = migrateSave(
+			{
+				achievements: {
+					a: { unlockedAt: 1, seen: false, claimed: false },
+					b: { unlockedAt: 2, seen: true, claimed: true },
+				},
+			},
+			16,
+		) as { achievements: Record<string, Record<string, unknown>> }
+		expect(r.achievements).toEqual({
+			a: { unlockedAt: 1, claimed: false },
+			b: { unlockedAt: 2, claimed: true },
+		})
+		expect(migrateSave({ iskierki: 3 }, 16)).toEqual({
+			iskierki: 3,
+			achievements: {},
+		})
 	})
 
 	test("fallback: brak unlockedStage → celebratedStage === 0", () => {
