@@ -829,20 +829,21 @@ export const useGame = create<GameState>()(
 				const ctx = rollContext(state, egg.mode)
 				// pity tylko dla jajek z rund (Jajko Życzeń i gwarantowany pierwszy
 				// potworek nie ruszają licznika trybu)
-				const pityRoll =
-					egg.quality !== "wish" && ctx.owned.size > 0
-						? rollMonsterWithPity(
-								egg.quality,
-								ctx,
-								state.legendaryPity[egg.mode],
-							)
-						: null
-				const monsterId =
-					pityRoll?.id ??
-					(egg.quality === "wish" ? rollWish(ctx) : FIRST_MONSTER_ID)
-				const legendaryPity = pityRoll
-					? { ...state.legendaryPity, [egg.mode]: pityRoll.pity }
-					: state.legendaryPity
+				let monsterId: number
+				let legendaryPity = state.legendaryPity
+				if (egg.quality === "wish") {
+					monsterId = rollWish(ctx)
+				} else if (ctx.owned.size === 0) {
+					monsterId = FIRST_MONSTER_ID
+				} else {
+					const r = rollMonsterWithPity(
+						egg.quality,
+						ctx,
+						state.legendaryPity[egg.mode],
+					)
+					monsterId = r.id
+					legendaryPity = { ...state.legendaryPity, [egg.mode]: r.pity }
+				}
 				const pendingEggs = state.pendingEggs.filter((_, i) => i !== index)
 				if (monsterId in state.ownedMonsters) {
 					const gained = dupIskierki(rarityOf(monsterId), egg.quality)

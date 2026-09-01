@@ -132,7 +132,7 @@ export function EggReward({
 						/>
 					</div>
 					<div className="text-lg font-extrabold text-slate-600">
-						Fragmenty jajka: {Math.min(fragmentsNow, threshold)} / {threshold}
+						Fragmenty jajka: {fragmentsNow} / {threshold}
 					</div>
 					<div className="text-center text-sm font-bold text-slate-500">
 						Gwiazdki czekają w jajku — uzbieraj resztę, a one zdecydują, jak

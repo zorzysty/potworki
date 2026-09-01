@@ -7,16 +7,15 @@ interface Props {
 	animate?: boolean
 	className?: string // przekazywane do MonsterSvg (np. monster-silhouette)
 	style?: CSSProperties
-	// --- szwy pod przyszły sklepik (kosmetyka), w v1 nieużywane ---
-	background?: ReactNode // tło/scenka ZA potworkiem (np. kupione tło)
+	// --- szwy kosmetyki (Sklepik) ---
+	background?: ReactNode // tło ZA potworkiem (slot "background", EquippedBackground)
 	overlay?: ReactNode // akcesoria/reakcje NA WIERZCHU (pointer-events-none)
 	frame?: string // klasy ramki karty (np. CARD_THEME[rarity].card)
 }
 
 // Cienki wrapper wokół zamrożonego MonsterSvg i JEDYNY chokepoint kosmetyki:
-// reakcje emocjonalne (serca, iskry) renderujemy jako `overlay` — rodzeństwo SVG,
-// nigdy zmiana twarzy (DNA potworków jest zamrożone). Sklepik później wypełni
-// `background`/`overlay`/`frame`, bez ruszania tego komponentu ani MonsterSvg.
+// reakcje emocjonalne (serca, iskry) i strój renderujemy jako `overlay`, tło jako
+// `background` — rodzeństwo SVG, nigdy zmiana twarzy (DNA potworków jest zamrożone).
 export function MonsterStage({
 	id,
 	size = 160,

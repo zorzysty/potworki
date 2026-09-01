@@ -45,8 +45,6 @@ describe("katalog kosmetyki — inwarianty ekonomii (decyzje projektowe)", () =>
 			expect(c.cost).toBeGreaterThanOrEqual(45)
 	})
 	test("suma katalogu (013 + ramki 014 + tła) w przedziale 520–680", () => {
-		// [300,450] → [430,580] po ramkach z planu 014; → [380,530] po wycofaniu
-		// aura-iskier (−60✨; migracja v12→v13 zwraca cenę). Dziś 426✨.
 		expect(launchTotal).toBeGreaterThanOrEqual(520)
 		expect(launchTotal).toBeLessThanOrEqual(680)
 	})

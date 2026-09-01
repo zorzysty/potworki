@@ -237,7 +237,7 @@ describe("addEggFragment", () => {
 		expect(bank.iskierki).toBe(ISKIERKI_CAP)
 	})
 
-	test("nadmiar fragmentów po obniżeniu progu: score z faktycznie zebranych, nie darmowe 30", () => {
+	test("nadmiar fragmentów po obniżeniu progu: score z zebranych, nadwyżka przechodzi dalej", () => {
 		// próg 22 (eggsEarned 30), a jajko ma już 25 fragmentów z 2★ każdy
 		const bank = {
 			eggFragments: 25,
@@ -252,9 +252,11 @@ describe("addEggFragment", () => {
 			() => 0.999,
 		)
 		expect(created).not.toBeNull()
-		expect(after.eggFragments).toBe(0)
 		// 52★ / 26 fragmentów = 2★ → score 20 → nigdy tęczowe (rand 0.999 dałoby je przy 30)
 		expect(created?.quality).not.toBe("rainbow")
+		// 26 − 22 = 4 fragmenty i proporcjonalny bank (8★) zostają na następne jajko
+		expect(after.eggFragments).toBe(4)
+		expect(after.eggStarBank).toBe(8)
 	})
 
 	test("non-rainbow: iskierki się nie zmienia", () => {

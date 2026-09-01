@@ -115,8 +115,9 @@ export interface EggBankState {
 
 // Dokłada jeden fragment + `gained` gwiazdek do bieżącego jajka. Gdy fragmenty
 // osiągną próg `fragmentsForEgg(eggsEarned)`, domyka jajko: finalny kolor losowany
-// z banku gwiazdek włożonych w jego budowę, reset banku i fragmentów, eggsEarned++,
-// iskierka za tęczowe (cap). Czysta: zwraca nowy stan + utworzone jajko (lub null).
+// z banku gwiazdek włożonych w jego budowę, nadwyżka fragmentów i proporcjonalna
+// część banku przechodzą do następnego jajka, eggsEarned++, iskierka za tęczowe
+// (cap). Czysta: zwraca nowy stan + utworzone jajko (lub null).
 export function addEggFragment(
 	bank: EggBankState,
 	gained: number,
@@ -129,22 +130,18 @@ export function addEggFragment(
 	if (eggFragments < threshold) {
 		return { bank: { ...bank, eggFragments, eggStarBank }, created: null }
 	}
-	// Math.max: po obniżeniu progu (retuning) jajko w toku może mieć więcej
-	// fragmentów niż próg — score liczymy z faktycznie zebranych, żeby nadmiar
-	// banku nie dawał darmowego score 30. Retuning dotyczy jajek w toku od razu,
-	// bez migracji (wzór wypraw).
-	const quality = eggQuality(
-		eggQualityScore(eggStarBank, Math.max(threshold, eggFragments)),
-		rand,
-	)
+	// Score ze WSZYSTKICH zebranych fragmentów (po obniżeniu progu jajko w toku
+	// może mieć ich więcej niż próg — retuning działa od razu, bez migracji).
+	const quality = eggQuality(eggQualityScore(eggStarBank, eggFragments), rand)
 	const iskierki =
 		quality === "rainbow"
 			? Math.min(ISKIERKI_CAP, bank.iskierki + 1)
 			: bank.iskierki
+	const carry = eggFragments - threshold
 	return {
 		bank: {
-			eggFragments: 0,
-			eggStarBank: 0,
+			eggFragments: carry,
+			eggStarBank: Math.round((eggStarBank * carry) / eggFragments),
 			eggsEarned: bank.eggsEarned + 1,
 			iskierki,
 		},

@@ -200,12 +200,13 @@ Refreshed by the 2026-07-12 audit; ordered by (grounding × payoff)/effort:
 - **`background` cosmetic slot ("tła") — DONE 2026-09-01:** 4 backgrounds in
   `cosmetics.ts`, `EquippedBackground` on the collection card and the Home
   companion and (statically) the collection tiles; village deliberately without.
-- **Reward-economy validation — DONE 2026-07-25 (static analysis):** findings
-  with goal-time estimates and prioritized problems live in
-  [`plans/028-analiza-ekonomii.md`](028-analiza-ekonomii.md) — awaiting the
-  maintainer's decisions before any retune plans are written. A
-  `simulateRoundOutcome` N-round simulation spike remains a possible
-  follow-up to firm up the numbers.
+- **Reward-economy validation — DONE:** static findings in
+  [`plans/028-analiza-ekonomii.md`](028-analiza-ekonomii.md) (2026-07-25);
+  Monte Carlo simulation + retune shipped 2026-09-01 (egg-threshold cap, soft
+  quality curve, per-mode legendary pity, dup × quality, backgrounds). Fresh
+  post-retune numbers and the remaining maintainer decisions (rainbow gate,
+  late-game iskierki sink / mode-stamped wish egg) live in
+  [`plans/029-ekonomia-po-retuningu.md`](029-ekonomia-po-retuningu.md).
 - **Parent progress view.** `DebugScreen` already renders the full
   per-fact mastery table and `adaptive.ts` exposes the aggregations; a
   gated (PIN/long-press) read-only, parent-legible presentation (color
