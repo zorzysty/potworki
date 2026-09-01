@@ -7,8 +7,8 @@ mieszkańcy przy budynkach.
 ✅ ZREALIZOWANE (plan 013): budynek „Sklepik" (7. w katalogu wioski) +
 kosmetyka per-potworek — kapelusze/aury przez slot `overlay` w `MonsterStage`,
 garderoba „Ubierz 🎩" w Moich Potworkach; katalog append-friendly = powtarzalny
-zlew iskierek po komplecie wioski+kolekcji. Fast-follow (jeszcze nie): ramki
-do kart kolekcjonerskich (plan 014), tła (slot `background`).
+zlew iskierek po komplecie wioski+kolekcji. Ramki do kart kolekcjonerskich
+(plan 014) i tła (slot `background`, 4 scenki) zrealizowane.
 
 - Sklepik za iskierki: dekoracje do wioski, akcesoria/tła dla potworków, ramki do kart kolekcjonerskich. Duplikat przestaje rozczarowywać („znowu ten sam"), bo zawsze przybliża do czegoś.
 - Czysto kosmetyczne → nie dotyka pedagogiki ani zamrożonego seeda, więc bezpieczne. Rozszerza istniejący EggBankState/iskierki, nie tworzy nowej ekonomii od zera.

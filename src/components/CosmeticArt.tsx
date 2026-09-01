@@ -54,6 +54,8 @@ function FrameGlyph({ color, e }: { color: string; e?: string }) {
 // Jeden glif = jedna scenka 48×48. Wektory tam, gdzie emoji nie istnieje
 // (czapka z pomponem, wianek, kapelusz czarodzieja, korona lodowa…).
 function Glyph({ id }: { id: CosmeticId }) {
+	const bg = BACKGROUNDS[id]
+	if (bg) return <BackgroundGlyph bg={bg} />
 	switch (id) {
 		case "czapka-z-pomponem":
 			return (
@@ -201,6 +203,93 @@ function Glyph({ id }: { id: CosmeticId }) {
 		default:
 			return <EmojiGlyph e="🎩" />
 	}
+}
+
+// Tła (slot "background"): dwa kolory gradientu + emoji-drobinki; nowe tło =
+// wpis w katalogu cosmetics.ts + wiersz tutaj.
+interface BackgroundDef {
+	stops: [string, string]
+	gradient?: string // gdy dwa kolory to za mało (horyzont łąki)
+	bits: [string, string, string]
+}
+const BACKGROUNDS: Record<CosmeticId, BackgroundDef> = {
+	"tlo-laka": {
+		stops: ["#bae6fd", "#4ade80"],
+		gradient:
+			"linear-gradient(#bae6fd 0%, #bae6fd 55%, #86efac 56%, #4ade80 100%)",
+		bits: ["🌼", "🌷", "☁️"],
+	},
+	"tlo-noc": { stops: ["#1e1b4b", "#4c1d95"], bits: ["🌙", "⭐", "✨"] },
+	"tlo-podwodne": { stops: ["#67e8f9", "#0369a1"], bits: ["🫧", "🐟", "🐚"] },
+	"tlo-kosmos": { stops: ["#0f172a", "#581c87"], bits: ["🪐", "⭐", "🚀"] },
+}
+const gradientOf = (bg: BackgroundDef) =>
+	bg.gradient ?? `linear-gradient(${bg.stops[0]}, ${bg.stops[1]})`
+
+// Miniatura tła: kafel z gradientem i pierwszym emoji scenki.
+function BackgroundGlyph({ bg }: { bg: BackgroundDef }) {
+	const gid = `bg-${bg.stops[0].slice(1)}-${bg.stops[1].slice(1)}`
+	return (
+		<g>
+			<defs>
+				<linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0" stopColor={bg.stops[0]} />
+					<stop offset="1" stopColor={bg.stops[1]} />
+				</linearGradient>
+			</defs>
+			<rect x={4} y={4} width={40} height={40} rx={10} fill={`url(#${gid})`} />
+			<text x={24} y={34} textAnchor="middle" fontSize={22}>
+				{bg.bits[0]}
+			</text>
+		</g>
+	)
+}
+
+// Pełna scenka ZA potworkiem (prop `background` MonsterStage): drobinki pływają
+// jak w aurze, potworek zostaje bohaterem.
+const BG_SPOTS: CSSProperties[] = [
+	{ left: "6%", top: "8%" },
+	{ right: "6%", top: "18%", animationDelay: "0.7s" },
+	{ left: "10%", bottom: "6%", animationDelay: "1.3s" },
+]
+function BackgroundScene({
+	bg,
+	animate,
+}: {
+	bg: BackgroundDef
+	animate: boolean
+}) {
+	return (
+		<div
+			className="absolute inset-0 overflow-hidden rounded-[28%]"
+			style={{ background: gradientOf(bg) }}
+		>
+			{BG_SPOTS.map((style, i) => (
+				<span
+					key={`${bg.bits[i]}-${i}`}
+					className={`absolute text-base ${animate ? "anim-float" : ""}`}
+					style={style}
+				>
+					{bg.bits[i]}
+				</span>
+			))}
+		</div>
+	)
+}
+
+// Założone tło potworka — do slotu `background` MonsterStage. Brak → null.
+// animate=false na statycznych kaflach listy (wzór EquippedOverlay).
+export function EquippedBackground({
+	monsterId,
+	animate = true,
+}: {
+	monsterId: number
+	animate?: boolean
+}) {
+	const cosmetics = useGame((s) => s.cosmetics)
+	const id = equippedFor(cosmetics, monsterId).background
+	const bg = id ? BACKGROUNDS[id] : undefined
+	return bg ? <BackgroundScene bg={bg} animate={animate} /> : null
 }
 
 // Miniatura przedmiotu: wiersze sklepiku, chipy garderoby. `size` px lub CSS

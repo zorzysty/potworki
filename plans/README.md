@@ -197,13 +197,9 @@ From the 2026-07-12 audit:
 
 Refreshed by the 2026-07-12 audit; ordered by (grounding × payoff)/effort:
 
-- **Ship the wired-but-empty `background` cosmetic slot ("tła").**
-  `MonsterStage` already renders a `background` slot (zero callers today),
-  the shop/wardrobe UI already iterates the catalog per slot, and
-  ROADMAP.md names "tła (slot `background`)" as the un-built fast-follow.
-  Mostly catalog entries + art + a "Tło" wardrobe row; no save-shape
-  change beyond the existing `equipped` map. Effort S; the cheapest
-  append-friendly iskierki sink available.
+- **`background` cosmetic slot ("tła") — DONE 2026-09-01:** 4 backgrounds in
+  `cosmetics.ts`, `EquippedBackground` on the collection card and the Home
+  companion and (statically) the collection tiles; village deliberately without.
 - **Reward-economy validation — DONE 2026-07-25 (static analysis):** findings
   with goal-time estimates and prioritized problems live in
   [`plans/028-analiza-ekonomii.md`](028-analiza-ekonomii.md) — awaiting the

@@ -11,7 +11,7 @@ import { buildingLevel } from "./village"
 // Czysty moduł: bez losowości, zegara i DOM. Jednokierunkowy import
 // z village.ts (buildingLevel) — bez cyklu.
 
-export type CosmeticSlot = "hat" | "aura" | "frame"
+export type CosmeticSlot = "hat" | "aura" | "frame" | "background"
 export type CosmeticId = string // stabilne kebab-case id, NIGDY nie zmieniać
 
 export interface CosmeticDef {
@@ -90,7 +90,7 @@ export const COSMETICS: readonly CosmeticDef[] = [
 	// Ramki kart kolekcjonerskich (plan 014): oprawa modala posiadanego
 	// potworka, kupowana raz, zakładana per potworek (slot "frame").
 	// Nazwy wolno edytować dowolnie; id zamrożone (persystowane w zapisie).
-	// Razem 140✨ → suma katalogu 426✨ (testowany przedział [380, 530]).
+	// Razem 140✨ (testowany przedział sumy katalogu w cosmetics.test.ts).
 	{
 		id: "rama-kwiatki",
 		name: "Ramka w Kwiatki",
@@ -136,6 +136,31 @@ export const COSMETICS: readonly CosmeticDef[] = [
 		tier: 3,
 		cost: 50,
 		cardClasses: "frame-teczowa border-transparent",
+	},
+	// Tła (slot "background"): scenka ZA potworkiem na karcie kolekcji i u
+	// przyjaciela na Home (prop `background` MonsterStage). Art w CosmeticArt.tsx
+	// (BACKGROUNDS).
+	{ id: "tlo-laka", name: "Tło: Łąka", slot: "background", tier: 1, cost: 20 },
+	{
+		id: "tlo-noc",
+		name: "Tło: Gwiaździsta noc",
+		slot: "background",
+		tier: 2,
+		cost: 35,
+	},
+	{
+		id: "tlo-podwodne",
+		name: "Tło: Podwodny świat",
+		slot: "background",
+		tier: 2,
+		cost: 40,
+	},
+	{
+		id: "tlo-kosmos",
+		name: "Tło: Kosmos",
+		slot: "background",
+		tier: 3,
+		cost: 60,
 	},
 ]
 

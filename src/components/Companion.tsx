@@ -1,7 +1,7 @@
 import { type CSSProperties, useEffect, useRef, useState } from "react"
 import { MONSTERS } from "../monsters/catalog"
 import { dayStamp, type RoundPhase, useGame } from "../store/store"
-import { EquippedOverlay } from "./CosmeticArt"
+import { EquippedBackground, EquippedOverlay } from "./CosmeticArt"
 import {
 	GREET_HELLO,
 	GREET_MISSED,
@@ -174,6 +174,7 @@ export function Companion({ size = 150 }: { size?: number }) {
 					id={companionId}
 					size={size}
 					animate
+					background={<EquippedBackground monsterId={companionId} />}
 					// kosmetyka KOMPONUJE się z reakcją (fragment) — nigdy jej nie wypiera
 					overlay={
 						<>

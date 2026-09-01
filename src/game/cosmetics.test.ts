@@ -15,15 +15,15 @@ import { INITIAL_VILLAGE } from "./village"
 const launchTotal = COSMETICS.reduce((s, c) => s + c.cost, 0)
 
 describe("katalog kosmetyki — integralność", () => {
-	test("16 przedmiotów (11 z planu 013 po wycofaniu aura-iskier + 5 ramek z planu 014), unikalne id", () => {
-		expect(COSMETICS.length).toBe(16)
+	test("20 przedmiotów (11 z planu 013 po wycofaniu aura-iskier + 5 ramek z planu 014 + 4 tła), unikalne id", () => {
+		expect(COSMETICS.length).toBe(20)
 		const ids = COSMETICS.map((c) => c.id)
 		expect(new Set(ids).size).toBe(ids.length)
 	})
-	test("każdy przedmiot: tier ∈ {1,2,3}, slot ∈ {hat, aura, frame}, koszt > 0, nazwa niepusta", () => {
+	test("każdy przedmiot: tier ∈ {1,2,3}, slot ∈ {hat, aura, frame, background}, koszt > 0, nazwa niepusta", () => {
 		for (const c of COSMETICS) {
 			expect([1, 2, 3]).toContain(c.tier)
-			expect(["hat", "aura", "frame"]).toContain(c.slot)
+			expect(["hat", "aura", "frame", "background"]).toContain(c.slot)
 			expect(c.cost).toBeGreaterThan(0)
 			expect(c.name.length).toBeGreaterThan(0)
 		}
@@ -44,15 +44,22 @@ describe("katalog kosmetyki — inwarianty ekonomii (decyzje projektowe)", () =>
 		for (const c of COSMETICS.filter((c) => c.tier === 3))
 			expect(c.cost).toBeGreaterThanOrEqual(45)
 	})
-	test("suma katalogu (013 + ramki 014) w przedziale 380–530", () => {
+	test("suma katalogu (013 + ramki 014 + tła) w przedziale 520–680", () => {
 		// [300,450] → [430,580] po ramkach z planu 014; → [380,530] po wycofaniu
 		// aura-iskier (−60✨; migracja v12→v13 zwraca cenę). Dziś 426✨.
-		expect(launchTotal).toBeGreaterThanOrEqual(380)
-		expect(launchTotal).toBeLessThanOrEqual(530)
+		expect(launchTotal).toBeGreaterThanOrEqual(520)
+		expect(launchTotal).toBeLessThanOrEqual(680)
 	})
 })
 
 describe("ramki kart (plan 014) — integralność", () => {
+	test("tła: co najmniej jedno w każdym tierze sklepiku (zlew na całą długość gry)", () => {
+		const bg = COSMETICS.filter((c) => c.slot === "background")
+		expect(bg.length).toBeGreaterThanOrEqual(3)
+		for (const tier of [1, 2, 3])
+			expect(bg.some((c) => c.tier === tier)).toBe(true)
+	})
+
 	const frames = COSMETICS.filter((c) => c.slot === "frame")
 	test("dokładnie 5 ramek w katalogu", () => {
 		expect(frames.length).toBe(5)

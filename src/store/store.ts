@@ -396,17 +396,19 @@ export function mergePersisted(
 	current: GameState,
 ): GameState {
 	const p = (persisted ?? {}) as Partial<GameState>
-	const merged = { ...current, ...p }
 	// zagnieżdżone rekordy: zapis bez pola (po dev-HMR) nie może dać undefined.x
-	for (const k of [
-		"achievementStats",
-		"village",
-		"cosmetics",
-		"legendaryPity",
-	] as const) {
-		merged[k] = { ...current[k], ...(p[k] ?? {}) } as never
+	const nested = <T extends object>(
+		base: T,
+		patch: Partial<T> | undefined,
+	): T => ({ ...base, ...(patch ?? {}) }) as T
+	return {
+		...current,
+		...p,
+		achievementStats: nested(current.achievementStats, p.achievementStats),
+		village: nested(current.village, p.village),
+		cosmetics: nested(current.cosmetics, p.cosmetics),
+		legendaryPity: nested(current.legendaryPity, p.legendaryPity),
 	}
-	return merged
 }
 
 export const useGame = create<GameState>()(

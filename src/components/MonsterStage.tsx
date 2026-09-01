@@ -32,7 +32,16 @@ export function MonsterStage({
 			{background && (
 				<div className="pointer-events-none absolute inset-0">{background}</div>
 			)}
-			<MonsterSvg id={id} size={size} animate={animate} className={className} />
+			{/* relative: potworek ma malować się NAD absolutnym tłem (kolejność DOM
+			    nie wystarcza — element pozycjonowany wygrywa z niepozycjonowanym) */}
+			<div className="relative">
+				<MonsterSvg
+					id={id}
+					size={size}
+					animate={animate}
+					className={className}
+				/>
+			</div>
 			{overlay && (
 				<div className="pointer-events-none absolute inset-0">{overlay}</div>
 			)}

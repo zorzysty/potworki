@@ -1,6 +1,10 @@
 import { useState } from "react"
 import { BigButton } from "../components/BigButton"
-import { CosmeticArt, EquippedOverlay } from "../components/CosmeticArt"
+import {
+	CosmeticArt,
+	EquippedBackground,
+	EquippedOverlay,
+} from "../components/CosmeticArt"
 import { HelpTip } from "../components/HelpTip"
 import { ModalCloseX } from "../components/ModalCloseX"
 import { MonsterStage } from "../components/MonsterStage"
@@ -53,6 +57,7 @@ function WardrobeSection({ monsterId }: { monsterId: number }) {
 	const slots: { slot: CosmeticSlot; label: string }[] = [
 		{ slot: "hat", label: "Kapelusze" },
 		{ slot: "aura", label: "Aury" },
+		{ slot: "background", label: "Tła" },
 	]
 	// Ramki (slot "frame", plan 014) mają własny rządek pod spodem: chip
 	// „Bez ramki" przywraca oprawę rzadkości, chipy noszą nazwę widocznym
@@ -422,6 +427,7 @@ function MonsterCard({
 						id={monsterId}
 						size={180}
 						animate={true}
+						background={<EquippedBackground monsterId={monsterId} />}
 						overlay={<EquippedOverlay monsterId={monsterId} />}
 					/>
 				</div>
@@ -723,6 +729,12 @@ export function CollectionScreen() {
 									size="100%"
 									animate={false}
 									frame="w-full"
+									background={
+										<EquippedBackground
+											monsterId={monster.id}
+											animate={false}
+										/>
+									}
 									overlay={
 										<EquippedOverlay monsterId={monster.id} animate={false} />
 									}
