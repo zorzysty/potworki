@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Architecture review — potworki</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
+<style>
+  .seam { stroke-dasharray: 4 4; }
+  .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+  .mod { border: 2px solid #334155; border-radius: 6px; background: #fff; }
+  .lbl { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color:#475569; }
+  .iface { background:#e0e7ff; border-bottom:2px dashed #6366f1; }
+  .impl { background:#f1f5f9; }
+  .leakbox { border-color:#dc2626; }
+  .mermaid { font-size: 12px; }
+  .delta { background:#fef3c7; border-left:3px solid #d97706; }
+</style>
+</head>
+<body class="bg-stone-50 text-slate-900 font-sans">
+<main class="max-w-5xl mx-auto px-6 py-12 space-y-12">
+
+<header class="space-y-3">
+  <h1 class="font-serif text-4xl">Architecture review — <span class="text-indigo-700">potworki</span></h1>
+  <p class="text-slate-500 text-sm">2026-09-01, revised against <code>a8bb150</code> · hot spots from git log: <code>store/store.ts</code> (1266 lines, most-changed), <code>screens/CollectionScreen.tsx</code>, <code>screens/HomeScreen.tsx</code>, <code>store/schema.ts</code>, <code>screens/RoundSummary.tsx</code>, <code>game/rewards.ts</code></p>
+  <div class="flex flex-wrap gap-4 text-xs text-slate-600 pt-2">
+    <span><span class="inline-block w-4 h-3 align-middle border-2 border-slate-700 bg-white"></span> module</span>
+    <span><span class="inline-block w-4 align-middle border-t-2 border-dashed border-indigo-500"></span> seam</span>
+    <span><span class="inline-block w-4 align-middle border-t-2 border-red-600"></span> leakage</span>
+    <span><span class="inline-block w-4 h-3 align-middle deep rounded-sm"></span> deep module</span>
+    <span><span class="inline-block w-4 h-3 align-middle delta"></span> changed since first pass</span>
+    <span class="text-slate-400">· no CONTEXT.md / ADRs in repo — domain names follow the DOX docs (Runda, Jajko, Iskierki, Wioska, Wyprawa, Strażnik)</span>
+  </div>
+</header>
+
+<section class="delta rounded-lg p-4 text-sm space-y-2">
+  <div class="lbl">Revision — seven commits landed between the first pass and this one (<code>2085215</code>…<code>a8bb150</code>: wish-egg pool guard, threshold cap 22, legendary pity, dup × quality, background cosmetic slot, surplus carry, achievement "unlocked stays complete")</div>
+  <ul class="list-disc pl-5 space-y-1">
+    <li><strong>Resolved:</strong> "hatchEgg on a complete collection deletes the egg with no refund". <code>rollWish</code> never returns null now (dup instead), <code>buyWishEgg</code> guards on <code>wishEggAvailable</code>, two new store tests pin both edges.</li>
+    <li><strong>Invalidated:</strong> the "<code>MonsterStage.background</code> prop is unused" small cut. Three callers now (Companion, card, wardrobe tile).</li>
+    <li><strong>Strengthened:</strong> candidate 4 (store.ts now exports <em>two</em> pure Jajko Życzeń functions plus <code>WISH_POOL</code>, and the screen imports them from the store), candidate 5 (hatchEgg's two <code>set()</code> branches now share three fields), candidate 6 (AchievementsScreen gained a second rule in JSX).</li>
+    <li><strong>Unchanged:</strong> candidates 1, 2, 3 and the three remaining tripwires. Line numbers refreshed throughout.</li>
+  </ul>
+</section>
+
+<section id="candidates" class="space-y-10">
+
+<!-- ============ 1 ============ -->
+<article id="c1" class="rounded-xl border border-slate-200 bg-white p-6 space-y-5 shadow-sm">
+  <div class="flex items-start justify-between gap-4">
+    <h2 class="font-serif text-2xl">1 · Collapse the Runda lifecycle into <code>game/round.ts</code></h2>
+    <div class="flex gap-2 shrink-0">
+      <span class="px-2 py-1 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">Strong</span>
+      <span class="px-2 py-1 rounded text-xs bg-slate-100 text-slate-600">in-process</span>
+    </div>
+  </div>
+  <p class="font-mono text-sm text-slate-600">store/store.ts ≈437-818 (startRound · startVisitRound · pressConfirm · nextQuestion) · store/store.ts:201-300 (bumpDaysPlayed · settleExpedition · roundClosePatch) · store/store.ts ≈1110-1195 (debug pair) · game/debug.ts:31-112 · screens/RoundSummary.tsx:41-46 · screens/RoundScreen.tsx:27-31</p>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <div class="lbl mb-2">Before — sequencing in the store, mirrored in debug.ts</div>
+      <pre class="mermaid">
+flowchart TB
+  SR[startRound ~52 lines] --> RS[(RoundState)]
+  SV[startVisitRound ~49 lines] --> RS
+  PC[pressConfirm ~130 lines<br/>requeue index+3 :675, 1★ cap :616,<br/>fragment + eggsCreated idx :647-650] --> RS
+  NQ[nextQuestion ~115 lines<br/>stage unlock → wage :726 → visit bonus<br/>→ expedition +1 :225 → roundClosePatch] --> RS
+  DBG[game/debug.ts<br/>simulateRoundOutcome<br/>= second copy of nextQuestion] -.mirror.-> NQ
+  RS -.idx lookup.-> SUM[RoundSummary.tsx:41]
+  NQ --> W[roundWage] & U[shouldUnlockNextStage] & X[resolveExpedition] & F[addEggFragment]
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class DBG,SUM leak
+      </pre>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <div class="lbl mb-2">After — one deep module, store becomes <code>set(finishRound(get(), …))</code></div>
+      <div class="relative h-[300px]">
+        <div class="absolute inset-x-4 top-2 mod deep text-white rounded-lg p-3">
+          <div class="lbl !text-indigo-200">game/round.ts</div>
+          <div class="mt-1 text-sm font-mono">newRound · answer · finishRound</div>
+          <div class="mt-2 grid grid-cols-2 gap-1 text-[11px] text-slate-300 opacity-70">
+            <span>requeue queue</span><span>1★ requeue cap</span>
+            <span>fragment + egg index (+ surplus carry)</span><span>stage unlock</span>
+            <span>wage (firstRoundToday before bump)</span><span>visit bonus</span>
+            <span>expedition settle (+1 rule)</span><span>counter deltas · single wallet cap</span>
+          </div>
+        </div>
+        <svg class="absolute inset-0 w-full h-full pointer-events-none">
+          <line x1="50%" y1="170" x2="50%" y2="210" stroke="#6366f1" stroke-width="2" class="seam"/>
+        </svg>
+        <div class="absolute inset-x-4 top-[215px] flex gap-2 text-xs">
+          <div class="mod flex-1 p-2 text-center">store: 4 thin actions</div>
+          <div class="mod flex-1 p-2 text-center">DebugScreen: same functions</div>
+          <div class="mod flex-1 p-2 text-center">bun test: 10 keypresses → 1 call</div>
+        </div>
+        <div class="absolute inset-x-4 bottom-0 text-center text-[11px] text-red-600 line-through">game/debug.ts deleted</div>
+      </div>
+    </div>
+  </div>
+
+  <p><strong>Problem.</strong> The Runda lifecycle is ~340 lines across four store actions, with a full second implementation in <code>game/debug.ts</code> that exists only because the first is unreachable without a zustand instance; the ordering rules (read <code>firstRoundToday</code> before <code>bumpDaysPlayed</code>, <code>totalRounds + 1</code> for expeditions, <code>eggsCreated</code> indices read back by RoundSummary) are untestable arithmetic. The surplus-carry retune (<code>4fb34b6</code>) went into <code>addEggFragment</code> cleanly, but its store-side index bookkeeping at :647-650 is still the untested half.</p>
+  <p><strong>Solution.</strong> Three pure functions over <code>(SaveState, RoundState)</code> returning patches; the store applies them, the debug screen calls the same functions with a synthetic round, the mirror is deleted.</p>
+  <ul class="grid sm:grid-cols-2 gap-1 text-sm list-disc pl-5">
+    <li>locality: one place for finalization order</li>
+    <li>deletion test: debug mirror vanishes</li>
+    <li>tests hit the interface, not the keypad</li>
+    <li>two-eggs-in-one-round becomes testable</li>
+    <li>"speed only rewards" gets a property test</li>
+    <li>store DOX "thin coordinator" becomes true</li>
+  </ul>
+</article>
+
+<!-- ============ 2 ============ -->
+<article id="c2" class="rounded-xl border border-slate-200 bg-white p-6 space-y-5 shadow-sm">
+  <div class="flex items-start justify-between gap-4">
+    <h2 class="font-serif text-2xl">2 · One Iskierki wallet: <code>credit</code> / <code>spend</code></h2>
+    <div class="flex gap-2 shrink-0">
+      <span class="px-2 py-1 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">Strong</span>
+      <span class="px-2 py-1 rounded text-xs bg-slate-100 text-slate-600">in-process</span>
+    </div>
+  </div>
+  <p class="font-mono text-sm text-slate-600">store/store.ts:285, 853, 1059, 1097, 1209 · store/store.ts (buyWishEgg · buildVillage · buyDecoration · buyCosmetic) · game/rewards.ts:138 · game/debug.ts:97 · store/schema.ts:253</p>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <div class="lbl mb-2">Before — the cap is a convention, written 8 times</div>
+      <div class="grid grid-cols-4 gap-2 text-[11px] font-mono">
+        <div class="mod leakbox p-2">roundClosePatch :285<br/><span class="text-red-600">min(CAP, …)</span></div>
+        <div class="mod leakbox p-2">hatchEgg dup :853<br/><span class="text-red-600">min(CAP, …)</span></div>
+        <div class="mod leakbox p-2">checkAchievements :1059<br/><span class="text-red-600">min(CAP, …)</span></div>
+        <div class="mod leakbox p-2">reconcileAchv :1097<br/><span class="text-red-600">min(CAP, …)</span></div>
+        <div class="mod leakbox p-2">debugAddIskierki :1209<br/><span class="text-red-600">min(CAP, …)</span></div>
+        <div class="mod leakbox p-2">rewards rainbow +1 :138<br/><span class="text-red-600">min(CAP, …)</span></div>
+        <div class="mod leakbox p-2">debug.ts wage :97<br/><span class="text-red-600">min(CAP, …)</span></div>
+        <div class="mod leakbox p-2">schema v12→13 :253<br/><span class="text-red-600">min(CAP, …)</span></div>
+      </div>
+      <div class="lbl mt-4 mb-2">…and four identical "can afford → subtract" blocks</div>
+      <div class="grid grid-cols-4 gap-2 text-[11px] font-mono">
+        <div class="mod p-2">buyWishEgg</div><div class="mod p-2">buildVillage</div><div class="mod p-2">buyDecoration</div><div class="mod p-2">buyCosmetic</div>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">Only the round-close site has a cap test. The new dup × quality income (<code>dupIskierki</code>, up to 5× the old value) landed at :853 through the same hand-written convention, uncapped in tests.</p>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <div class="lbl mb-2">After — mass diagram</div>
+      <div class="flex gap-6 items-end h-[260px] px-4">
+        <div class="flex-1 flex flex-col justify-end">
+          <div class="iface p-2 text-xs text-center h-[110px] flex items-center justify-center">interface: 8 hand-rolled<br/>min() + 4 affordability<br/>checks a caller must know</div>
+          <div class="impl p-2 text-xs text-center h-[60px] flex items-center justify-center">impl: one number</div>
+          <div class="lbl text-center mt-2">before (shallow)</div>
+        </div>
+        <div class="flex-1 flex flex-col justify-end">
+          <div class="iface p-2 text-xs text-center h-[36px] flex items-center justify-center font-mono">credit(w, n) · spend(w, n)</div>
+          <div class="deep text-white p-2 text-xs text-center h-[150px] flex flex-col items-center justify-center gap-1">
+            <span>cap</span><span>insufficient → null</span><span>never negative</span><span>one property test:<br/>no income path exceeds cap</span>
+          </div>
+          <div class="lbl text-center mt-2">after (deep)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p><strong>Problem.</strong> The store DOX promises "wallet capped ONCE" but that holds only inside <code>roundClosePatch</code>; every other income path re-implements the cap and spending paths re-implement affordability.</p>
+  <p><strong>Solution.</strong> A tiny module in <code>game/</code>, <code>credit(iskierki, amount)</code> and <code>spend(iskierki, cost) → number | null</code>; all eight cap sites and four spend blocks route through it. The migration keeps its own frozen constant (see tripwires).</p>
+  <ul class="grid sm:grid-cols-2 gap-1 text-sm list-disc pl-5">
+    <li>locality: cap changes in one place</li>
+    <li>leverage: one interface, 12 call sites</li>
+    <li>one cap test replaces five scattered ones</li>
+    <li>debug.ts stops importing the cap</li>
+  </ul>
+</article>
+
+<!-- ============ 3 ============ -->
+<article id="c3" class="rounded-xl border border-slate-200 bg-white p-6 space-y-5 shadow-sm">
+  <div class="flex items-start justify-between gap-4">
+    <h2 class="font-serif text-2xl">3 · Collection queries: <code>game/collection.ts</code></h2>
+    <div class="flex gap-2 shrink-0">
+      <span class="px-2 py-1 rounded text-xs font-semibold bg-amber-100 text-amber-800">Worth exploring</span>
+      <span class="px-2 py-1 rounded text-xs bg-slate-100 text-slate-600">in-process</span>
+    </div>
+  </div>
+  <p class="font-mono text-sm text-slate-600">screens/HomeScreen.tsx:39-45, 64, 83 · screens/MapScreen.tsx:298 · screens/VillageScreen.tsx:342 · game/village.ts:239 · screens/HatchScreen.tsx:21-27 · screens/CollectionScreen.tsx:626 · screens/RoundSummary.tsx:54-55 · store/store.ts:312-324 (WISH_POOL · wishEggAvailable)</p>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <div class="lbl mb-2">Before — the same reads, re-derived per screen</div>
+      <pre class="mermaid">
+flowchart LR
+  OM[(ownedMonsters<br/>SaveState)]
+  OM --> H[Home: newest sort,<br/>count, complete?, guardian?]
+  OM --> M[Map: newest sort,<br/>guardian? ×3]
+  OM --> V[Village: oldest sort,<br/>complete?]
+  OM --> VR[village.ts villageRoster:<br/>newest sort again]
+  OM --> HS[Hatch: count, complete?]
+  OM --> C[Collection: count]
+  OM --> ST[store.ts wishEggAvailable:<br/>mult-pool complete?]
+  OM --> RS[RoundSummary / RoundScreen:<br/>guardian?]
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class H,M,V,VR,ST leak
+      </pre>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <div class="lbl mb-2">After — call-graph collapse</div>
+      <div class="relative h-[300px]">
+        <div class="absolute left-4 top-6 w-40 mod p-2 text-xs text-center">ownedMonsters</div>
+        <svg class="absolute inset-0 w-full h-full pointer-events-none">
+          <line x1="180" y1="40" x2="230" y2="40" stroke="#6366f1" stroke-width="2" class="seam"/>
+          <line x1="360" y1="90" x2="360" y2="130" stroke="#334155" stroke-width="2"/>
+        </svg>
+        <div class="absolute left-[230px] top-2 right-4 deep text-white rounded-lg p-3">
+          <div class="lbl !text-indigo-200">game/collection.ts</div>
+          <div class="font-mono text-xs mt-1">byRecency · isComplete · poolComplete(mode) · has · count</div>
+          <div class="text-[11px] text-slate-300 opacity-70 mt-1">tie-break on equal hatchedAt decided once</div>
+        </div>
+        <div class="absolute left-[230px] top-[135px] right-4 grid grid-cols-4 gap-1 text-[10px]">
+          <div class="mod p-1 text-center">Home</div><div class="mod p-1 text-center">Map</div><div class="mod p-1 text-center">Village</div><div class="mod p-1 text-center">Hatch</div>
+          <div class="mod p-1 text-center">Collection</div><div class="mod p-1 text-center">Summary</div><div class="mod p-1 text-center">store guards</div><div class="mod p-1 text-center">villageRoster</div>
+        </div>
+        <p class="absolute left-[230px] right-4 bottom-2 text-[11px] text-slate-500">Screens read fields; the comparator and both "complete" rules exist once.</p>
+      </div>
+    </div>
+  </div>
+
+  <p><strong>Problem.</strong> The <code>hatchedAt</code> comparator lives in four files, "collection complete" in three, "owned count" in three, "guardian owned" in six; tie-breaking on equal timestamps is unspecified. Since the first pass a second completeness notion appeared, "multiplication pool complete", and it lives in <code>store.ts</code> rather than next to the first.</p>
+  <p><strong>Solution.</strong> Five small pure functions in <code>game/</code>; the monument's "first hatched", Home's "newest", and "pool complete before catalog complete" become unit tests instead of screen and store behaviour.</p>
+  <ul class="grid sm:grid-cols-2 gap-1 text-sm list-disc pl-5">
+    <li>locality: one comparator, one place for "complete"</li>
+    <li>leverage: 8 call sites, one interface</li>
+    <li>tie-break becomes a tested decision</li>
+    <li>villageRoster stops re-sorting</li>
+  </ul>
+</article>
+
+<!-- ============ 4 ============ -->
+<article id="c4" class="rounded-xl border border-slate-200 bg-white p-6 space-y-5 shadow-sm">
+  <div class="flex items-start justify-between gap-4">
+    <h2 class="font-serif text-2xl">4 · Move Jajko Życzeń out of the store: <code>game/wishEgg.ts</code></h2>
+    <div class="flex gap-2 shrink-0">
+      <span class="px-2 py-1 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">Strong</span>
+      <span class="px-2 py-1 rounded text-xs bg-slate-100 text-slate-600">in-process</span>
+      <span class="px-2 py-1 rounded text-xs delta">upgraded</span>
+    </div>
+  </div>
+  <p class="font-mono text-sm text-slate-600">store/store.ts:308-345 (WISH_MODE · WISH_POOL · wishEggAvailable · wishEggCost) · screens/CollectionScreen.tsx:35, 627, 632, 679-683 · game/rewards.ts:178 (wishEggPrice)</p>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <div class="lbl mb-2">Before — cross-section of one feature</div>
+      <div class="space-y-1 text-xs">
+        <div class="h-11 border-l-4 border-slate-400 bg-white pl-3 flex items-center">game/rewards.ts · <code>wishEggPrice</code> — floor, ceiling, rarity premium (tested)</div>
+        <div class="h-11 border-l-4 border-red-600 bg-white pl-3 flex items-center">store/store.ts · <code>wishEggCost</code> — "does the dream count?" 4-clause predicate + rarity base + fountain discount</div>
+        <div class="h-11 border-l-4 border-red-600 bg-white pl-3 flex items-center delta">store/store.ts · <code>WISH_POOL</code> + <code>wishEggAvailable</code> — pool membership, "single source of truth" per DOX, but in the store file</div>
+        <div class="h-11 border-l-4 border-red-600 bg-white pl-3 flex items-center">CollectionScreen.tsx:679 · same 4-clause predicate re-typed for the "(wymarzony!)" label</div>
+        <div class="h-11 border-l-4 border-red-600 bg-white pl-3 flex items-center">CollectionScreen.tsx:35 · imports <em>two</em> game functions from the store file</div>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">If the two predicates drift, the label says "dream" at a price computed without it.</p>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <div class="lbl mb-2">After — one band</div>
+      <div class="space-y-1 text-xs">
+        <div class="h-[148px] deep text-white rounded pl-3 flex flex-col justify-center gap-1">
+          <div class="lbl !text-indigo-200">game/wishEgg.ts</div>
+          <div class="font-mono">wishEgg(save) → { cost, dreamApplies, unlocked, available }</div>
+          <div class="text-slate-300 opacity-70">floor · ceiling on surcharge · rarity base · fountain discount · dream eligibility · pool membership (WISH_MODE)</div>
+        </div>
+        <div class="h-11 border-l-4 border-slate-400 bg-white pl-3 flex items-center">store: <code>if (!w.available) return; spend(iskierki, w.cost)</code></div>
+        <div class="h-11 border-l-4 border-slate-400 bg-white pl-3 flex items-center">CollectionScreen: reads <code>cost</code>, <code>dreamApplies</code>, <code>available</code></div>
+      </div>
+    </div>
+  </div>
+
+  <p><strong>Problem.</strong> Pure economy rules live in <code>store.ts</code> (two exported functions plus the pool constant after <code>2085215</code>), so the screen imports game logic from the store, and the branchy half of the price rule is duplicated across the seam for a label. The game DOX already describes <code>wishEggAvailable</code> as the single source of truth; the file it sits in contradicts the DOX's "logic lives in <code>src/game/</code>".</p>
+  <p><strong>Solution.</strong> One function in <code>game/</code> returning cost, eligibility, unlock and availability together; the store and the screen both read it. Pairs with candidate 2's <code>spend</code> and candidate 3's <code>poolComplete</code>.</p>
+  <ul class="grid sm:grid-cols-2 gap-1 text-sm list-disc pl-5">
+    <li>label and price agree by construction</li>
+    <li>wishEggCost tests leave store.test.ts</li>
+    <li>screen stops importing from store.ts</li>
+    <li>DOX ownership line becomes true</li>
+  </ul>
+</article>
+
+<!-- ============ 5 ============ -->
+<article id="c5" class="rounded-xl border border-slate-200 bg-white p-6 space-y-5 shadow-sm">
+  <div class="flex items-start justify-between gap-4">
+    <h2 class="font-serif text-2xl">5 · Store dedup: <code>awardAchievements</code>, a <code>RoundState</code> factory, one <code>hatchEgg</code> patch</h2>
+    <div class="flex gap-2 shrink-0">
+      <span class="px-2 py-1 rounded text-xs font-semibold bg-amber-100 text-amber-800">Worth exploring</span>
+      <span class="px-2 py-1 rounded text-xs bg-slate-100 text-slate-600">in-process</span>
+    </div>
+  </div>
+  <p class="font-mono text-sm text-slate-600">store/store.ts ≈1046-1100 (checkAchievements · reconcileAchievements) · ≈458-488 + ≈521-545 (RoundState literals) · ≈848-878 (hatchEgg branches) · ≈1110-1195 (debug pair)</p>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <div class="lbl mb-2">Before — four pairs of near-identical bodies</div>
+      <div class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-2">
+          <div class="mod leakbox p-2">checkAchievements<br/><span class="text-slate-500">evaluate → ledger → cap → toast, seen:false</span></div>
+          <div class="mod leakbox p-2">reconcileAchievements<br/><span class="text-slate-500">evaluate → ledger → cap, seen:true</span></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="mod leakbox p-2">startRound<br/><span class="text-slate-500">20-field RoundState literal</span></div>
+          <div class="mod leakbox p-2">startVisitRound<br/><span class="text-slate-500">same literal, 4 fields differ</span></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 delta rounded">
+          <div class="mod leakbox p-2">hatchEgg dup branch<br/><span class="text-slate-500">pendingEggs · legendaryPity · achievementStats · lastHatch</span></div>
+          <div class="mod leakbox p-2">hatchEgg new branch<br/><span class="text-slate-500">same three + ownedMonsters · dream</span></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="mod leakbox p-2">debugSimulateRound<br/><span class="text-slate-500">6-field spread + settle + close</span></div>
+          <div class="mod leakbox p-2">debugFinishRound<br/><span class="text-slate-500">same spread + settle + close</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <div class="lbl mb-2">After</div>
+      <div class="space-y-3 text-xs">
+        <div class="deep text-white rounded p-3 font-mono">awardAchievements(state, { silent })</div>
+        <div class="deep text-white rounded p-3 font-mono">makeRoundState({ mode, plan, introFactor, visitStage })</div>
+        <div class="deep text-white rounded p-3 font-mono">hatchEgg: one base patch, one <code>set()</code>, branch only on <code>lastHatch</code>/<code>ownedMonsters</code></div>
+        <div class="mod p-3 text-slate-500">debug pair: absorbed by candidate 1's <code>finishRound</code></div>
+        <p class="text-slate-500">"reconcile is silent, check is loud" becomes one test on one function; adding a RoundState field or a per-hatch field (as <code>legendaryPity</code> just was) is a one-site edit.</p>
+      </div>
+    </div>
+  </div>
+
+  <p><strong>Problem.</strong> Two ~90% identical achievement actions, two copies of the RoundState literal, and since the pity commit two <code>hatchEgg</code> branches that each carry <code>pendingEggs</code>, <code>legendaryPity</code> and <code>achievementStats</code>; a new per-hatch field must be remembered in both.</p>
+  <p><strong>Solution.</strong> Store-private helpers; the debug pair disappears with candidate 1, so do this alongside or after it.</p>
+  <ul class="grid sm:grid-cols-2 gap-1 text-sm list-disc pl-5">
+    <li>locality: one reward path, one hatch patch</li>
+    <li>interface shrinks; implementation absorbs the copies</li>
+    <li>silent/loud contract tested once</li>
+  </ul>
+</article>
+
+<!-- ============ 6 ============ -->
+<article id="c6" class="rounded-xl border border-slate-200 bg-white p-6 space-y-5 shadow-sm">
+  <div class="flex items-start justify-between gap-4">
+    <h2 class="font-serif text-2xl">6 · Screen view-models: <code>homeStatus(save)</code>, <code>achievementRows(save)</code></h2>
+    <div class="flex gap-2 shrink-0">
+      <span class="px-2 py-1 rounded text-xs font-semibold bg-slate-200 text-slate-700">Speculative</span>
+      <span class="px-2 py-1 rounded text-xs bg-slate-100 text-slate-600">in-process</span>
+    </div>
+  </div>
+  <p class="font-mono text-sm text-slate-600">screens/HomeScreen.tsx:39-75 · screens/AchievementsScreen.tsx:25-45 · screens/RoundSummary.tsx:41-60 · screens/VillageScreen.tsx:299-343</p>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <div class="lbl mb-2">Before</div>
+      <pre class="mermaid">
+flowchart TB
+  S[(store)] -->|"useGame((s) => s)"| A[AchievementsScreen<br/>53 rows sorted per render,<br/>+ 'unlocked stays complete' rule in JSX,<br/>re-renders on every pressConfirm]
+  S --> H[HomeScreen<br/>15 inline derivations<br/>incl. the one-proactive-card rule :70]
+  S --> R[RoundSummary<br/>egg index lookup, goal, region]
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class A leak
+      </pre>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <div class="lbl mb-2">After</div>
+      <pre class="mermaid">
+flowchart TB
+  S[(store)] --> VM[store/selectors.ts<br/>homeStatus · achievementRows · summaryView]
+  VM --> A[AchievementsScreen]
+  VM --> H[HomeScreen]
+  VM --> R[RoundSummary]
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class VM deep
+      </pre>
+    </div>
+  </div>
+
+  <p><strong>Problem.</strong> Home derives 15 values inline, five duplicated elsewhere, and the DOX governance rule "max one proactive card, invitation beats expedition chip" is an untested <code>&amp;&amp;</code> in JSX. AchievementsScreen subscribes to the whole store, and <code>a8bb150</code> added a second rule there ("unlocked stays complete regardless of live progress") that is a property of the achievements interface, not of the screen; it belongs behind <code>evaluate.ts</code> where it can be tested.</p>
+  <p><strong>Solution.</strong> Pure functions over <code>SaveState</code> that return what the screen renders. Still speculative as a whole because candidates 1 and 3 remove most of the duplication first, but the <code>achievementRows</code> half is now concrete enough to do on its own.</p>
+  <ul class="grid sm:grid-cols-2 gap-1 text-sm list-disc pl-5">
+    <li>Home card priority becomes a test</li>
+    <li>"unlocked stays complete" becomes a test</li>
+    <li>AchievementsScreen selects narrowly</li>
+    <li>leverage only if 3+ screens share a view-model</li>
+  </ul>
+</article>
+
+<!-- ============ small cuts ============ -->
+<article class="rounded-xl border border-slate-200 bg-white p-6 space-y-3 shadow-sm">
+  <h2 class="font-serif text-2xl">Small cuts (deletion test passed: complexity vanishes)</h2>
+  <ul class="text-sm space-y-1 list-disc pl-5">
+    <li><code>game/cosmetics.ts:181</code> <code>availableCosmetics</code> — zero production callers, two tests. Delete both.</li>
+    <li><code>game/cosmetics.ts</code> <code>sklepikLevel</code>, <code>isOwned</code> — pass-throughs; inline at their 6 call sites or keep only if a second building gets a shop.</li>
+    <li><code>store/store.ts:197</code> re-export of <code>dayStamp</code> — one consumer (<code>Companion.tsx:3</code>), import from <code>game/time</code> directly.</li>
+    <li><code>store/store.ts:963</code> <code>buyDecoration</code> uses <code>DECORATIONS.find</code> while <code>DECORATIONS_BY_ID</code> exists.</li>
+    <li class="text-slate-400 line-through"><code>MonsterStage.background</code> unused — no longer true, three callers since <code>32e0858</code>.</li>
+  </ul>
+  <h3 class="font-serif text-lg pt-2">Tripwires worth adding (not refactors)</h3>
+  <ul class="text-sm space-y-1 list-disc pl-5">
+    <li><code>store/schema.ts</code> <code>migrateSave</code> silently skips a missing <code>MIGRATIONS[v]</code>: a bumped <code>SAVE_VERSION</code> with a forgotten entry is a no-op, the exact failure the DOX forbids. v14→15 was remembered; the tripwire is still absent. One test: every <code>v in [1, SAVE_VERSION)</code> has a step.</li>
+    <li><code>store/schema.ts:253</code> v12→13 refund imports live <code>ISKIERKI_CAP</code>; migrations should freeze their constants inline.</li>
+    <li><code>store/store.ts</code> <code>safeStorage</code> is a documented contract with zero tests.</li>
+    <li class="text-slate-400 line-through"><code>hatchEgg</code> on a complete collection deletes the egg silently — resolved by <code>2085215</code>, covered by two store tests.</li>
+  </ul>
+</article>
+
+</section>
+
+<section id="top-recommendation" class="rounded-xl deep text-white p-8 space-y-3 shadow-lg">
+  <div class="lbl !text-indigo-200">Top recommendation</div>
+  <h2 class="font-serif text-3xl"><a href="#c1" class="underline decoration-indigo-400">1 · Collapse the Runda lifecycle into <code>game/round.ts</code></a></h2>
+  <p class="text-slate-200">It is the most-changed code in the repo, it is the only module implemented twice, and it holds every ordering rule the DOX calls sacred. Deepening it deletes <code>game/debug.ts</code>, makes candidate 5's debug pair disappear, and gives candidate 2's wallet its single entry point. Do 2 alongside it. Candidate 4 is now the cheapest Strong on the list and touches code you just changed, so it is a good warm-up. 3 is independent; 6 waits.</p>
+</section>
+
+</main>
+</body>
+</html>
