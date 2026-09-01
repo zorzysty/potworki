@@ -19,6 +19,7 @@ Pojedynczy store zustand: koordynacja przepływu gry (runda, wyklucie, nawigacja
 - Pauza (`RoundState.paused`): guard w akcjach wejścia (`pressDigit`/`pressBackspace`/`pressConfirm` = ciche no-op w pauzie) — jedyne miejsce wyciszające wszystkie źródła naraz (globalny `keydown` żyje obok nakładki UI). Przerwa nie może NIC kosztować.
 - Niezmiennik `companionId !== expedition?.monsterId`, guardy po OBU stronach (`setCompanion` i `sendExpedition`); guard w store jest źródłem prawdy, UI pokazuje łagodne wyjaśnienie.
 - O puli wyklucia decyduje **stempel `PendingEgg.mode`** (persystowany), nie aktualny przełącznik (`mode` w store jest efemeryczny) — legendarnych ekskluzywnych nie da się zdobyć przełączeniem trybu między zdobyciem a wykluciem. Wymarzony ma priorytet tylko, gdy jest w puli trybu jajka.
+- Jajko Życzeń losuje z puli MNOŻENIOWEJ (72), która domyka się przed 80/80: `wishEggAvailable` to jedyne źródło prawdy dla guardu w `buyWishEgg` i widoczności przycisku w UI; jajko kupione tuż przed domknięciem puli wykluwa duplikat (nigdy nie znika po cichu).
 - `wishEggsBought` (`achievementStats`) jest ŹRÓDŁEM CENY Jajka Życzeń — nie zerować i nie przenosić bez zmiany cennika.
 - Osiągnięcia: ocena czysta w `src/achievements/`; store odblokowuje i płaci (`checkAchievements` po akcjach zmieniających stan → toast; `reconcileAchievements` cicho raz przy starcie) oraz podbija liczniki zdarzeniowe wprost w akcjach.
 - Ścieżki debug świadomie pomijają bonus wizyty i licznik `visitRoundsCompleted` — wizyty to feature prawdziwej gry.

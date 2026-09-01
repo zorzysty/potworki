@@ -12,6 +12,7 @@ import {
 	WISH_COST,
 	WISH_COST_NO_DREAM,
 	WISH_COST_STEP,
+	WISH_MODE,
 	WISH_PRICE_FLOOR,
 	WISH_SURCHARGE_MAX,
 } from "../game/rewards"
@@ -21,10 +22,12 @@ import {
 	FIRST_MONSTER_ID,
 	GAP_ONLY_IDS,
 	IDS_BY_RARITY,
+	idsByRarityForMode,
+	MONSTER_COUNT,
 	rarityOf,
 } from "../monsters/catalog"
 import { SAVE_KEYS } from "./schema"
-import { mergePersisted, useGame, wishEggCost } from "./store"
+import { mergePersisted, useGame, wishEggAvailable, wishEggCost } from "./store"
 
 const game = () => useGame.getState()
 
@@ -477,6 +480,42 @@ describe("buyWishEgg — ekonomia", () => {
 		game().buyWishEgg()
 		expect(game().iskierki).toBe(29)
 		expect(game().pendingEggs.length).toBe(0)
+	})
+
+	// cała pula mnożeniowa posiadana (72 < 80: ekskluzywnych trybów brak)
+	const ownAllMult = () =>
+		Object.fromEntries(
+			Object.values(idsByRarityForMode(WISH_MODE))
+				.flat()
+				.map((id) => [id, { hatchedAt: 1 }]),
+		)
+
+	test("komplet puli mnożeniowej przy brakujących ekskluzywnych — kupno to ciche no-op", () => {
+		buildFontanna()
+		const ownedMonsters = ownAllMult()
+		useGame.setState({ ownedMonsters })
+		expect(wishEggAvailable(ownedMonsters)).toBe(false)
+		expect(Object.keys(ownedMonsters).length).toBeLessThan(MONSTER_COUNT)
+		game().debugAddIskierki(200)
+		game().buyWishEgg()
+		expect(game().iskierki).toBe(200)
+		expect(game().pendingEggs.length).toBe(0)
+		expect(game().achievementStats.wishEggsBought).toBe(0)
+	})
+
+	test("pula domknięta między kupnem a wykluciem — jajko życzeń wykluwa duplikat", () => {
+		suppressAchievements()
+		buildFontanna()
+		game().debugAddIskierki(WISH_COST_NO_DREAM)
+		game().buyWishEgg()
+		expect(game().iskierki).toBe(0)
+		// w międzyczasie ostatni brakujący z puli mnożeniowej wykluł się z innego jajka
+		useGame.setState({ ownedMonsters: ownAllMult(), screen: "hatch" })
+		game().hatchEgg(0)
+		expect(game().pendingEggs.length).toBe(0)
+		expect(game().lastHatch?.isNew).toBe(false)
+		expect(game().iskierki).toBeGreaterThan(0)
+		expect(game().achievementStats.wishEggsBought).toBe(1)
 	})
 
 	test("dokładna kwota — odejmuje koszt, pcha jajko wish, screen hatch", () => {

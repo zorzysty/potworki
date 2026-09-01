@@ -45,8 +45,10 @@ import {
 	ISKIERKI_FOR_DUP,
 	rollMonster,
 	rollWish,
+	tiersWithUnowned,
 	WISH_COST,
 	WISH_COST_NO_DREAM,
+	WISH_MODE,
 	wishEggPrice,
 } from "../game/rewards"
 import { dayStamp } from "../game/time"
@@ -306,6 +308,15 @@ function rollContext(state: SaveState, mode: GameMode) {
 		rarityOf,
 		rand: Math.random,
 	}
+}
+
+// Czy Jajko Życzeń ma jeszcze kogo wykluć (pula mnożeniowa domyka się przed
+// 80/80) — jedyne źródło prawdy dla guardu kupna i widoczności przycisku.
+export function wishEggAvailable(
+	ownedMonsters: SaveState["ownedMonsters"],
+): boolean {
+	const owned = new Set(Object.keys(ownedMonsters).map(Number))
+	return tiersWithUnowned(idsByRarityForMode(WISH_MODE), owned).length > 0
 }
 
 // Cena Jajka Życzeń = baza (wg wymarzonego) + progresja za już kupione.
@@ -827,10 +838,6 @@ export const useGame = create<GameState>()(
 							? FIRST_MONSTER_ID
 							: rollMonster(egg.quality, ctx)
 				const pendingEggs = state.pendingEggs.filter((_, i) => i !== index)
-				if (monsterId === null) {
-					set({ pendingEggs })
-					return
-				}
 				if (monsterId in state.ownedMonsters) {
 					const gained = ISKIERKI_FOR_DUP[rarityOf(monsterId)]
 					set({
@@ -904,14 +911,14 @@ export const useGame = create<GameState>()(
 				const state = get()
 				// studnia życzeń: Jajko Życzeń kupuje się przy fontannie (L1+)
 				if (!wishEggUnlocked(state.village)) return
+				if (!wishEggAvailable(state.ownedMonsters)) return
 				const cost = wishEggCost(state)
 				if (state.iskierki < cost) return
 				set({
 					iskierki: state.iskierki - cost,
-					// jajko życzeń = pula mnożeniowa (legendarne tylko-dzielenie nie do kupienia)
 					pendingEggs: [
 						...state.pendingEggs,
-						{ quality: "wish", mode: "mult" },
+						{ quality: "wish", mode: WISH_MODE },
 					],
 					achievementStats: {
 						...state.achievementStats,

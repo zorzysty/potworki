@@ -194,15 +194,29 @@ export function rollMonster(quality: EggQuality, ctx: RollContext): number {
 	return pickInTier(rollTier(RARITY_ODDS[quality], ctx.rand), ctx)
 }
 
-// Jajko Życzeń: z wymarzonym → dokładnie on; bez → losowy NIEPOSIADANY (złote szanse,
-// re-roll z renormalizacją wśród tierów, w których coś jeszcze zostało)
-export function rollWish(ctx: RollContext): number | null {
-	const { idsByRarity, owned, dreamId, rand } = ctx
-	if (dreamId !== null && !owned.has(dreamId)) return dreamId
-	const available = RARITY_ORDER.filter((tier) =>
+// Pula Jajka Życzeń: mnożeniowa — legendarne ekskluzywne trybów nie są do kupienia.
+export const WISH_MODE: GameMode = "mult"
+
+// Tiery, w których pula ma jeszcze nieposiadanych (pusta lista = pula wyczerpana;
+// ten sam predykat blokuje kupno Jajka Życzeń w store).
+export function tiersWithUnowned(
+	idsByRarity: Record<Rarity, readonly number[]>,
+	owned: ReadonlySet<number>,
+): Rarity[] {
+	return RARITY_ORDER.filter((tier) =>
 		idsByRarity[tier].some((id) => !owned.has(id)),
 	)
-	if (available.length === 0) return null // komplet — UI ukrywa przycisk
+}
+
+// Jajko Życzeń: z wymarzonym → dokładnie on; bez → losowy NIEPOSIADANY (złote szanse,
+// re-roll z renormalizacją wśród tierów, w których coś jeszcze zostało). Pula
+// wyczerpana (kupione, gdy brakował jeden, a domknęło go inne jajko z gniazda)
+// → zwykłe złote losowanie, czyli duplikat jak z każdego jajka po komplecie.
+export function rollWish(ctx: RollContext): number {
+	const { idsByRarity, owned, dreamId, rand } = ctx
+	if (dreamId !== null && !owned.has(dreamId)) return dreamId
+	const available = tiersWithUnowned(idsByRarity, owned)
+	if (available.length === 0) return rollMonster("gold", ctx)
 	const odds = RARITY_ODDS.gold
 	const weights = available.map((tier) => odds[RARITY_ORDER.indexOf(tier)] ?? 0)
 	const total = weights.reduce((s, w) => s + w, 0)
@@ -215,5 +229,5 @@ export function rollWish(ctx: RollContext): number | null {
 			return unowned[Math.floor(rand() * unowned.length)] as number
 		}
 	}
-	return null
+	return rollMonster("gold", ctx)
 }

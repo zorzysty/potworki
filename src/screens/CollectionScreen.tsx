@@ -28,7 +28,7 @@ import {
 import { loreFor } from "../monsters/lore"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { originOf } from "../monsters/world"
-import { useGame, wishEggCost } from "../store/store"
+import { useGame, wishEggAvailable, wishEggCost } from "../store/store"
 
 // Wyświetlanie po rzadkości (common→legendary), w obrębie rzadkości po id.
 // Id nie są już ciągłe po rzadkości (nowe potworki dochodzą na końcu), więc
@@ -618,7 +618,7 @@ export function CollectionScreen() {
 	const [selectedId, setSelectedId] = useState<number | null>(null)
 
 	const ownedCount = Object.keys(ownedMonsters).length
-	const allOwned = ownedCount === MONSTER_COUNT
+	const wishAvailable = wishEggAvailable(ownedMonsters)
 	// studnia życzeń: bez fontanny przycisk kupna ustępuje zajawce (fontanna →
 	// Wioska), a ceny nie ma czego liczyć
 	const wishUnlocked = wishEggUnlocked(village)
@@ -659,7 +659,7 @@ export function CollectionScreen() {
 			    (aspiracja jak zablokowane półki Sklepiku, nigdy ton błędu) NIE
 			    zależy od portfela — to jedyne miejsce tłumaczące związek
 			    Fontanna→Jajko Życzeń; przycisk kupna jak dotąd tylko przy >0 ✨. */}
-			{!allOwned && (!wishUnlocked || iskierki > 0) && (
+			{wishAvailable && (!wishUnlocked || iskierki > 0) && (
 				<div className="mx-auto flex w-full max-w-sm items-center gap-2">
 					<BigButton
 						onClick={wishUnlocked ? buyWishEgg : () => goTo("village")}

@@ -255,19 +255,18 @@ describe("rollWish", () => {
 				rarityOf,
 				rand,
 			})
-			expect(got === null || !owned.has(got)).toBe(true)
+			expect(owned.has(got)).toBe(false)
 		}
 	})
-	test("returns null when everything is owned", () => {
+	test("pula wyczerpana → zwykłe losowanie (duplikat), nigdy brak potworka", () => {
 		const owned = new Set<number>([0, 1, 2, 3, 4, 5, 6])
-		expect(
-			rollWish({
-				idsByRarity,
-				owned,
-				dreamId: null,
-				rarityOf,
-				rand: () => 0.5,
-			}),
-		).toBeNull()
+		const got = rollWish({
+			idsByRarity,
+			owned,
+			dreamId: null,
+			rarityOf,
+			rand: () => 0.5,
+		})
+		expect(owned.has(got)).toBe(true)
 	})
 })
