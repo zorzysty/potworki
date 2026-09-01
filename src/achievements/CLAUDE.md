@@ -16,7 +16,7 @@ Deklaratywny katalog osiągnięć i ich ocena jako czyste funkcje — cele krót
 - `wishEggsBought` ma drugiego konsumenta poza osiągnięciami (cena Jajka Życzeń) — nie zerować i nie przedefiniowywać bez zmiany cennika; wycofanie osiągnięć nie zwalnia licznika.
 - Osiągnięcia na licznikach nieodtwarzalnych wstecz liczą się od wdrożenia (`reconcileAchievements` nie nadrabia) — świadome.
 - Targety osiągnięć budowniczego podążają za `BUILDINGS.length`; ledger jest append-only — zdobyte przy niższym targecie zostaje zdobyte.
-- Nagrody i odblokowania nadaje store, nigdy ten moduł — tu tylko czysta ocena.
+- Nagrody i odblokowania nadaje store, nigdy ten moduł — tu tylko czysta ocena (`iskierkiReward` z `evaluateAchievements` to suma informacyjna; wypłata idzie przez `claimAchievement` w store, per osiągnięcie).
 
 ## Work Guidance
 

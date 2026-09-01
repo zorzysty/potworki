@@ -12,13 +12,15 @@ import {
 import type { VillageState } from "../game/village"
 import { INITIAL_VILLAGE } from "../game/village"
 
-export const SAVE_VERSION = 15
+export const SAVE_VERSION = 16
 
 // Wpis ledgera osiągnięć. `seen` jak celebratedStage: false → badge „nowe!" na Home,
-// czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen).
+// czyszczony przy wejściu na ekran osiągnięć (markAchievementsSeen). `claimed`: iskierki
+// za osiągnięcie NIE wpadają same — dziecko odbiera je tapnięciem na ekranie osiągnięć.
 export interface AchievementEntry {
 	unlockedAt: number
 	seen: boolean
+	claimed: boolean
 }
 
 // Liczniki zdarzeniowe dla osiągnięć, których nie da się odtworzyć z reszty zapisu
@@ -277,6 +279,19 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 		...(state as Record<string, unknown>),
 		legendaryPity: INITIAL_LEGENDARY_PITY,
 	}),
+	// v15→v16: iskierki za osiągnięcia odbiera się ręcznie (`claimed`). Wszystko zdobyte
+	// dotąd zostało już wypłacone automatycznie → claimed:true (bez podwójnej nagrody).
+	15: (state) => {
+		const s = state as Record<string, unknown>
+		const prev =
+			s.achievements && typeof s.achievements === "object"
+				? (s.achievements as Record<string, Record<string, unknown>>)
+				: {}
+		const achievements: Record<string, unknown> = {}
+		for (const [id, e] of Object.entries(prev))
+			achievements[id] = { ...e, claimed: true }
+		return { ...s, achievements }
+	},
 }
 
 export function migrateSave(state: unknown, fromVersion: number): unknown {

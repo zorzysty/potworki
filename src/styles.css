@@ -434,6 +434,41 @@ body {
 	}
 }
 
+/* ---------- osiągnięcia: odbiór iskierek ---------- */
+
+/* kafel z nieodebranymi iskierkami — pulsująca złota poświata (transform/box-shadow) */
+.anim-claim-ready {
+	animation: claim-ready 1.6s ease-in-out infinite;
+}
+
+@keyframes claim-ready {
+	0%,
+	100% {
+		transform: scale(1);
+		box-shadow: 0 0 0 0 rgb(251 191 36 / 0.7);
+	}
+	50% {
+		transform: scale(1.02);
+		box-shadow: 0 0 0 10px rgb(251 191 36 / 0);
+	}
+}
+
+/* rozbłysk po odbiorze: iskierka leci od środka kafla pod kątem --burst-angle i gaśnie */
+.anim-claim-burst {
+	animation: claim-burst 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes claim-burst {
+	0% {
+		transform: rotate(var(--burst-angle)) translateX(0) scale(0.4);
+		opacity: 1;
+	}
+	100% {
+		transform: rotate(var(--burst-angle)) translateX(120px) scale(1.4);
+		opacity: 0;
+	}
+}
+
 /* ---------- warstwa opiekuńcza: przyjaciel + wioska ---------- */
 
 /* radosny podskok (reakcja na dotyk, drobna bezczynność na Home) */

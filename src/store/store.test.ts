@@ -92,8 +92,12 @@ function playVisitRoundClean() {
 }
 
 function suppressAchievements() {
-	const all: Record<string, { unlockedAt: number; seen: boolean }> = {}
-	for (const a of ACHIEVEMENTS) all[a.id] = { unlockedAt: 0, seen: true }
+	const all: Record<
+		string,
+		{ unlockedAt: number; seen: boolean; claimed: boolean }
+	> = {}
+	for (const a of ACHIEVEMENTS)
+		all[a.id] = { unlockedAt: 0, seen: true, claimed: true }
 	useGame.setState({ achievements: all })
 }
 
@@ -1063,7 +1067,7 @@ describe("markGatesCelebrated", () => {
 // ---------------------------------------------------------------------------
 
 describe("osiągnięcia", () => {
-	test("perfekcyjna runda 30/30 → perfectRounds++ i 'bez-pomylki' zdobyte + iskierki", () => {
+	test("perfekcyjna runda 30/30 → perfectRounds++ i 'bez-pomylki' zdobyte, iskierki czekają na odbiór", () => {
 		game().startRound()
 		for (let i = 0; i < 9; i++) {
 			answer(true)
@@ -1077,10 +1081,26 @@ describe("osiągnięcia", () => {
 		expect(s.achievementStats.perfectRounds).toBe(1)
 		expect(s.achievements["bez-pomylki"]).toBeDefined()
 		expect(s.achievements["bez-pomylki"]?.seen).toBe(false)
-		// zdobyte zawsze: pierwsza-runda(5) + pierwsze-jajko(5) + bez-pomylki(5) = 15
-		// (+1 tylko jeśli wylosowane jajko jest tęczowe)
+		expect(s.achievements["bez-pomylki"]?.claimed).toBe(false)
 		expect(s.achievements["pierwsza-runda"]).toBeDefined()
-		expect(s.iskierki).toBeGreaterThanOrEqual(15)
+	})
+
+	test("claimAchievement: wypłaca nagrodę raz, ignoruje niezdobyte i cap", () => {
+		useGame.setState({ totalRounds: 1, achievements: {}, iskierki: 0 })
+		game().checkAchievements()
+		expect(game().achievements["pierwsza-runda"]?.claimed).toBe(false)
+		game().claimAchievement("pierwsza-runda")
+		expect(game().achievements["pierwsza-runda"]?.claimed).toBe(true)
+		expect(game().iskierki).toBe(5)
+		game().claimAchievement("pierwsza-runda") // drugi tap = nic
+		expect(game().iskierki).toBe(5)
+		game().claimAchievement("kolekcja-80") // niezdobyte = nic
+		expect(game().iskierki).toBe(5)
+		useGame.setState({ iskierki: ISKIERKI_CAP })
+		useGame.setState({ totalRounds: 1, achievements: {} })
+		game().checkAchievements()
+		game().claimAchievement("pierwsza-runda")
+		expect(game().iskierki).toBe(ISKIERKI_CAP)
 	})
 
 	test("poprawna odpowiedź w dzieleniu → divCorrect++ i 'pierwsze-dzielenie'", () => {
@@ -1125,14 +1145,15 @@ describe("osiągnięcia", () => {
 		expect(Object.keys(game().achievements).length).toBe(count)
 	})
 
-	test("reconcileAchievements: odblokowuje zasłużone po cichu (seen:true) + iskierki", () => {
+	test("reconcileAchievements: odblokowuje zasłużone po cichu (seen:true), iskierki do odbioru", () => {
 		// ustawiamy stan z pominięciem checkAchievements (bezpośredni setState)
-		useGame.setState({ totalRounds: 1, achievements: {} })
+		useGame.setState({ totalRounds: 1, achievements: {}, iskierki: 0 })
 		game().reconcileAchievements()
 		const s = game()
 		expect(s.achievements["pierwsza-runda"]).toBeDefined()
 		expect(s.achievements["pierwsza-runda"]?.seen).toBe(true)
-		expect(s.iskierki).toBeGreaterThanOrEqual(5)
+		expect(s.achievements["pierwsza-runda"]?.claimed).toBe(false)
+		expect(s.iskierki).toBe(0)
 	})
 
 	test("checkAchievements wrzuca zdobyte do kolejki toastów; shift je zdejmuje", () => {
@@ -1143,6 +1164,13 @@ describe("osiągnięcia", () => {
 		const len = q.length
 		game().shiftAchievementToast()
 		expect(game().achievementQueue.length).toBe(len - 1)
+	})
+
+	test("goTo('achievements') czyści kolejkę toastów (toast prowadzi właśnie tam)", () => {
+		game().debugOwnRarity("common")
+		expect(game().achievementQueue.length).toBeGreaterThan(0)
+		game().goTo("achievements")
+		expect(game().achievementQueue).toEqual([])
 	})
 
 	test("reconcileAchievements NIE wrzuca do kolejki toastów (ciche)", () => {

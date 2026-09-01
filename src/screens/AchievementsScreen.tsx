@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { type CSSProperties, useEffect, useState } from "react"
 import {
 	ACHIEVEMENTS,
 	type AchievementCtx,
@@ -18,15 +18,34 @@ interface AchievementRow {
 	def: AchievementDef
 	progress: AchievementProgress
 	unlocked: boolean
+	claimable: boolean // zdobyte, iskierki jeszcze nieodebrane
 	unlockedAt: number
 }
 
+// ile trwa rozbłysk iskierek po odbiorze (zgrane z .anim-claim-burst w styles.css)
+const CLAIM_BURST_MS = 900
+// kierunki lotu iskierek (kąty co 45°)
+const BURST_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315]
+
 export function AchievementsScreen() {
 	const state = useGame((s) => s)
-	const { achievements, iskierki, goTo, markAchievementsSeen, debugReset } =
-		state
+	const {
+		achievements,
+		iskierki,
+		goTo,
+		markAchievementsSeen,
+		claimAchievement,
+		debugReset,
+	} = state
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [confirmReset, setConfirmReset] = useState(false)
+	// id osiągnięcia, nad którym właśnie rozbłyskują odebrane iskierki
+	const [burstId, setBurstId] = useState<string | null>(null)
+	useEffect(() => {
+		if (!burstId) return
+		const t = setTimeout(() => setBurstId(null), CLAIM_BURST_MS)
+		return () => clearTimeout(t)
+	}, [burstId])
 
 	// wejście na ekran = osiągnięcia „zobaczone" → znika badge na Home (idempotentne)
 	useEffect(() => {
@@ -46,12 +65,14 @@ export function AchievementsScreen() {
 			def,
 			progress,
 			unlocked: entry !== undefined,
+			claimable: entry !== undefined && !entry.claimed,
 			unlockedAt: entry?.unlockedAt ?? 0,
 		}
 	})
-	// kolejność: najpierw zdobyte→niezdobyte, potem wg trudności (łatwe→legendarne, przez
-	// rosnącą nagrodę 5/10/15/25); remisy zachowują kolejność z katalogu (stabilny sort)
+	// kolejność: do odebrania → zdobyte → niezdobyte, potem wg trudności (łatwe→legendarne,
+	// przez rosnącą nagrodę 5/10/15/25); remisy zachowują kolejność z katalogu (stabilny sort)
 	rows.sort((a, b) => {
+		if (a.claimable !== b.claimable) return a.claimable ? -1 : 1
 		if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1
 		return (
 			REWARD_BY_DIFFICULTY[a.def.difficulty] -
@@ -84,23 +105,47 @@ export function AchievementsScreen() {
 						align="right"
 						text="To twoje osiągnięcia 🏅. Zdobywasz je za różne sukcesy w grze — a za każde dostajesz iskierki ✨! Pasek pokazuje, jak blisko jesteś."
 					/>
-					<div className="rounded-full bg-white/80 px-4 py-2 text-lg font-extrabold text-amber-500 shadow">
+					<div
+						key={iskierki}
+						className={`rounded-full bg-white/80 px-4 py-2 text-lg font-extrabold text-amber-500 shadow ${burstId ? "anim-pop" : ""}`}
+					>
 						✨ {iskierki}
 					</div>
 				</div>
 			</div>
 
 			<div className="flex flex-col gap-2.5 pb-6">
-				{rows.map(({ def, progress, unlocked }) => {
+				{rows.map(({ def, progress, unlocked, claimable }) => {
 					const tier = TIER_META[def.difficulty]
 					const shown = Math.min(progress.current, progress.target)
+					const bursting = burstId === def.id
+					// tap na nieodebrane = odbiór iskierek (rozbłysk), na resztę = karta szczegółu
+					const onClick = claimable
+						? () => {
+								claimAchievement(def.id)
+								setBurstId(def.id)
+							}
+						: () => setSelectedId(def.id)
 					return (
 						<button
 							key={def.id}
 							type="button"
-							onClick={() => setSelectedId(def.id)}
-							className={`touch-manipulation flex items-center gap-3 rounded-2xl border-4 bg-white/80 p-3 text-left shadow-sm transition-transform active:scale-95 ${unlocked ? tier.border : "border-slate-300"} ${unlocked ? "" : "opacity-70"}`}
+							onClick={onClick}
+							className={`relative touch-manipulation flex items-center gap-3 rounded-2xl border-4 p-3 text-left shadow-sm transition-transform active:scale-95 ${claimable ? "anim-claim-ready border-amber-400 bg-amber-50" : unlocked ? `bg-white/80 ${tier.border}` : "border-slate-300 bg-white/80 opacity-70"}`}
 						>
+							{bursting && (
+								<div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center overflow-visible">
+									{BURST_ANGLES.map((deg) => (
+										<span
+											key={deg}
+											className="anim-claim-burst absolute text-2xl"
+											style={{ "--burst-angle": `${deg}deg` } as CSSProperties}
+										>
+											✨
+										</span>
+									))}
+								</div>
+							)}
 							<div
 								className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-3xl ${unlocked ? "" : "grayscale"}`}
 							>
@@ -117,9 +162,10 @@ export function AchievementsScreen() {
 										{def.title}
 									</div>
 									<div
-										className={`shrink-0 rounded-full px-2 py-0.5 text-sm font-extrabold ${tier.badge}`}
+										className={`shrink-0 rounded-full px-2 py-0.5 text-sm font-extrabold ${claimable ? "anim-bounce-slow bg-amber-400 text-white shadow" : tier.badge}`}
 									>
-										✨ {REWARD_BY_DIFFICULTY[def.difficulty]}
+										{claimable ? "Odbierz " : ""}✨{" "}
+										{REWARD_BY_DIFFICULTY[def.difficulty]}
 									</div>
 								</div>
 								<div className="flex items-center gap-2">

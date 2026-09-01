@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
+import { ACHIEVEMENTS, REWARD_BY_DIFFICULTY } from "../achievements/catalog"
 import { evaluateAchievements } from "../achievements/evaluate"
 import {
 	applyAnswer,
@@ -177,6 +178,7 @@ interface GameState extends SaveState {
 	applyDecay: () => void
 	markGatesCelebrated: () => void
 	checkAchievements: () => void
+	claimAchievement: (id: string) => void
 	markAchievementsSeen: () => void
 	reconcileAchievements: () => void
 	shiftAchievementToast: () => void
@@ -423,12 +425,14 @@ export const useGame = create<GameState>()(
 			villageVisited: false,
 
 			// stan rundy żyje tylko na ekranie rundy; wejście do wioski gasi
-			// sesyjny badge „stać cię!" na Home
+			// sesyjny badge „stać cię!" na Home; wejście na osiągnięcia gasi toasty
+			// (toast jest klikalny i prowadzi właśnie tu — reszta kolejki jest zbędna)
 			goTo: (screen) =>
 				set((s) => ({
 					screen,
 					round: screen === "round" ? s.round : null,
 					villageVisited: s.villageVisited || screen === "village",
+					achievementQueue: screen === "achievements" ? [] : s.achievementQueue,
 				})),
 
 			// pauza jest polem rundy, więc ginie razem z nią (patrz RoundState)
@@ -1040,12 +1044,12 @@ export const useGame = create<GameState>()(
 			markGatesCelebrated: () =>
 				set((s) => ({ celebratedStage: s.unlockedStage })),
 
-			// Sprawdza i odblokowuje świeżo spełnione osiągnięcia (badge „nowe!" → seen:false)
-			// + dolicza iskierki (cap). Wołane na końcu akcji zmieniających stan. Idempotentne:
-			// te już w ledgerze są pomijane (alreadyUnlocked).
+			// Sprawdza i odblokowuje świeżo spełnione osiągnięcia (badge „nowe!" → seen:false).
+			// Iskierek NIE wypłaca — odbiera je claimAchievement. Wołane na końcu akcji
+			// zmieniających stan. Idempotentne: te już w ledgerze są pomijane (alreadyUnlocked).
 			checkAchievements: () => {
 				const s = get()
-				const { newlyUnlocked, iskierkiReward } = evaluateAchievements(
+				const { newlyUnlocked } = evaluateAchievements(
 					{ save: s, counters: s.achievementStats },
 					new Set(Object.keys(s.achievements)),
 				)
@@ -1053,13 +1057,31 @@ export const useGame = create<GameState>()(
 				const now = Date.now()
 				const achievements = { ...s.achievements }
 				for (const id of newlyUnlocked)
-					achievements[id] = { unlockedAt: now, seen: false }
+					achievements[id] = { unlockedAt: now, seen: false, claimed: false }
 				set({
 					achievements,
-					iskierki: Math.min(ISKIERKI_CAP, s.iskierki + iskierkiReward),
 					// kolejka toastów „zdobyte!" (efemeryczna) — pokazuje je AchievementToast.
 					// reconcileAchievements NIE dokłada tu nic (odblokowania startowe są ciche).
 					achievementQueue: [...s.achievementQueue, ...newlyUnlocked],
+				})
+			},
+
+			// Odbiór iskierek za zdobyte osiągnięcie (tap na ekranie osiągnięć). Jedyne
+			// miejsce wypłaty nagrody za osiągnięcie; idempotentne (claimed strzeże).
+			claimAchievement: (id) => {
+				const s = get()
+				const entry = s.achievements[id]
+				const def = ACHIEVEMENTS.find((a) => a.id === id)
+				if (!entry || entry.claimed || !def) return
+				set({
+					achievements: {
+						...s.achievements,
+						[id]: { ...entry, claimed: true },
+					},
+					iskierki: Math.min(
+						ISKIERKI_CAP,
+						s.iskierki + REWARD_BY_DIFFICULTY[def.difficulty],
+					),
 				})
 			},
 
@@ -1080,10 +1102,10 @@ export const useGame = create<GameState>()(
 
 			// Jak checkAchievements, ale po cichu (seen:true) — przy starcie sesji odblokowuje
 			// osiągnięcia, które dziecko już spełnia (po wdrożeniu funkcji / migracji v5→v6),
-			// bez lawiny powiadomień, a iskierki za nie dolicza (postęp dziecka jest święty).
+			// bez lawiny powiadomień; iskierki czekają do odbioru (postęp dziecka jest święty).
 			reconcileAchievements: () => {
 				const s = get()
-				const { newlyUnlocked, iskierkiReward } = evaluateAchievements(
+				const { newlyUnlocked } = evaluateAchievements(
 					{ save: s, counters: s.achievementStats },
 					new Set(Object.keys(s.achievements)),
 				)
@@ -1091,11 +1113,8 @@ export const useGame = create<GameState>()(
 				const now = Date.now()
 				const achievements = { ...s.achievements }
 				for (const id of newlyUnlocked)
-					achievements[id] = { unlockedAt: now, seen: true }
-				set({
-					achievements,
-					iskierki: Math.min(ISKIERKI_CAP, s.iskierki + iskierkiReward),
-				})
+					achievements[id] = { unlockedAt: now, seen: true, claimed: false }
+				set({ achievements })
 			},
 
 			debugSetAllMastery: (value) => {

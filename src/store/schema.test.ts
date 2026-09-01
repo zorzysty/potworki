@@ -351,6 +351,21 @@ describe("migrateSave", () => {
 		expect(r.iskierki).toBe(3)
 	})
 
+	test("v15→v16: zdobyte dotąd osiągnięcia dostają claimed:true (już wypłacone)", () => {
+		const r = migrateSave(
+			{ achievements: { "pierwsza-runda": { unlockedAt: 1, seen: true } } },
+			15,
+		) as { achievements: Record<string, Record<string, unknown>> }
+		expect(r.achievements["pierwsza-runda"]).toEqual({
+			unlockedAt: 1,
+			seen: true,
+			claimed: true,
+		})
+		const bare = migrateSave({ iskierki: 3 }, 15) as Record<string, unknown>
+		expect(bare.achievements).toEqual({})
+		expect(bare.iskierki).toBe(3)
+	})
+
 	test("fallback: brak unlockedStage → celebratedStage === 0", () => {
 		const result = migrateSave({}, 2) as Record<string, unknown>
 		expect(result.celebratedStage).toBe(0)
