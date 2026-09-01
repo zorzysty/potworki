@@ -36,8 +36,12 @@ export function AchievementsScreen() {
 	const ctx: AchievementCtx = { save: state, counters: state.achievementStats }
 
 	const rows = ACHIEVEMENTS.map((def) => {
-		const progress = achievementProgress(def, ctx)
+		const live = achievementProgress(def, ctx)
 		const entry = achievements[def.id]
+		// zdobyte zostaje zdobyte: pasek pełny nawet gdy zasób spadł (wydane iskierki)
+		// albo target urósł (ledger append-only) — inaczej ✓ przy pasku 30/50
+		const progress =
+			entry === undefined ? live : { ...live, current: live.target, ratio: 1 }
 		return {
 			def,
 			progress,
