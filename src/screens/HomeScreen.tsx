@@ -271,7 +271,9 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 						<span className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
 							<span
 								className="block h-full rounded-full bg-amber-400 transition-[width]"
-								style={{ width: `${(eggFragments / eggThreshold) * 100}%` }}
+								style={{
+									width: `${Math.min(100, (eggFragments / eggThreshold) * 100)}%`,
+								}}
 							/>
 						</span>
 						<span className="text-xs font-bold text-slate-400">

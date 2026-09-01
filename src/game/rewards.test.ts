@@ -73,20 +73,26 @@ describe("wishEggPrice", () => {
 
 describe("qualityOdds", () => {
 	test("every row sums to 100", () => {
-		for (const s of [0, 10, 25, 26, 27, 28, 29, 30]) {
+		for (let s = 0; s <= 30; s++) {
 			const sum = qualityOdds(s).reduce((a, b) => a + b, 0)
 			expect(sum).toBe(100)
 		}
 	})
-	test("rainbow only reachable at 30", () => {
-		expect(qualityOdds(29)[3]).toBe(0)
+	test("tęczowe tylko od score 28, pełna szansa tylko przy 30", () => {
+		expect(qualityOdds(27)[3]).toBe(0)
+		expect(qualityOdds(28)[3]).toBeGreaterThan(0)
 		expect(qualityOdds(30)[3]).toBe(40)
 	})
-	test("threshold table", () => {
-		expect(qualityOdds(25)).toEqual([100, 0, 0, 0])
-		expect(qualityOdds(26)).toEqual([40, 60, 0, 0])
-		expect(qualityOdds(28)).toEqual([20, 30, 50, 0])
-		expect(qualityOdds(30)).toEqual([10, 20, 30, 40])
+	test("krzywa łagodna: srebrne od 16, złote od 23, zwykłe poniżej 16", () => {
+		expect(qualityOdds(15)).toEqual([100, 0, 0, 0])
+		expect(qualityOdds(16)[1]).toBeGreaterThan(0)
+		expect(qualityOdds(22)[2]).toBe(0)
+		expect(qualityOdds(23)[2]).toBeGreaterThan(0)
+	})
+	test("monotoniczna: wyższy score nigdy nie zwiększa szansy na zwykłe", () => {
+		for (let s = 1; s <= 30; s++) {
+			expect(qualityOdds(s)[0]).toBeLessThanOrEqual(qualityOdds(s - 1)[0])
+		}
 	})
 })
 
@@ -103,8 +109,8 @@ describe("eggQuality", () => {
 	test("rainbow at 30 with high roll", () => {
 		expect(eggQuality(30, () => 0.999)).toBe("rainbow")
 	})
-	test("normal at 25 with any roll", () => {
-		expect(eggQuality(25, () => 0.999)).toBe("normal")
+	test("normal at 15 with any roll", () => {
+		expect(eggQuality(15, () => 0.999)).toBe("normal")
 	})
 	test("normal at 30 with zero roll (lowest bucket)", () => {
 		expect(eggQuality(30, () => 0)).toBe("normal")
@@ -112,7 +118,7 @@ describe("eggQuality", () => {
 })
 
 describe("eggQualityScore", () => {
-	test("komplet 3★ → 30 niezależnie od progu (tęczowe = bezbłędnie)", () => {
+	test("komplet 3★ → 30 niezależnie od progu (pełna szansa na tęczowe = bezbłędnie)", () => {
 		expect(eggQualityScore(30, 10)).toBe(30)
 		expect(eggQualityScore(42, 14)).toBe(30)
 	})
@@ -127,7 +133,7 @@ describe("eggQualityScore", () => {
 		expect(eggQualityScore(-5, 10)).toBe(0)
 		expect(eggQualityScore(5, 0)).toBe(0)
 	})
-	test("duże jajko: jedna skaza nie daje score 30 (tęczowe = bezbłędnie)", () => {
+	test("duże jajko: jedna skaza nie daje score 30", () => {
 		// próg 22 (jajka 21+): komplet 3★ = bank 66 → 30; jedna 2★ = bank 65 → 29
 		expect(eggQualityScore(66, 22)).toBe(30)
 		expect(eggQualityScore(65, 22)).toBe(29)
@@ -210,6 +216,26 @@ describe("addEggFragment", () => {
 		}
 		const { bank } = addEggFragment(bank9, 3, "mult", () => 0.999)
 		expect(bank.iskierki).toBe(ISKIERKI_CAP)
+	})
+
+	test("nadmiar fragmentów po obniżeniu progu: score z faktycznie zebranych, nie darmowe 30", () => {
+		// próg 22 (eggsEarned 30), a jajko ma już 25 fragmentów z 2★ każdy
+		const bank = {
+			eggFragments: 25,
+			eggStarBank: 50,
+			eggsEarned: 30,
+			iskierki: 0,
+		}
+		const { bank: after, created } = addEggFragment(
+			bank,
+			2,
+			"mult",
+			() => 0.999,
+		)
+		expect(created).not.toBeNull()
+		expect(after.eggFragments).toBe(0)
+		// 52★ / 26 fragmentów = 2★ → score 20 → nigdy tęczowe (rand 0.999 dałoby je przy 30)
+		expect(created?.quality).not.toBe("rainbow")
 	})
 
 	test("non-rainbow: iskierki się nie zmienia", () => {

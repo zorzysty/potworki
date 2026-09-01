@@ -45,7 +45,6 @@ import {
 	ISKIERKI_FOR_DUP,
 	rollMonster,
 	rollWish,
-	tiersWithUnowned,
 	WISH_COST,
 	WISH_COST_NO_DREAM,
 	WISH_MODE,
@@ -310,13 +309,16 @@ function rollContext(state: SaveState, mode: GameMode) {
 	}
 }
 
+const WISH_POOL: readonly number[] = Object.values(
+	idsByRarityForMode(WISH_MODE),
+).flat()
+
 // Czy Jajko Życzeń ma jeszcze kogo wykluć (pula mnożeniowa domyka się przed
-// 80/80) — jedyne źródło prawdy dla guardu kupna i widoczności przycisku.
+// kompletem katalogu) — jedyne źródło prawdy dla guardu kupna i przycisku w UI.
 export function wishEggAvailable(
 	ownedMonsters: SaveState["ownedMonsters"],
 ): boolean {
-	const owned = new Set(Object.keys(ownedMonsters).map(Number))
-	return tiersWithUnowned(idsByRarityForMode(WISH_MODE), owned).length > 0
+	return WISH_POOL.some((id) => !(id in ownedMonsters))
 }
 
 // Cena Jajka Życzeń = baza (wg wymarzonego) + progresja za już kupione.

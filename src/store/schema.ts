@@ -44,7 +44,7 @@ export interface SaveState {
 	celebratedStage: number // najwyższy etap, którego animację otwarcia bramy już pokazano (mapa)
 	ownedMonsters: Record<number, { hatchedAt: number }>
 	iskierki: number
-	eggFragments: number // 0–(próg−1), resztki przenoszone między rundami
+	eggFragments: number // zwykle 0–(próg−1); po obniżeniu progu może go przejściowo przekroczyć — addEggFragment domyka wtedy jajko przy następnej odpowiedzi
 	eggStarBank: number // suma gwiazdek zebranych przy budowie bieżącego jajka; decyduje o jego kolorze przy domknięciu
 	eggsEarned: number // ile jajek z fragmentów już powstało — steruje progiem (fragmentsForEgg)
 	pendingEggs: PendingEgg[]

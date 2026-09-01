@@ -72,11 +72,15 @@ export const QUESTIONS_PER_ROUND = 10
 export const MAX_QUESTIONS_PER_ROUND = 12
 export const MAX_STARS_PER_ROUND = 30
 
-// Próg fragmentów na jajko rośnie z liczbą już zdobytych jajek (wyklucie ma być osiągnięciem):
-// 1. jajko = 10, jajka 2–10 = 14, 11–20 = 18, 21–30 = 22, +4 za każdą kolejną dziesiątkę.
+// Próg fragmentów na jajko rośnie z liczbą już zdobytych jajek (wyklucie ma być
+// osiągnięciem): 1. jajko = 10, jajka 2–10 = 14, 11–20 = 18, od 21. = 22 (cap).
+// Cap, bo bez niego pętla nagrody rozciągała się bez końca (jajko co 6–7 rund
+// przy 150. jajku), a właśnie wtedy zostają najtrudniejsze cele kolekcji.
+export const EGG_THRESHOLD_CAP = 22
+
 export function fragmentsForEgg(eggsEarned: number): number {
 	if (eggsEarned <= 0) return 10
-	return 14 + 4 * Math.floor(eggsEarned / 10)
+	return Math.min(EGG_THRESHOLD_CAP, 14 + 4 * Math.floor(eggsEarned / 10))
 }
 
 export interface RoundQuestion {

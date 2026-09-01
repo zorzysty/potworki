@@ -21,7 +21,8 @@ Logika pedagogiczna i ekonomia nagród jako czyste funkcje — bez Reacta, DOM-u
 - `GameMode` (`mult`/`div`/`gap`): trzy **widoki tego samego faktu** — wspólne mastery, etapy i ekonomia; selekcja, odblokowania i decay nie znają trybu. Tokeny trybów są persystowane (`PendingEgg.mode`) — zamrożone; etykiety UI wolno edytować.
 - **Wszystkie liczby strojenia** (progi, ceny, czasy, szanse) żyją w tych plikach i są jedynym źródłem prawdy — także dla bytów w toku (retuning wypraw dotyczy trwających natychmiast; duration/reward niepersystowane). Testy pilnują struktury i przedziałów, nie dokładnych wartości.
 - `stageProgress === 1` ⟺ `shouldUnlockNextStage === true` — kryształy bramy nigdy nie kłamią.
-- Kolor jajka wynika z gwiazdek włożonych w **całą jego budowę** (bank → `eggQualityScore`), losowany raz przy domknięciu i finalny od chwili utworzenia; tęczowe tylko przy komplecie 3★ i tylko z szansą.
+- Kolor jajka wynika z gwiazdek włożonych w **całą jego budowę** (bank → `eggQualityScore`), losowany raz przy domknięciu i finalny od chwili utworzenia; krzywa jakości jest łagodna (nie schodek) — dziecko poprawne-ale-niespieszne też widzi kolorowe jajka; tęczowe tylko z szansą i tylko przy niemal komplecie 3★.
+- Próg fragmentów na jajko rośnie, ale jest capowany (`EGG_THRESHOLD_CAP`) — pętla wyklucia nie może rozciągać się bez końca.
 - Jajko Życzeń: podłogę `WISH_PRICE_FLOOR` egzekwuje samo `wishEggPrice` (żaden konsument nie może jej zgubić); sufit ogranicza **dopłatę, nie cenę końcową** (premia za rzadkość wymarzonego przeżywa sufit i zniżkę fontanny); cena maks ≤ `ISKIERKI_CAP`. Licznik kupionych = `achievementStats.wishEggsBought` — świadomie bez nowego pola zapisu.
 - Żołd: wolna runda zawsze dostaje bazę; bonusy obecności bez streaka — przerwa niczego nie zabiera.
 - Wyprawy: postęp = UKOŃCZONE rundy, **nigdy zegar** (żadnych `Date.now()`/timerów w tej mechanice); strata nagrody niemożliwa; ekonomia uzupełnia żołd, nie zastępuje go.

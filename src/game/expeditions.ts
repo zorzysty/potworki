@@ -106,7 +106,7 @@ export function isExpeditionDone(
 }
 
 // Rozstrzygnięcie powrotu (czyste, rand wstrzykiwany): nagroda z katalogu +
-// ewentualny trop — losowy NIEPOSIADANY potworek (wzór rollWish: null przy
+// ewentualny trop — losowy NIEPOSIADANY potworek (null przy
 // komplecie kolekcji; null też, gdy szansa nie trafiła).
 export function resolveExpedition(
 	e: ExpeditionState,

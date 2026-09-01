@@ -19,13 +19,20 @@ export const QUALITY_ORDER: readonly EggQuality[] = [
 
 // Rozkład jakości jajka wg score 0–30 (eggQualityScore — średnia gwiazdek z całej
 // budowy jajka, nie z jednej rundy) [normal, silver, gold, rainbow] w %.
-// Tęczowe tylko z szansą i tylko przy score 30; każdy wiersz sumuje się do 100.
+// Krzywa łagodna, nie schodek: dziecko poprawne, ale nie zawsze w budżecie 3★
+// (średnio ~2,3★ → score 23) ma widzieć kolorowe jajka, a nie wieczne zwykłe —
+// kolor to jedyna widoczna nagroda za jakość gry. Tęczowe tylko z szansą i tylko
+// od score 28 (≥ 2,8★ średnio: co najwyżej kilka 2★ na całe jajko). Każdy wiersz
+// sumuje się do 100.
 export function qualityOdds(
 	score: number,
 ): readonly [number, number, number, number] {
 	if (score >= 30) return [10, 20, 30, 40]
-	if (score >= 28) return [20, 30, 50, 0]
-	if (score >= 26) return [40, 60, 0, 0]
+	if (score >= 28) return [20, 30, 40, 10]
+	if (score >= 26) return [30, 45, 25, 0]
+	if (score >= 23) return [50, 40, 10, 0]
+	if (score >= 20) return [70, 30, 0, 0]
+	if (score >= 16) return [85, 15, 0, 0]
 	return [100, 0, 0, 0]
 }
 
@@ -42,8 +49,8 @@ export function eggQuality(score: number, rand: () => number): EggQuality {
 // Kolor jajka zależy od gwiazdek zebranych przy JEGO budowie, nie od jednej rundy:
 // `starBank` to suma gwiazdek włożonych w `fragments` (= próg) tworzących to jajko.
 // Średnia gwiazdek/fragment (0..3) skalujemy do 0..30 — tej samej osi co `eggQuality`.
-// floor (nie round): score 30 wymaga banku == fragments×3, więc tęczowe naprawdę tylko
-// za komplet 3★ także przy dużych jajkach (round zaokrąglał 29,5 w górę dla progów ≥20).
+// floor (nie round): score 30 wymaga banku == fragments×3, więc pełne 40 % na tęczowe
+// naprawdę tylko za komplet 3★ także przy dużych jajkach (round zaokrąglał 29,5 w górę).
 export function eggQualityScore(starBank: number, fragments: number): number {
 	if (fragments <= 0) return 0
 	return Math.max(0, Math.min(30, Math.floor((starBank / fragments) * 10)))
@@ -76,6 +83,9 @@ export const ISKIERKI_FOR_DUP: Record<Rarity, number> = {
 
 export const ISKIERKI_CAP = 999
 
+// Pula Jajka Życzeń: mnożeniowa — legendarne ekskluzywne trybów nie są do kupienia.
+export const WISH_MODE: GameMode = "mult"
+
 // Stan ekonomii jajek niesiony między odpowiedziami (commit per odpowiedź).
 export interface EggBankState {
 	eggFragments: number
@@ -100,7 +110,14 @@ export function addEggFragment(
 	if (eggFragments < threshold) {
 		return { bank: { ...bank, eggFragments, eggStarBank }, created: null }
 	}
-	const quality = eggQuality(eggQualityScore(eggStarBank, threshold), rand)
+	// Math.max: po obniżeniu progu (retuning) jajko w toku może mieć więcej
+	// fragmentów niż próg — score liczymy z faktycznie zebranych, żeby nadmiar
+	// banku nie dawał darmowego score 30. Retuning dotyczy jajek w toku od razu,
+	// bez migracji (wzór wypraw).
+	const quality = eggQuality(
+		eggQualityScore(eggStarBank, Math.max(threshold, eggFragments)),
+		rand,
+	)
 	const iskierki =
 		quality === "rainbow"
 			? Math.min(ISKIERKI_CAP, bank.iskierki + 1)
@@ -194,20 +211,6 @@ export function rollMonster(quality: EggQuality, ctx: RollContext): number {
 	return pickInTier(rollTier(RARITY_ODDS[quality], ctx.rand), ctx)
 }
 
-// Pula Jajka Życzeń: mnożeniowa — legendarne ekskluzywne trybów nie są do kupienia.
-export const WISH_MODE: GameMode = "mult"
-
-// Tiery, w których pula ma jeszcze nieposiadanych (pusta lista = pula wyczerpana;
-// ten sam predykat blokuje kupno Jajka Życzeń w store).
-export function tiersWithUnowned(
-	idsByRarity: Record<Rarity, readonly number[]>,
-	owned: ReadonlySet<number>,
-): Rarity[] {
-	return RARITY_ORDER.filter((tier) =>
-		idsByRarity[tier].some((id) => !owned.has(id)),
-	)
-}
-
 // Jajko Życzeń: z wymarzonym → dokładnie on; bez → losowy NIEPOSIADANY (złote szanse,
 // re-roll z renormalizacją wśród tierów, w których coś jeszcze zostało). Pula
 // wyczerpana (kupione, gdy brakował jeden, a domknęło go inne jajko z gniazda)
@@ -215,7 +218,9 @@ export function tiersWithUnowned(
 export function rollWish(ctx: RollContext): number {
 	const { idsByRarity, owned, dreamId, rand } = ctx
 	if (dreamId !== null && !owned.has(dreamId)) return dreamId
-	const available = tiersWithUnowned(idsByRarity, owned)
+	const available = RARITY_ORDER.filter((tier) =>
+		idsByRarity[tier].some((id) => !owned.has(id)),
+	)
 	if (available.length === 0) return rollMonster("gold", ctx)
 	const odds = RARITY_ODDS.gold
 	const weights = available.map((tier) => odds[RARITY_ORDER.indexOf(tier)] ?? 0)
@@ -229,5 +234,5 @@ export function rollWish(ctx: RollContext): number {
 			return unowned[Math.floor(rand() * unowned.length)] as number
 		}
 	}
-	return rollMonster("gold", ctx)
+	return rollMonster("gold", ctx) // siatka na dryf zmiennoprzecinkowy
 }

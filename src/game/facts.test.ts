@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test"
 import {
 	ALL_FACTS,
 	budgetMs,
+	EGG_THRESHOLD_CAP,
 	expectedAnswer,
 	FACTS_BY_KEY,
 	fragmentsForEgg,
@@ -117,6 +118,10 @@ describe("fragmentsForEgg", () => {
 
 	test("21st egg costs 22 fragments", () => {
 		expect(fragmentsForEgg(20)).toBe(22)
+	})
+
+	test("próg jest capowany — 150. jajko kosztuje tyle samo co 21.", () => {
+		expect(fragmentsForEgg(1000)).toBe(EGG_THRESHOLD_CAP)
 	})
 })
 
