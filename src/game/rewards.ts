@@ -81,6 +81,25 @@ export const ISKIERKI_FOR_DUP: Record<Rarity, number> = {
 	legendary: 5,
 }
 
+// Duplikat płaci wg rzadkości × jakość jajka: po domknięciu tierów ~90 % wykluć
+// to duplikaty, a kolor jajka to jedyna nagroda za jakość gry — złote jajko
+// z pospolitym w środku nie może być warte 1 ✨. Jajko Życzeń bez mnożnika
+// (duplikat z niego to tylko wyścig o ostatniego brakującego).
+export const DUP_QUALITY_MULT: Record<PendingEgg["quality"], number> = {
+	normal: 1,
+	silver: 2,
+	gold: 3,
+	rainbow: 5,
+	wish: 1,
+}
+
+export function dupIskierki(
+	rarity: Rarity,
+	quality: PendingEgg["quality"],
+): number {
+	return ISKIERKI_FOR_DUP[rarity] * DUP_QUALITY_MULT[quality]
+}
+
 export const ISKIERKI_CAP = 999
 
 // Pula Jajka Życzeń: mnożeniowa — legendarne ekskluzywne trybów nie są do kupienia.

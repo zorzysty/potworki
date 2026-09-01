@@ -3,9 +3,12 @@ import { describe, expect, test } from "bun:test"
 import { mulberry32 } from "../monsters/catalog"
 import {
 	addEggFragment,
+	DUP_QUALITY_MULT,
+	dupIskierki,
 	eggQuality,
 	eggQualityScore,
 	ISKIERKI_CAP,
+	ISKIERKI_FOR_DUP,
 	LEGENDARY_PITY_EVERY,
 	QUALITY_ORDER,
 	qualityOdds,
@@ -94,6 +97,20 @@ describe("qualityOdds", () => {
 	test("monotoniczna: wyższy score nigdy nie zwiększa szansy na zwykłe", () => {
 		for (let s = 1; s <= 30; s++) {
 			expect(qualityOdds(s)[0]).toBeLessThanOrEqual(qualityOdds(s - 1)[0])
+		}
+	})
+})
+
+describe("dupIskierki", () => {
+	test("zwykłe jajko i Jajko Życzeń = tabela rzadkości bez mnożnika", () => {
+		expect(dupIskierki("common", "normal")).toBe(ISKIERKI_FOR_DUP.common)
+		expect(dupIskierki("epic", "wish")).toBe(ISKIERKI_FOR_DUP.epic)
+	})
+	test("mnożnik rośnie z jakością jajka", () => {
+		let prev = 0
+		for (const q of QUALITY_ORDER) {
+			expect(DUP_QUALITY_MULT[q]).toBeGreaterThan(prev)
+			prev = DUP_QUALITY_MULT[q]
 		}
 	})
 })

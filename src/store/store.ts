@@ -41,8 +41,8 @@ import {
 import type { EggQuality, Rarity } from "../game/rewards"
 import {
 	addEggFragment,
+	dupIskierki,
 	ISKIERKI_CAP,
-	ISKIERKI_FOR_DUP,
 	rollMonsterWithPity,
 	rollWish,
 	WISH_COST,
@@ -843,7 +843,7 @@ export const useGame = create<GameState>()(
 					: state.legendaryPity
 				const pendingEggs = state.pendingEggs.filter((_, i) => i !== index)
 				if (monsterId in state.ownedMonsters) {
-					const gained = ISKIERKI_FOR_DUP[rarityOf(monsterId)]
+					const gained = dupIskierki(rarityOf(monsterId), egg.quality)
 					set({
 						pendingEggs,
 						legendaryPity,

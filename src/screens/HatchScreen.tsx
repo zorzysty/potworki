@@ -7,6 +7,14 @@ import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
 
+// polska liczba mnoga: 1 iskierkę, 2–4 iskierki, 5+ (i 12–14) iskierek
+function iskierkiWord(n: number): string {
+	if (n === 1) return "iskierkę"
+	const d = n % 10
+	const h = n % 100
+	return d >= 2 && d <= 4 && (h < 12 || h > 14) ? "iskierki" : "iskierek"
+}
+
 export function HatchScreen() {
 	const pendingEggs = useGame((s) => s.pendingEggs)
 	const lastHatch = useGame((s) => s.lastHatch)
@@ -112,7 +120,7 @@ export function HatchScreen() {
 						{!lastHatch.isNew && (
 							<div className="anim-fade-up text-xl font-extrabold text-amber-300">
 								Już go masz! Zamienia się w ✨ +{lastHatch.iskierkiGained}{" "}
-								{lastHatch.iskierkiGained === 1 ? "iskierkę" : "iskierki"}
+								{iskierkiWord(lastHatch.iskierkiGained)}
 							</div>
 						)}
 						<div className="flex flex-col gap-3 pt-2">

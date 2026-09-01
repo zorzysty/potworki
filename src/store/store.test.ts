@@ -7,6 +7,7 @@ import { COSMETICS } from "../game/cosmetics"
 import { EXPEDITIONS_BY_ID } from "../game/expeditions"
 import type { FactKey } from "../game/facts"
 import {
+	dupIskierki,
 	ISKIERKI_CAP,
 	ISKIERKI_FOR_DUP,
 	LEGENDARY_PITY_EVERY,
@@ -415,6 +416,17 @@ describe("hatchEgg — gwarancje", () => {
 		const rarity = rarityOf(lh.monsterId)
 		expect(game().iskierki).toBe(ISKIERKI_FOR_DUP[rarity])
 		expect(Object.keys(game().ownedMonsters).length).toBe(ownedBefore)
+		// jakość jajka mnoży nagrodę za duplikat (store przekazuje egg.quality)
+		game().debugAddEgg("gold")
+		game().hatchEgg()
+		const gold = game().lastHatch
+		if (!gold) throw new Error("brak wyniku wyklucia")
+		expect(gold.iskierkiGained).toBe(
+			dupIskierki(rarityOf(gold.monsterId), "gold"),
+		)
+		expect(gold.iskierkiGained).toBeGreaterThan(
+			ISKIERKI_FOR_DUP[rarityOf(gold.monsterId)],
+		)
 	})
 
 	test("iskierki nie przekraczają 999 przy duplikacie", () => {
