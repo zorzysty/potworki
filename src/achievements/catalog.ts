@@ -641,3 +641,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		}),
 	},
 ]
+
+export const ACHIEVEMENTS_BY_ID: ReadonlyMap<string, AchievementDef> = new Map(
+	ACHIEVEMENTS.map((a) => [a.id, a]),
+)

@@ -5,12 +5,12 @@ import { BUILDINGS, DECORATIONS, MAX_BUILDING_LEVEL } from "../game/village"
 import { MONSTER_COUNT } from "../monsters/catalog"
 import type { AchievementCounters, SaveState } from "../store/schema"
 import { INITIAL_SAVE } from "../store/schema"
+import { ACHIEVEMENTS, REWARD_BY_DIFFICULTY } from "./catalog"
 import {
-	ACHIEVEMENTS,
-	type AchievementCtx,
-	REWARD_BY_DIFFICULTY,
-} from "./catalog"
-import { evaluateAchievements } from "./evaluate"
+	achievementRows,
+	claimAchievement,
+	unlockAchievements,
+} from "./evaluate"
 
 const maxCounters: AchievementCounters = {
 	perfectRounds: 25,
@@ -52,66 +52,97 @@ const maxSave: SaveState = {
 		goalId: null,
 	},
 }
-const maxCtx: AchievementCtx = { save: maxSave, counters: maxCounters }
-const emptyCtx: AchievementCtx = {
-	save: INITIAL_SAVE,
-	counters: INITIAL_SAVE.achievementStats,
-}
 
-const TOTAL_REWARD = ACHIEVEMENTS.reduce(
-	(s, a) => s + REWARD_BY_DIFFICULTY[a.difficulty],
-	0,
-)
-
-describe("evaluateAchievements", () => {
-	test("czysty zapis → nic nie odblokowane, 0 iskierek", () => {
-		const r = evaluateAchievements(emptyCtx, new Set())
+describe("unlockAchievements", () => {
+	test("czysty zapis → nic nie odblokowane, ledger bez zmian", () => {
+		const r = unlockAchievements(INITIAL_SAVE, 7)
 		expect(r.newlyUnlocked).toEqual([])
-		expect(r.iskierkiReward).toBe(0)
+		expect(r.achievements).toEqual({})
 	})
 
-	test("maksymalny zapis → wszystkie 53 + pełna nagroda (630)", () => {
-		const r = evaluateAchievements(maxCtx, new Set())
+	test("maksymalny zapis → wszystkie 53, każde nieodebrane ze stemplem now", () => {
+		const r = unlockAchievements(maxSave, 7)
 		expect(r.newlyUnlocked.length).toBe(ACHIEVEMENTS.length)
-		expect(r.iskierkiReward).toBe(TOTAL_REWARD)
-		// 11×easy(5) + 20×medium(10) + 19×hard(15) + 4×legendary(25) = 630
-		expect(r.iskierkiReward).toBe(630)
+		for (const id of r.newlyUnlocked)
+			expect(r.achievements[id]).toEqual({ unlockedAt: 7, claimed: false })
 	})
 
-	test("idempotencja: już zdobyte nie wpadają ponownie ani nie naliczają iskierek", () => {
-		const all = new Set(ACHIEVEMENTS.map((a) => a.id))
-		const r = evaluateAchievements(maxCtx, all)
-		expect(r.newlyUnlocked).toEqual([])
-		expect(r.iskierkiReward).toBe(0)
+	test("idempotencja: ponowne wywołanie na zwróconym ledgerze nic nie dodaje", () => {
+		const first = unlockAchievements(maxSave, 7)
+		const again = unlockAchievements(
+			{ ...maxSave, achievements: first.achievements },
+			8,
+		)
+		expect(again.newlyUnlocked).toEqual([])
+		expect(again.achievements).toEqual(first.achievements)
 	})
 
-	test("częściowy postęp: tylko spełnione, z poprawną nagrodą", () => {
-		// 1 runda + 1 potworek → odblokowuje 'pierwsza-runda' i 'pierwszy-potwor' (po 5)
+	test("częściowy postęp: tylko spełnione; już zapisane pomijane", () => {
+		// 1 runda + 1 potworek → 'pierwsza-runda' i 'pierwszy-potwor'
 		const save: SaveState = {
 			...INITIAL_SAVE,
 			totalRounds: 1,
 			ownedMonsters: { 0: { hatchedAt: 0 } },
 		}
-		const r = evaluateAchievements(
-			{ save, counters: save.achievementStats },
-			new Set(),
-		)
-		expect(r.newlyUnlocked.sort()).toEqual([
+		expect(unlockAchievements(save, 1).newlyUnlocked.sort()).toEqual([
 			"pierwsza-runda",
 			"pierwszy-potwor",
 		])
-		expect(r.iskierkiReward).toBe(
-			REWARD_BY_DIFFICULTY.easy + REWARD_BY_DIFFICULTY.easy,
-		)
+		const partial = {
+			...save,
+			achievements: { "pierwsza-runda": { unlockedAt: 0, claimed: true } },
+		}
+		expect(unlockAchievements(partial, 1).newlyUnlocked).toEqual([
+			"pierwszy-potwor",
+		])
+	})
+})
+
+describe("claimAchievement", () => {
+	test("wypłaca nagrodę wg trudności raz; niezdobyte/odebrane/nieznane = null", () => {
+		const save = {
+			achievements: { "pierwsza-runda": { unlockedAt: 0, claimed: false } },
+		}
+		const r = claimAchievement(save, "pierwsza-runda")
+		expect(r?.reward).toBe(REWARD_BY_DIFFICULTY.easy)
+		expect(r?.achievements["pierwsza-runda"]?.claimed).toBe(true)
+		expect(claimAchievement(r ?? save, "pierwsza-runda")).toBeNull()
+		expect(claimAchievement(save, "kolekcja-80")).toBeNull()
+		expect(claimAchievement(save, "nie-ma-takiego")).toBeNull()
+	})
+})
+
+describe("achievementRows", () => {
+	test("kolejność: do odebrania → zdobyte → niezdobyte, w grupie wg nagrody", () => {
+		const save: SaveState = {
+			...INITIAL_SAVE,
+			achievements: {
+				"pierwsza-runda": { unlockedAt: 0, claimed: false },
+				"pierwszy-potwor": { unlockedAt: 0, claimed: true },
+			},
+		}
+		const rows = achievementRows(save)
+		expect(rows.length).toBe(ACHIEVEMENTS.length)
+		expect(rows[0]?.def.id).toBe("pierwsza-runda")
+		expect(rows[1]?.def.id).toBe("pierwszy-potwor")
+		const rest = rows.slice(2)
+		expect(rest.every((r) => !r.unlocked)).toBe(true)
+		const rewards = rest.map((r) => REWARD_BY_DIFFICULTY[r.def.difficulty])
+		expect(rewards).toEqual([...rewards].sort((a, b) => a - b))
 	})
 
-	test("częściowy postęp pomija to, co już w alreadyUnlocked", () => {
-		const save: SaveState = { ...INITIAL_SAVE, totalRounds: 1 }
-		const r = evaluateAchievements(
-			{ save, counters: save.achievementStats },
-			new Set(["pierwsza-runda"]),
+	test("zdobyte zostaje zdobyte: pasek pełny, choć zasób spadł", () => {
+		// „Skarbnica iskier" (100 ✨) zdobyta, iskierki wydane do zera
+		const save: SaveState = {
+			...INITIAL_SAVE,
+			iskierki: 0,
+			achievements: { "skarbnica-iskier": { unlockedAt: 0, claimed: true } },
+		}
+		const row = achievementRows(save).find(
+			(r) => r.def.id === "skarbnica-iskier",
 		)
-		expect(r.newlyUnlocked).toEqual([])
-		expect(r.iskierkiReward).toBe(0)
+		expect(row?.unlocked).toBe(true)
+		expect(row?.progress.current).toBe(100)
+		expect(row?.progress.ratio).toBe(1)
 	})
 })

@@ -7,7 +7,7 @@ Deklaratywny katalog osiągnięć i ich ocena jako czyste funkcje — cele krót
 ## Ownership
 
 - `catalog.ts` — typy, `REWARD_BY_DIFFICULTY`, tablica `ACHIEVEMENTS` z czystą funkcją `progress(ctx)` każdego osiągnięcia
-- `evaluate.ts` — `achievementProgress` i `evaluateAchievements` (jedyne wejście store)
+- `evaluate.ts` — `achievementProgress` + czysty ledger nad `SaveState.achievements`: `unlockAchievements` (dopisuje spełnione), `claimAchievement` (oznacza odebrane, zwraca nagrodę), `achievementRows` (posortowane wiersze ekranu, „zdobyte zostaje zdobyte"); store i ekran tylko czytają wyniki
 
 ## Local Contracts
 
@@ -16,7 +16,7 @@ Deklaratywny katalog osiągnięć i ich ocena jako czyste funkcje — cele krót
 - `wishEggsBought` ma drugiego konsumenta poza osiągnięciami (cena Jajka Życzeń) — nie zerować i nie przedefiniowywać bez zmiany cennika; wycofanie osiągnięć nie zwalnia licznika.
 - Osiągnięcia na licznikach nieodtwarzalnych wstecz liczą się od wdrożenia (`reconcileAchievements` nie nadrabia) — świadome.
 - Targety osiągnięć budowniczego podążają za `BUILDINGS.length`; ledger jest append-only — zdobyte przy niższym targecie zostaje zdobyte.
-- Nagrody i odblokowania nadaje store, nigdy ten moduł — tu tylko czysta ocena (`iskierkiReward` z `evaluateAchievements` to suma informacyjna; wypłata idzie przez `claimAchievement` w store, per osiągnięcie).
+- Ten moduł nie dotyka portfela ani kolejki toastów — zwraca patch ledgera i kwotę; store wypłaca (`credit`) i decyduje, czy odblokowanie jest głośne (toast) czy ciche (reconcile przy starcie).
 
 ## Work Guidance
 

@@ -1,15 +1,11 @@
 import { useEffect } from "react"
 import {
-	ACHIEVEMENTS,
-	type AchievementDef,
+	ACHIEVEMENTS_BY_ID,
 	REWARD_BY_DIFFICULTY,
 } from "../achievements/catalog"
 import { useGame } from "../store/store"
 import { TIER_META } from "./achievementTier"
 
-const BY_ID = new Map<string, AchievementDef>(
-	ACHIEVEMENTS.map((a) => [a.id, a]),
-)
 // jak długo jeden toast jest widoczny zanim ustąpi następnemu z kolejki
 const TOAST_MS = 3200
 
@@ -31,7 +27,7 @@ export function AchievementToast() {
 	}, [currentId, shift])
 
 	if (!currentId) return null
-	const def = BY_ID.get(currentId)
+	const def = ACHIEVEMENTS_BY_ID.get(currentId)
 	if (!def) return null
 	const tier = TIER_META[def.difficulty]
 

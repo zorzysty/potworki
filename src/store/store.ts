@@ -1,7 +1,9 @@
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
-import { ACHIEVEMENTS, REWARD_BY_DIFFICULTY } from "../achievements/catalog"
-import { evaluateAchievements } from "../achievements/evaluate"
+import {
+	claimAchievement as claimLedger,
+	unlockAchievements,
+} from "../achievements/evaluate"
 import {
 	applyAnswer,
 	decayStats,
@@ -1007,15 +1009,11 @@ export const useGame = create<GameState>()(
 			// zmieniających stan. Idempotentne: te już w ledgerze są pomijane (alreadyUnlocked).
 			checkAchievements: () => {
 				const s = get()
-				const { newlyUnlocked } = evaluateAchievements(
-					{ save: s, counters: s.achievementStats },
-					new Set(Object.keys(s.achievements)),
+				const { achievements, newlyUnlocked } = unlockAchievements(
+					s,
+					Date.now(),
 				)
 				if (newlyUnlocked.length === 0) return
-				const now = Date.now()
-				const achievements = { ...s.achievements }
-				for (const id of newlyUnlocked)
-					achievements[id] = { unlockedAt: now, claimed: false }
 				set({
 					achievements,
 					// kolejka toastów „zdobyte!" (efemeryczna) — pokazuje je AchievementToast.
@@ -1028,16 +1026,11 @@ export const useGame = create<GameState>()(
 			// miejsce wypłaty nagrody za osiągnięcie; idempotentne (claimed strzeże).
 			claimAchievement: (id) => {
 				const s = get()
-				const entry = s.achievements[id]
-				const def = ACHIEVEMENTS.find((a) => a.id === id)
-				if (!entry || entry.claimed || !def) return
+				const r = claimLedger(s, id)
+				if (!r) return
 				set({
-					achievements: {
-						...s.achievements,
-						[id]: { ...entry, claimed: true },
-					},
-					iskierki: credit(s.iskierki, REWARD_BY_DIFFICULTY[def.difficulty])
-						.wallet,
+					achievements: r.achievements,
+					iskierki: credit(s.iskierki, r.reward).wallet,
 				})
 				// jak każda akcja zmieniająca portfel — np. „Skarbnica iskier" (100 ✨)
 				get().checkAchievements()
@@ -1051,17 +1044,11 @@ export const useGame = create<GameState>()(
 			// osiągnięcia, które dziecko już spełnia (po wdrożeniu funkcji / migracji v5→v6),
 			// bez lawiny powiadomień; iskierki czekają do odbioru (postęp dziecka jest święty).
 			reconcileAchievements: () => {
-				const s = get()
-				const { newlyUnlocked } = evaluateAchievements(
-					{ save: s, counters: s.achievementStats },
-					new Set(Object.keys(s.achievements)),
+				const { achievements, newlyUnlocked } = unlockAchievements(
+					get(),
+					Date.now(),
 				)
-				if (newlyUnlocked.length === 0) return
-				const now = Date.now()
-				const achievements = { ...s.achievements }
-				for (const id of newlyUnlocked)
-					achievements[id] = { unlockedAt: now, claimed: false }
-				set({ achievements })
+				if (newlyUnlocked.length > 0) set({ achievements })
 			},
 
 			debugSetAllMastery: (value) => {

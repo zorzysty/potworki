@@ -1,26 +1,10 @@
 import { type CSSProperties, useEffect, useRef, useState } from "react"
-import {
-	ACHIEVEMENTS,
-	type AchievementCtx,
-	type AchievementDef,
-	REWARD_BY_DIFFICULTY,
-} from "../achievements/catalog"
-import {
-	type AchievementProgress,
-	achievementProgress,
-} from "../achievements/evaluate"
+import { REWARD_BY_DIFFICULTY } from "../achievements/catalog"
+import { type AchievementRow, achievementRows } from "../achievements/evaluate"
 import { TIER_META } from "../components/achievementTier"
 import { HelpTip } from "../components/HelpTip"
 import { ModalCloseX } from "../components/ModalCloseX"
 import { useGame } from "../store/store"
-
-interface AchievementRow {
-	def: AchievementDef
-	progress: AchievementProgress
-	unlocked: boolean
-	claimable: boolean // zdobyte, iskierki jeszcze nieodebrane
-	unlockedAt: number
-}
 
 // Lot iskierek po odbiorze (zgrane z .anim-claim-fly w styles.css): rozprysk ze środka ekranu,
 // potem lot do licznika w nagłówku. Licznik podskakuje z nową wartością, gdy dolecą.
@@ -76,33 +60,7 @@ export function AchievementsScreen() {
 		setSelectedId(null)
 	}
 
-	const ctx: AchievementCtx = { save: state, counters: state.achievementStats }
-
-	const rows = ACHIEVEMENTS.map((def) => {
-		const live = achievementProgress(def, ctx)
-		const entry = achievements[def.id]
-		// zdobyte zostaje zdobyte: pasek pełny nawet gdy zasób spadł (wydane iskierki)
-		// albo target urósł (ledger append-only) — inaczej ✓ przy pasku 30/50
-		const progress =
-			entry === undefined ? live : { ...live, current: live.target, ratio: 1 }
-		return {
-			def,
-			progress,
-			unlocked: entry !== undefined,
-			claimable: entry !== undefined && !entry.claimed,
-			unlockedAt: entry?.unlockedAt ?? 0,
-		}
-	})
-	// kolejność: do odebrania → zdobyte → niezdobyte, potem wg trudności (łatwe→legendarne,
-	// przez rosnącą nagrodę 5/10/15/25); remisy zachowują kolejność z katalogu (stabilny sort)
-	rows.sort((a, b) => {
-		if (a.claimable !== b.claimable) return a.claimable ? -1 : 1
-		if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1
-		return (
-			REWARD_BY_DIFFICULTY[a.def.difficulty] -
-			REWARD_BY_DIFFICULTY[b.def.difficulty]
-		)
-	})
+	const rows = achievementRows(state)
 
 	const unlockedCount = Object.keys(achievements).length
 	const selected = selectedId
@@ -121,7 +79,7 @@ export function AchievementsScreen() {
 					←
 				</button>
 				<div className="text-2xl font-extrabold text-grape-dark">
-					Osiągnięcia {unlockedCount}/{ACHIEVEMENTS.length}
+					Osiągnięcia {unlockedCount}/{rows.length}
 				</div>
 				<div className="flex items-center gap-1.5">
 					<HelpTip
