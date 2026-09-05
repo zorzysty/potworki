@@ -265,73 +265,72 @@ export function HatchScreen() {
 						<div className="anim-bounce-slow text-xl font-extrabold text-white/80">
 							👆 Tapnij jajko {3 - cracks} {3 - cracks === 1 ? "raz" : "razy"}!
 						</div>
-						{pendingEggs.length > 1 && (
-							<div className="flex w-full flex-col items-center gap-1">
-								{/* gniazdo = wybór jajka: sloty wg permutacji nestOrder, slot
-								    wybranego jajka pusty; nadmiar ponad liczbę slotów pokazuje chip */}
-								<NestArt
-									className="max-w-[34rem]"
-									style={{
-										width: "min(100%, calc((var(--app-vh) - 270px) * 0.75))",
-									}}
-								>
-									{nestOrder.map((i, slotIdx) => {
-										const e = pendingEggs[i]
-										const slot = NEST_SLOTS[slotIdx]
-										if (!e || !slot || i === safeIndex) return null
-										return (
-											<button
-												key={i}
-												ref={(el) => {
-													if (el) nestRefs.current.set(i, el)
-													else nestRefs.current.delete(i)
-												}}
-												type="button"
-												onClick={() => selectEgg(i)}
-												className="pointer-events-none absolute touch-manipulation [filter:drop-shadow(0_3px_3px_#0006)] transition-[filter] hover:[filter:drop-shadow(0_0_5px_#fff)_drop-shadow(0_0_12px_#fffa)] active:scale-90"
-												style={{
-													left: `${slot.cx - slot.w / 2}%`,
-													bottom: `${100 - slot.bottom}%`,
-													width: `${slot.w}%`,
-													zIndex: slot.z,
-												}}
-												aria-label={`Wybierz: ${EGG_LABELS[e.quality]}`}
-											>
-												<EggView
-													quality={e.quality}
-													className="block h-auto w-full"
-												/>
-												{/* hitbox = kształt jajka: niewidzialna nakładka z clip-path
+						{/* gniazdo zawsze widoczne (puste przy jednym jajku) — stały układ ekranu */}
+						<div className="flex w-full flex-col items-center gap-1">
+							{/* gniazdo = wybór jajka: sloty wg permutacji nestOrder, slot
+							    wybranego jajka pusty; nadmiar ponad liczbę slotów pokazuje chip */}
+							<NestArt
+								className="max-w-[34rem]"
+								style={{
+									width: "min(100%, calc((var(--app-vh) - 270px) * 0.75))",
+								}}
+							>
+								{nestOrder.map((i, slotIdx) => {
+									const e = pendingEggs[i]
+									const slot = NEST_SLOTS[slotIdx]
+									if (!e || !slot || i === safeIndex) return null
+									return (
+										<button
+											key={i}
+											ref={(el) => {
+												if (el) nestRefs.current.set(i, el)
+												else nestRefs.current.delete(i)
+											}}
+											type="button"
+											onClick={() => selectEgg(i)}
+											className="pointer-events-none absolute touch-manipulation [filter:drop-shadow(0_3px_3px_#0006)] transition-[filter] hover:[filter:drop-shadow(0_0_5px_#fff)_drop-shadow(0_0_12px_#fffa)] active:scale-90"
+											style={{
+												left: `${slot.cx - slot.w / 2}%`,
+												bottom: `${100 - slot.bottom}%`,
+												width: `${slot.w}%`,
+												zIndex: slot.z,
+											}}
+											aria-label={`Wybierz: ${EGG_LABELS[e.quality]}`}
+										>
+											<EggView
+												quality={e.quality}
+												className="block h-auto w-full"
+											/>
+											{/* hitbox = kształt jajka: niewidzialna nakładka z clip-path
 												    (przycina hit-testing) NAD rysunkiem — sam rysunek zostaje
 												    nieprzycięty; przycisk sam klików nie łapie (pointer-events-none) */}
-												<div
-													className="pointer-events-auto absolute inset-0"
-													style={{ clipPath: EGG_CLIP }}
-												/>
-												{e.mode === "div" && (
-													<div className="absolute right-0 top-0 rounded-full bg-violet-500 px-1.5 text-xs font-extrabold text-white">
-														÷
-													</div>
-												)}
-												{e.mode === "gap" && (
-													<div className="absolute right-0 top-0 rounded-full bg-violet-500 px-1.5 text-xs font-extrabold text-white">
-														🧩
-													</div>
-												)}
-											</button>
-										)
-									})}
-									{pendingEggs.length > NEST_SLOTS.length && (
-										<div
-											className="absolute right-2 top-2 rounded-full bg-white/20 px-3 py-1 text-sm font-extrabold text-white"
-											style={{ zIndex: 11 }}
-										>
-											+{pendingEggs.length - NEST_SLOTS.length} 🥚
-										</div>
-									)}
-								</NestArt>
-							</div>
-						)}
+											<div
+												className="pointer-events-auto absolute inset-0"
+												style={{ clipPath: EGG_CLIP }}
+											/>
+											{e.mode === "div" && (
+												<div className="absolute right-0 top-0 rounded-full bg-violet-500 px-1.5 text-xs font-extrabold text-white">
+													÷
+												</div>
+											)}
+											{e.mode === "gap" && (
+												<div className="absolute right-0 top-0 rounded-full bg-violet-500 px-1.5 text-xs font-extrabold text-white">
+													🧩
+												</div>
+											)}
+										</button>
+									)
+								})}
+								{pendingEggs.length > NEST_SLOTS.length && (
+									<div
+										className="absolute right-2 top-2 rounded-full bg-white/20 px-3 py-1 text-sm font-extrabold text-white"
+										style={{ zIndex: 11 }}
+									>
+										+{pendingEggs.length - NEST_SLOTS.length} 🥚
+									</div>
+								)}
+							</NestArt>
+						</div>
 					</>
 				) : (
 					<>
