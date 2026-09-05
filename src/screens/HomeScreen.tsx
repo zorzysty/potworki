@@ -4,6 +4,7 @@ import { Companion } from "../components/Companion"
 import { EggView } from "../components/EggView"
 import { HelpTip } from "../components/HelpTip"
 import { visitStage } from "../game/adaptive"
+import * as collection from "../game/collection"
 import { expeditionProgress } from "../game/expeditions"
 import { fragmentsForEgg, isMaxStage, unlockedFactors } from "../game/facts"
 import { canAffordSomething } from "../game/village"
@@ -36,14 +37,10 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const startVisitRound = useGame((s) => s.startVisitRound)
 	const goTo = useGame((s) => s.goTo)
 
-	const ownedIds = Object.keys(ownedMonsters).map(Number)
-	const ownedCount = ownedIds.length
+	const ownedCount = collection.ownedCount(ownedMonsters)
 	const factors = unlockedFactors(unlockedStage)
-	const newestOwned = ownedIds.sort(
-		(x, y) =>
-			(ownedMonsters[y]?.hatchedAt ?? 0) - (ownedMonsters[x]?.hatchedAt ?? 0),
-	)[0]
 	// bohater Home = przyjaciel (jeśli wybrany i posiadany), inaczej najnowszy potworek
+	const newestOwned = collection.newestOwned(ownedMonsters)
 	const companionPresent = companionId !== null && companionId in ownedMonsters
 	const heroId = companionPresent ? (companionId as number) : newestOwned
 	const firstEgg = pendingEggs[0]
@@ -63,8 +60,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	// ma pierwszeństwo (plans/README.md, Shared-surface governance).
 	const visited = visitStage(facts, unlockedStage)
 	const visitRegion = visited !== null ? REGIONS[visited] : undefined
-	const guardianOwned =
-		visitRegion !== undefined && visitRegion.guardianId in ownedMonsters
+	const guardianOwned = collection.guardianOwned(visitRegion, ownedMonsters)
 	// chip postępu wyprawy: pasywny status POD gniazdem; zasada „maks jedna
 	// proaktywna karta na Home" — USTĘPUJE zaproszeniu Strażnika, gdy oba by
 	// grały; „Graj!" nigdy nie spada niżej (plans/README.md, governance)
@@ -82,7 +78,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 				Potworki
 			</h1>
 
-			{ownedCount === MONSTER_COUNT && (
+			{collection.isCollectionComplete(ownedMonsters) && (
 				<div className="anim-pop rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-5 py-2 text-xl font-extrabold text-white shadow-lg">
 					🏆 Mistrzyni Kolekcji!
 				</div>

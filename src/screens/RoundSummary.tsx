@@ -8,6 +8,7 @@ import { RARITY_META } from "../components/rarity"
 import { StarMeter } from "../components/StarMeter"
 import { useGateReveal } from "../components/useGateReveal"
 import { VISIT_BONUS } from "../game/adaptive"
+import * as collection from "../game/collection"
 import { fragmentsForEgg } from "../game/facts"
 import { currentGoal } from "../game/village"
 import { rarityOf } from "../monsters/catalog"
@@ -51,8 +52,7 @@ export function RoundSummary() {
 	// doliczone przy finalizacji; chip żołdu zostaje czystym żołdem)
 	const visitRegion =
 		round.visitStage !== null ? REGIONS[round.visitStage] : undefined
-	const guardianOwned =
-		visitRegion !== undefined && visitRegion.guardianId in ownedMonsters
+	const guardianOwned = collection.guardianOwned(visitRegion, ownedMonsters)
 	// powrót z wyprawy: nagroda już doliczona przy finalizacji; trop pokazuje
 	// TYLKO sylwetkę + rzadkość (nigdy imię — konwencja „???" do wyklucia)
 	const back = round.expeditionReturn

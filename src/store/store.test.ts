@@ -442,6 +442,32 @@ describe("hatchEgg — gwarancje", () => {
 		expect(game().iskierki).toBe(999)
 	})
 
+	test("ostatni brakujący potworek: lastHatch.collectionComplete = true", () => {
+		suppressAchievements()
+		const allButZero = Object.fromEntries(
+			Array.from({ length: MONSTER_COUNT - 1 }, (_, i) => [
+				i + 1,
+				{ hatchedAt: 1 },
+			]),
+		)
+		// Jajko Życzeń z wymarzonym = dokładnie on → deterministyczne domknięcie
+		useGame.setState({
+			ownedMonsters: allButZero,
+			dreamMonsterId: 0,
+			pendingEggs: [{ quality: "wish", mode: "mult" }],
+		})
+		game().hatchEgg()
+		expect(game().lastHatch?.isNew).toBe(true)
+		expect(game().lastHatch?.collectionComplete).toBe(true)
+		// zwykłe wyklucie wcześniej — false
+		useGame.setState({
+			ownedMonsters: {},
+			pendingEggs: [{ quality: "normal", mode: "mult" }],
+		})
+		game().hatchEgg()
+		expect(game().lastHatch?.collectionComplete).toBe(false)
+	})
+
 	test("duplikat przy prawie pełnym portfelu: ekran obiecuje tyle, ile dostał portfel", () => {
 		suppressAchievements()
 		game().debugOwnRarity("common")

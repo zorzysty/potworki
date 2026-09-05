@@ -5,6 +5,7 @@ import { CRYSTALS, GateArch, GateReveal, litCrystals } from "../components/gate"
 import { HelpTip } from "../components/HelpTip"
 import { useGateReveal } from "../components/useGateReveal"
 import { needsMaintenance, stageProgress } from "../game/adaptive"
+import { guardianOwned, newestOwned } from "../game/collection"
 import { isMaxStage, STAGES } from "../game/facts"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { BRIDGE_GUARDIAN_IDS, REGIONS, type Region } from "../monsters/world"
@@ -292,11 +293,7 @@ export function MapScreen() {
 	const refresh = needsMaintenance(facts, unlockedStage) // stare tabliczki przygasły
 	const gatesLeft = STAGES.length - 1 - unlockedStage // nieotwarte bramy (z bieżącą)
 
-	const ownedIds = Object.keys(ownedMonsters).map(Number)
-	const traveler = ownedIds.sort(
-		(a, b) =>
-			(ownedMonsters[b]?.hatchedAt ?? 0) - (ownedMonsters[a]?.hatchedAt ?? 0),
-	)[0]
+	const traveler = newestOwned(ownedMonsters)
 
 	// zdobyte krainy: etapy unlockedStage..1 (od najnowszej), etap 0 = wioska
 	const conquered: number[] = []
@@ -315,7 +312,7 @@ export function MapScreen() {
 			el: (
 				<RegionIsland
 					region={region}
-					guardianOwned={region.guardianId in ownedMonsters}
+					guardianOwned={guardianOwned(region, ownedMonsters)}
 					side={sideOf(i)}
 					badge={
 						<span

@@ -1,3 +1,4 @@
+import { ownedCount } from "../game/collection"
 import { COSMETICS_BY_ID } from "../game/cosmetics"
 import { ALL_FACTS, isMaxStage, STAGES } from "../game/facts"
 import { BUILDINGS, DECORATIONS, MAX_BUILDING_LEVEL } from "../game/village"
@@ -44,10 +45,6 @@ export interface AchievementDef {
 }
 
 // --- helpery liczące z zapisu (czyste) ---
-
-function ownedCount(save: SaveState): number {
-	return Object.keys(save.ownedMonsters).length
-}
 
 function ownedOfRarity(
 	save: SaveState,
@@ -139,7 +136,10 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		description: "Zdobądź swojego pierwszego potworka.",
 		icon: "👾",
 		difficulty: "easy",
-		progress: ({ save }) => ({ current: ownedCount(save), target: 1 }),
+		progress: ({ save }) => ({
+			current: ownedCount(save.ownedMonsters),
+			target: 1,
+		}),
 	},
 	{
 		id: "pierwsze-jajko",
@@ -163,7 +163,10 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		description: "Zbierz 5 potworków.",
 		icon: "🐣",
 		difficulty: "easy",
-		progress: ({ save }) => ({ current: ownedCount(save), target: 5 }),
+		progress: ({ save }) => ({
+			current: ownedCount(save.ownedMonsters),
+			target: 5,
+		}),
 	},
 	{
 		id: "brama-1",
@@ -188,7 +191,10 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		description: "Zbierz 15 potworków.",
 		icon: "📦",
 		difficulty: "medium",
-		progress: ({ save }) => ({ current: ownedCount(save), target: 15 }),
+		progress: ({ save }) => ({
+			current: ownedCount(save.ownedMonsters),
+			target: 15,
+		}),
 	},
 	{
 		id: "pierwszy-legendarny",
@@ -281,7 +287,10 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		description: "Zbierz 40 potworków.",
 		icon: "🏹",
 		difficulty: "hard",
-		progress: ({ save }) => ({ current: ownedCount(save), target: 40 }),
+		progress: ({ save }) => ({
+			current: ownedCount(save.ownedMonsters),
+			target: 40,
+		}),
 	},
 	{
 		id: "kolekcja-komplet",
@@ -290,7 +299,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		icon: "🏆",
 		difficulty: "legendary",
 		progress: ({ save }) => ({
-			current: ownedCount(save),
+			current: ownedCount(save.ownedMonsters),
 			target: MONSTER_COUNT,
 		}),
 	},

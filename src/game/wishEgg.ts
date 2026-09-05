@@ -1,10 +1,6 @@
-import {
-	idsByRarityForMode,
-	isDivisionOnly,
-	isGapOnly,
-	rarityOf,
-} from "../monsters/catalog"
+import { isDivisionOnly, isGapOnly, rarityOf } from "../monsters/catalog"
 import type { SaveState } from "../store/schema"
+import { isPoolComplete } from "./collection"
 import {
 	WISH_COST,
 	WISH_COST_NO_DREAM,
@@ -12,11 +8,6 @@ import {
 	wishEggPrice,
 } from "./rewards"
 import { wishEggDiscount, wishEggUnlocked } from "./village"
-
-// Pula Jajka Życzeń: mnożeniowa — legendarne ekskluzywne trybów nie są do kupienia.
-const WISH_POOL: readonly number[] = Object.values(
-	idsByRarityForMode(WISH_MODE),
-).flat()
 
 export type WishEggState = Pick<
 	SaveState,
@@ -52,6 +43,6 @@ export function wishEgg(state: WishEggState): {
 		),
 		dreamApplies,
 		unlocked: wishEggUnlocked(state.village),
-		available: WISH_POOL.some((id) => !(id in state.ownedMonsters)),
+		available: !isPoolComplete(state.ownedMonsters, WISH_MODE),
 	}
 }

@@ -1,3 +1,4 @@
+import { byRecency } from "./collection"
 import { MAX_STARS_PER_ROUND } from "./facts"
 
 // Wioska Budowniczych: katalog budynków/dekoracji i czysta ekonomia żołdu.
@@ -234,10 +235,7 @@ export function villageRoster(
 ): VillageRoster {
 	const ownedIds = Object.keys(ownedMonsters).map(Number)
 	const cap = villageCap(v)
-	const sorted = [...ownedIds].sort(
-		(a, b) =>
-			(ownedMonsters[b]?.hatchedAt ?? 0) - (ownedMonsters[a]?.hatchedAt ?? 0),
-	)
+	const sorted = byRecency(ownedMonsters)
 	const present = sorted.filter((id) => id !== opts.travelerId)
 	let shown = present.slice(0, cap)
 	const { companionId } = opts

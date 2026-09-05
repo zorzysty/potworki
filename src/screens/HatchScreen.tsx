@@ -4,7 +4,7 @@ import { BigButton } from "../components/BigButton"
 import { EGG_LABELS, EggView } from "../components/EggView"
 import { NEST_SLOTS, NestArt } from "../components/NestArt"
 import { RARITY_META } from "../components/rarity"
-import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
+import { MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
 
@@ -46,13 +46,11 @@ export function HatchScreen() {
 	const bigRef = useRef<HTMLDivElement>(null)
 	const nestRefs = useRef(new Map<number, HTMLElement>())
 
-	const ownedCount = useGame((s) => Object.keys(s.ownedMonsters).length)
 	// indeks może się zdezaktualizować po wykluciu (lista się skraca) — przytnij do zakresu
 	const safeIndex = Math.min(selectedIndex, Math.max(0, pendingEggs.length - 1))
 	const egg = pendingEggs[safeIndex]
 	const monster = lastHatch ? MONSTERS[lastHatch.monsterId] : undefined
-	const collectionComplete =
-		lastHatch?.isNew === true && ownedCount === MONSTER_COUNT
+	const collectionComplete = lastHatch?.collectionComplete === true
 
 	const nestOrder =
 		order.length === pendingEggs.length ? order : pendingEggs.map((_, i) => i)

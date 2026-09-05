@@ -9,6 +9,7 @@ import { HelpTip } from "../components/HelpTip"
 import { ModalCloseX } from "../components/ModalCloseX"
 import { MonsterStage } from "../components/MonsterStage"
 import { CARD_THEME, RARITY_META } from "../components/rarity"
+import { ownedCount as collectionCount } from "../game/collection"
 import type { CosmeticSlot } from "../game/cosmetics"
 import {
 	COSMETICS,
@@ -626,7 +627,7 @@ export function CollectionScreen() {
 	const achievementStats = useGame((s) => s.achievementStats)
 	const [selectedId, setSelectedId] = useState<number | null>(null)
 
-	const ownedCount = Object.keys(ownedMonsters).length
+	const ownedCount = collectionCount(ownedMonsters)
 	// studnia życzeń: bez fontanny przycisk kupna ustępuje zajawce (fontanna →
 	// Wioska); guard w store czyta ten sam obiekt
 	const wish = wishEgg({

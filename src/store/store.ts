@@ -31,6 +31,7 @@ import type { Fact, FactKey, GameMode, RoundQuestion } from "../game/facts"
 
 export type { RoundQuestion } from "../game/facts"
 
+import { isCollectionComplete } from "../game/collection"
 import {
 	expectedAnswer,
 	FACTS_BY_KEY,
@@ -57,6 +58,7 @@ import {
 	BUILDINGS,
 	buildingLevel,
 	DECORATIONS,
+	DECORATIONS_BY_ID,
 	MAX_BUILDING_LEVEL,
 	nextLevelCost,
 	roundWage,
@@ -134,6 +136,7 @@ export interface HatchResult {
 	isNew: boolean
 	isDream: boolean
 	iskierkiGained: number
+	collectionComplete: boolean // ten wyklut domknął katalog (fanfary na ekranie)
 }
 
 interface GameState extends SaveState {
@@ -817,20 +820,28 @@ export const useGame = create<GameState>()(
 							isNew: false,
 							isDream: false,
 							iskierkiGained: gained,
+							collectionComplete: false,
 						},
 					})
 				} else {
 					const isDream = state.dreamMonsterId === monsterId
+					const ownedMonsters = {
+						...state.ownedMonsters,
+						[monsterId]: { hatchedAt: Date.now() },
+					}
 					set({
 						pendingEggs,
 						legendaryPity,
-						ownedMonsters: {
-							...state.ownedMonsters,
-							[monsterId]: { hatchedAt: Date.now() },
-						},
+						ownedMonsters,
 						dreamMonsterId: isDream ? null : state.dreamMonsterId,
 						achievementStats,
-						lastHatch: { monsterId, isNew: true, isDream, iskierkiGained: 0 },
+						lastHatch: {
+							monsterId,
+							isNew: true,
+							isDream,
+							iskierkiGained: 0,
+							collectionComplete: isCollectionComplete(ownedMonsters),
+						},
 					})
 				}
 				get().checkAchievements()
@@ -922,7 +933,7 @@ export const useGame = create<GameState>()(
 
 			buyDecoration: (id) => {
 				const state = get()
-				const def = DECORATIONS.find((d) => d.id === id)
+				const def = DECORATIONS_BY_ID.get(id)
 				if (!def) return
 				if (state.village.decorations.includes(id)) return
 				const wallet = spend(state.iskierki, def.cost)

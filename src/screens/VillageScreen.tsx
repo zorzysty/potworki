@@ -34,6 +34,7 @@ import {
 	TreeArt,
 } from "../components/village/Scenery"
 import { WanderingMonster, wanderParams } from "../components/WanderingMonster"
+import { firstHatched, isCollectionComplete } from "../game/collection"
 import type { CosmeticId } from "../game/cosmetics"
 import { expeditionProgress } from "../game/expeditions"
 import type { BuildingId, DecorationId } from "../game/village"
@@ -45,7 +46,7 @@ import {
 	nextLevelCost,
 	villageRoster,
 } from "../game/village"
-import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
+import { MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
 
@@ -228,31 +229,29 @@ export function VillageScreen() {
 	// useMemo — memo(WanderingMonster) widzi te same referencje, więc
 	// przełączniki UI (evening/sheet/showCamp) nie rekonsyliują ~26 drzew SVG.
 	// Deps = dokładnie te wycinki store, które łańcuch czyta (stabilne).
-	const { ownedIds, ownedCount, activeSpots, residentIds, wanderers } =
-		useMemo(() => {
-			const activeSpots = RESIDENT_SPOTS.filter(
-				([id]) => buildingLevel(village, id) >= 1,
-			)
-			const { ownedIds, residentIds, wanderIds } = villageRoster(
-				ownedMonsters,
-				village,
-				{
-					travelerId: expedition?.monsterId ?? null,
-					companionId,
-					residentSpots: activeSpots.length,
-				},
-			)
-			return {
-				ownedIds,
-				ownedCount: ownedIds.length,
-				activeSpots,
-				residentIds,
-				wanderers: wanderIds.map((id, i) => ({
-					id,
-					params: wanderParams(id, i),
-				})),
-			}
-		}, [ownedMonsters, village, expedition, companionId])
+	const { ownedCount, activeSpots, residentIds, wanderers } = useMemo(() => {
+		const activeSpots = RESIDENT_SPOTS.filter(
+			([id]) => buildingLevel(village, id) >= 1,
+		)
+		const { ownedIds, residentIds, wanderIds } = villageRoster(
+			ownedMonsters,
+			village,
+			{
+				travelerId: expedition?.monsterId ?? null,
+				companionId,
+				residentSpots: activeSpots.length,
+			},
+		)
+		return {
+			ownedCount: ownedIds.length,
+			activeSpots,
+			residentIds,
+			wanderers: wanderIds.map((id, i) => ({
+				id,
+				params: wanderParams(id, i),
+			})),
+		}
+	}, [ownedMonsters, village, expedition, companionId])
 
 	const ogrodek = buildingLevel(village, "ogrodek")
 	const latarnie = buildingLevel(village, "latarnie")
@@ -269,10 +268,7 @@ export function VillageScreen() {
 		? MONSTERS[expedition.monsterId]?.name
 		: undefined
 	// pomnik przedstawia PIERWSZEGO wyklutego potworka dziecka
-	const firstHatchedId = [...ownedIds].sort(
-		(a, b) =>
-			(ownedMonsters[a]?.hatchedAt ?? 0) - (ownedMonsters[b]?.hatchedAt ?? 0),
-	)[0]
+	const firstHatchedId = firstHatched(ownedMonsters)
 
 	const handleBuild = (id: BuildingId) => {
 		const newLevel = buildingLevel(village, id) + 1
@@ -743,7 +739,7 @@ export function VillageScreen() {
 					    nie płaskim wypełnieniem; nad wszystkim prócz nakładki wieczoru */}
 					<div className="pointer-events-none absolute inset-0 z-[110] rounded-3xl shadow-[inset_0_0_48px_rgba(30,58,42,0.16)]" />
 
-					{ownedCount === MONSTER_COUNT && (
+					{isCollectionComplete(ownedMonsters) && (
 						<div className="anim-pop absolute left-1/2 top-2 z-[130] -translate-x-1/2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-5 py-2 text-lg font-extrabold text-white shadow-lg">
 							🎉 Cała wioska w komplecie!
 						</div>

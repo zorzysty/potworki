@@ -4,6 +4,7 @@ import { CheerCompanion } from "../components/Companion"
 import { Keypad } from "../components/Keypad"
 import { QuestionCard } from "../components/QuestionCard"
 import { StarMeter } from "../components/StarMeter"
+import { guardianOwned } from "../game/collection"
 import { REGIONS } from "../monsters/world"
 import { useGame } from "../store/store"
 import { RoundSummary } from "./RoundSummary"
@@ -77,7 +78,7 @@ export function RoundScreen({
 				lastStars={round.lastStars}
 				overrideId={guardianId}
 				overrideSilhouette={
-					guardianId !== undefined && !(guardianId in ownedMonsters)
+					guardianId !== undefined && !guardianOwned(visitRegion, ownedMonsters)
 				}
 			/>
 
