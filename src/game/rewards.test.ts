@@ -85,16 +85,18 @@ describe("qualityOdds", () => {
 			expect(sum).toBe(100)
 		}
 	})
-	test("tęczowe tylko od score 28, pełna szansa tylko przy 30", () => {
-		expect(qualityOdds(27)[3]).toBe(0)
-		expect(qualityOdds(28)[3]).toBeGreaterThan(0)
+	test("tęczowe: mała szansa od score 22, pełne 40 % tylko przy 30", () => {
+		expect(qualityOdds(21)[3]).toBe(0)
+		expect(qualityOdds(22)[3]).toBeGreaterThan(0)
+		expect(qualityOdds(22)[3]).toBeLessThanOrEqual(2)
+		expect(qualityOdds(29)[3]).toBeLessThan(40)
 		expect(qualityOdds(30)[3]).toBe(40)
 	})
-	test("krzywa łagodna: srebrne od 16, złote od 23, zwykłe poniżej 16", () => {
-		expect(qualityOdds(15)).toEqual([100, 0, 0, 0])
-		expect(qualityOdds(16)[1]).toBeGreaterThan(0)
-		expect(qualityOdds(22)[2]).toBe(0)
-		expect(qualityOdds(23)[2]).toBeGreaterThan(0)
+	test("krzywa łagodna: srebrne od 14, złote od 20, zwykłe poniżej 14", () => {
+		expect(qualityOdds(13)).toEqual([100, 0, 0, 0])
+		expect(qualityOdds(14)[1]).toBeGreaterThan(0)
+		expect(qualityOdds(19)[2]).toBe(0)
+		expect(qualityOdds(20)[2]).toBeGreaterThan(0)
 	})
 	test("monotoniczna: wyższy score nigdy nie zwiększa szansy na zwykłe", () => {
 		for (let s = 1; s <= 30; s++) {

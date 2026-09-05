@@ -385,12 +385,12 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 	{
 		id: "kolekcjoner-teczy",
 		title: "Kolekcjoner tęczy",
-		description: "Wykluj 3 tęczowe jajka.",
+		description: "Wykluj 2 tęczowe jajka.",
 		icon: "🦄",
 		difficulty: "hard",
 		progress: ({ counters }) => ({
 			current: counters.rainbowEggsHatched,
-			target: 3,
+			target: 2,
 		}),
 	},
 	{
@@ -478,12 +478,15 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 	{
 		id: "perfekcyjne-25",
 		title: "Perfekcjonista",
-		description: "Zakończ 25 rund z kompletem gwiazdek (30/30).",
+		// id zostaje „perfekcyjne-25" (zamrożone); target 10: 25 zdobywało tylko
+		// dziecko niemal zawsze w budżecie czasu, 10 wpada też dziecku, które
+		// przyspiesza w miarę nauki (symulacja 030).
+		description: "Zakończ 10 rund z kompletem gwiazdek (30/30).",
 		icon: "🎯",
 		difficulty: "hard",
 		progress: ({ counters }) => ({
 			current: counters.perfectRounds,
-			target: 25,
+			target: 10,
 		}),
 	},
 	{

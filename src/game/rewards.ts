@@ -20,19 +20,25 @@ export const QUALITY_ORDER: readonly EggQuality[] = [
 // Rozkład jakości jajka wg score 0–30 (eggQualityScore — średnia gwiazdek z całej
 // budowy jajka, nie z jednej rundy) [normal, silver, gold, rainbow] w %.
 // Krzywa łagodna, nie schodek: dziecko poprawne, ale nie zawsze w budżecie 3★
-// (średnio ~2,3★ → score 23) ma widzieć kolorowe jajka, a nie wieczne zwykłe —
-// kolor to jedyna widoczna nagroda za jakość gry. Tęczowe tylko z szansą i tylko
-// od score 28 (≥ 2,8★ średnio: co najwyżej kilka 2★ na całe jajko). Każdy wiersz
-// sumuje się do 100.
+// (średnio ~2,2★ → score 22) ma widzieć kolorowe jajka, a nie wieczne zwykłe —
+// kolor to jedyna widoczna nagroda za jakość gry. Złote od 20, żeby średnia
+// takiego dziecka trafiała w nie regularnie (poprzedni próg 23 leżał dokładnie
+// na jego średniej — złote niemal nie wpadało). Tęczowe: pełna szansa (40 %)
+// tylko za komplet 3★, ale MAŁA szansa już od score 22 — tęcza ma być rzadkim
+// szczęściem dla każdego grającego dobrze, nie nagrodą wyłącznie dla
+// bezbłędnych (przy progu 28 dziecko „dobre" nie widziało tęczy nigdy, a z nią
+// dwóch osiągnięć). Każdy wiersz sumuje się do 100.
 export function qualityOdds(
 	score: number,
 ): readonly [number, number, number, number] {
 	if (score >= 30) return [10, 20, 30, 40]
 	if (score >= 28) return [20, 30, 40, 10]
-	if (score >= 26) return [30, 45, 25, 0]
-	if (score >= 23) return [50, 40, 10, 0]
-	if (score >= 20) return [70, 30, 0, 0]
-	if (score >= 16) return [85, 15, 0, 0]
+	if (score >= 26) return [25, 40, 30, 5]
+	if (score >= 24) return [40, 40, 18, 2]
+	if (score >= 22) return [52, 35, 12, 1]
+	if (score >= 20) return [68, 27, 5, 0]
+	if (score >= 17) return [80, 20, 0, 0]
+	if (score >= 14) return [90, 10, 0, 0]
 	return [100, 0, 0, 0]
 }
 
