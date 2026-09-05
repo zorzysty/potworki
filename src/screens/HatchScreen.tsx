@@ -146,9 +146,6 @@ export function HatchScreen() {
 						    ~270px, resztę dzielą gniazdo (3/4 szer. = wys.) i jajko */}
 						{pendingEggs.length > 1 && (
 							<div className="flex w-full flex-col items-center gap-1">
-								<div className="text-lg font-extrabold text-white/80">
-									Jajka w gnieździe
-								</div>
 								{/* gniazdo = wybór jajka: jajko i siedzi w slocie i, wybrane
 								    świeci; nadmiar ponad liczbę slotów pokazuje chip */}
 								<NestArt

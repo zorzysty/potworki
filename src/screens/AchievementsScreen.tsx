@@ -1,10 +1,4 @@
-import {
-	type CSSProperties,
-	type MouseEvent,
-	useEffect,
-	useRef,
-	useState,
-} from "react"
+import { type CSSProperties, useEffect, useRef, useState } from "react"
 import {
 	ACHIEVEMENTS,
 	type AchievementCtx,
@@ -28,7 +22,7 @@ interface AchievementRow {
 	unlockedAt: number
 }
 
-// Lot iskierek po odbiorze (zgrane z .anim-claim-fly w styles.css): rozprysk z kafla,
+// Lot iskierek po odbiorze (zgrane z .anim-claim-fly w styles.css): rozprysk ze środka ekranu,
 // potem lot do licznika w nagłówku. Licznik podskakuje z nową wartością, gdy dolecą.
 const FLY_MS = 1600
 const FLY_STAGGER_MS = 100
@@ -64,6 +58,23 @@ export function AchievementsScreen() {
 		return () => clearTimeout(t)
 	}, [flight])
 	const shownIskierki = flight && !flight.landed ? flight.from : iskierki
+	// odbiór z modala: modal znika, iskierki startują ze środka ekranu i lecą do licznika
+	const claim = (id: string) => {
+		const x = window.innerWidth / 2
+		const y = window.innerHeight / 2
+		const c = counterRef.current?.getBoundingClientRect()
+		setFlight({
+			id,
+			x,
+			y,
+			dx: c ? c.left + c.width / 2 - x : 0,
+			dy: c ? c.top + c.height / 2 - y : 0,
+			from: iskierki,
+			landed: false,
+		})
+		claimAchievement(id)
+		setSelectedId(null)
+	}
 
 	const ctx: AchievementCtx = { save: state, counters: state.achievementStats }
 
@@ -132,30 +143,11 @@ export function AchievementsScreen() {
 				{rows.map(({ def, progress, unlocked, claimable }) => {
 					const tier = TIER_META[def.difficulty]
 					const shown = Math.min(progress.current, progress.target)
-					// tap na nieodebrane = odbiór iskierek (lot do licznika), na resztę = karta szczegółu
-					const onClick = claimable
-						? (e: MouseEvent<HTMLButtonElement>) => {
-								const r = e.currentTarget.getBoundingClientRect()
-								const c = counterRef.current?.getBoundingClientRect() ?? r
-								const x = r.left + r.width / 2
-								const y = r.top + r.height / 2
-								setFlight({
-									id: def.id,
-									x,
-									y,
-									dx: c.left + c.width / 2 - x,
-									dy: c.top + c.height / 2 - y,
-									from: iskierki,
-									landed: false,
-								})
-								claimAchievement(def.id)
-							}
-						: () => setSelectedId(def.id)
 					return (
 						<button
 							key={def.id}
 							type="button"
-							onClick={onClick}
+							onClick={() => setSelectedId(def.id)}
 							className={`touch-manipulation flex items-center gap-3 rounded-2xl border-4 p-3 text-left shadow-sm transition-transform active:scale-95 ${claimable ? "anim-claim-ready border-amber-400 bg-amber-50" : unlocked ? `bg-white/80 ${tier.border}` : "border-slate-300 bg-white/80 opacity-70"}`}
 						>
 							<div
@@ -236,7 +228,11 @@ export function AchievementsScreen() {
 			)}
 
 			{selected && (
-				<AchievementModal row={selected} onClose={() => setSelectedId(null)} />
+				<AchievementModal
+					row={selected}
+					onClose={() => setSelectedId(null)}
+					onClaim={() => claim(selected.def.id)}
+				/>
 			)}
 
 			{confirmReset && (
@@ -301,11 +297,13 @@ function ResetModal({
 function AchievementModal({
 	row,
 	onClose,
+	onClaim,
 }: {
 	row: AchievementRow
 	onClose: () => void
+	onClaim: () => void
 }) {
-	const { def, progress, unlocked, unlockedAt } = row
+	const { def, progress, unlocked, unlockedAt, claimable } = row
 	const tier = TIER_META[def.difficulty]
 	const shown = Math.min(progress.current, progress.target)
 
@@ -377,6 +375,16 @@ function AchievementModal({
 						/>
 					</div>
 				</div>
+
+				{claimable && (
+					<button
+						type="button"
+						onClick={onClaim}
+						className="anim-bounce-slow touch-manipulation rounded-2xl bg-amber-400 px-6 py-4 text-xl font-extrabold text-white shadow-lg active:scale-95"
+					>
+						Odbierz {REWARD_BY_DIFFICULTY[def.difficulty]} iskierek ✨
+					</button>
+				)}
 
 				{/* ===== STOPKA: data zdobycia albo zachęta ===== */}
 				{unlocked ? (
