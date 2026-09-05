@@ -706,9 +706,8 @@ export function CollectionScreen() {
 					// 80 animowanych kafli to za dużo, a lista ma być spokojna.
 					// Założona ramka podmienia rzadkościowy kolor krawędzi (świadoma
 					// decyzja maintainera; anim-glow złotej ramki wycięty na kaflu).
-					const tileFrameId = owned
-						? equippedFor(cosmetics, monster.id).frame
-						: undefined
+					const equipped = owned ? equippedFor(cosmetics, monster.id) : {}
+					const tileFrameId = equipped.frame
 					const tileFrame =
 						tileFrameId !== undefined
 							? COSMETICS_BY_ID.get(tileFrameId)
@@ -723,18 +722,21 @@ export function CollectionScreen() {
 							className={`touch-manipulation relative flex flex-col items-center rounded-2xl border-4 bg-white/80 p-2 shadow-sm transition-transform active:scale-95
 								${tileFrame ?? RARITY_META[monster.rarity].border} ${isDream ? "ring-4 ring-amber-300" : ""}`}
 						>
+							{/* tło wypełnia cały kafel (nie okno z artem jak na karcie);
+							    rounded-xl = rounded-2xl kafla minus border-4 */}
+							{owned && (
+								<EquippedBackground
+									monsterId={monster.id}
+									animate={false}
+									className="rounded-xl"
+								/>
+							)}
 							{owned ? (
 								<MonsterStage
 									id={monster.id}
 									size="100%"
 									animate={false}
 									frame="w-full"
-									background={
-										<EquippedBackground
-											monsterId={monster.id}
-											animate={false}
-										/>
-									}
 									overlay={
 										<EquippedOverlay monsterId={monster.id} animate={false} />
 									}
@@ -747,7 +749,11 @@ export function CollectionScreen() {
 									className="monster-silhouette"
 								/>
 							)}
-							<div className="mt-1 truncate text-xs font-extrabold text-slate-600">
+							<div
+								className={`relative mt-1 max-w-full truncate text-xs font-extrabold text-slate-600 ${
+									equipped.background ? "rounded-full bg-white/85 px-2" : ""
+								}`}
+							>
 								{owned ? monster.name : "???"}
 							</div>
 							{isDream && (

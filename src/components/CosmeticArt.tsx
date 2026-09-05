@@ -255,13 +255,15 @@ const BG_SPOTS: CSSProperties[] = [
 function BackgroundScene({
 	bg,
 	animate,
+	className,
 }: {
 	bg: BackgroundDef
 	animate: boolean
+	className: string
 }) {
 	return (
 		<div
-			className="absolute inset-0 overflow-hidden rounded-[28%]"
+			className={`absolute inset-0 overflow-hidden ${className}`}
 			style={{ background: gradientOf(bg) }}
 		>
 			{BG_SPOTS.map((style, i) => (
@@ -278,18 +280,23 @@ function BackgroundScene({
 }
 
 // Założone tło potworka — do slotu `background` MonsterStage. Brak → null.
-// animate=false na statycznych kaflach listy (wzór EquippedOverlay).
+// animate=false na statycznych kaflach listy (wzór EquippedOverlay); `className`
+// nadpisuje kształt (kafel listy wypełnia tłem cały kafel, nie okno z artem).
 export function EquippedBackground({
 	monsterId,
 	animate = true,
+	className = "rounded-[28%]",
 }: {
 	monsterId: number
 	animate?: boolean
+	className?: string
 }) {
 	const cosmetics = useGame((s) => s.cosmetics)
 	const id = equippedFor(cosmetics, monsterId).background
 	const bg = id ? BACKGROUNDS[id] : undefined
-	return bg ? <BackgroundScene bg={bg} animate={animate} /> : null
+	return bg ? (
+		<BackgroundScene bg={bg} animate={animate} className={className} />
+	) : null
 }
 
 // Miniatura przedmiotu: wiersze sklepiku, chipy garderoby. `size` px lub CSS
