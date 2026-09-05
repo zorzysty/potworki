@@ -1,7 +1,8 @@
-import type { CSSProperties } from "react"
+import { type CSSProperties, useId } from "react"
 import type { CosmeticId } from "../game/cosmetics"
 import { equippedFor } from "../game/cosmetics"
 import { useGame } from "../store/store"
+import { SCENES } from "./BackgroundArt"
 
 // Art przedmiotów ze Sklepiku (wiersze sklepu, garderoba) oraz nakładka
 // EquippedOverlay — założone rzeczy renderowane NAD potworkiem przez slot
@@ -54,8 +55,7 @@ function FrameGlyph({ color, e }: { color: string; e?: string }) {
 // Jeden glif = jedna scenka 48×48. Wektory tam, gdzie emoji nie istnieje
 // (czapka z pomponem, wianek, kapelusz czarodzieja, korona lodowa…).
 function Glyph({ id }: { id: CosmeticId }) {
-	const bg = BACKGROUNDS[id]
-	if (bg) return <BackgroundGlyph bg={bg} />
+	if (SCENES[id]) return <BackgroundGlyph id={id} />
 	switch (id) {
 		case "czapka-z-pomponem":
 			return (
@@ -205,76 +205,57 @@ function Glyph({ id }: { id: CosmeticId }) {
 	}
 }
 
-// Tła (slot "background"): dwa kolory gradientu + emoji-drobinki; nowe tło =
-// wpis w katalogu cosmetics.ts + wiersz tutaj.
-interface BackgroundDef {
-	stops: [string, string]
-	gradient?: string // gdy dwa kolory to za mało (horyzont łąki)
-	bits: [string, string, string]
-}
-const BACKGROUNDS: Record<CosmeticId, BackgroundDef> = {
-	"tlo-laka": {
-		stops: ["#bae6fd", "#4ade80"],
-		gradient:
-			"linear-gradient(#bae6fd 0%, #bae6fd 55%, #86efac 56%, #4ade80 100%)",
-		bits: ["🌼", "🌷", "☁️"],
-	},
-	"tlo-noc": { stops: ["#1e1b4b", "#4c1d95"], bits: ["🌙", "⭐", "✨"] },
-	"tlo-podwodne": { stops: ["#67e8f9", "#0369a1"], bits: ["🫧", "🐟", "🐚"] },
-	"tlo-kosmos": { stops: ["#0f172a", "#581c87"], bits: ["🪐", "⭐", "🚀"] },
-}
-const gradientOf = (bg: BackgroundDef) =>
-	bg.gradient ?? `linear-gradient(${bg.stops[0]}, ${bg.stops[1]})`
-
-// Miniatura tła: kafel z gradientem i pierwszym emoji scenki.
-function BackgroundGlyph({ bg }: { bg: BackgroundDef }) {
-	const gid = `bg-${bg.stops[0].slice(1)}-${bg.stops[1].slice(1)}`
+// Tła (slot "background"): wektorowe scenki w BackgroundArt.tsx (SCENES).
+// Miniatura = ta sama scena przycięta do zaokrąglonego kafla.
+function BackgroundGlyph({ id }: { id: CosmeticId }) {
+	const uid = useId()
+	const Scene = SCENES[id]
+	if (!Scene) return null
 	return (
-		<g>
-			<defs>
-				<linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0" stopColor={bg.stops[0]} />
-					<stop offset="1" stopColor={bg.stops[1]} />
-				</linearGradient>
-			</defs>
-			<rect x={4} y={4} width={40} height={40} rx={10} fill={`url(#${gid})`} />
-			<text x={24} y={34} textAnchor="middle" fontSize={22}>
-				{bg.bits[0]}
-			</text>
+		<g clipPath={`url(#${uid}-clip)`}>
+			{/* clip na <g>, nie na wewnętrznym <svg> — tam liczyłby się w jego
+			    układzie 200×200 i miniatura zbiegłaby się do rogu */}
+			<clipPath id={`${uid}-clip`}>
+				<rect x={4} y={4} width={40} height={40} rx={10} />
+			</clipPath>
+			<svg
+				x={4}
+				y={4}
+				width={40}
+				height={40}
+				viewBox="0 0 200 200"
+				preserveAspectRatio="xMidYMid slice"
+			>
+				<Scene animate={false} uid={uid} />
+			</svg>
 		</g>
 	)
 }
 
-// Pełna scenka ZA potworkiem (prop `background` MonsterStage): drobinki pływają
-// jak w aurze, potworek zostaje bohaterem.
-const BG_SPOTS: CSSProperties[] = [
-	{ left: "6%", top: "8%" },
-	{ right: "6%", top: "18%", animationDelay: "0.7s" },
-	{ left: "10%", bottom: "6%", animationDelay: "1.3s" },
-]
+// Pełna scenka ZA potworkiem (prop `background` MonsterStage): `slice`
+// wypełnia kontener dowolnych proporcji, potworek zostaje bohaterem.
 function BackgroundScene({
-	bg,
+	id,
 	animate,
 	className,
 }: {
-	bg: BackgroundDef
+	id: CosmeticId
 	animate: boolean
 	className: string
 }) {
+	const uid = useId()
+	const Scene = SCENES[id]
+	if (!Scene) return null
 	return (
-		<div
-			className={`absolute inset-0 overflow-hidden ${className}`}
-			style={{ background: gradientOf(bg) }}
-		>
-			{BG_SPOTS.map((style, i) => (
-				<span
-					key={`${bg.bits[i]}-${i}`}
-					className={`absolute text-base ${animate ? "anim-float" : ""}`}
-					style={style}
-				>
-					{bg.bits[i]}
-				</span>
-			))}
+		<div className={`absolute inset-0 overflow-hidden ${className}`}>
+			<svg
+				className="block h-full w-full"
+				viewBox="0 0 200 200"
+				preserveAspectRatio="xMidYMid slice"
+				aria-hidden="true"
+			>
+				<Scene animate={animate} uid={uid} />
+			</svg>
 		</div>
 	)
 }
@@ -293,9 +274,8 @@ export function EquippedBackground({
 }) {
 	const cosmetics = useGame((s) => s.cosmetics)
 	const id = equippedFor(cosmetics, monsterId).background
-	const bg = id ? BACKGROUNDS[id] : undefined
-	return bg ? (
-		<BackgroundScene bg={bg} animate={animate} className={className} />
+	return id && SCENES[id] ? (
+		<BackgroundScene id={id} animate={animate} className={className} />
 	) : null
 }
 

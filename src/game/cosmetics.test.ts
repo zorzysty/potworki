@@ -15,8 +15,8 @@ import { INITIAL_VILLAGE } from "./village"
 const launchTotal = COSMETICS.reduce((s, c) => s + c.cost, 0)
 
 describe("katalog kosmetyki — integralność", () => {
-	test("20 przedmiotów (11 z planu 013 po wycofaniu aura-iskier + 5 ramek z planu 014 + 4 tła), unikalne id", () => {
-		expect(COSMETICS.length).toBe(20)
+	test("22 przedmioty (11 z planu 013 po wycofaniu aura-iskier + 5 ramek z planu 014 + 6 teł), unikalne id", () => {
+		expect(COSMETICS.length).toBe(22)
 		const ids = COSMETICS.map((c) => c.id)
 		expect(new Set(ids).size).toBe(ids.length)
 	})

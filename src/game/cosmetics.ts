@@ -138,8 +138,8 @@ export const COSMETICS: readonly CosmeticDef[] = [
 		cardClasses: "frame-teczowa border-transparent",
 	},
 	// Tła (slot "background"): scenka ZA potworkiem na karcie kolekcji i u
-	// przyjaciela na Home (prop `background` MonsterStage). Art w CosmeticArt.tsx
-	// (BACKGROUNDS).
+	// przyjaciela na Home (prop `background` MonsterStage). Scenki SVG w
+	// components/BackgroundArt.tsx (SCENES).
 	{ id: "tlo-laka", name: "Tło: Łąka", slot: "background", tier: 1, cost: 20 },
 	{
 		id: "tlo-noc",
@@ -161,6 +161,20 @@ export const COSMETICS: readonly CosmeticDef[] = [
 		slot: "background",
 		tier: 3,
 		cost: 60,
+	},
+	{
+		id: "tlo-zima",
+		name: "Tło: Zimowa kraina",
+		slot: "background",
+		tier: 2,
+		cost: 40,
+	},
+	{
+		id: "tlo-slodycze",
+		name: "Tło: Kraina słodyczy",
+		slot: "background",
+		tier: 3,
+		cost: 55,
 	},
 ]
 

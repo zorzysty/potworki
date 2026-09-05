@@ -373,6 +373,9 @@ function MonsterCard({
 			<div
 				className={`relative w-full shrink-0 overflow-hidden rounded-3xl border-2 bg-gradient-to-br p-3 ${cardTheme.window} ${cardTheme.windowBorder}`}
 			>
+				{/* założone tło wypełnia całe okno z artem (okno ma overflow-hidden
+				    i własne zaokrąglenie) */}
+				<EquippedBackground monsterId={monsterId} className="" />
 				{/* radialny blask za potworkiem */}
 				<div
 					className={`pointer-events-none absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl ${cardTheme.halo}`}
@@ -427,7 +430,6 @@ function MonsterCard({
 						id={monsterId}
 						size={180}
 						animate={true}
-						background={<EquippedBackground monsterId={monsterId} />}
 						overlay={<EquippedOverlay monsterId={monsterId} />}
 					/>
 				</div>
