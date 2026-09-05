@@ -788,38 +788,40 @@ export function CollectionScreen() {
 				</div>
 			</div>
 
-			{/* Jedno rusztowanie dla obu stanów studni życzeń. Zajawka fontanny
+			{/* Jedno rusztowanie dla stanów studni życzeń. Zajawka fontanny
 			    (aspiracja jak zablokowane półki Sklepiku, nigdy ton błędu) NIE
 			    zależy od portfela — to jedyne miejsce tłumaczące związek
-			    Fontanna→Jajko Życzeń; przycisk kupna jak dotąd tylko przy >0 ✨. */}
-			{wish.available && (!wish.unlocked || iskierki > 0) && (
-				<div className="mx-auto flex w-full max-w-sm items-center gap-2">
-					<BigButton
-						onClick={wish.unlocked ? buyWishEgg : () => goTo("village")}
-						variant="secondary"
-						disabled={wish.unlocked && iskierki < wish.cost}
-						className={`flex-1 py-3 ${wish.unlocked ? "text-xl" : "text-lg"}`}
-					>
-						{wish.unlocked ? (
-							<>
-								Jajko Życzeń 🌟 — {wish.cost} ✨
-								{wish.dreamApplies && " (wymarzony!)"}
-							</>
-						) : (
-							"Jajko Życzeń 🌟 — zbuduj Fontannę! ⛲"
-						)}
-					</BigButton>
-					<HelpTip
-						placement="bottom"
-						align="right"
-						text={
-							wish.unlocked
-								? "Kupujesz je za iskierki ✨. Masz wymarzonego potworka? Dostaniesz dokładnie jego — na pewno! Nie masz? Wykluje się jakiś nowy potworek, którego jeszcze nie masz. Uwaga: legendarnych potworków Jajko Życzeń nie wykluwa — te zdobywasz tylko z jajek za rundy. (Sam wymarzony jest za darmo i tylko sprawia, że zwykłe jajka częściej wykluwają właśnie jego.)"
-								: "Jajko Życzeń kupisz przy Fontannie: wrzucasz iskierki ✨ i wypowiadasz życzenie. Zbuduj Fontannę w Wiosce, a studnia życzeń ruszy!"
-						}
-					/>
-				</div>
-			)}
+			    Fontanna→Jajko Życzeń. JEDYNY powód wyszarzenia to komplet
+			    nielegendarnych (decyzja maintainera 2026-09-06): brak iskierek
+			    nie gasi przycisku (cena stoi w etykiecie, tap = cichy no-op w store). */}
+			<div className="mx-auto flex w-full max-w-sm items-center gap-2">
+				<BigButton
+					onClick={wish.unlocked ? buyWishEgg : () => goTo("village")}
+					variant="secondary"
+					disabled={!wish.available}
+					className={`flex-1 py-3 ${wish.unlocked ? "text-xl" : "text-lg"}`}
+				>
+					{!wish.available ? (
+						"Jajko Życzeń 🌟 — masz już wszystkie potworki poza legendarnymi!"
+					) : wish.unlocked ? (
+						<>
+							Jajko Życzeń 🌟 — {wish.cost} ✨
+							{wish.dreamApplies && " (wymarzony!)"}
+						</>
+					) : (
+						"Jajko Życzeń 🌟 — zbuduj Fontannę! ⛲"
+					)}
+				</BigButton>
+				<HelpTip
+					placement="bottom"
+					align="right"
+					text={
+						wish.unlocked
+							? "Kupujesz je za iskierki ✨. Masz wymarzonego potworka? Dostaniesz dokładnie jego — na pewno! Nie masz? Wykluje się jakiś nowy potworek, którego jeszcze nie masz. Uwaga: legendarnych potworków Jajko Życzeń nie wykluwa — te zdobywasz tylko z jajek za rundy. (Sam wymarzony jest za darmo i tylko sprawia, że zwykłe jajka częściej wykluwają właśnie jego.)"
+							: "Jajko Życzeń kupisz przy Fontannie: wrzucasz iskierki ✨ i wypowiadasz życzenie. Zbuduj Fontannę w Wiosce, a studnia życzeń ruszy!"
+					}
+				/>
+			</div>
 
 			<div className="grid grid-cols-3 gap-3 pb-6 min-[420px]:grid-cols-4">
 				{SORTED_MONSTERS.map((monster) => (
