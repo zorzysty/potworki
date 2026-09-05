@@ -171,7 +171,9 @@ export function addEggFragment(
 		created: { quality, mode },
 	}
 }
-// Cena BAZOWA pierwszego Jajka Życzeń (dalej rośnie — patrz wishEggPrice).
+// Cena BAZOWA pierwszego Jajka Życzeń wg rzadkości wymarzonego (dalej rośnie —
+// patrz wishEggPrice). `legendary` nieużywane: wymarzony legendarny nie
+// dotyczy jajka (dreamApplies=false → baza WISH_COST_NO_DREAM).
 export const WISH_COST: Record<Rarity, number> = {
 	common: 10,
 	rare: 10,
@@ -282,28 +284,40 @@ export function rollMonsterWithPity(
 	}
 }
 
-// Jajko Życzeń: z wymarzonym → dokładnie on; bez → losowy NIEPOSIADANY (złote szanse,
-// re-roll z renormalizacją wśród tierów, w których coś jeszcze zostało). Pula
-// wyczerpana (kupione, gdy brakował jeden, a domknęło go inne jajko z gniazda)
-// → zwykłe złote losowanie, czyli duplikat jak z każdego jajka po komplecie.
+// Jajko Życzeń NIE dotyczy legendarnych (decyzja maintainera 2026-09-05: te
+// zdobywa się wyłącznie jajkami z rund i pity): wymarzony legendarny jest
+// ignorowany, losowanie idzie po tierach WISH_TIERS. Z wymarzonym
+// (nielegendarnym) → dokładnie on; bez → losowy NIEPOSIADANY (złote szanse,
+// renormalizacja wśród tierów, w których coś jeszcze zostało). Pula wyczerpana
+// (kupione, gdy brakował jeden, a domknęło go inne jajko z gniazda) → duplikat
+// z tych samych tierów — jajko nigdy nie znika po cichu.
+export const WISH_TIERS: readonly Rarity[] = ["common", "rare", "epic"]
+
 export function rollWish(ctx: RollContext): number {
 	const { idsByRarity, owned, dreamId, rand } = ctx
-	if (dreamId !== null && !owned.has(dreamId)) return dreamId
-	const available = RARITY_ORDER.filter((tier) =>
+	if (
+		dreamId !== null &&
+		!owned.has(dreamId) &&
+		ctx.rarityOf(dreamId) !== "legendary"
+	)
+		return dreamId
+	const available = WISH_TIERS.filter((tier) =>
 		idsByRarity[tier].some((id) => !owned.has(id)),
 	)
+	const tiers = available.length > 0 ? available : WISH_TIERS
 	const odds = RARITY_ODDS.gold
-	const weights = available.map((tier) => odds[RARITY_ORDER.indexOf(tier)] ?? 0)
+	const weights = tiers.map((tier) => odds[RARITY_ORDER.indexOf(tier)] ?? 0)
 	const total = weights.reduce((s, w) => s + w, 0)
 	let roll = rand() * total
-	for (let i = 0; i < available.length; i++) {
+	let tier = tiers[tiers.length - 1] as Rarity
+	for (let i = 0; i < tiers.length; i++) {
 		roll -= weights[i] ?? 0
 		if (roll <= 0) {
-			const tier = available[i] as Rarity
-			const unowned = idsByRarity[tier].filter((id) => !owned.has(id))
-			return unowned[Math.floor(rand() * unowned.length)] as number
+			tier = tiers[i] as Rarity
+			break
 		}
 	}
-	// pula wyczerpana (available puste) albo dryf zmiennoprzecinkowy → duplikat
-	return pickInTier(rollTier(odds, rand), ctx)
+	const unowned = idsByRarity[tier].filter((id) => !owned.has(id))
+	const pool = unowned.length > 0 ? unowned : idsByRarity[tier]
+	return pool[Math.floor(rand() * pool.length)] as number
 }

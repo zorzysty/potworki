@@ -1,4 +1,8 @@
-import { idsByRarityForMode, MONSTER_COUNT } from "../monsters/catalog"
+import {
+	IDS_BY_RARITY,
+	idsByRarityForMode,
+	MONSTER_COUNT,
+} from "../monsters/catalog"
 import type { Region } from "../monsters/world"
 import type { GameMode } from "./facts"
 
@@ -23,6 +27,13 @@ export const poolIds = (mode: GameMode): number[] =>
 
 export const isPoolComplete = (owned: OwnedMonsters, mode: GameMode): boolean =>
 	poolIds(mode).every((id) => id in owned)
+
+// Wszystkie pospolite, rzadkie i epickie posiadane — od tej chwili Jajko
+// Życzeń jest zablokowane (legendarne bazowe zdobywa się jajkami z rund).
+export const isNonLegendaryComplete = (owned: OwnedMonsters): boolean =>
+	[...IDS_BY_RARITY.common, ...IDS_BY_RARITY.rare, ...IDS_BY_RARITY.epic].every(
+		(id) => id in owned,
+	)
 
 // Przyjęcie potworka do kolekcji — JEDNA reguła dla wyklucia i znaleziska z
 // wyprawy: wpis z hatchedAt + zwolnienie slotu wymarzonego, gdy to on.

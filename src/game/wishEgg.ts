@@ -1,18 +1,7 @@
-import {
-	isDivisionOnly,
-	isFeedOnly,
-	isGapOnly,
-	isPairsOnly,
-	rarityOf,
-} from "../monsters/catalog"
+import { rarityOf } from "../monsters/catalog"
 import type { SaveState } from "../store/schema"
-import { isPoolComplete } from "./collection"
-import {
-	WISH_COST,
-	WISH_COST_NO_DREAM,
-	WISH_MODE,
-	wishEggPrice,
-} from "./rewards"
+import { isNonLegendaryComplete } from "./collection"
+import { WISH_COST, WISH_COST_NO_DREAM, wishEggPrice } from "./rewards"
 import { wishEggDiscount, wishEggUnlocked } from "./village"
 
 export type WishEggState = Pick<
@@ -23,9 +12,12 @@ export type WishEggState = Pick<
 // Jedyne źródło prawdy o Jajku Życzeń — guard kupna w store i przycisk w UI
 // czytają ten sam obiekt, więc etykieta „(wymarzony!)" i cena nie mogą się rozjechać.
 // - unlocked: studnia życzeń (Fontanna L1+)
-// - available: pula mnożeniowa domyka się PRZED kompletem katalogu
-// - dreamApplies: wymarzony liczy się tylko, gdy nieposiadany i w puli mnożeniowej
-//   (ekskluzywny tylko-dzielenie / tylko-luka zdobywa się realną grą w swoim trybie)
+// - available: dopóki brakuje choć jednego pospolitego/rzadkiego/epickiego —
+//   po ich komplecie jajko jest zablokowane (decyzja maintainera 2026-09-05;
+//   wcześniej blokował dopiero komplet całej puli mnożeniowej z legendarnymi)
+// - dreamApplies: wymarzony liczy się tylko, gdy nieposiadany i NIElegendarny
+//   (legendarne — bazowe i ekskluzywne — zdobywa się wyłącznie jajkami z rund;
+//   jajko życzeń domyka pospolite/rzadkie/epickie)
 // - cost: baza wg wymarzonego + progresja za kupione (licznik `wishEggsBought`
 //   z achievementStats — bez bliźniaczego pola zapisu) − zniżka fontanny;
 //   podłogę i sufit dopłaty egzekwuje samo `wishEggPrice`
@@ -39,10 +31,7 @@ export function wishEgg(state: WishEggState): {
 	const dreamApplies =
 		dream !== null &&
 		!(dream in state.ownedMonsters) &&
-		!isDivisionOnly(dream) &&
-		!isGapOnly(dream) &&
-		!isPairsOnly(dream) &&
-		!isFeedOnly(dream)
+		rarityOf(dream) !== "legendary"
 	return {
 		cost: wishEggPrice(
 			dreamApplies ? WISH_COST[rarityOf(dream)] : WISH_COST_NO_DREAM,
@@ -51,6 +40,6 @@ export function wishEgg(state: WishEggState): {
 		),
 		dreamApplies,
 		unlocked: wishEggUnlocked(state.village),
-		available: !isPoolComplete(state.ownedMonsters, WISH_MODE),
+		available: !isNonLegendaryComplete(state.ownedMonsters),
 	}
 }

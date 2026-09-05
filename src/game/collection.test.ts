@@ -1,11 +1,12 @@
 import { describe, expect, test } from "bun:test"
-import { MONSTER_COUNT } from "../monsters/catalog"
+import { MONSTER_COUNT, rarityOf } from "../monsters/catalog"
 import { REGIONS } from "../monsters/world"
 import {
 	byRecency,
 	firstHatched,
 	guardianOwned,
 	isCollectionComplete,
+	isNonLegendaryComplete,
 	isPoolComplete,
 	newestOwned,
 } from "./collection"
@@ -36,6 +37,18 @@ describe("collection", () => {
 		expect(isCollectionComplete(owned)).toBe(false)
 		expect(isPoolComplete(all, "mult")).toBe(true)
 		expect(isPoolComplete(owned, "mult")).toBe(false)
+	})
+
+	test("komplet nielegendarnych: legendarne nie mają znaczenia", () => {
+		const nonLeg = Object.fromEntries(
+			Array.from({ length: MONSTER_COUNT }, (_, id) => id)
+				.filter((id) => rarityOf(id) !== "legendary")
+				.map((id) => [id, { hatchedAt: 1 }]),
+		)
+		expect(isNonLegendaryComplete(nonLeg)).toBe(true)
+		expect(isPoolComplete(nonLeg, "mult")).toBe(false)
+		const { 0: _first, ...missingOne } = nonLeg
+		expect(isNonLegendaryComplete(missingOne)).toBe(false)
 	})
 
 	test("guardianOwned: brak krainy = false", () => {

@@ -378,5 +378,19 @@ describe("rollWish", () => {
 			rand: () => 0.5,
 		})
 		expect(owned.has(got)).toBe(true)
+		expect(rarityOf(got)).not.toBe("legendary")
+	})
+	test("nigdy legendarny: wymarzony legendarny ignorowany, tier legendary poza losowaniem", () => {
+		const rand = mulberry32(7)
+		for (let i = 0; i < 300; i++) {
+			const got = rollWish({
+				idsByRarity,
+				owned: new Set<number>([0, 1, 2, 3, 4, 5]),
+				dreamId: 6,
+				rarityOf,
+				rand,
+			})
+			expect(rarityOf(got)).not.toBe("legendary")
+		}
 	})
 })

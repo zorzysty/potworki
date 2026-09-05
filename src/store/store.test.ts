@@ -553,22 +553,22 @@ describe("buyWishEgg — ekonomia", () => {
 		expect(wishEgg(game()).cost).toBe(WISH_COST_NO_DREAM - 5)
 		buildFontanna(3)
 		expect(wishEgg(game()).cost).toBe(WISH_PRICE_FLOOR)
-		// premia za rzadkość wymarzonego przeżywa zniżkę (30−10=20 > podłoga)
-		const legendaryId = IDS_BY_RARITY.legendary[0]
-		if (legendaryId === undefined) throw new Error("brak legendarnych")
-		game().setDreamMonster(legendaryId)
-		expect(wishEgg(game()).cost).toBe(WISH_COST.legendary - 10)
+		// premia za rzadkość wymarzonego przeżywa zniżkę (20−10=10 > podłoga)
+		const epicId = IDS_BY_RARITY.epic[0]
+		if (epicId === undefined) throw new Error("brak epickich")
+		game().setDreamMonster(epicId)
+		expect(wishEgg(game()).cost).toBe(WISH_COST.epic - 10)
 	})
 
 	test("za mało iskierek — brak efektu", () => {
 		buildFontanna()
-		const legendaryId = IDS_BY_RARITY.legendary[0]
-		if (legendaryId === undefined) throw new Error("brak legendarnych")
-		game().setDreamMonster(legendaryId)
-		// koszt wymarzonego legendarnego = 30
-		game().debugAddIskierki(29)
+		const epicId = IDS_BY_RARITY.epic[0]
+		if (epicId === undefined) throw new Error("brak epickich")
+		game().setDreamMonster(epicId)
+		// koszt wymarzonego epickiego = 20
+		game().debugAddIskierki(19)
 		game().buyWishEgg()
-		expect(game().iskierki).toBe(29)
+		expect(game().iskierki).toBe(19)
 		expect(game().pendingEggs.length).toBe(0)
 	})
 
@@ -580,9 +580,13 @@ describe("buyWishEgg — ekonomia", () => {
 				.map((id) => [id, { hatchedAt: 1 }]),
 		)
 
-	test("komplet puli mnożeniowej przy brakujących ekskluzywnych — kupno to ciche no-op", () => {
+	test("komplet nielegendarnych (legendarne wciąż brakują) — kupno to ciche no-op", () => {
 		buildFontanna()
-		const ownedMonsters = ownAllMult()
+		const ownedMonsters = Object.fromEntries(
+			Object.entries(ownAllMult()).filter(
+				([id]) => rarityOf(Number(id)) !== "legendary",
+			),
+		)
 		useGame.setState({ ownedMonsters })
 		expect(wishEgg(game()).available).toBe(false)
 		expect(Object.keys(ownedMonsters).length).toBeLessThan(MONSTER_COUNT)
@@ -611,10 +615,10 @@ describe("buyWishEgg — ekonomia", () => {
 	test("dokładna kwota — odejmuje koszt, pcha jajko wish, screen hatch", () => {
 		suppressAchievements()
 		buildFontanna()
-		const legendaryId = IDS_BY_RARITY.legendary[0]
-		if (legendaryId === undefined) throw new Error("brak legendarnych")
-		game().setDreamMonster(legendaryId)
-		game().debugAddIskierki(30)
+		const epicId = IDS_BY_RARITY.epic[0]
+		if (epicId === undefined) throw new Error("brak epickich")
+		game().setDreamMonster(epicId)
+		game().debugAddIskierki(WISH_COST.epic)
 		game().buyWishEgg()
 		expect(game().iskierki).toBe(0)
 		expect(game().pendingEggs.length).toBe(1)
@@ -642,14 +646,30 @@ describe("buyWishEgg — ekonomia", () => {
 
 	test("progresja dolicza się do bazy wymarzonego (rzadkość zostaje)", () => {
 		suppressAchievements()
-		const legendaryId = IDS_BY_RARITY.legendary[0]
-		if (legendaryId === undefined) throw new Error("brak legendarnych")
-		game().setDreamMonster(legendaryId)
-		expect(wishEgg(game()).cost).toBe(WISH_COST.legendary)
+		const epicId = IDS_BY_RARITY.epic[0]
+		if (epicId === undefined) throw new Error("brak epickich")
+		game().setDreamMonster(epicId)
+		expect(wishEgg(game()).cost).toBe(WISH_COST.epic)
 		useGame.setState({
 			achievementStats: { ...game().achievementStats, wishEggsBought: 2 },
 		})
-		expect(wishEgg(game()).cost).toBe(WISH_COST.legendary + 2 * WISH_COST_STEP)
+		expect(wishEgg(game()).cost).toBe(WISH_COST.epic + 2 * WISH_COST_STEP)
+	})
+
+	test("wymarzony legendarny nie dotyczy Jajka Życzeń: cena bez dreamu, wykluwa się nielegendarny", () => {
+		suppressAchievements()
+		buildFontanna()
+		const legendaryId = IDS_BY_RARITY.legendary[0]
+		if (legendaryId === undefined) throw new Error("brak legendarnych")
+		game().setDreamMonster(legendaryId)
+		expect(wishEgg(game()).dreamApplies).toBe(false)
+		expect(wishEgg(game()).cost).toBe(WISH_COST_NO_DREAM)
+		game().debugAddIskierki(30)
+		game().buyWishEgg()
+		game().hatchEgg()
+		const id = game().lastHatch?.monsterId
+		expect(id).toBeDefined()
+		expect(rarityOf(id as number)).not.toBe("legendary")
 	})
 
 	test("cena ma sufit — nie przebija capu portfela (przycisk nie umiera)", () => {
@@ -662,13 +682,13 @@ describe("buyWishEgg — ekonomia", () => {
 
 	test("wish egg hatches unowned dream", () => {
 		buildFontanna()
-		const legendaryId = IDS_BY_RARITY.legendary[0]
-		if (legendaryId === undefined) throw new Error("brak legendarnych")
-		game().setDreamMonster(legendaryId)
+		const epicId = IDS_BY_RARITY.epic[0]
+		if (epicId === undefined) throw new Error("brak epickich")
+		game().setDreamMonster(epicId)
 		game().debugAddIskierki(30)
 		game().buyWishEgg()
 		game().hatchEgg()
-		expect(game().lastHatch?.monsterId).toBe(legendaryId)
+		expect(game().lastHatch?.monsterId).toBe(epicId)
 	})
 })
 

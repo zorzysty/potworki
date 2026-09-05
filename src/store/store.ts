@@ -478,7 +478,7 @@ export const useGame = create<GameState>()(
 
 			buyWishEgg: () => {
 				const state = get()
-				// studnia życzeń (Fontanna L1+) + pula mnożeniowa jeszcze niedomknięta
+				// studnia życzeń (Fontanna L1+) + brakuje jeszcze nielegendarnych
 				const wish = wishEgg(state)
 				if (!wish.unlocked || !wish.available) return
 				const wallet = spend(state.iskierki, wish.cost)
