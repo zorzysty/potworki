@@ -12,6 +12,7 @@ Logika pedagogiczna i ekonomia nagród jako czyste funkcje — bez Reacta, DOM-u
 - `village.ts` — katalog budynków i dekoracji (każdy budynek ma realny perk), żołd (`roundWage`), koszty, `villageRoster`, cel budowy
 - `cosmetics.ts` — katalog kosmetyki Sklepiku (tiery per poziom budynku); import jednokierunkowy z `village.ts`
 - `expeditions.ts` — katalog typów wypraw i czyste helpery; brama Placu Zabaw; import jednokierunkowy z `village.ts`
+- `wishEgg.ts` — `wishEgg(save) → { cost, dreamApplies, unlocked, available }`: jedyne źródło prawdy o Jajku Życzeń (pula, cena, odblokowanie); import z `rewards.ts`, `village.ts` i katalogu potworków
 - `time.ts` — `dayStamp(now)`: lokalny znacznik dnia, czysty względem wstrzykiwanego `now`
 - `debug.ts` — czysta symulacja rundy debug (wstrzykiwane `rand`/`now`)
 
@@ -26,7 +27,7 @@ Logika pedagogiczna i ekonomia nagród jako czyste funkcje — bez Reacta, DOM-u
 - **Każdy dochód przechodzi przez `credit`, każdy zakup przez `spend`** — żadnych ręcznych `Math.min(ISKIERKI_CAP, …)` ani `iskierki < cost` poza `rewards.ts` (wyjątek: zamrożone migracje w `store/schema.ts`). Komunikat dla dziecka pokazuje `gained` z `credit`, nigdy kwotę sprzed capu.
 - Pity: licznik jajek Z RUND per tryb (`SaveState.legendaryPity`) gwarantuje tier legendarny co `LEGENDARY_PITY_EVERY`, tylko gdy pula trybu ma nieposiadanego legendarnego; Jajko Życzeń i pierwszy potworek go nie ruszają — ekskluzywne legendarne mają być celem, nie loterią.
 - Próg fragmentów na jajko rośnie, ale jest capowany (`EGG_THRESHOLD_CAP`) — pętla wyklucia nie może rozciągać się bez końca.
-- Jajko Życzeń: podłogę `WISH_PRICE_FLOOR` egzekwuje samo `wishEggPrice` (żaden konsument nie może jej zgubić); sufit ogranicza **dopłatę, nie cenę końcową** (premia za rzadkość wymarzonego przeżywa sufit i zniżkę fontanny); cena maks ≤ `ISKIERKI_CAP`. Licznik kupionych = `achievementStats.wishEggsBought` — świadomie bez nowego pola zapisu.
+- Jajko Życzeń: store (guard `buyWishEgg`) i UI (przycisk, etykieta „(wymarzony!)") czytają TEN SAM obiekt `wishEgg(save)` — cena i etykieta zgadzają się z konstrukcji; podłogę `WISH_PRICE_FLOOR` egzekwuje samo `wishEggPrice` (żaden konsument nie może jej zgubić); sufit ogranicza **dopłatę, nie cenę końcową** (premia za rzadkość wymarzonego przeżywa sufit i zniżkę fontanny); cena maks ≤ `ISKIERKI_CAP`. Licznik kupionych = `achievementStats.wishEggsBought` — świadomie bez nowego pola zapisu.
 - Żołd: wolna runda zawsze dostaje bazę; bonusy obecności bez streaka — przerwa niczego nie zabiera.
 - Wyprawy: postęp = UKOŃCZONE rundy, **nigdy zegar** (żadnych `Date.now()`/timerów w tej mechanice); strata nagrody niemożliwa; ekonomia uzupełnia żołd, nie zastępuje go.
 - Kosmetyka: kupowana raz, zakładanie darmowe i nielimitowane (jeden przedmiot na wielu potworkach naraz — przebieranki mają być zabawą, nie grindem); katalog append-friendly (projektowany powtarzalny zlew iskierek); stock rotacyjny/timery odrzucone (presja/FOMO).

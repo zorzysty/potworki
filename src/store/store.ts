@@ -47,10 +47,7 @@ import {
 	rollMonsterWithPity,
 	rollWish,
 	spend,
-	WISH_COST,
-	WISH_COST_NO_DREAM,
 	WISH_MODE,
-	wishEggPrice,
 } from "../game/rewards"
 import { dayStamp } from "../game/time"
 import type { BuildingId, DecorationId } from "../game/village"
@@ -61,15 +58,12 @@ import {
 	MAX_BUILDING_LEVEL,
 	nextLevelCost,
 	roundWage,
-	wishEggDiscount,
-	wishEggUnlocked,
 } from "../game/village"
+import { wishEgg } from "../game/wishEgg"
 import {
 	FIRST_MONSTER_ID,
 	IDS_BY_RARITY,
 	idsByRarityForMode,
-	isDivisionOnly,
-	isGapOnly,
 	MONSTERS,
 	rarityOf,
 } from "../monsters/catalog"
@@ -309,49 +303,6 @@ function rollContext(state: SaveState, mode: GameMode) {
 		rarityOf,
 		rand: Math.random,
 	}
-}
-
-const WISH_POOL: readonly number[] = Object.values(
-	idsByRarityForMode(WISH_MODE),
-).flat()
-
-// Czy Jajko Życzeń ma jeszcze kogo wykluć (pula mnożeniowa domyka się przed
-// kompletem katalogu) — jedyne źródło prawdy dla guardu kupna i przycisku w UI.
-export function wishEggAvailable(
-	ownedMonsters: SaveState["ownedMonsters"],
-): boolean {
-	return WISH_POOL.some((id) => !(id in ownedMonsters))
-}
-
-// Cena Jajka Życzeń = baza (wg wymarzonego) + progresja za już kupione.
-// Licznik `wishEggsBought` żyje w `achievementStats` i znaczy dokładnie „ile
-// jajek życzeń kupiono" — używamy go zamiast dokładać bliźniacze pole do
-// zapisu (zero zmian kształtu `SaveState`, zero migracji). Skutek uboczny jest
-// zamierzony: kto już kupował, płaci od razu wyższą stawkę.
-export function wishEggCost(
-	state: Pick<
-		SaveState,
-		"dreamMonsterId" | "ownedMonsters" | "achievementStats" | "village"
-	>,
-): number {
-	const dream = state.dreamMonsterId
-	// jajko życzeń losuje z puli mnożeniowej → wymarzony ekskluzywny dla innego
-	// trybu (tylko-dzielenie / tylko-luka) go nie dotyczy (zdobywa się go realną
-	// grą w swoim trybie), więc liczymy jak bez dreamu
-	const base =
-		dream === null ||
-		dream in state.ownedMonsters ||
-		isDivisionOnly(dream) ||
-		isGapOnly(dream)
-			? WISH_COST_NO_DREAM
-			: WISH_COST[rarityOf(dream)]
-	// zniżka fontanny (studnia życzeń) schodzi z ceny końcowej; podłogę
-	// WISH_PRICE_FLOOR egzekwuje samo wishEggPrice (rewards.ts)
-	return wishEggPrice(
-		base,
-		state.achievementStats.wishEggsBought,
-		wishEggDiscount(state.village),
-	)
 }
 
 // localStorage opakowany w try/catch (tryb prywatny Safari rzuca na setItem);
@@ -925,10 +876,10 @@ export const useGame = create<GameState>()(
 
 			buyWishEgg: () => {
 				const state = get()
-				// studnia życzeń: Jajko Życzeń kupuje się przy fontannie (L1+)
-				if (!wishEggUnlocked(state.village)) return
-				if (!wishEggAvailable(state.ownedMonsters)) return
-				const wallet = spend(state.iskierki, wishEggCost(state))
+				// studnia życzeń (Fontanna L1+) + pula mnożeniowa jeszcze niedomknięta
+				const wish = wishEgg(state)
+				if (!wish.unlocked || !wish.available) return
+				const wallet = spend(state.iskierki, wish.cost)
 				if (wallet === null) return
 				set({
 					iskierki: wallet,

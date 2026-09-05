@@ -22,7 +22,8 @@ import {
 	expeditionUnlocked,
 } from "../game/expeditions"
 import { RARITY_ORDER } from "../game/rewards"
-import { buildingLevel, wishEggUnlocked } from "../game/village"
+import { buildingLevel } from "../game/village"
+import { wishEgg } from "../game/wishEgg"
 import {
 	isDivisionOnly,
 	isGapOnly,
@@ -32,7 +33,7 @@ import {
 import { loreFor } from "../monsters/lore"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { originOf } from "../monsters/world"
-import { useGame, wishEggAvailable, wishEggCost } from "../store/store"
+import { useGame } from "../store/store"
 
 // Wyświetlanie po rzadkości (common→legendary), w obrębie rzadkości po id.
 // Id nie są już ciągłe po rzadkości (nowe potworki dochodzą na końcu), więc
@@ -626,13 +627,14 @@ export function CollectionScreen() {
 	const [selectedId, setSelectedId] = useState<number | null>(null)
 
 	const ownedCount = Object.keys(ownedMonsters).length
-	const wishAvailable = wishEggAvailable(ownedMonsters)
 	// studnia życzeń: bez fontanny przycisk kupna ustępuje zajawce (fontanna →
-	// Wioska), a ceny nie ma czego liczyć
-	const wishUnlocked = wishEggUnlocked(village)
-	const cost = wishUnlocked
-		? wishEggCost({ dreamMonsterId, ownedMonsters, achievementStats, village })
-		: 0
+	// Wioska); guard w store czyta ten sam obiekt
+	const wish = wishEgg({
+		dreamMonsterId,
+		ownedMonsters,
+		achievementStats,
+		village,
+	})
 	const selected = selectedId !== null ? MONSTERS[selectedId] : undefined
 	const selectedOwned =
 		selectedId !== null ? ownedMonsters[selectedId] : undefined
@@ -667,22 +669,18 @@ export function CollectionScreen() {
 			    (aspiracja jak zablokowane półki Sklepiku, nigdy ton błędu) NIE
 			    zależy od portfela — to jedyne miejsce tłumaczące związek
 			    Fontanna→Jajko Życzeń; przycisk kupna jak dotąd tylko przy >0 ✨. */}
-			{wishAvailable && (!wishUnlocked || iskierki > 0) && (
+			{wish.available && (!wish.unlocked || iskierki > 0) && (
 				<div className="mx-auto flex w-full max-w-sm items-center gap-2">
 					<BigButton
-						onClick={wishUnlocked ? buyWishEgg : () => goTo("village")}
+						onClick={wish.unlocked ? buyWishEgg : () => goTo("village")}
 						variant="secondary"
-						disabled={wishUnlocked && iskierki < cost}
-						className={`flex-1 py-3 ${wishUnlocked ? "text-xl" : "text-lg"}`}
+						disabled={wish.unlocked && iskierki < wish.cost}
+						className={`flex-1 py-3 ${wish.unlocked ? "text-xl" : "text-lg"}`}
 					>
-						{wishUnlocked ? (
+						{wish.unlocked ? (
 							<>
-								Jajko Życzeń 🌟 — {cost} ✨
-								{dreamMonsterId !== null &&
-									!(dreamMonsterId in ownedMonsters) &&
-									!isDivisionOnly(dreamMonsterId) &&
-									!isGapOnly(dreamMonsterId) &&
-									" (wymarzony!)"}
+								Jajko Życzeń 🌟 — {wish.cost} ✨
+								{wish.dreamApplies && " (wymarzony!)"}
 							</>
 						) : (
 							"Jajko Życzeń 🌟 — zbuduj Fontannę! ⛲"
@@ -692,7 +690,7 @@ export function CollectionScreen() {
 						placement="bottom"
 						align="right"
 						text={
-							wishUnlocked
+							wish.unlocked
 								? "Kupujesz je za iskierki ✨. Masz wymarzonego potworka? Dostaniesz dokładnie jego — na pewno! Nie masz? Wykluje się jakiś nowy potworek, którego jeszcze nie masz. (Sam wymarzony jest za darmo i tylko sprawia, że zwykłe jajka częściej wykluwają właśnie jego.)"
 								: "Jajko Życzeń kupisz przy Fontannie: wrzucasz iskierki ✨ i wypowiadasz życzenie. Zbuduj Fontannę w Wiosce, a studnia życzeń ruszy!"
 						}

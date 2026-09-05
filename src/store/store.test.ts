@@ -19,6 +19,7 @@ import {
 	WISH_SURCHARGE_MAX,
 } from "../game/rewards"
 import { BUILDINGS, DECORATIONS } from "../game/village"
+import { wishEgg } from "../game/wishEgg"
 import {
 	DIVISION_ONLY_IDS,
 	FIRST_MONSTER_ID,
@@ -29,7 +30,7 @@ import {
 	rarityOf,
 } from "../monsters/catalog"
 import { SAVE_KEYS } from "./schema"
-import { mergePersisted, useGame, wishEggAvailable, wishEggCost } from "./store"
+import { mergePersisted, useGame } from "./store"
 
 const game = () => useGame.getState()
 
@@ -520,14 +521,14 @@ describe("buyWishEgg — ekonomia", () => {
 	test("zniżka fontanny: L2 −5, L3 −10 z podłogą ceny (nigdy za darmo)", () => {
 		// bez wymarzonego: baza 10 — przy L3 podłoga łapie (10−10 → 5, nie 0)
 		buildFontanna(2)
-		expect(wishEggCost(game())).toBe(WISH_COST_NO_DREAM - 5)
+		expect(wishEgg(game()).cost).toBe(WISH_COST_NO_DREAM - 5)
 		buildFontanna(3)
-		expect(wishEggCost(game())).toBe(WISH_PRICE_FLOOR)
+		expect(wishEgg(game()).cost).toBe(WISH_PRICE_FLOOR)
 		// premia za rzadkość wymarzonego przeżywa zniżkę (30−10=20 > podłoga)
 		const legendaryId = IDS_BY_RARITY.legendary[0]
 		if (legendaryId === undefined) throw new Error("brak legendarnych")
 		game().setDreamMonster(legendaryId)
-		expect(wishEggCost(game())).toBe(WISH_COST.legendary - 10)
+		expect(wishEgg(game()).cost).toBe(WISH_COST.legendary - 10)
 	})
 
 	test("za mało iskierek — brak efektu", () => {
@@ -554,7 +555,7 @@ describe("buyWishEgg — ekonomia", () => {
 		buildFontanna()
 		const ownedMonsters = ownAllMult()
 		useGame.setState({ ownedMonsters })
-		expect(wishEggAvailable(ownedMonsters)).toBe(false)
+		expect(wishEgg(game()).available).toBe(false)
 		expect(Object.keys(ownedMonsters).length).toBeLessThan(MONSTER_COUNT)
 		game().debugAddIskierki(200)
 		game().buyWishEgg()
@@ -595,10 +596,10 @@ describe("buyWishEgg — ekonomia", () => {
 	test("progresja ceny: każde kolejne jajko o WISH_COST_STEP droższe", () => {
 		suppressAchievements()
 		buildFontanna()
-		const cena = () => wishEggCost(game())
+		const cena = () => wishEgg(game()).cost
 		expect(cena()).toBe(WISH_COST_NO_DREAM)
 		// trzy zakupy pod rząd — za każdym razem płacimy dokładnie tyle, ile
-		// pokazuje wishEggCost, a stawka rośnie o krok
+		// pokazuje wishEgg().cost, a stawka rośnie o krok
 		for (let i = 0; i < 3; i++) {
 			const oczekiwana = WISH_COST_NO_DREAM + WISH_COST_STEP * i
 			expect(cena()).toBe(oczekiwana)
@@ -615,19 +616,19 @@ describe("buyWishEgg — ekonomia", () => {
 		const legendaryId = IDS_BY_RARITY.legendary[0]
 		if (legendaryId === undefined) throw new Error("brak legendarnych")
 		game().setDreamMonster(legendaryId)
-		expect(wishEggCost(game())).toBe(WISH_COST.legendary)
+		expect(wishEgg(game()).cost).toBe(WISH_COST.legendary)
 		useGame.setState({
 			achievementStats: { ...game().achievementStats, wishEggsBought: 2 },
 		})
-		expect(wishEggCost(game())).toBe(WISH_COST.legendary + 2 * WISH_COST_STEP)
+		expect(wishEgg(game()).cost).toBe(WISH_COST.legendary + 2 * WISH_COST_STEP)
 	})
 
 	test("cena ma sufit — nie przebija capu portfela (przycisk nie umiera)", () => {
 		useGame.setState({
 			achievementStats: { ...game().achievementStats, wishEggsBought: 500 },
 		})
-		expect(wishEggCost(game())).toBe(WISH_COST_NO_DREAM + WISH_SURCHARGE_MAX)
-		expect(wishEggCost(game())).toBeLessThanOrEqual(ISKIERKI_CAP)
+		expect(wishEgg(game()).cost).toBe(WISH_COST_NO_DREAM + WISH_SURCHARGE_MAX)
+		expect(wishEgg(game()).cost).toBeLessThanOrEqual(ISKIERKI_CAP)
 	})
 
 	test("wish egg hatches unowned dream", () => {
@@ -919,7 +920,8 @@ describe("tryb luki", () => {
 		game().setDreamMonster(76)
 		const { dreamMonsterId, ownedMonsters, achievementStats, village } = game()
 		expect(
-			wishEggCost({ dreamMonsterId, ownedMonsters, achievementStats, village }),
+			wishEgg({ dreamMonsterId, ownedMonsters, achievementStats, village })
+				.cost,
 		).toBe(WISH_COST_NO_DREAM)
 	})
 
