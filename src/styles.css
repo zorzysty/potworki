@@ -208,6 +208,29 @@ body {
 	animation: float 2.6s ease-in-out infinite;
 }
 
+/* kaczka w stawie: pływa prawo-lewo i odwraca się na końcach (dziób w kierunku ruchu) */
+.anim-swim {
+	animation: swim 7s ease-in-out infinite;
+}
+
+@keyframes swim {
+	0% {
+		transform: translateX(0) scaleX(1);
+	}
+	46% {
+		transform: translateX(180%) scaleX(1);
+	}
+	50% {
+		transform: translateX(180%) scaleX(-1);
+	}
+	96% {
+		transform: translateX(0) scaleX(-1);
+	}
+	100% {
+		transform: translateX(0) scaleX(1);
+	}
+}
+
 @keyframes float {
 	0%,
 	100% {

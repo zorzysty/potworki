@@ -533,7 +533,7 @@ export function VillageScreen() {
 								}}
 							>
 								<PondArt />
-								<span className="anim-float absolute left-[26%] top-[8%] block w-[22%]">
+								<span className="anim-swim absolute left-[26%] top-[8%] block w-[22%]">
 									<DuckArt />
 								</span>
 							</span>
@@ -555,12 +555,7 @@ export function VillageScreen() {
 								className="absolute flex flex-col items-center"
 								style={{ left: "26%", bottom: "8%" }}
 							>
-								<MonsterSvg
-									id={firstHatchedId}
-									size={38}
-									animate={false}
-									className="monster-silhouette opacity-70"
-								/>
+								<MonsterSvg id={firstHatchedId} size={38} animate={false} />
 								<span className="-mt-1 block w-14">
 									<PedestalArt />
 								</span>
