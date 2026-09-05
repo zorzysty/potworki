@@ -22,8 +22,8 @@ import {
 	WISH_COST_NO_DREAM,
 	WISH_COST_STEP,
 	WISH_MODE,
+	WISH_PRICE_CAP,
 	WISH_PRICE_FLOOR,
-	WISH_SURCHARGE_MAX,
 } from "../game/rewards"
 import { feedAnswer } from "../game/round"
 import { BUILDINGS, DECORATIONS } from "../game/village"
@@ -676,7 +676,7 @@ describe("buyWishEgg — ekonomia", () => {
 		useGame.setState({
 			achievementStats: { ...game().achievementStats, wishEggsBought: 500 },
 		})
-		expect(wishEgg(game()).cost).toBe(WISH_COST_NO_DREAM + WISH_SURCHARGE_MAX)
+		expect(wishEgg(game()).cost).toBe(WISH_PRICE_CAP)
 		expect(wishEgg(game()).cost).toBeLessThanOrEqual(ISKIERKI_CAP)
 	})
 

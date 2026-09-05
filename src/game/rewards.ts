@@ -184,14 +184,14 @@ export const WISH_COST_NO_DREAM = 10
 
 // Progresja: każde KOLEJNE Jajko Życzeń kosztuje o `WISH_COST_STEP` więcej niż
 // poprzednie — jajko ma zostać wielkim życzeniem, nie zakupem co dwie rundy.
-// `WISH_SURCHARGE_MAX` ogranicza samą DOPŁATĘ, nie cenę końcową: sufit jest
-// obowiązkowy (bez niego cena przerosłaby cap portfela 999 i przycisk zostałby
-// martwy na zawsze — zamknięta droga, nie wyzwanie), ale gdyby capował cenę,
-// wszystkie bazy zlałyby się w jedną liczbę i premia za rzadkość wymarzonego
-// po cichu by zniknęła. Tak cena maksymalna = baza + dopłata (≤ 130 ✨ < 999),
-// a różnice wg rzadkości zostają na zawsze. Gałki strojenia: obie stałe + bazy.
+// `WISH_PRICE_CAP` to sufit CENY KOŃCOWEJ (przed zniżką fontanny): decyzja
+// maintainera 2026-09-06 — jajko ma kosztować najwyżej 100 ✨, żeby dziecko z
+// pełną setką zawsze mogło je kupić (poprzedni sufit ograniczał tylko dopłatę,
+// więc cena dochodziła do 110–120 i przycisk gasł jako „nie stać"). Po
+// osiągnięciu sufitu bazy wg rzadkości wymarzonego zlewają się w 100 — to
+// świadome; premia za rzadkość działa tylko przy pierwszych zakupach.
 export const WISH_COST_STEP = 10
-export const WISH_SURCHARGE_MAX = 100
+export const WISH_PRICE_CAP = 100
 
 // Podłoga ceny PO zniżce fontanny (wysokość zniżki w village.ts): jajko
 // nigdy nie jest darmowe — życzenie ma kosztować choć garść iskierek, inaczej
@@ -208,7 +208,7 @@ export function wishEggPrice(
 	const surcharge = WISH_COST_STEP * Math.max(0, bought)
 	return Math.max(
 		WISH_PRICE_FLOOR,
-		base + Math.min(WISH_SURCHARGE_MAX, surcharge) - discount,
+		Math.min(WISH_PRICE_CAP, base + surcharge) - discount,
 	)
 }
 
