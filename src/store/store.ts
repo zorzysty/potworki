@@ -4,11 +4,11 @@ import {
 	claimAchievement as claimLedger,
 	unlockAchievements,
 } from "../achievements/evaluate"
-import { decayStats, emptyStats, reachedGoal } from "../game/adaptive"
+import { decayStats } from "../game/adaptive"
 import { grantMonster, ownedIds } from "../game/collection"
 import type { CosmeticId, CosmeticSlot } from "../game/cosmetics"
 import { COSMETICS_BY_ID, isOwned, sklepikLevel } from "../game/cosmetics"
-import { simulateRound } from "../game/debug"
+import { FULL_VILLAGE, ownPatch, simulateRound } from "../game/debug"
 import type { ExpeditionTypeId } from "../game/expeditions"
 import { EXPEDITIONS_BY_ID, expeditionUnlocked } from "../game/expeditions"
 import type { FactKey, GameMode } from "../game/facts"
@@ -17,7 +17,6 @@ export type { RoundQuestion } from "../game/facts"
 
 import {
 	expectedAnswer,
-	FACTS_BY_KEY,
 	isMaxStage,
 	modeUnlocked,
 	unlockedFactors,
@@ -42,11 +41,8 @@ import {
 } from "../game/round"
 import type { BuildingId, DecorationId } from "../game/village"
 import {
-	BUILDINGS,
 	buildingLevel,
-	DECORATIONS,
 	DECORATIONS_BY_ID,
-	MAX_BUILDING_LEVEL,
 	nextLevelCost,
 } from "../game/village"
 import { wishEgg } from "../game/wishEgg"
@@ -122,8 +118,8 @@ interface GameState extends SaveState {
 	reconcileAchievements: () => void
 	shiftAchievementToast: () => void
 
-	debugSetAllMastery: (value: number) => void
-	debugSimulateRound: (totalStars: number) => void
+	debugSimulateRound: (totalStars: number, times?: number) => void
+	debugPatch: (patch: Partial<SaveState>) => void // panel debug: dowolny patch zapisu
 	debugFinishRound: (totalStars: number) => void
 	debugOwnRarity: (rarity: Rarity) => void
 	debugAddIskierki: (amount: number) => void
@@ -647,36 +643,32 @@ export const useGame = create<GameState>()(
 			// bez lawiny powiadomień; iskierki czekają do odbioru (postęp dziecka jest święty).
 			reconcileAchievements: () => get().checkAchievements(true),
 
-			debugSetAllMastery: (value) => {
-				const facts = { ...get().facts }
-				for (const fact of FACTS_BY_KEY.values()) {
-					const prev = facts[fact.key] ?? emptyStats()
-					facts[fact.key] = {
-						...prev,
-						mastery: value,
-						mastered: reachedGoal(prev, value),
-						attempts: Math.max(1, prev.attempts),
-						lastSeen: Date.now(),
-					}
-				}
-				set({ facts })
-			},
-
 			// ekran debug: cicho dopisuje efekt jednej rundy do zapisu (bez wchodzenia w rundę)
 			// symulowana runda tymi samymi funkcjami co prawdziwa gra (game/debug.ts →
 			// game/round.ts): żołd, wyprawa, liczniki — bez rundy na ekranie. Świadomie
 			// bez bonusu wizyty i licznika wizyt: to zwykła (nie-wizytowa) runda.
-			debugSimulateRound: (totalStars) => {
-				const state = get()
-				const { patch } = simulateRound(
-					state,
-					state.mode,
-					totalStars,
-					Math.random,
-					Date.now(),
-				)
-				set(patch)
+			debugSimulateRound: (totalStars, times = 1) => {
+				for (let i = 0; i < times; i++) {
+					const state = get()
+					const { patch } = simulateRound(
+						state,
+						state.mode,
+						totalStars,
+						Math.random,
+						Date.now(),
+					)
+					set(patch)
+				}
 				get().checkAchievements()
+			},
+
+			// `mode` jest efemeryczny (poza SaveState): patch cofający etap musi
+			// zdjąć tryb zamknięty bramą, inaczej Start rundy grałby tryb nieosiągalny
+			debugPatch: (patch) => {
+				set(patch)
+				const s = get()
+				if (!modeUnlocked(s.mode, s.unlockedStage)) set({ mode: "mult" })
+				s.checkAchievements()
 			},
 
 			// ekran rundy: kończy trwającą rundę z sumą `totalStars` gwiazdek i przechodzi
@@ -701,14 +693,10 @@ export const useGame = create<GameState>()(
 				get().checkAchievements()
 			},
 
-			debugOwnRarity: (rarity) => {
-				const owned = { ...get().ownedMonsters }
-				for (const id of IDS_BY_RARITY[rarity]) {
-					owned[id] ??= { hatchedAt: Date.now() }
-				}
-				set({ ownedMonsters: owned })
-				get().checkAchievements()
-			},
+			debugOwnRarity: (rarity) =>
+				get().debugPatch(
+					ownPatch(get(), IDS_BY_RARITY[rarity], true, Date.now()),
+				),
 
 			debugAddIskierki: (amount) =>
 				set((s) => ({ iskierki: credit(s.iskierki, amount).wallet })),
@@ -728,16 +716,7 @@ export const useGame = create<GameState>()(
 
 			// stawia całą wioskę BEZ wydawania iskierek — narzędzie do testów
 			// wizualnych (pełna scena jednym stuknięciem, wzór debugOwnRarity)
-			debugBuildAll: () =>
-				set({
-					village: {
-						buildings: Object.fromEntries(
-							BUILDINGS.map((b) => [b.id, MAX_BUILDING_LEVEL]),
-						),
-						decorations: DECORATIONS.map((d) => d.id),
-						goalId: null,
-					},
-				}),
+			debugBuildAll: () => set({ village: FULL_VILLAGE }),
 
 			debugReset: () =>
 				set({

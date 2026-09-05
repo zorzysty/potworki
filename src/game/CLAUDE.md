@@ -16,7 +16,7 @@ Logika pedagogiczna i ekonomia nagród jako czyste funkcje — bez Reacta, DOM-u
 - `collection.ts` — fakty o kolekcji z `ownedMonsters` i JEDYNA reguła przyjęcia potworka (`grantMonster`: wyklucie i znalezisko); `poolIds(mode)`; `isNonLegendaryComplete` (brama Jajka Życzeń); `byRecency`/`newestOwned`/`firstHatched` (jeden komparator, remis → niższy `id`), `ownedCount`, `isCollectionComplete` (katalog) vs `isPoolComplete(mode)` (pula trybu), `guardianOwned`; ekrany nie liczą tego same
 - `wishEgg.ts` — `wishEgg(save) → { cost, dreamApplies, unlocked, available }`: jedyne źródło prawdy o Jajku Życzeń (cena, odblokowanie, dostępność = brakuje nielegendarnych); import z `rewards.ts`, `village.ts` i katalogu potworków
 - `time.ts` — `dayStamp(now)`: lokalny znacznik dnia, czysty względem wstrzykiwanego `now`
-- `debug.ts` — `simulateRound`: gra pełną rundę funkcjami z `round.ts` (w trybie par stuka kolejne cele przez `submitPair`; nie lustro logiki — nie ma czego utrzymywać w dwóch miejscach); `distributeStars` steruje czasem odpowiedzi tak, by wyszła zadana suma gwiazdek
+- `debug.ts` — `simulateRound`: gra pełną rundę funkcjami z `round.ts` (w trybie par stuka kolejne cele przez `submitPair`; nie lustro logiki — nie ma czego utrzymywać w dwóch miejscach); `distributeStars` steruje czasem odpowiedzi tak, by wyszła zadana suma gwiazdek; czyste patche panelu debug (`SCENARIOS` — jeden tap = znany stan gry, skok do etapu zostawia najnowszą tabliczkę nieopanowaną, by runda nie otwierała od razu kolejnej bramy; `withMastery`/`withOwned`/`parseSaveJson`) — panel nie liczy stanów sam
 
 ## Local Contracts
 
