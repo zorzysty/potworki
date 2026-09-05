@@ -2,6 +2,7 @@ import confetti from "canvas-confetti"
 import { useEffect, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { EGG_LABELS, EggView } from "../components/EggView"
+import { NEST_SLOTS, NestArt } from "../components/NestArt"
 import { RARITY_META } from "../components/rarity"
 import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
@@ -87,7 +88,7 @@ export function HatchScreen() {
 				)}
 			</div>
 
-			<div className="flex flex-1 flex-col items-center justify-center gap-5">
+			<div className="flex w-full flex-1 flex-col items-center justify-center gap-5">
 				{monster && lastHatch ? (
 					<>
 						{lastHatch.isNew && (
@@ -140,38 +141,71 @@ export function HatchScreen() {
 					</>
 				) : egg ? (
 					<>
+						{/* gniazdo i duże jajko skalują się wspólnie od --app-vh: stały
+						    budżet pionowy (nagłówek, etykiety, podpowiedź, odstępy) to
+						    ~270px, resztę dzielą gniazdo (3/4 szer. = wys.) i jajko */}
 						{pendingEggs.length > 1 && (
-							<div className="flex w-full flex-col items-center gap-2">
+							<div className="flex w-full flex-col items-center gap-1">
 								<div className="text-lg font-extrabold text-white/80">
 									Jajka w gnieździe
 								</div>
-								<div className="flex max-w-full gap-2 overflow-x-auto px-2 py-1">
-									{pendingEggs.map((e, i) => (
-										<button
-											key={i}
-											type="button"
-											onClick={() => selectEgg(i)}
-											className={`relative shrink-0 touch-manipulation rounded-2xl p-1.5 transition active:scale-90 ${
-												i === safeIndex
-													? "bg-white/30 ring-4 ring-white"
-													: "bg-white/5"
-											}`}
-											aria-label={`Wybierz: ${EGG_LABELS[e.quality]}`}
+								{/* gniazdo = wybór jajka: jajko i siedzi w slocie i, wybrane
+								    świeci; nadmiar ponad liczbę slotów pokazuje chip */}
+								<NestArt
+									className="max-w-[34rem]"
+									style={{
+										width: "min(100%, calc((var(--app-vh) - 270px) * 0.75))",
+									}}
+								>
+									{pendingEggs.map((e, i) => {
+										const slot = NEST_SLOTS[i]
+										if (!slot) return null
+										const sel = i === safeIndex
+										return (
+											<button
+												key={i}
+												type="button"
+												onClick={() => selectEgg(i)}
+												className={`absolute touch-manipulation transition active:scale-90 ${
+													sel ? "z-[5] scale-110" : ""
+												}`}
+												style={{
+													left: `${slot.cx - slot.w / 2}%`,
+													bottom: `${100 - slot.bottom}%`,
+													width: `${slot.w}%`,
+													zIndex: sel ? 5 : slot.z,
+													filter: sel
+														? "drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px #fff)"
+														: "drop-shadow(0 3px 3px #0006)",
+												}}
+												aria-label={`Wybierz: ${EGG_LABELS[e.quality]}`}
+											>
+												<EggView
+													quality={e.quality}
+													className="block h-auto w-full"
+												/>
+												{e.mode === "div" && (
+													<div className="absolute right-0 top-0 rounded-full bg-violet-500 px-1.5 text-xs font-extrabold text-white">
+														÷
+													</div>
+												)}
+												{e.mode === "gap" && (
+													<div className="absolute right-0 top-0 rounded-full bg-violet-500 px-1.5 text-xs font-extrabold text-white">
+														🧩
+													</div>
+												)}
+											</button>
+										)
+									})}
+									{pendingEggs.length > NEST_SLOTS.length && (
+										<div
+											className="absolute right-2 top-2 rounded-full bg-white/20 px-3 py-1 text-sm font-extrabold text-white"
+											style={{ zIndex: 11 }}
 										>
-											<EggView quality={e.quality} size={56} />
-											{e.mode === "div" && (
-												<div className="absolute right-0 top-0 rounded-full bg-violet-500 px-1.5 text-xs font-extrabold text-white">
-													÷
-												</div>
-											)}
-											{e.mode === "gap" && (
-												<div className="absolute right-0 top-0 rounded-full bg-violet-500 px-1.5 text-xs font-extrabold text-white">
-													🧩
-												</div>
-											)}
-										</button>
-									))}
-								</div>
+											+{pendingEggs.length - NEST_SLOTS.length} 🥚
+										</div>
+									)}
+								</NestArt>
 							</div>
 						)}
 						<div className="text-2xl font-extrabold text-white/90">
@@ -187,7 +221,18 @@ export function HatchScreen() {
 								key={wobbleNonce}
 								className={wobbleNonce > 0 ? "anim-wobble" : "anim-float"}
 							>
-								<EggView quality={egg.quality} cracks={cracks} size={190} />
+								<div
+									style={{
+										width:
+											"clamp(110px, calc((var(--app-vh) - 270px) * 0.34), 190px)",
+									}}
+								>
+									<EggView
+										quality={egg.quality}
+										cracks={cracks}
+										className="block h-auto w-full"
+									/>
+								</div>
 							</div>
 						</button>
 						<div className="anim-bounce-slow text-xl font-extrabold text-white/80">
@@ -196,7 +241,7 @@ export function HatchScreen() {
 					</>
 				) : (
 					<>
-						<div className="text-7xl">🪺</div>
+						<NestArt className="max-w-[28rem]" />
 						<div className="text-2xl font-extrabold text-white/90">
 							Gniazdo jest puste
 						</div>
