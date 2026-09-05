@@ -92,7 +92,7 @@ summary { cursor: pointer; font-weight: 700; color: var(--accent); }
 <main>
 <div class="eyebrow">Potworki · analiza ekonomii · 5 września 2026, noc · stan repo: main @ 1c7a595 (SAVE_VERSION 19, 88 potworków, 5 trybów, 63 osiągnięcia)</div>
 <h1>Ekonomia Potworków na pięć trybów</h1>
-<p class="lede">Piąta analiza, po dołożeniu trybów Dzielniki (pary) i Porównywanie, 8 nowych legendarnych ekskluzywnych (razem 16), 10 osiągnięć i nowego cennika duplikatów. Symulator przepisany pod 5 trybów (gra parami przez <code>submitPair</code>, porównywaniem przez <code>submitFeed</code>), 1000 rund na przebieg, bo komplet 88 trwa dłużej.</p>
+<p class="lede">Piąta analiza (z dopiskiem po wdrożeniu nowych reguł Jajka Życzeń), po dołożeniu trybów Dzielniki (pary) i Porównywanie, 8 nowych legendarnych ekskluzywnych (razem 16), 10 osiągnięć i nowego cennika duplikatów. Symulator przepisany pod 5 trybów (gra parami przez <code>submitPair</code>, porównywaniem przez <code>submitFeed</code>), 1000 rund na przebieg, bo komplet 88 trwa dłużej.</p>
 
 <div class="verdict">
 	<div class="card ok"><h3>Do 72. potworka nic się nie popsuło</h3><p>Nowy potworek co 2 rundy przez ~2,0 miesiąca, bramy w 3 tygodnie, wioska i sklepik po ~4 miesiącach, złote i tęczowe jajka jak w 030. Nowe tryby wchodzą bramą 2 i 4 (runda ~10 i ~25), więc dziecko gra nimi od pierwszego miesiąca; ich osiągnięcia licznikowe wpadają w tym samym tempie co dzielenia.</p></div>
@@ -101,6 +101,22 @@ summary { cursor: pointer; font-weight: 700; color: var(--accent); }
 </div>
 
 <div class="tiles" id="tiles"></div>
+
+<h2 id="po-wdrozeniu">0. Po wdrożeniu: Jajko Życzeń tylko dla nielegendarnych (5 września, noc)</h2>
+<p>Decyzje maintainera po tym raporcie, wdrożone w commicie <code>1c97c3a</code>: Jajko Życzeń nigdy nie wykluwa legendarnego (wymarzony legendarny jest ignorowany, cena bez dopłaty, losowanie tylko z tierów pospolity/rzadki/epicki), jest zablokowane, gdy dziecko ma już wszystkie nielegendarne potworki (wcześniej: gdy miało całą pulę mnożeniową z legendarnymi), a tooltip mówi o tym wprost. Pomysł uwolnienia jajka jako stałego zlewu został wycofany w trakcie pracy; symulacja wariantu „bez końca” pokazała, że przy polityce „najtańsze najpierw” dziecko wydawałoby wszystko na jajka za 110 ✨ i nigdy nie domknęło wioski, choć faktycznie żadna iskierka nie przepadała.</p>
+<div class="tablewrap"><table>
+<tr><th>Miara (profil dobry, mediana)</th><th>przed</th><th>po</th></tr>
+<tr><td>Pierwszy legendarny</td><td>18</td><td>18 (z jajek za rundy i pity, nie z Jajka Życzeń)</td></tr>
+<tr><td>Legendarne bazowe 4/4</td><td>40 (37–56)</td><td class="bad">73 (52–89)</td></tr>
+<tr><td>Komplet epickich</td><td>144</td><td>140</td></tr>
+<tr><td>72 potworki</td><td>131</td><td>130</td></tr>
+<tr><td>Wioska / sklepik komplet</td><td>250 / 210</td><td>245 / 204</td></tr>
+<tr><td>Kolekcja 88/88</td><td>496 (414–578)</td><td>520 (448–612)</td></tr>
+<tr><td>Jajek Życzeń kupionych → nowych</td><td>8,7 → 8,7</td><td>8,6 → 8,6</td></tr>
+<tr><td>Iskierki przepadłe na capie / 1000 rund</td><td>6438</td><td>6494</td></tr>
+</table></div>
+<p><b>Skutki.</b> Jajko Życzeń nadal domyka pospolite, rzadkie i epickie w tym samym tempie (dziecko kupuje ~9 sztuk, każde daje nowego potworka). Legendarne bazowe przychodzą teraz wyłącznie z jajek mnożeniowych i pity, więc komplet czterech przesuwa się z ~40 na ~73 rundy (z 3 na 5 tygodni); pierwszy legendarny bez zmian. Komplet 88/88 wydłuża się o ~24 rundy. Zlew iskierek pozostaje otwarty: przepada tyle samo, co przed zmianą. Rekomendacja R1 (wspólny licznik pity z progiem 6) jest nadal aktualna i po niej komplet wynosi ~291 rund.</p>
+<p class="note">Sekcje 2–8 poniżej opisują stan sprzed tej zmiany; różnice ograniczają się do powyższej tabeli.</p>
 
 <h2>1. Metoda</h2>
 <p>Skrypt <code>plans/ekonomia.sim.ts</code> (dawny 030, przepisany) importuje funkcje z <code>src/</code> i gra jak store: rundy przez <code>game/round.ts</code> we wszystkich pięciu trybach (pary: stukanie kolejnych par celu, pomyłka = para o innym iloczynie; porównywanie: stuknięcie strony, pomyłka = rytuał drugiej strony), wyklucie przez <code>rollMonsterWithPity</code>/<code>rollWish</code>, zakupy z katalogów wioski i sklepiku, osiągnięcia przez <code>unlockAchievements</code>/<code>claimAchievement</code>, wizyty przez <code>newVisitRound</code>, znaleziska przez <code>finishRound</code>, decay jak <code>applyDecay</code>. Agregacja: <code>plans/ekonomia.agg.ts</code>.</p>

@@ -229,7 +229,9 @@ Refreshed by the 2026-07-12 audit; ordered by (grounding × payoff)/effort:
   ~496 rounds (~7.6 months), 71% of it the 16-exclusive tail with a capped
   wallet; a child ignoring the new modes never completes. Open: shared pity
   counter with threshold 6 (88/88 → ~282 rounds), Home hint for the missing
-  mode.
+  mode. Shipped after it (`1c97c3a`): the wish egg never hatches legendaries
+  and is blocked once all non-legendary monsters are owned (section 0 of the
+  report has the before/after numbers).
 - **Parent progress view.** `DebugScreen` already renders the full
   per-fact mastery table and `adaptive.ts` exposes the aggregations; a
   gated (PIN/long-press) read-only, parent-legible presentation (color
