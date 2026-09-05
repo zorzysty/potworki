@@ -7,7 +7,7 @@ import { EggView } from "../components/EggView"
 import { ExpeditionDetails } from "../components/ExpeditionDetails"
 import { HelpTip } from "../components/HelpTip"
 import { MonsterStage } from "../components/MonsterStage"
-import { visitStage } from "../game/adaptive"
+import { VISIT_BONUS, visitStage } from "../game/adaptive"
 import * as collection from "../game/collection"
 import { expeditionProgress } from "../game/expeditions"
 import { fragmentsForEgg, isMaxStage, unlockedFactors } from "../game/facts"
@@ -201,7 +201,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 							{visitRegion.emoji}
 						</div>
 						<div className="mt-0.5 text-sm font-bold text-slate-500">
-							Odśwież starą tabliczkę ×{visitRegion.factor}
+							Tabliczka ×{visitRegion.factor} — w nagrodę +{VISIT_BONUS} ✨
 						</div>
 						{!guardianOwned && (
 							<div className="text-xs font-bold text-slate-400">

@@ -223,7 +223,7 @@ export function needsMaintenance(
 // Celowo małe: wizyty odpalają się rzadko (tylko przy podupadłych tabliczkach,
 // zwykle po przerwie), a nagradzają dokładnie to zachowanie, na którym nam
 // zależy — powtórkę. Strojenie tutaj.
-export const VISIT_BONUS = 2
+export const VISIT_BONUS = 3
 
 // Etap do odwiedzenia: NAJSŁABSZA (najniższa średnia mastery) już odblokowana
 // starsza tabliczka — null, gdy utrzymanie nie jest potrzebne. To ona wybiera
