@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test"
-import { WISH_COST, WISH_COST_NO_DREAM } from "./rewards"
+import {
+	WISH_COST,
+	WISH_COST_NO_DREAM,
+	WISH_FINAL_PRICE_MAX,
+	WISH_PRICE_CAP,
+	wishEggPrice,
+} from "./rewards"
+import { FONTANNA_WISH_DISCOUNT } from "./village"
 import { type WishEggState, wishEgg } from "./wishEgg"
 
 // Wymarzony: 0 = pierwszy potworek (mnożeniowy), 76 = tylko-luka. Fontanna L1
@@ -35,5 +42,12 @@ describe("wishEgg", () => {
 		)
 		expect(w.unlocked).toBe(false)
 		expect(w.available).toBe(true)
+	})
+
+	test("sufit ceny = 100 po maksymalnej zniżce fontanny (spójność z village.ts)", () => {
+		const maxDiscount = Math.max(...FONTANNA_WISH_DISCOUNT)
+		expect(WISH_PRICE_CAP).toBe(WISH_FINAL_PRICE_MAX + maxDiscount)
+		for (const base of Object.values(WISH_COST))
+			expect(wishEggPrice(base, 999, maxDiscount)).toBe(WISH_FINAL_PRICE_MAX)
 	})
 })

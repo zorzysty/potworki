@@ -184,14 +184,16 @@ export const WISH_COST_NO_DREAM = 10
 
 // Progresja: każde KOLEJNE Jajko Życzeń kosztuje o `WISH_COST_STEP` więcej niż
 // poprzednie — jajko ma zostać wielkim życzeniem, nie zakupem co dwie rundy.
-// `WISH_PRICE_CAP` to sufit CENY KOŃCOWEJ (przed zniżką fontanny): decyzja
-// maintainera 2026-09-06 — jajko ma kosztować najwyżej 100 ✨, żeby dziecko z
-// pełną setką zawsze mogło je kupić (poprzedni sufit ograniczał tylko dopłatę,
-// więc cena dochodziła do 110–120 i przycisk gasł jako „nie stać"). Po
-// osiągnięciu sufitu bazy wg rzadkości wymarzonego zlewają się w 100 — to
-// świadome; premia za rzadkość działa tylko przy pierwszych zakupach.
+// Sufit ceny (decyzja maintainera 2026-09-06): po MAKSYMALNEJ zniżce fontanny
+// (Fontanna Marzeń, FONTANNA_WISH_DISCOUNT w village.ts) jajko ma kosztować
+// dokładnie WISH_FINAL_PRICE_MAX = 100 ✨, więc sufit przed zniżką to 100 +
+// największa zniżka. Literał, bo rewards.ts nie importuje village.ts;
+// spójność pilnuje test w wishEgg.test.ts. Po osiągnięciu sufitu bazy wg
+// rzadkości wymarzonego zlewają się w jedną cenę — świadome; premia za rzadkość
+// działa tylko przy pierwszych zakupach.
 export const WISH_COST_STEP = 10
-export const WISH_PRICE_CAP = 100
+export const WISH_FINAL_PRICE_MAX = 100
+export const WISH_PRICE_CAP = 110
 
 // Podłoga ceny PO zniżce fontanny (wysokość zniżki w village.ts): jajko
 // nigdy nie jest darmowe — życzenie ma kosztować choć garść iskierek, inaczej

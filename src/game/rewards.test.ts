@@ -68,7 +68,7 @@ describe("wishEggPrice", () => {
 		expect(wishEggPrice(WISH_COST.epic, 2)).toBeGreaterThan(
 			wishEggPrice(WISH_COST_NO_DREAM, 2),
 		)
-		for (const bought of [9, 17, 500]) {
+		for (const bought of [11, 17, 500]) {
 			expect(wishEggPrice(WISH_COST_NO_DREAM, bought)).toBe(WISH_PRICE_CAP)
 			expect(wishEggPrice(WISH_COST.epic, bought)).toBe(WISH_PRICE_CAP)
 		}
