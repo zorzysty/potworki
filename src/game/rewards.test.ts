@@ -132,8 +132,8 @@ describe("eggQuality", () => {
 	test("rainbow at 30 with high roll", () => {
 		expect(eggQuality(30, () => 0.999)).toBe("rainbow")
 	})
-	test("normal at 15 with any roll", () => {
-		expect(eggQuality(15, () => 0.999)).toBe("normal")
+	test("normal below 14 with any roll", () => {
+		expect(eggQuality(13, () => 0.999)).toBe("normal")
 	})
 	test("normal at 30 with zero roll (lowest bucket)", () => {
 		expect(eggQuality(30, () => 0)).toBe("normal")
