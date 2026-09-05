@@ -7,7 +7,7 @@ import {
 } from "./adaptive"
 import type { Fact, FactKey, GameMode } from "./facts"
 import { budgetMs, isMaxStage, QUESTIONS_PER_ROUND } from "./facts"
-import { addEggFragment, ISKIERKI_CAP } from "./rewards"
+import { addEggFragment, credit } from "./rewards"
 import { dayStamp } from "./time"
 import { roundWage } from "./village"
 
@@ -94,7 +94,7 @@ export function simulateRoundOutcome(
 	// liczony względem lastPlayedDay sprzed rundy, jak w store)
 	const firstRoundToday = state.achievementStats.lastPlayedDay !== dayStamp(now)
 	const wage = roundWage(state.village, totalStars, firstRoundToday)
-	iskierki = Math.min(ISKIERKI_CAP, iskierki + wage)
+	iskierki = credit(iskierki, wage).wallet
 
 	return {
 		facts,

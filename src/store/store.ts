@@ -42,10 +42,11 @@ import {
 import type { EggQuality, Rarity } from "../game/rewards"
 import {
 	addEggFragment,
+	credit,
 	dupIskierki,
-	ISKIERKI_CAP,
 	rollMonsterWithPity,
 	rollWish,
+	spend,
 	WISH_COST,
 	WISH_COST_NO_DREAM,
 	WISH_MODE,
@@ -283,7 +284,7 @@ function roundClosePatch(
 		stats[key] = stats[key] + delta
 	}
 	return {
-		iskierki: Math.min(ISKIERKI_CAP, iskierkiBeforeCap + settled.reward),
+		iskierki: credit(iskierkiBeforeCap, settled.reward).wallet,
 		totalRounds: state.totalRounds + 1,
 		expedition: settled.expedition,
 		achievementStats: bumpDaysPlayed(stats, now),
@@ -849,11 +850,14 @@ export const useGame = create<GameState>()(
 				}
 				const pendingEggs = state.pendingEggs.filter((_, i) => i !== index)
 				if (monsterId in state.ownedMonsters) {
-					const gained = dupIskierki(rarityOf(monsterId), egg.quality)
+					const { wallet, gained } = credit(
+						state.iskierki,
+						dupIskierki(rarityOf(monsterId), egg.quality),
+					)
 					set({
 						pendingEggs,
 						legendaryPity,
-						iskierki: Math.min(ISKIERKI_CAP, state.iskierki + gained),
+						iskierki: wallet,
 						achievementStats,
 						lastHatch: {
 							monsterId,
@@ -924,10 +928,10 @@ export const useGame = create<GameState>()(
 				// studnia życzeń: Jajko Życzeń kupuje się przy fontannie (L1+)
 				if (!wishEggUnlocked(state.village)) return
 				if (!wishEggAvailable(state.ownedMonsters)) return
-				const cost = wishEggCost(state)
-				if (state.iskierki < cost) return
+				const wallet = spend(state.iskierki, wishEggCost(state))
+				if (wallet === null) return
 				set({
-					iskierki: state.iskierki - cost,
+					iskierki: wallet,
 					pendingEggs: [
 						...state.pendingEggs,
 						{ quality: "wish", mode: WISH_MODE },
@@ -946,9 +950,11 @@ export const useGame = create<GameState>()(
 			buildVillage: (id) => {
 				const state = get()
 				const cost = nextLevelCost(state.village, id)
-				if (cost === null || state.iskierki < cost) return
+				if (cost === null) return
+				const wallet = spend(state.iskierki, cost)
+				if (wallet === null) return
 				set({
-					iskierki: state.iskierki - cost,
+					iskierki: wallet,
 					village: {
 						...state.village,
 						buildings: {
@@ -966,9 +972,10 @@ export const useGame = create<GameState>()(
 				const def = DECORATIONS.find((d) => d.id === id)
 				if (!def) return
 				if (state.village.decorations.includes(id)) return
-				if (state.iskierki < def.cost) return
+				const wallet = spend(state.iskierki, def.cost)
+				if (wallet === null) return
 				set({
-					iskierki: state.iskierki - def.cost,
+					iskierki: wallet,
 					village: {
 						...state.village,
 						decorations: [...state.village.decorations, id],
@@ -990,9 +997,10 @@ export const useGame = create<GameState>()(
 				if (!def) return
 				if (isOwned(state.cosmetics, id)) return
 				if (def.tier > sklepikLevel(state.village)) return
-				if (state.iskierki < def.cost) return
+				const wallet = spend(state.iskierki, def.cost)
+				if (wallet === null) return
 				set({
-					iskierki: state.iskierki - def.cost,
+					iskierki: wallet,
 					cosmetics: {
 						...state.cosmetics,
 						owned: [...state.cosmetics.owned, id],
@@ -1077,11 +1085,11 @@ export const useGame = create<GameState>()(
 						...s.achievements,
 						[id]: { ...entry, claimed: true },
 					},
-					iskierki: Math.min(
-						ISKIERKI_CAP,
-						s.iskierki + REWARD_BY_DIFFICULTY[def.difficulty],
-					),
+					iskierki: credit(s.iskierki, REWARD_BY_DIFFICULTY[def.difficulty])
+						.wallet,
 				})
+				// jak każda akcja zmieniająca portfel — np. „Skarbnica iskier" (100 ✨)
+				get().checkAchievements()
 			},
 
 			// Zdejmuje pierwszy toast z kolejki (po wyświetleniu/auto-zniknięciu).
@@ -1213,7 +1221,7 @@ export const useGame = create<GameState>()(
 			},
 
 			debugAddIskierki: (amount) =>
-				set((s) => ({ iskierki: Math.min(ISKIERKI_CAP, s.iskierki + amount) })),
+				set((s) => ({ iskierki: credit(s.iskierki, amount).wallet })),
 
 			debugAddEgg: (quality) =>
 				set((s) => ({

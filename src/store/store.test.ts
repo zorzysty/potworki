@@ -441,6 +441,19 @@ describe("hatchEgg — gwarancje", () => {
 		expect(game().iskierki).toBe(999)
 	})
 
+	test("duplikat przy prawie pełnym portfelu: ekran obiecuje tyle, ile dostał portfel", () => {
+		suppressAchievements()
+		game().debugOwnRarity("common")
+		game().debugOwnRarity("rare")
+		game().debugOwnRarity("epic")
+		game().debugOwnRarity("legendary")
+		game().debugAddIskierki(ISKIERKI_CAP - 1)
+		game().debugAddEgg("rainbow")
+		game().hatchEgg()
+		expect(game().iskierki).toBe(ISKIERKI_CAP)
+		expect(game().lastHatch?.iskierkiGained).toBe(1)
+	})
+
 	test("wyklucie wymarzonego czyści dreamMonsterId", () => {
 		// pusta kolekcja, wymarzone = 0 (FIRST_MONSTER_ID)
 		game().setDreamMonster(FIRST_MONSTER_ID)
@@ -1096,6 +1109,15 @@ describe("osiągnięcia", () => {
 		game().checkAchievements()
 		game().claimAchievement("pierwsza-runda")
 		expect(game().iskierki).toBe(ISKIERKI_CAP)
+	})
+
+	test("claimAchievement: odbiór, który przekracza 100 ✨, od razu odblokowuje Skarbnicę", () => {
+		useGame.setState({ totalRounds: 1, achievements: {}, iskierki: 96 })
+		game().checkAchievements()
+		expect(game().achievements["skarbnica-iskier"]).toBeUndefined()
+		game().claimAchievement("pierwsza-runda") // +5 → 101
+		expect(game().iskierki).toBe(101)
+		expect(game().achievements["skarbnica-iskier"]?.claimed).toBe(false)
 	})
 
 	test("poprawna odpowiedź w dzieleniu → divCorrect++ i 'pierwsze-dzielenie'", () => {

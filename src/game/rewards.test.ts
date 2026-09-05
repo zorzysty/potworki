@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test"
 import { mulberry32 } from "../monsters/catalog"
 import {
 	addEggFragment,
+	credit,
 	DUP_QUALITY_MULT,
 	dupIskierki,
 	eggQuality,
@@ -15,6 +16,7 @@ import {
 	RARITY_ODDS,
 	rollMonsterWithPity,
 	rollWish,
+	spend,
 	WISH_COST,
 	WISH_COST_NO_DREAM,
 	WISH_COST_STEP,
@@ -156,6 +158,23 @@ describe("eggQualityScore", () => {
 		// próg 22 (jajka 21+): komplet 3★ = bank 66 → 30; jedna 2★ = bank 65 → 29
 		expect(eggQualityScore(66, 22)).toBe(30)
 		expect(eggQualityScore(65, 22)).toBe(29)
+	})
+})
+
+describe("portfel (credit/spend)", () => {
+	test("credit: cap i realny przyrost", () => {
+		expect(credit(0, 5)).toEqual({ wallet: 5, gained: 5 })
+		expect(credit(ISKIERKI_CAP - 4, 40)).toEqual({
+			wallet: ISKIERKI_CAP,
+			gained: 4,
+		})
+		expect(credit(ISKIERKI_CAP, 1)).toEqual({ wallet: ISKIERKI_CAP, gained: 0 })
+	})
+
+	test("spend: null gdy nie stać, nigdy ujemny", () => {
+		expect(spend(10, 10)).toBe(0)
+		expect(spend(9, 10)).toBeNull()
+		expect(spend(0, 0)).toBe(0)
 	})
 })
 

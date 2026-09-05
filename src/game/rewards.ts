@@ -102,6 +102,22 @@ export function dupIskierki(
 
 export const ISKIERKI_CAP = 999
 
+// Portfel iskierek: JEDYNE miejsce, które zna cap i regułę „brak środków".
+// credit zwraca też realny przyrost (po capie) — to on trafia do komunikatów
+// dla dziecka, żeby ekran nigdy nie obiecał więcej, niż dostał portfel.
+export function credit(
+	wallet: number,
+	amount: number,
+): { wallet: number; gained: number } {
+	const next = Math.min(ISKIERKI_CAP, wallet + amount)
+	return { wallet: next, gained: next - wallet }
+}
+
+// null = nie stać; inaczej portfel po zakupie (nigdy ujemny).
+export function spend(wallet: number, cost: number): number | null {
+	return wallet < cost ? null : wallet - cost
+}
+
 // Pula Jajka Życzeń: mnożeniowa — legendarne ekskluzywne trybów nie są do kupienia.
 export const WISH_MODE: GameMode = "mult"
 
@@ -134,9 +150,7 @@ export function addEggFragment(
 	// może mieć ich więcej niż próg — retuning działa od razu, bez migracji).
 	const quality = eggQuality(eggQualityScore(eggStarBank, eggFragments), rand)
 	const iskierki =
-		quality === "rainbow"
-			? Math.min(ISKIERKI_CAP, bank.iskierki + 1)
-			: bank.iskierki
+		quality === "rainbow" ? credit(bank.iskierki, 1).wallet : bank.iskierki
 	const carry = eggFragments - threshold
 	return {
 		bank: {
