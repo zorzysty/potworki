@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { GoalProgressBar } from "../components/GoalProgressBar"
 import { HelpTip } from "../components/HelpTip"
+import { MonsterStage } from "../components/MonsterStage"
 import { SpeechBubble } from "../components/SpeechBubble"
 import { BuildingArt } from "../components/village/BuildingArt"
 import { BuildReveal } from "../components/village/BuildReveal"
@@ -551,7 +552,7 @@ export function VillageScreen() {
 								className="absolute flex flex-col items-center"
 								style={{ left: "26%", bottom: "8%" }}
 							>
-								<MonsterSvg id={firstHatchedId} size={38} animate={false} />
+								<MonsterStage id={firstHatchedId} size={38} animate={false} />
 								<span className="-mt-1 block w-14">
 									<PedestalArt />
 								</span>

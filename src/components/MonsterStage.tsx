@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react"
 import { MonsterSvg } from "../monsters/MonsterSvg"
+import { EquippedOverlay } from "./CosmeticArt"
 
 interface Props {
 	id: number
@@ -7,27 +8,34 @@ interface Props {
 	animate?: boolean
 	className?: string // przekazywane do MonsterSvg (np. monster-silhouette)
 	style?: CSSProperties
+	wrapClassName?: string // klasy kontenera (np. w-full dla kafla listy)
 	// --- szwy kosmetyki (Sklepik) ---
 	background?: ReactNode // tło ZA potworkiem (slot "background", EquippedBackground)
-	overlay?: ReactNode // akcesoria/reakcje NA WIERZCHU (pointer-events-none)
-	frame?: string // klasy ramki karty (np. CARD_THEME[rarity].card)
+	overlay?: ReactNode // nakładki reakcji (serca, iskry, znacznik) NA WIERZCHU stroju
 }
 
 // Cienki wrapper wokół zamrożonego MonsterSvg i JEDYNY chokepoint kosmetyki:
-// reakcje emocjonalne (serca, iskry) i strój renderujemy jako `overlay`, tło jako
-// `background` — rodzeństwo SVG, nigdy zmiana twarzy (DNA potworków jest zamrożone).
+// założony strój (kapelusz/aura) Stage dokłada SAM — każdy potworek narysowany
+// przez Stage nosi to, co ma w garderobie (nieposiadany nic nie ma → zero DOM).
+// Reakcje emocjonalne przychodzą jako `overlay` i malują się NAD strojem —
+// rodzeństwo SVG, nigdy zmiana twarzy (DNA potworków jest zamrożone). Tło
+// decyduje caller (`background`): przyjaciel na Home tak, wioska i wędrowcy nie.
+// `align-top`: w kontenerze blokowym inline-flex nie zostawia szczeliny linii.
 export function MonsterStage({
 	id,
 	size = 160,
 	animate = true,
 	className,
 	style,
+	wrapClassName = "",
 	background,
 	overlay,
-	frame = "",
 }: Props) {
 	return (
-		<div className={`relative inline-flex ${frame}`} style={style}>
+		<div
+			className={`relative inline-flex align-top ${wrapClassName}`}
+			style={style}
+		>
 			{background && (
 				<div className="pointer-events-none absolute inset-0">{background}</div>
 			)}
@@ -41,9 +49,10 @@ export function MonsterStage({
 					className={className}
 				/>
 			</div>
-			{overlay && (
-				<div className="pointer-events-none absolute inset-0">{overlay}</div>
-			)}
+			<div className="pointer-events-none absolute inset-0">
+				<EquippedOverlay monsterId={id} animate={animate} />
+				{overlay}
+			</div>
 		</div>
 	)
 }

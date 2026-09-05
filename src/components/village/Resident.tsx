@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react"
 import { HeartBurst } from "../Companion"
-import { EquippedOverlay } from "../CosmeticArt"
 import { MonsterStage } from "../MonsterStage"
 
 export type ResidentMode = "doze" | "play" | "guard"
@@ -68,7 +67,6 @@ export function Resident({
 						// kosmetyka komponuje się z reakcją (fragment)
 						overlay={
 							<>
-								<EquippedOverlay monsterId={id} />
 								{react !== null ? <HeartBurst nonce={react} /> : null}
 							</>
 						}

@@ -1,5 +1,4 @@
 import { BigButton } from "../components/BigButton"
-import { EquippedOverlay } from "../components/CosmeticArt"
 import { EggReward } from "../components/EggReward"
 import { GoalProgressBar } from "../components/GoalProgressBar"
 import { GateReveal } from "../components/gate"
@@ -105,11 +104,7 @@ export function RoundSummary() {
 				<div className="anim-pop flex w-full max-w-sm flex-col gap-3 rounded-3xl bg-white/90 p-4 shadow-lg">
 					<div className="flex items-center gap-3">
 						{/* powracający nosi swój strój — przez MonsterStage */}
-						<MonsterStage
-							id={back.monsterId}
-							size={72}
-							overlay={<EquippedOverlay monsterId={back.monsterId} />}
-						/>
+						<MonsterStage id={back.monsterId} size={72} />
 						{/* powitanie z wyprawy */}
 						<div className="flex-1 text-lg font-extrabold leading-tight text-grape-dark">
 							Wrócił(a) z wyprawy!{" "}
@@ -177,7 +172,7 @@ export function RoundSummary() {
 
 			{visitRegion && (
 				<div className="anim-pop flex items-center gap-3 rounded-3xl bg-gradient-to-r from-amber-300 to-orange-400 px-5 py-3 text-white shadow-lg">
-					<MonsterSvg
+					<MonsterStage
 						id={visitRegion.guardianId}
 						size={48}
 						className={guardianOwned ? undefined : "monster-silhouette"}

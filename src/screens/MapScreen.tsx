@@ -3,11 +3,11 @@ import { BigButton } from "../components/BigButton"
 import { EggView } from "../components/EggView"
 import { CRYSTALS, GateArch, GateReveal, litCrystals } from "../components/gate"
 import { HelpTip } from "../components/HelpTip"
+import { MonsterStage } from "../components/MonsterStage"
 import { useGateReveal } from "../components/useGateReveal"
 import { needsMaintenance, stageProgress } from "../game/adaptive"
 import { guardianOwned, newestOwned } from "../game/collection"
 import { isMaxStage, STAGES } from "../game/facts"
-import { MonsterSvg } from "../monsters/MonsterSvg"
 import { BRIDGE_GUARDIAN_IDS, REGIONS, type Region } from "../monsters/world"
 import type { SaveState } from "../store/schema"
 import { useGame } from "../store/store"
@@ -140,7 +140,7 @@ function RegionIsland({
 			<div className="relative flex items-center gap-3">
 				<div className="flex shrink-0 flex-col items-center">
 					{guardianOwned ? (
-						<MonsterSvg id={region.guardianId} size={56} animate={false} />
+						<MonsterStage id={region.guardianId} size={56} animate={false} />
 					) : (
 						<MysteryGuardian size={52} />
 					)}
@@ -253,7 +253,7 @@ function GuardianBridge({
 							style={{ transform: `translateY(${BRIDGE_DY[i]}px)` }}
 						>
 							{id in ownedMonsters ? (
-								<MonsterSvg id={id} size={52} animate={false} />
+								<MonsterStage id={id} size={52} animate={false} />
 							) : (
 								<MysteryGuardian size={46} />
 							)}
@@ -421,7 +421,7 @@ export function MapScreen() {
 						{/* potwórek-podróżnik u stóp bramy */}
 						<div className="absolute -bottom-1 -left-10">
 							{traveler !== undefined ? (
-								<MonsterSvg id={traveler} size={72} />
+								<MonsterStage id={traveler} size={72} />
 							) : (
 								<div className="anim-float">
 									<EggView quality="normal" size={48} />

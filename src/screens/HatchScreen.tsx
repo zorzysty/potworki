@@ -2,10 +2,10 @@ import confetti from "canvas-confetti"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { EGG_LABELS, EggView } from "../components/EggView"
+import { MonsterStage } from "../components/MonsterStage"
 import { NEST_SLOTS, NestArt } from "../components/NestArt"
 import { RARITY_META } from "../components/rarity"
 import { MONSTERS } from "../monsters/catalog"
-import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
 
 // kontur jajka z EggView (viewBox 120×150) spróbkowany do wielokąta w % —
@@ -196,7 +196,7 @@ export function HatchScreen() {
 								lastHatch.isDream ? "ring-8 ring-amber-300" : ""
 							}`}
 						>
-							<MonsterSvg id={lastHatch.monsterId} size={210} />
+							<MonsterStage id={lastHatch.monsterId} size={210} />
 						</div>
 						<div className="text-4xl font-extrabold text-white">
 							{monster.name}

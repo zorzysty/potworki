@@ -1,10 +1,6 @@
 import { useState } from "react"
 import { BigButton } from "../components/BigButton"
-import {
-	CosmeticArt,
-	EquippedBackground,
-	EquippedOverlay,
-} from "../components/CosmeticArt"
+import { CosmeticArt, EquippedBackground } from "../components/CosmeticArt"
 import { HelpTip } from "../components/HelpTip"
 import { ModalCloseX } from "../components/ModalCloseX"
 import { MonsterStage } from "../components/MonsterStage"
@@ -428,12 +424,7 @@ function MonsterCard({
 				<div className="relative flex justify-center">
 					{/* przez MonsterStage — karta pokazuje założony strój
 				    (każdy potworek z kosmetyką renderuje się przez Stage) */}
-					<MonsterStage
-						id={monsterId}
-						size={180}
-						animate={true}
-						overlay={<EquippedOverlay monsterId={monsterId} />}
-					/>
+					<MonsterStage id={monsterId} size={180} animate={true} />
 				</div>
 			</div>
 
@@ -737,10 +728,7 @@ export function CollectionScreen() {
 									id={monster.id}
 									size="100%"
 									animate={false}
-									frame="w-full"
-									overlay={
-										<EquippedOverlay monsterId={monster.id} animate={false} />
-									}
+									wrapClassName="w-full"
 								/>
 							) : (
 								<MonsterSvg

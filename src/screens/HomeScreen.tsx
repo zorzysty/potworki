@@ -3,6 +3,7 @@ import { BigButton } from "../components/BigButton"
 import { Companion } from "../components/Companion"
 import { EggView } from "../components/EggView"
 import { HelpTip } from "../components/HelpTip"
+import { MonsterStage } from "../components/MonsterStage"
 import { visitStage } from "../game/adaptive"
 import * as collection from "../game/collection"
 import { expeditionProgress } from "../game/expeditions"
@@ -88,7 +89,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 				{companionPresent ? (
 					<Companion size={150} />
 				) : newestOwned !== undefined ? (
-					<MonsterSvg id={newestOwned} size={150} />
+					<MonsterStage id={newestOwned} size={150} />
 				) : (
 					<div className="anim-float">
 						<EggView quality="normal" size={100} />
@@ -183,7 +184,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					onClick={startVisitRound}
 					className="anim-fade-up touch-manipulation flex w-full max-w-xs items-center gap-3 rounded-3xl bg-white/80 px-4 py-3 text-left shadow-md active:scale-95"
 				>
-					<MonsterSvg
+					<MonsterStage
 						id={visitRegion.guardianId}
 						size={44}
 						className={guardianOwned ? undefined : "monster-silhouette"}
