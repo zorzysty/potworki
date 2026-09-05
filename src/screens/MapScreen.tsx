@@ -8,7 +8,7 @@ import { useGateReveal } from "../components/useGateReveal"
 import { needsMaintenance, stageProgress } from "../game/adaptive"
 import { guardianOwned, newestOwned } from "../game/collection"
 import { isMaxStage, STAGES } from "../game/facts"
-import { BRIDGE_GUARDIAN_IDS, REGIONS, type Region } from "../monsters/world"
+import { BRIDGE_DIVIDER_IDS, REGIONS, type Region } from "../monsters/world"
 import type { SaveState } from "../store/schema"
 import { useGame } from "../store/store"
 
@@ -50,8 +50,8 @@ function Trail({ from, to }: { from: Side; to: Side }) {
 	)
 }
 
-// zasłonka niezdobytego strażnika — „tajemniczy do odkrycia", nie szara sylwetka
-function MysteryGuardian({ size }: { size: number }) {
+// zasłonka niezdobytego potworka (strażnik krainy, Dzielnik) — „tajemniczy do odkrycia", nie szara sylwetka
+function MysteryMonster({ size }: { size: number }) {
 	return (
 		<div
 			className="flex shrink-0 items-center justify-center rounded-full border-2 border-dashed border-slate-400/60 bg-white/70 font-extrabold text-slate-400"
@@ -142,7 +142,7 @@ function RegionIsland({
 					{guardianOwned ? (
 						<MonsterStage id={region.guardianId} size={56} animate={false} />
 					) : (
-						<MysteryGuardian size={52} />
+						<MysteryMonster size={52} />
 					)}
 					<div
 						aria-hidden
@@ -165,13 +165,13 @@ function RegionIsland({
 // łuk pomostu: środkowi strażnicy stoją wyżej (wartości dobrane do krzywej SVG)
 const BRIDGE_DY = [0, -12, -12, 0]
 
-// Most Strażników: prawdziwy mostek nad wodą, strażnicy stoją na pomoście
-function GuardianBridge({
+// Most Dzielników: prawdziwy mostek nad wodą, Dzielniki stoją na pomoście
+function DividerBridge({
 	ownedMonsters,
 }: {
 	ownedMonsters: SaveState["ownedMonsters"]
 }) {
-	const bridgeOwned = BRIDGE_GUARDIAN_IDS.filter(
+	const bridgeOwned = BRIDGE_DIVIDER_IDS.filter(
 		(id) => id in ownedMonsters,
 	).length
 	// bez overflow-hidden: dymek HelpTip musi wystawać ponad kartę; scena i tak
@@ -180,12 +180,12 @@ function GuardianBridge({
 		<div className="relative w-full max-w-sm self-center rounded-[2.2rem] border-b-8 border-black/10 bg-gradient-to-b from-sky-200 via-sky-300 to-blue-400 px-4 pb-3 pt-3 shadow-lg">
 			<div className="relative z-10 flex items-center justify-center gap-1.5">
 				<span className="rounded-2xl bg-white/90 px-3 py-1 text-[15px] font-extrabold text-fuchsia-600 shadow-sm">
-					🌉 Most Strażników
+					🌉 Most Dzielników
 				</span>
 				<HelpTip
 					placement="top"
 					align="right"
-					text="Te cztery potworki strzegą Mostu. Zdobędziesz je tylko grając w dzielenie ➗!"
+					text="Te cztery Dzielniki mieszkają na Moście. Zdobędziesz je tylko grając w dzielenie ➗!"
 				/>
 			</div>
 			<div className="relative mt-1 h-28">
@@ -245,9 +245,9 @@ function GuardianBridge({
 						strokeLinecap="round"
 					/>
 				</svg>
-				{/* strażnicy stoją na łuku pomostu */}
+				{/* Dzielniki stoją na łuku pomostu */}
 				<div className="absolute inset-x-0 bottom-7 flex items-end justify-center gap-2">
-					{BRIDGE_GUARDIAN_IDS.map((id, i) => (
+					{BRIDGE_DIVIDER_IDS.map((id, i) => (
 						<div
 							key={id}
 							style={{ transform: `translateY(${BRIDGE_DY[i]}px)` }}
@@ -255,7 +255,7 @@ function GuardianBridge({
 							{id in ownedMonsters ? (
 								<MonsterStage id={id} size={52} animate={false} />
 							) : (
-								<MysteryGuardian size={46} />
+								<MysteryMonster size={46} />
 							)}
 						</div>
 					))}
@@ -263,7 +263,7 @@ function GuardianBridge({
 			</div>
 			<div className="relative z-10 -mt-1 flex justify-center">
 				<span className="rounded-full bg-white/85 px-3 py-0.5 text-sm font-extrabold text-fuchsia-600 shadow-sm">
-					{bridgeOwned}/{BRIDGE_GUARDIAN_IDS.length} ✨
+					{bridgeOwned}/{BRIDGE_DIVIDER_IDS.length} ✨
 				</span>
 			</div>
 		</div>
@@ -354,7 +354,7 @@ export function MapScreen() {
 	nodes.push({
 		key: "bridge",
 		side: "center",
-		el: <GuardianBridge ownedMonsters={ownedMonsters} />,
+		el: <DividerBridge ownedMonsters={ownedMonsters} />,
 	})
 
 	return (
@@ -449,7 +449,7 @@ export function MapScreen() {
 				</div>
 			)}
 
-			{/* szlak: zdobyte krainy → wioska startowa → Most Strażników */}
+			{/* szlak: zdobyte krainy → wioska startowa → Most Dzielników */}
 			{nodes.map((node, i) => (
 				<Fragment key={node.key}>
 					<Trail from={nodes[i - 1]?.side ?? "center"} to={node.side} />

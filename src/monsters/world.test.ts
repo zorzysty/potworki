@@ -9,7 +9,7 @@ import {
 	rarityOf,
 } from "./catalog"
 import {
-	BRIDGE_GUARDIAN_IDS,
+	BRIDGE_DIVIDER_IDS,
 	BRIDGE_ORIGIN,
 	originOf,
 	REGIONS,
@@ -70,10 +70,10 @@ describe("strażnicy", () => {
 	})
 })
 
-describe("Most Strażników", () => {
+describe("Most Dzielników", () => {
 	test("4 legendarne tylko-dzielenie (72–75)", () => {
-		expect([...BRIDGE_GUARDIAN_IDS]).toEqual([72, 73, 74, 75])
-		for (const id of BRIDGE_GUARDIAN_IDS) {
+		expect([...BRIDGE_DIVIDER_IDS]).toEqual([72, 73, 74, 75])
+		for (const id of BRIDGE_DIVIDER_IDS) {
 			expect(rarityOf(id)).toBe("legendary")
 			expect(isDivisionOnly(id)).toBe(true)
 		}
@@ -93,7 +93,7 @@ describe("regionOf / originOf", () => {
 	})
 
 	test("originOf: tylko-dzielenie → Most, tylko-luka → Dolina, reszta → region", () => {
-		for (const id of BRIDGE_GUARDIAN_IDS) {
+		for (const id of BRIDGE_DIVIDER_IDS) {
 			expect(originOf(id)).toBe(BRIDGE_ORIGIN)
 		}
 		for (const id of GAP_ONLY_IDS) {

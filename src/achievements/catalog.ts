@@ -342,7 +342,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 	},
 	{
 		id: "straznik-mostu",
-		title: "Strażnik Mostu",
+		title: "Dzielnik Mostu",
 		description: "Zdobądź legendarnego potworka tylko z dzielenia.",
 		icon: "🌉",
 		difficulty: "hard",
@@ -452,7 +452,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 	},
 	{
 		id: "wszyscy-straznicy-mostu",
-		title: "Strażnicy Mostu",
+		title: "Dzielniki Mostu",
 		description: "Zdobądź wszystkie legendarne potworki z dzielenia.",
 		icon: "🐉",
 		difficulty: "hard",

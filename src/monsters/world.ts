@@ -149,8 +149,8 @@ export const REGIONS: readonly Region[] = [
 	},
 ]
 
-// Most Strażników: 4 legendarne tylko-dzielenie (id 72–75) strzegące krainy zza Mostu.
-export const BRIDGE_GUARDIAN_IDS = [72, 73, 74, 75] as const
+// Most Dzielników: 4 legendarne tylko-dzielenie (id 72–75) z krainy zza Mostu. „Dzielnik" to celowo NIE „Strażnik" — strażnik to potworek krainy (Region.guardianId).
+export const BRIDGE_DIVIDER_IDS = [72, 73, 74, 75] as const
 
 // Pochodzenie potworków tylko-dzielenie. Rozróżniane od regionów polem `kind`
 // ("bridge" vs "region") — UI sprawdza `origin.kind`, nie brak pola.
@@ -171,7 +171,7 @@ export const VALLEY_ORIGIN = {
 }
 
 // Kraina pochodzenia potworka (paszport). Potworki tylko-dzielenie przybywają zza
-// Mostu Strażników, tylko-luka — z Doliny Zagadek; żadne z nich nie ma zwykłego
+// Mostu Dzielników, tylko-luka — z Doliny Zagadek; żadne z nich nie ma zwykłego
 // regionu (id % 7 kłamałby o krainie). Czysta — bez stanu gry.
 export function originOf(
 	id: number,

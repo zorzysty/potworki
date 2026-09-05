@@ -10,6 +10,7 @@ Deterministyczny katalog 80 potworków (DNA, rzadkości, imiona) i ich rendering
 - `names.ts` — generator polskich imion z sylab
 - `parts.tsx` / `MonsterSvg.tsx` — palety, części SVG i kompozycja warstw
 - `world.ts` — `REGIONS` (region per etap), pochodzenie potworków (`regionOf`/`originOf`, most i dolina dla trybów ekskluzywnych)
+- Nomenklatura: „Strażnik"/`guardian` = wyłącznie potworek krainy (`Region.guardianId`, zaproszenia na rundę-wizytę); legendarne tylko-dzielenie z Mostu to „Dzielniki" (`BRIDGE_DIVIDER_IDS`) — nie mieszać nazw, bo to różne mechaniki.
 - `lore.ts` — `loreFor(id)`: deterministyczny opis z DNA
 
 ## Local Contracts
