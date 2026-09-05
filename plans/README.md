@@ -207,6 +207,15 @@ Refreshed by the 2026-07-12 audit; ordered by (grounding × payoff)/effort:
   post-retune numbers and the remaining maintainer decisions (rainbow gate,
   late-game iskierki sink / mode-stamped wish egg) live in
   [`plans/029-ekonomia-po-retuningu.md`](029-ekonomia-po-retuningu.md).
+  Third pass (2026-09-05) simulates whole rounds with the real engine on a
+  day calendar: report
+  [`plans/030-analiza-ekonomii-2026-09.html`](030-analiza-ekonomii-2026-09.html),
+  reproducible via `plans/030-analiza-ekonomii-2026-09.sim.ts` (imports `src/`;
+  rerun after any retune). Recommendations R1, R2, R4, R5 shipped the same day
+  (`mastered` high-water flag + SAVE_VERSION 18, legendary pity 12→8, softer
+  egg-quality curve with rainbow chance from score 22, Gość Strażnika 5→2,
+  Kolekcjoner tęczy 3→2, Perfekcjonista 25→10); R3 (no new iskierki sink)
+  deliberately unchanged. Post-change numbers are in section 0 of the report.
 - **Parent progress view.** `DebugScreen` already renders the full
   per-fact mastery table and `adaptive.ts` exposes the aggregations; a
   gated (PIN/long-press) read-only, parent-legible presentation (color
