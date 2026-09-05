@@ -12,7 +12,7 @@ import {
 import type { VillageState } from "../game/village"
 import { INITIAL_VILLAGE } from "../game/village"
 
-export const SAVE_VERSION = 17
+export const SAVE_VERSION = 18
 
 // Wpis ledgera osiągnięć. `claimed`: iskierki za osiągnięcie NIE wpadają same — dziecko
 // odbiera je tapnięciem na ekranie osiągnięć; do tego czasu Home pokazuje badge.
@@ -302,6 +302,22 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 		for (const [id, { seen: _seen, ...e }] of Object.entries(prev))
 			achievements[id] = e
 		return { ...s, achievements }
+	},
+	// v17→v18: FactStats.mastered (opanowane KIEDYKOLWIEK; osiągnięcia „opanuj"
+	// czytają flagę zamiast żywego mastery). Start: działania, które są ≥ progu
+	// teraz — historii szczytów nie da się odtworzyć, więc reszta dojdzie w grze.
+	17: (state) => {
+		const s = state as Record<string, unknown>
+		const prev =
+			s.facts && typeof s.facts === "object"
+				? (s.facts as Record<string, Record<string, unknown>>)
+				: {}
+		const facts: Record<string, unknown> = {}
+		for (const [key, st] of Object.entries(prev)) {
+			const mastery = typeof st?.mastery === "number" ? st.mastery : 0
+			facts[key] = { ...st, mastered: mastery >= 0.8 }
+		}
+		return { ...s, facts }
 	},
 }
 

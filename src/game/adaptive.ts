@@ -5,12 +5,28 @@ export interface FactStats {
 	attempts: number // tylko pierwsze próby
 	correct: number
 	streak: number
-	mastery: number // 0..1 — jedyny score
+	mastery: number // 0..1 — jedyny score selekcji i bram
 	lastSeen: number
+	// „Opanowane": mastery KIEDYKOLWIEK sięgnęło MASTERY_GOAL. Flaga nie gaśnie
+	// (decay i pomyłka obniżają tylko `mastery`) — czytają ją osiągnięcia.
+	// Warunek „wszystkie 55 ≥ 0,8 naraz" był nieosiągalny: pomyłka dzieli
+	// mastery na pół, więc zawsze któreś działanie jest świeżo po potknięciu.
+	mastered: boolean
 }
 
+// Próg „opanowania" działania (osiągnięcia) — wyżej niż UNLOCK_THRESHOLD, bo
+// „opanować" to więcej niż „odblokować bramę"; ~kilka szybkich poprawnych.
+export const MASTERY_GOAL = 0.8
+
 export function emptyStats(): FactStats {
-	return { attempts: 0, correct: 0, streak: 0, mastery: 0, lastSeen: 0 }
+	return {
+		attempts: 0,
+		correct: 0,
+		streak: 0,
+		mastery: 0,
+		lastSeen: 0,
+		mastered: false,
+	}
 }
 
 const DAY_MS = 86_400_000
@@ -38,6 +54,7 @@ export function applyAnswer(
 		next.mastery = stats.mastery + (1 - stats.mastery) * gain
 		next.correct = stats.correct + 1
 		next.streak = stats.streak + 1
+		next.mastered = stats.mastered || next.mastery >= MASTERY_GOAL
 	} else {
 		next.mastery = stats.mastery * 0.5
 		next.streak = 0

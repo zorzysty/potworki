@@ -8,6 +8,7 @@ import {
 	emptyStats,
 	introRoundPlan,
 	isIntroRound,
+	MASTERY_GOAL,
 	needsMaintenance,
 	newlyUnlockedFactor,
 	pickNextFact,
@@ -56,6 +57,20 @@ describe("applyAnswer", () => {
 		const result = applyAnswer(stats, f, false, 0, NOW)
 		expect(result.mastery).toBeCloseTo(0.25)
 		expect(result.streak).toBe(0)
+	})
+
+	test("mastered: flaga zapala się przy mastery ≥ MASTERY_GOAL i nie gaśnie po pomyłce ani decayu", () => {
+		let s = emptyStats()
+		for (let i = 0; i < 4; i++) s = applyAnswer(s, f, true, 0, NOW)
+		expect(s.mastery).toBeLessThan(MASTERY_GOAL)
+		expect(s.mastered).toBe(false)
+		s = applyAnswer(s, f, true, 0, NOW)
+		expect(s.mastery).toBeGreaterThanOrEqual(MASTERY_GOAL)
+		expect(s.mastered).toBe(true)
+		s = applyAnswer(s, f, false, 0, NOW)
+		expect(s.mastery).toBeLessThan(MASTERY_GOAL)
+		expect(s.mastered).toBe(true)
+		expect(decayStats(s, NOW + 30 * DAY).mastered).toBe(true)
 	})
 })
 

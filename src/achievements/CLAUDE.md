@@ -6,7 +6,7 @@ Deklaratywny katalog osiągnięć i ich ocena jako czyste funkcje — cele krót
 
 ## Ownership
 
-- `catalog.ts` — typy, `REWARD_BY_DIFFICULTY`, tablica `ACHIEVEMENTS` z czystą funkcją `progress(ctx)` każdego osiągnięcia
+- `catalog.ts` — typy, `REWARD_BY_DIFFICULTY`, tablica `ACHIEVEMENTS` z czystą funkcją `progress(ctx)` każdego osiągnięcia; osiągnięcia „opanuj" liczą flagę `FactStats.mastered` (próg `MASTERY_GOAL` należy do `game/adaptive.ts`)
 - `evaluate.ts` — `achievementProgress` + czysty ledger nad `SaveState.achievements`: `unlockAchievements` (dopisuje spełnione), `claimAchievement` (oznacza odebrane, zwraca nagrodę), `achievementRows` (posortowane wiersze ekranu, „zdobyte zostaje zdobyte"); store i ekran tylko czytają wyniki
 
 ## Local Contracts

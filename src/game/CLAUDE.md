@@ -7,7 +7,7 @@ Logika pedagogiczna i ekonomia nagród jako czyste funkcje — bez Reacta, DOM-u
 ## Ownership
 
 - `facts.ts` — 55 faktów komutatywnych, etapy odblokowań (`STAGES`), budżety czasowe i gwiazdki, próg fragmentów (`fragmentsForEgg`), budowanie pytania (`makeQuestion`, `expectedAnswer`)
-- `adaptive.ts` — mastery/decay, selekcja pytań, odblokowania etapów i postęp bramy, intro-rundy i rundy-wizyty
+- `adaptive.ts` — mastery/decay, selekcja pytań, odblokowania etapów i postęp bramy, intro-rundy i rundy-wizyty; `MASTERY_GOAL` i flaga `FactStats.mastered`
 - `round.ts` — cykl życia Rundy nad `(SaveState, RoundState)`: `newRound`/`newVisitRound`, `submitAnswer` (commit per odpowiedź, powtórka na `index+3`, max 12 pytań, poprawna powtórka capowana do 1★), `advance` (następne pytanie albo finalizacja: żołd z bonusem dnia liczonym PRZED podbiciem dnia, bonus wizyty, powrót wyprawy, liczniki — wszystko przez JEDEN `credit`); store tylko nakłada `patch`
 - `rewards.ts` — jakość jajek, szanse rzadkości, pity legendarnych per tryb (`rollMonsterWithPity`), Jajko Życzeń (`wishEggPrice`), bank gwiazdek (`addEggFragment`), portfel iskierek (`credit`/`spend` — jedyne miejsce znające `ISKIERKI_CAP` i regułę „nie stać")
 - `village.ts` — katalog budynków i dekoracji (każdy budynek ma realny perk), żołd (`roundWage`), koszty, `villageRoster`, cel budowy
@@ -24,6 +24,7 @@ Logika pedagogiczna i ekonomia nagród jako czyste funkcje — bez Reacta, DOM-u
 - `GameMode` (`mult`/`div`/`gap`): trzy **widoki tego samego faktu** — wspólne mastery, etapy i ekonomia; selekcja, odblokowania i decay nie znają trybu. Tokeny trybów są persystowane (`PendingEgg.mode`) — zamrożone; etykiety UI wolno edytować.
 - **Wszystkie liczby strojenia** (progi, ceny, czasy, szanse) żyją w tych plikach i są jedynym źródłem prawdy — także dla bytów w toku (retuning wypraw dotyczy trwających natychmiast; duration/reward niepersystowane). Testy pilnują struktury i przedziałów, nie dokładnych wartości.
 - `stageProgress === 1` ⟺ `shouldUnlockNextStage === true` — kryształy bramy nigdy nie kłamią.
+- `FactStats.mastered` = „opanowane KIEDYKOLWIEK" (high-water, nigdy nie gaśnie); osiągnięcia czytają flagę, selekcja/bramy/decay żywe `mastery`. Warunek „wszystkie działania ≥ progu naraz" był nieosiągalny (pomyłka dzieli mastery na pół) — nie wracać do niego.
 - Kolor jajka wynika z gwiazdek włożonych w **całą jego budowę** (bank → `eggQualityScore`), losowany raz przy domknięciu i finalny od chwili utworzenia; krzywa jakości jest łagodna (nie schodek) — dziecko poprawne-ale-niespieszne też widzi kolorowe jajka; tęczowe tylko z szansą i tylko przy niemal komplecie 3★.
 - Duplikat płaci wg rzadkości × jakość jajka (`dupIskierki`) — kolor jajka ma coś znaczyć także wtedy, gdy w środku nie ma nowego potworka.
 - **Każdy dochód przechodzi przez `credit`, każdy zakup przez `spend`** — żadnych ręcznych `Math.min(ISKIERKI_CAP, …)` ani `iskierki < cost` poza `rewards.ts` (wyjątek: zamrożone migracje w `store/schema.ts`). Komunikat dla dziecka pokazuje `gained` z `credit`, nigdy kwotę sprzed capu.

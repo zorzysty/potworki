@@ -387,7 +387,42 @@ describe("migrateSave", () => {
 		expect(migrateSave({ iskierki: 3 }, 16)).toEqual({
 			iskierki: 3,
 			achievements: {},
+			facts: {},
 		})
+	})
+
+	test("v17→v18: mastered z bieżącego mastery (≥ 0,8), reszta stats nietknięta", () => {
+		const r = migrateSave(
+			{
+				facts: {
+					"2x3": {
+						attempts: 4,
+						correct: 4,
+						streak: 4,
+						mastery: 0.85,
+						lastSeen: 1,
+					},
+					"2x4": {
+						attempts: 2,
+						correct: 1,
+						streak: 0,
+						mastery: 0.3,
+						lastSeen: 1,
+					},
+				},
+			},
+			17,
+		) as { facts: Record<string, Record<string, unknown>> }
+		expect(r.facts["2x3"]).toEqual({
+			attempts: 4,
+			correct: 4,
+			streak: 4,
+			mastery: 0.85,
+			lastSeen: 1,
+			mastered: true,
+		})
+		expect(r.facts["2x4"]?.mastered).toBe(false)
+		expect(migrateSave({ iskierki: 3 }, 17)).toEqual({ iskierki: 3, facts: {} })
 	})
 
 	test("fallback: brak unlockedStage → celebratedStage === 0", () => {

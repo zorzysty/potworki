@@ -4,7 +4,7 @@ import {
 	claimAchievement as claimLedger,
 	unlockAchievements,
 } from "../achievements/evaluate"
-import { decayStats, emptyStats } from "../game/adaptive"
+import { decayStats, emptyStats, MASTERY_GOAL } from "../game/adaptive"
 import type { CosmeticId, CosmeticSlot } from "../game/cosmetics"
 import { COSMETICS_BY_ID, isOwned, sklepikLevel } from "../game/cosmetics"
 import { simulateRound } from "../game/debug"
@@ -591,6 +591,7 @@ export const useGame = create<GameState>()(
 					facts[fact.key] = {
 						...prev,
 						mastery: value,
+						mastered: prev.mastered || value >= MASTERY_GOAL,
 						attempts: Math.max(1, prev.attempts),
 						lastSeen: Date.now(),
 					}

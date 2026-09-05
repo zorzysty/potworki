@@ -1,3 +1,4 @@
+import { MASTERY_GOAL } from "../game/adaptive"
 import { ownedCount } from "../game/collection"
 import { COSMETICS_BY_ID } from "../game/cosmetics"
 import { ALL_FACTS, isMaxStage, STAGES } from "../game/facts"
@@ -21,10 +22,7 @@ export const REWARD_BY_DIFFICULTY: Record<Difficulty, number> = {
 	legendary: 25,
 }
 
-// Próg „opanowanego" działania dla osiągnięć — wyżej niż UNLOCK_THRESHOLD (0.65),
-// bo „opanować" to coś więcej niż „odblokować następną bramę". Mastery rośnie
-// asymptotycznie (cap ~0.95), więc 0.8 ≈ kilka szybkich poprawnych odpowiedzi.
-export const MASTERY_GOAL = 0.8
+export { MASTERY_GOAL }
 
 // Kontekst oceny: trwały zapis + liczniki zdarzeniowe (oba z SaveState).
 export interface AchievementCtx {
@@ -53,10 +51,10 @@ function ownedOfRarity(
 	return IDS_BY_RARITY[rarity].filter((id) => id in save.ownedMonsters).length
 }
 
+// „Opanowane" = flaga high-water (FactStats.mastered), nie żywe mastery —
+// osiągnięcie nie może gasnąć przez decay ani jedną literówkę.
 function masteredCount(save: SaveState): number {
-	return ALL_FACTS.filter(
-		(f) => (save.facts[f.key]?.mastery ?? 0) >= MASTERY_GOAL,
-	).length
+	return ALL_FACTS.filter((f) => save.facts[f.key]?.mastered === true).length
 }
 
 // Działania zawierające dany czynnik (cała „tabliczka ×n", 10 sztuk).
@@ -66,9 +64,7 @@ function factsForFactor(n: number): number {
 
 function masteredForFactor(save: SaveState, n: number): number {
 	return ALL_FACTS.filter(
-		(f) =>
-			(f.a === n || f.b === n) &&
-			(save.facts[f.key]?.mastery ?? 0) >= MASTERY_GOAL,
+		(f) => (f.a === n || f.b === n) && save.facts[f.key]?.mastered === true,
 	).length
 }
 

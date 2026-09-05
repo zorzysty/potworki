@@ -31,7 +31,14 @@ const maxSave: SaveState = {
 	facts: Object.fromEntries(
 		ALL_FACTS.map((f) => [
 			f.key,
-			{ attempts: 5, correct: 5, streak: 5, mastery: 1, lastSeen: 0 },
+			{
+				attempts: 5,
+				correct: 5,
+				streak: 5,
+				mastery: 1,
+				lastSeen: 0,
+				mastered: true,
+			},
 		]),
 	),
 	ownedMonsters: Object.fromEntries(
