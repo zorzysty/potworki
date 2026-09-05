@@ -791,14 +791,14 @@ export function CollectionScreen() {
 			{/* Jedno rusztowanie dla stanów studni życzeń. Zajawka fontanny
 			    (aspiracja jak zablokowane półki Sklepiku, nigdy ton błędu) NIE
 			    zależy od portfela — to jedyne miejsce tłumaczące związek
-			    Fontanna→Jajko Życzeń. JEDYNY powód wyszarzenia to komplet
-			    nielegendarnych (decyzja maintainera 2026-09-06): brak iskierek
-			    nie gasi przycisku (cena stoi w etykiecie, tap = cichy no-op w store). */}
+			    Fontanna→Jajko Życzeń. Dwa powody wyszarzenia (decyzja maintainera
+			    2026-09-06): komplet nielegendarnych (własna etykieta) albo za mało
+			    iskierek na cenę z etykiety. */}
 			<div className="mx-auto flex w-full max-w-sm items-center gap-2">
 				<BigButton
 					onClick={wish.unlocked ? buyWishEgg : () => goTo("village")}
 					variant="secondary"
-					disabled={!wish.available}
+					disabled={!wish.available || (wish.unlocked && iskierki < wish.cost)}
 					className={`flex-1 py-3 ${wish.unlocked ? "text-xl" : "text-lg"}`}
 				>
 					{!wish.available ? (
