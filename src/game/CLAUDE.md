@@ -8,6 +8,7 @@ Logika pedagogiczna i ekonomia nagród jako czyste funkcje — bez Reacta, DOM-u
 
 - `facts.ts` — 55 faktów komutatywnych, etapy odblokowań (`STAGES`), budżety czasowe i gwiazdki, próg fragmentów (`fragmentsForEgg`), budowanie pytania (`makeQuestion`, `expectedAnswer`)
 - `adaptive.ts` — mastery/decay, selekcja pytań, odblokowania etapów i postęp bramy, intro-rundy i rundy-wizyty
+- `round.ts` — cykl życia Rundy nad `(SaveState, RoundState)`: `newRound`/`newVisitRound`, `submitAnswer` (commit per odpowiedź, powtórka na `index+3`, max 12 pytań, poprawna powtórka capowana do 1★), `advance` (następne pytanie albo finalizacja: żołd z bonusem dnia liczonym PRZED podbiciem dnia, bonus wizyty, powrót wyprawy, liczniki — wszystko przez JEDEN `credit`); store tylko nakłada `patch`
 - `rewards.ts` — jakość jajek, szanse rzadkości, pity legendarnych per tryb (`rollMonsterWithPity`), Jajko Życzeń (`wishEggPrice`), bank gwiazdek (`addEggFragment`), portfel iskierek (`credit`/`spend` — jedyne miejsce znające `ISKIERKI_CAP` i regułę „nie stać")
 - `village.ts` — katalog budynków i dekoracji (każdy budynek ma realny perk), żołd (`roundWage`), koszty, `villageRoster`, cel budowy
 - `cosmetics.ts` — katalog kosmetyki Sklepiku (tiery per poziom budynku); import jednokierunkowy z `village.ts`
@@ -15,7 +16,7 @@ Logika pedagogiczna i ekonomia nagród jako czyste funkcje — bez Reacta, DOM-u
 - `collection.ts` — fakty o kolekcji z `ownedMonsters`: `byRecency`/`newestOwned`/`firstHatched` (jeden komparator, remis → niższy `id`), `ownedCount`, `isCollectionComplete` (katalog) vs `isPoolComplete(mode)` (pula trybu), `guardianOwned`; ekrany nie liczą tego same
 - `wishEgg.ts` — `wishEgg(save) → { cost, dreamApplies, unlocked, available }`: jedyne źródło prawdy o Jajku Życzeń (pula, cena, odblokowanie); import z `rewards.ts`, `village.ts` i katalogu potworków
 - `time.ts` — `dayStamp(now)`: lokalny znacznik dnia, czysty względem wstrzykiwanego `now`
-- `debug.ts` — czysta symulacja rundy debug (wstrzykiwane `rand`/`now`)
+- `debug.ts` — `simulateRound`: gra pełną rundę funkcjami z `round.ts` (nie lustro logiki — nie ma czego utrzymywać w dwóch miejscach); `distributeStars` steruje czasem odpowiedzi tak, by wyszła zadana suma gwiazdek
 
 ## Local Contracts
 

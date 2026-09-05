@@ -1,15 +1,18 @@
 import type { SaveState } from "../store/schema"
+import type { GameMode, RoundQuestion } from "./facts"
 import {
-	applyAnswer,
-	emptyStats,
-	pickNextFact,
-	shouldUnlockNextStage,
-} from "./adaptive"
-import type { Fact, FactKey, GameMode } from "./facts"
-import { budgetMs, isMaxStage, QUESTIONS_PER_ROUND } from "./facts"
-import { addEggFragment, credit } from "./rewards"
-import { dayStamp } from "./time"
-import { roundWage } from "./village"
+	budgetMs,
+	expectedAnswer,
+	FACTS_BY_KEY,
+	QUESTIONS_PER_ROUND,
+} from "./facts"
+import {
+	advance,
+	newRound,
+	type Rand,
+	type RoundStep,
+	submitAnswer,
+} from "./round"
 
 // Rozkłada sumę gwiazdek na n pytań (każde 0..3): jak najwięcej trójek (szybkie
 // odpowiedzi → większy przyrost mastery), reszta wolniej. Dla debug-symulacji rundy.
@@ -24,89 +27,42 @@ export function distributeStars(total: number, n: number): number[] {
 	return q
 }
 
-// Debug: liczy efekt pełnej rundy QUESTIONS_PER_ROUND pytań kończącej się sumą
-// `totalStars` gwiazdek — tak jak prawdziwa runda (commit per odpowiedź + finalizacja).
-// `firstFact` to pierwsze pytanie (na ekranie rundy: aktualnie wyświetlane); reszta
-// losowana selekcją jak w grze. Czysta funkcja: niczego nie zapisuje, zwraca deltę.
-export function simulateRoundOutcome(
-	state: SaveState,
+// Czas odpowiedzi dający dokładnie `stars` gwiazdek (progi ze starsFor).
+const ELAPSED_FACTOR = [3, 2, 1.25, 0] as const
+
+// Debug: gra pełną rundę QUESTIONS_PER_ROUND poprawnych odpowiedzi kończącą się
+// sumą `totalStars` — TYMI SAMYMI funkcjami co prawdziwa gra (game/round.ts), więc
+// nie ma czego lustrzyć. `firstQuestion` = aktualnie wyświetlane pytanie (ekran
+// rundy). Zwraca skumulowany patch zapisu i rundę w fazie summary.
+export function simulateRound(
+	save: SaveState,
+	mode: GameMode,
 	totalStars: number,
-	rand: () => number,
+	rand: Rand,
 	now: number,
-	firstFact?: Fact,
-	mode: GameMode = "mult",
-) {
-	const facts = { ...state.facts }
-	let eggFragments = state.eggFragments
-	let eggStarBank = state.eggStarBank
-	let eggsEarned = state.eggsEarned
-	let iskierki = state.iskierki
-	const pendingEggs = [...state.pendingEggs]
-	const createdIndices: number[] = []
-	const asked: FactKey[] = []
+	firstQuestion?: RoundQuestion,
+): RoundStep {
+	let round = newRound(save, mode, rand, now)
+	if (firstQuestion) round = { ...round, question: firstQuestion }
+	let cur: SaveState = save
+	const patch: Partial<SaveState> = {}
+	const apply = (step: RoundStep | null) => {
+		if (!step) throw new Error("simulateRound: nieoczekiwana faza rundy")
+		Object.assign(patch, step.patch)
+		cur = { ...cur, ...step.patch }
+		round = step.round
+	}
 	const perQuestion = distributeStars(totalStars, QUESTIONS_PER_ROUND)
-
-	for (let i = 0; i < QUESTIONS_PER_ROUND; i++) {
-		const fact =
-			i === 0 && firstFact
-				? firstFact
-				: pickNextFact(facts, state.unlockedStage, asked.slice(-3), rand)
-		const stars = perQuestion[i] ?? 0
-		// szybka odpowiedź ⇔ 3 gwiazdki (ten sam próg co budżet 3⭐); wolniej = mniejszy przyrost
-		const elapsed = stars === 3 ? 0 : budgetMs(fact) * 2
-		facts[fact.key] = applyAnswer(
-			facts[fact.key] ?? emptyStats(),
-			fact,
-			true,
-			elapsed,
-			now,
+	for (let i = 0; round.phase !== "summary"; i++) {
+		const fact = FACTS_BY_KEY.get(round.question.key)
+		if (!fact)
+			throw new Error(`simulateRound: nieznany fakt ${round.question.key}`)
+		const elapsed = budgetMs(fact) * (ELAPSED_FACTOR[perQuestion[i] ?? 0] ?? 3)
+		const answer = String(expectedAnswer(round.question, mode))
+		apply(
+			submitAnswer(cur, { ...round, answer }, rand, round.startedAt + elapsed),
 		)
-		asked.push(fact.key)
-		// fragment + gwiazdki za każdą odpowiedź; jajko po przekroczeniu progu dostaje
-		// finalny kolor z banku (ta sama czysta logika co w store — addEggFragment)
-		const r = addEggFragment(
-			{ eggFragments, eggStarBank, eggsEarned, iskierki },
-			stars,
-			mode,
-			rand,
-		)
-		eggFragments = r.bank.eggFragments
-		eggStarBank = r.bank.eggStarBank
-		eggsEarned = r.bank.eggsEarned
-		iskierki = r.bank.iskierki
-		if (r.created) {
-			pendingEggs.push(r.created)
-			createdIndices.push(pendingEggs.length - 1)
-		}
+		apply(advance(cur, round, rand, now))
 	}
-
-	let unlockedStage = state.unlockedStage
-	let unlockedThisRound = false
-	if (
-		!isMaxStage(unlockedStage) &&
-		shouldUnlockNextStage(facts, unlockedStage)
-	) {
-		unlockedStage++
-		unlockedThisRound = true
-	}
-
-	// żołd za ukończoną rundę — lustro finalizacji nextQuestion (bonus dnia
-	// liczony względem lastPlayedDay sprzed rundy, jak w store)
-	const firstRoundToday = state.achievementStats.lastPlayedDay !== dayStamp(now)
-	const wage = roundWage(state.village, totalStars, firstRoundToday)
-	iskierki = credit(iskierki, wage).wallet
-
-	return {
-		facts,
-		eggFragments,
-		eggStarBank,
-		eggsEarned,
-		pendingEggs,
-		createdIndices,
-		asked,
-		iskierki,
-		wage,
-		unlockedStage,
-		unlockedThisRound,
-	}
+	return { patch, round }
 }

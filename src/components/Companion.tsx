@@ -1,6 +1,7 @@
 import { type CSSProperties, useEffect, useRef, useState } from "react"
+import { dayStamp } from "../game/time"
 import { MONSTERS } from "../monsters/catalog"
-import { dayStamp, type RoundPhase, useGame } from "../store/store"
+import { type RoundPhase, useGame } from "../store/store"
 import { EquippedBackground, EquippedOverlay } from "./CosmeticArt"
 import {
 	GREET_HELLO,

@@ -4,47 +4,20 @@ import {
 	claimAchievement as claimLedger,
 	unlockAchievements,
 } from "../achievements/evaluate"
-import {
-	applyAnswer,
-	decayStats,
-	emptyStats,
-	introRoundPlan,
-	isIntroRound,
-	newlyUnlockedFactor,
-	pickNextFact,
-	shouldUnlockNextStage,
-	VISIT_BONUS,
-	visitRoundPlan,
-	visitStage,
-} from "../game/adaptive"
+import { decayStats, emptyStats } from "../game/adaptive"
 import type { CosmeticId, CosmeticSlot } from "../game/cosmetics"
 import { COSMETICS_BY_ID, isOwned, sklepikLevel } from "../game/cosmetics"
-import { simulateRoundOutcome } from "../game/debug"
+import { simulateRound } from "../game/debug"
 import type { ExpeditionTypeId } from "../game/expeditions"
-import {
-	EXPEDITIONS_BY_ID,
-	expeditionUnlocked,
-	isExpeditionDone,
-	resolveExpedition,
-} from "../game/expeditions"
-import type { Fact, FactKey, GameMode, RoundQuestion } from "../game/facts"
+import { EXPEDITIONS_BY_ID, expeditionUnlocked } from "../game/expeditions"
+import type { FactKey, GameMode } from "../game/facts"
 
 export type { RoundQuestion } from "../game/facts"
 
 import { isCollectionComplete } from "../game/collection"
-import {
-	expectedAnswer,
-	FACTS_BY_KEY,
-	isMaxStage,
-	MAX_QUESTIONS_PER_ROUND,
-	MAX_STARS_PER_ROUND,
-	makeQuestion,
-	QUESTIONS_PER_ROUND,
-	starsFor,
-} from "../game/facts"
+import { expectedAnswer, FACTS_BY_KEY, isMaxStage } from "../game/facts"
 import type { EggQuality, Rarity } from "../game/rewards"
 import {
-	addEggFragment,
 	credit,
 	dupIskierki,
 	rollMonsterWithPity,
@@ -52,7 +25,8 @@ import {
 	spend,
 	WISH_MODE,
 } from "../game/rewards"
-import { dayStamp } from "../game/time"
+import type { RoundState } from "../game/round"
+import { advance, newRound, newVisitRound, submitAnswer } from "../game/round"
 import type { BuildingId, DecorationId } from "../game/village"
 import {
 	BUILDINGS,
@@ -61,17 +35,15 @@ import {
 	DECORATIONS_BY_ID,
 	MAX_BUILDING_LEVEL,
 	nextLevelCost,
-	roundWage,
 } from "../game/village"
 import { wishEgg } from "../game/wishEgg"
 import {
 	FIRST_MONSTER_ID,
 	IDS_BY_RARITY,
 	idsByRarityForMode,
-	MONSTERS,
 	rarityOf,
 } from "../monsters/catalog"
-import type { AchievementCounters, SaveState } from "./schema"
+import type { SaveState } from "./schema"
 import { INITIAL_SAVE, migrateSave, SAVE_KEYS, SAVE_VERSION } from "./schema"
 
 export type Screen =
@@ -83,53 +55,7 @@ export type Screen =
 	| "map"
 	| "village"
 	| "debug"
-export type RoundPhase = "answering" | "correct" | "wrong" | "summary"
-
-export interface RoundState {
-	mode: GameMode
-	// czynnik świeżo odblokowany w tej rundzie (pierwsza runda po bramie) — featurowany
-	// w połowie pytań; w dzieleniu wymusza go na pozycji dzielnika. null = zwykła runda.
-	introFactor: number | null
-	// gdy ustawiony: ułożony plan działań pytań bazowych intro-rundy (5 nowych + 5 starych),
-	// konsumowany pozycyjnie (planPos); powtórki po błędzie nie ruszają planu.
-	plan: FactKey[] | null
-	planPos: number
-	index: number
-	total: number
-	question: RoundQuestion
-	phase: RoundPhase
-	answer: string
-	stars: number
-	lastStars: number
-	startedAt: number
-	asked: FactKey[]
-	requeues: Record<number, FactKey>
-	shakeNonce: number
-	eggsCreated: number[] // indeksy w pendingEggs utworzone w tej rundzie (kolor jajka jest finalny już od utworzenia)
-	unlockedThisRound: boolean
-	wageEarned: number // żołd przyznany przy finalizacji (faza summary); 0 do końca rundy
-	// PAUZA („Przerwa ⏸"): siedzi na rundzie, nie obok niej — ginie razem z nią,
-	// więc nie da się jej przenieść na następną rundę (żadne zerowanie w akcjach
-	// nawigacji). Wycisza wejście u źródła: guardy w pressDigit/pressBackspace/
-	// pressConfirm. Nakładka RoundScreen zasłania tylko keypad, a globalny
-	// `keydown` w App.tsx żyje obok niej — bez guardu wpisywałby cyfry, a
-	// auto-submit zatwierdzałby odpowiedzi (błędna połowi mastery: kara za
-	// przerwę, wprost przeciw zasadzie roota „nigdy nie karze").
-	paused: boolean
-	// runda-wizyta u Strażnika: etap odwiedzanej (najsłabszej starszej) tabliczki —
-	// wybiera region/Strażnika i włącza podziękowanie (+VISIT_BONUS ✨) przy finalizacji.
-	// Efemeryczne (RoundState nie jest persystowany). null = zwykła runda.
-	visitStage: number | null
-	// powrót z wyprawy rozstrzygnięty przy finalizacji TEJ rundy (karta w
-	// podsumowaniu): nagroda już doliczona do iskierek; trop = wskazówka o
-	// nieposiadanym potworku (null gdy brak). Efemeryczne jak wageEarned —
-	// bez migracji. null = nikt nie wrócił w tej rundzie.
-	expeditionReturn: {
-		monsterId: number
-		rewardIskierki: number
-		tropMonsterId: number | null
-	} | null
-}
+export type { RoundPhase, RoundState } from "../game/round"
 
 export interface HatchResult {
 	monsterId: number
@@ -191,103 +117,6 @@ interface GameState extends SaveState {
 	debugOpenGate: () => void
 	debugBuildAll: () => void
 	debugReset: () => void
-}
-
-// Znacznik dnia mieszka w czystym src/game/time.ts (żołd i debug-symulacja go
-// potrzebują bez cyklu importów); re-eksport dla dotychczasowych konsumentów.
-export { dayStamp } from "../game/time"
-
-// Podbija licznik dni gry przy PIERWSZEJ ukończonej rundzie danego dnia (kumulacyjnie,
-// nie streak — przerwa nie zeruje). Wołane wszędzie tam, gdzie rośnie totalRounds.
-function bumpDaysPlayed(
-	stats: AchievementCounters,
-	now: number,
-): AchievementCounters {
-	const today = dayStamp(now)
-	if (stats.lastPlayedDay === today) return stats
-	return { ...stats, daysPlayed: stats.daysPlayed + 1, lastPlayedDay: today }
-}
-
-// Pula tropu z wyprawy: WSZYSTKIE id katalogu (wskazówka może dotyczyć każdego
-// nieposiadanego — także ekskluzywnych trybów, bo wymarzonym może być każdy).
-const ALL_MONSTER_IDS: readonly number[] = MONSTERS.map((m) => m.id)
-
-// Rozstrzygnięcie powrotu wyprawy przy finalizacji rundy (totalRounds+1 =
-// właśnie ukończona runda); matematyka w src/game/expeditions.ts. Gdy nikt nie
-// wraca — stan wyprawy bez zmian, reward 0. Wspólne dla nextQuestion i ścieżek
-// debug (debugFinishRound płaci i pokazuje kartę powrotu; debugSimulateRound
-// płaci po cichu — nie ma rundy, więc nie ma expeditionReturn).
-function settleExpedition(state: SaveState): {
-	expedition: SaveState["expedition"]
-	expeditionReturn: RoundState["expeditionReturn"]
-	reward: number
-} {
-	const e = state.expedition
-	if (!e || !isExpeditionDone(e, state.totalRounds + 1)) {
-		return { expedition: e, expeditionReturn: null, reward: 0 }
-	}
-	const r = resolveExpedition(
-		e,
-		new Set(Object.keys(state.ownedMonsters).map(Number)),
-		ALL_MONSTER_IDS,
-		Math.random,
-	)
-	return {
-		expedition: null,
-		expeditionReturn: { monsterId: e.monsterId, ...r },
-		reward: r.rewardIskierki,
-	}
-}
-
-// Liczniki zdarzeniowe podbijane o DELTĘ (lastPlayedDay nie jest liczbą i ma
-// własny mechanizm — bumpDaysPlayed).
-type CounterDeltas = Partial<
-	Record<
-		{
-			[K in keyof AchievementCounters]: AchievementCounters[K] extends number
-				? K
-				: never
-		}[keyof AchievementCounters],
-		number
-	>
->
-
-// Wspólne domknięcie rundy dla trzech ścieżek finalizacji (nextQuestion /
-// debugFinishRound / debugSimulateRound): rozstrzygnięta wyprawa, JEDEN
-// wspólny cap portfela, totalRounds, liczniki dni i wypraw. Rozmyślne RÓŻNICE
-// ścieżek (bonus wizyty, totalStars/perfectRounds, visitRoundsCompleted —
-// tylko realna gra) wchodzą przez argumenty, więc są widoczne w miejscu
-// wywołania. `counterDeltas` to PRZYROSTY (ile dołożyć), nie wartości: ścieżki
-// nie muszą znać bazy, a delta na liczniku, który helper podbija sam (wyprawy),
-// SUMUJE się zamiast go po cichu nadpisać. Nowe źródło dochodu lub licznik
-// końca rundy przechodzi TĘDY — nigdy przez edycję jednej ścieżki.
-function roundClosePatch(
-	state: Pick<SaveState, "totalRounds" | "achievementStats">,
-	settled: ReturnType<typeof settleExpedition>,
-	// pełny dochód rundy PRZED capem (bez nagrody wyprawy — tę dolicza helper)
-	iskierkiBeforeCap: number,
-	counterDeltas: CounterDeltas,
-	now: number,
-) {
-	const stats = { ...state.achievementStats }
-	const deltas: CounterDeltas = {
-		...counterDeltas,
-		expeditionsCompleted:
-			(counterDeltas.expeditionsCompleted ?? 0) +
-			(settled.expeditionReturn !== null ? 1 : 0),
-	}
-	for (const [key, delta] of Object.entries(deltas) as [
-		keyof CounterDeltas,
-		number,
-	][]) {
-		stats[key] = stats[key] + delta
-	}
-	return {
-		iskierki: credit(iskierkiBeforeCap, settled.reward).wallet,
-		totalRounds: state.totalRounds + 1,
-		expedition: settled.expedition,
-		achievementStats: bumpDaysPlayed(stats, now),
-	}
 }
 
 // Pula losowania potworków zależna od trybu jajka (idsByRarityForMode w
@@ -401,112 +230,21 @@ export const useGame = create<GameState>()(
 
 			startRound: () => {
 				const state = get()
-				const mode = state.mode
-				const stage = state.unlockedStage
-				// pierwsza runda po odblokowaniu czynnika: ułóż plan 5 nowych + 5 starych
-				// działań (mocne mieszanie), zamiast pozwolić nowej cyfrze zdominować pulę
-				const intro = isIntroRound(state.facts, stage)
-				const introFactor = intro ? newlyUnlockedFactor(stage) : null
-				const plan = intro
-					? introRoundPlan(
-							state.facts,
-							stage,
-							QUESTIONS_PER_ROUND,
-							Math.random,
-						).map((f) => f.key)
-					: null
-				const firstFact =
-					(plan?.[0] && FACTS_BY_KEY.get(plan[0])) ??
-					pickNextFact(state.facts, stage, [], Math.random)
 				set({
 					screen: "round",
-					round: {
-						mode,
-						paused: false,
-						introFactor,
-						plan,
-						planPos: 1,
-						index: 0,
-						total: QUESTIONS_PER_ROUND,
-						question: makeQuestion(
-							firstFact,
-							false,
-							mode,
-							introFactor,
-							Math.random,
-						),
-						phase: "answering",
-						answer: "",
-						stars: 0,
-						lastStars: 0,
-						startedAt: Date.now(),
-						asked: [],
-						requeues: {},
-						shakeNonce: 0,
-						eggsCreated: [],
-						unlockedThisRound: false,
-						wageEarned: 0,
-						visitStage: null,
-						expeditionReturn: null,
-					},
+					round: newRound(state, state.mode, Math.random, Date.now()),
 				})
 			},
 
-			// Runda-wizyta u Strażnika: powtórka starszych tabliczek opowiedziana jako
-			// odwiedziny w krainie najsłabszej z nich. Mechanika identyczna ze zwykłą
-			// rundą (mastery, gwiazdki, jajka, żołd); różnice: plan z visitRoundPlan
-			// (połowa z odwiedzanej tabliczki, reszta ze starszych), tryb PRZYPIĘTY do
-			// "mult" (zaproszenie mówi „tabliczka ×N", pytania muszą się zgadzać —
-			// przełącznik Home zostaje nietknięty dla późniejszych zwykłych rund)
-			// i podziękowanie Strażnika (+VISIT_BONUS ✨) przy finalizacji.
+			// Runda-wizyta u Strażnika (reguły w game/round.ts); bez potrzeby
+			// utrzymania karta zaproszenia nie powinna się renderować — wtedy zwykła runda.
 			startVisitRound: () => {
-				const state = get()
-				const stage = state.unlockedStage
-				const visited = visitStage(state.facts, stage)
-				// defensywnie: bez potrzeby utrzymania karta zaproszenia nie powinna
-				// się renderować — wtedy zwykła runda
-				if (visited === null) {
+				const round = newVisitRound(get(), Math.random, Date.now())
+				if (!round) {
 					get().startRound()
 					return
 				}
-				const plan = visitRoundPlan(
-					state.facts,
-					visited,
-					stage,
-					QUESTIONS_PER_ROUND,
-					Math.random,
-				).map((f) => f.key)
-				const firstFact = plan[0] ? FACTS_BY_KEY.get(plan[0]) : undefined
-				if (!firstFact) {
-					get().startRound()
-					return
-				}
-				set({
-					screen: "round",
-					round: {
-						mode: "mult",
-						paused: false,
-						introFactor: null,
-						plan,
-						planPos: 1,
-						index: 0,
-						total: QUESTIONS_PER_ROUND,
-						question: makeQuestion(firstFact, false, "mult", null, Math.random),
-						phase: "answering",
-						answer: "",
-						stars: 0,
-						lastStars: 0,
-						startedAt: Date.now(),
-						asked: [],
-						requeues: {},
-						shakeNonce: 0,
-						eggsCreated: [],
-						unlockedThisRound: false,
-						wageEarned: 0,
-						visitStage: visited,
-						expeditionReturn: null,
-					},
-				})
+				set({ screen: "round", round })
 			},
 
 			// Pauza wycisza wejście u ŹRÓDŁA: nakładka zasłania keypad, ale globalny
@@ -534,238 +272,22 @@ export const useGame = create<GameState>()(
 			pressConfirm: () => {
 				const state = get()
 				const { round } = state
-				if (!round || round.paused || round.answer === "") return
-				const q = round.question
-				const expected = expectedAnswer(q, round.mode)
-				const correct = Number(round.answer) === expected
-
-				if (round.phase === "wrong") {
-					// przepisywanie poprawnego wyniku — czysty rytuał utrwalający
-					if (correct) {
-						set({
-							round: {
-								...round,
-								phase: "correct",
-								lastStars: 0,
-								answer: round.answer,
-							},
-						})
-					} else {
-						set({
-							round: { ...round, answer: "", shakeNonce: round.shakeNonce + 1 },
-						})
-					}
-					return
-				}
-				if (round.phase !== "answering") return
-
-				// pierwsza próba — commit statystyk i fragmentu od razu (zamknięcie
-				// karty w środku rundy nie traci nauki)
-				const now = Date.now()
-				const elapsed = now - round.startedAt
-				const fact = FACTS_BY_KEY.get(q.key)
-				if (!fact) return
-				const stats = state.facts[q.key] ?? emptyStats()
-				const facts = {
-					...state.facts,
-					[q.key]: applyAnswer(stats, fact, correct, elapsed, now),
-				}
-
-				// błędne działanie (powtórka) daje maks. 1 gwiazdkę, nawet jeśli poprawka jest szybka
-				const earned = correct ? starsFor(elapsed, fact) : 0
-				const gained = q.isRequeue ? Math.min(1, earned) : earned
-				const stars = round.stars + gained
-
-				// liczniki osiągnięć: kariera gwiazdek rośnie zawsze (gained=0 nieszkodliwe),
-				// poprawne pierwsze próby w dzieleniu i w luce liczymy osobno
-				const achievementStats = {
-					...state.achievementStats,
-					totalStars: state.achievementStats.totalStars + gained,
-					divCorrect:
-						state.achievementStats.divCorrect +
-						(correct && round.mode === "div" ? 1 : 0),
-					gapCorrect:
-						state.achievementStats.gapCorrect +
-						(correct && round.mode === "gap" ? 1 : 0),
-				}
-
-				// fragment + gwiazdki niezależnie od wyniku — postęp nigdy nie przepada.
-				// addEggFragment domyka jajko po przekroczeniu progu (finalny kolor z banku).
-				const { bank, created } = addEggFragment(
-					{
-						eggFragments: state.eggFragments,
-						eggStarBank: state.eggStarBank,
-						eggsEarned: state.eggsEarned,
-						iskierki: state.iskierki,
-					},
-					gained,
-					round.mode,
-					Math.random,
-				)
-				const { eggFragments, eggStarBank, eggsEarned, iskierki } = bank
-				let pendingEggs = state.pendingEggs
-				const eggsCreated = [...round.eggsCreated]
-				if (created) {
-					pendingEggs = [...pendingEggs, created]
-					eggsCreated.push(pendingEggs.length - 1)
-				}
-
-				if (correct) {
-					set({
-						facts,
-						eggFragments,
-						eggStarBank,
-						eggsEarned,
-						pendingEggs,
-						iskierki,
-						achievementStats,
-						round: {
-							...round,
-							phase: "correct",
-							stars,
-							lastStars: gained,
-							eggsCreated,
-						},
-					})
-				} else {
-					// powtórka błędnego działania za 3 pytania (max 12 pytań w rundzie)
-					const requeues = { ...round.requeues }
-					let total = round.total
-					if (!q.isRequeue && total < MAX_QUESTIONS_PER_ROUND) {
-						const at = Math.min(round.index + 3, total)
-						requeues[at] = q.key
-						total++
-					}
-					set({
-						facts,
-						eggFragments,
-						eggStarBank,
-						eggsEarned,
-						pendingEggs,
-						iskierki,
-						achievementStats,
-						round: {
-							...round,
-							phase: "wrong",
-							answer: "",
-							stars,
-							lastStars: 0,
-							requeues,
-							total,
-							eggsCreated,
-							shakeNonce: round.shakeNonce + 1,
-						},
-					})
-				}
-				get().checkAchievements()
+				if (!round || round.paused) return
+				const r = submitAnswer(state, round, Math.random, Date.now())
+				if (!r) return
+				set({ ...r.patch, round: r.round })
+				if (r.committed) get().checkAchievements()
 			},
 
+			// następne pytanie albo finalizacja (żołd, bonus wizyty, wyprawa, liczniki —
+			// kolejność i jeden cap portfela pilnuje game/round.ts)
 			nextQuestion: () => {
 				const state = get()
-				const { round } = state
-				if (round?.phase !== "correct") return
-				const asked = [...round.asked, round.question.key]
-				const nextIndex = round.index + 1
-
-				if (nextIndex >= round.total) {
-					// koniec rundy: jajka mają już finalny kolor z chwili domknięcia
-					// (eggStarBank), iskierka za tęczowe też już przyznana — zostaje
-					// sprawdzenie odblokowania, policzenie rundy i żołd
-					let unlockedStage = state.unlockedStage
-					let unlockedThisRound = false
-					if (
-						!isMaxStage(unlockedStage) &&
-						shouldUnlockNextStage(state.facts, unlockedStage)
-					) {
-						unlockedStage++
-						unlockedThisRound = true
-					}
-					const now = Date.now()
-					// PRZED bumpDaysPlayed — bump nadpisuje lastPlayedDay, a bonus dnia
-					// liczy się względem stanu sprzed tej rundy
-					const firstRoundToday =
-						state.achievementStats.lastPlayedDay !== dayStamp(now)
-					const wageEarned = roundWage(
-						state.village,
-						round.stars,
-						firstRoundToday,
-					)
-					// podziękowanie Strażnika za rundę-wizytę — OSOBNO od żołdu
-					// (wageEarned zostaje czystym żołdem; podsumowanie pokazuje bonus
-					// własną linią). Ścieżki debug (debugFinishRound/debugSimulateRound)
-					// omijają ten blok — świadomie nie płacą bonusu.
-					const visitBonus = round.visitStage !== null ? VISIT_BONUS : 0
-					// wyprawa wraca? (totalRounds+1 = właśnie ukończona runda) — PO
-					// żołdzie; nagroda dolicza się do tej samej, RAZ capowanej sumy
-					// co żołd i bonus wizyty (dwa niezależne źródła dochodu)
-					const settled = settleExpedition(state)
-					set({
-						unlockedStage,
-						...roundClosePatch(
-							state,
-							settled,
-							state.iskierki + wageEarned + visitBonus,
-							{
-								perfectRounds: round.stars === MAX_STARS_PER_ROUND ? 1 : 0,
-								// rundy-wizyty liczą się tylko na realnej ścieżce finalizacji
-								// (ścieżki debug świadomie pomijają — jak bonus wizyty)
-								visitRoundsCompleted: round.visitStage !== null ? 1 : 0,
-							},
-							now,
-						),
-						round: {
-							...round,
-							phase: "summary",
-							asked,
-							unlockedThisRound,
-							wageEarned,
-							expeditionReturn: settled.expeditionReturn,
-						},
-					})
-					get().checkAchievements()
-					return
-				}
-
-				const requeuedKey = round.requeues[nextIndex]
-				const requeuedFact = requeuedKey
-					? FACTS_BY_KEY.get(requeuedKey)
-					: undefined
-				// pytanie bazowe (nie powtórka): w intro-rundzie bierz z planu, inaczej selekcja
-				let planPos = round.planPos
-				let baseFact: Fact | undefined
-				if (!requeuedFact) {
-					if (round.plan) {
-						const planKey = round.plan[planPos]
-						baseFact = planKey ? FACTS_BY_KEY.get(planKey) : undefined
-						planPos++
-					}
-					baseFact ??= pickNextFact(
-						state.facts,
-						state.unlockedStage,
-						asked.slice(-3),
-						Math.random,
-					)
-				}
-				const fact = requeuedFact ?? (baseFact as Fact)
-				set({
-					round: {
-						...round,
-						index: nextIndex,
-						planPos,
-						question: makeQuestion(
-							fact,
-							requeuedFact !== undefined,
-							round.mode,
-							round.introFactor,
-							Math.random,
-						),
-						phase: "answering",
-						answer: "",
-						lastStars: 0,
-						startedAt: Date.now(),
-						asked,
-					},
-				})
+				if (!state.round) return
+				const r = advance(state, state.round, Math.random, Date.now())
+				if (!r) return
+				set({ ...r.patch, round: r.round })
+				if (r.round.phase === "summary") get().checkAchievements()
 			},
 
 			// „Koniec na dziś": fragmenty, mastery i eggStarBank już zapisane (commit
@@ -1077,86 +599,39 @@ export const useGame = create<GameState>()(
 			},
 
 			// ekran debug: cicho dopisuje efekt jednej rundy do zapisu (bez wchodzenia w rundę)
+			// symulowana runda tymi samymi funkcjami co prawdziwa gra (game/debug.ts →
+			// game/round.ts): żołd, wyprawa, liczniki — bez rundy na ekranie. Świadomie
+			// bez bonusu wizyty i licznika wizyt: to zwykła (nie-wizytowa) runda.
 			debugSimulateRound: (totalStars) => {
 				const state = get()
-				const o = simulateRoundOutcome(
+				const { patch } = simulateRound(
 					state,
+					state.mode,
 					totalStars,
 					Math.random,
 					Date.now(),
-					undefined,
-					state.mode,
 				)
-				// wyprawa rozstrzyga się jak w prawdziwej rundzie, ale PO CICHU —
-				// symulacja nie ma rundy, więc karta powrotu (expeditionReturn) nie
-				// istnieje; nagroda i licznik idą normalnie
-				const settled = settleExpedition(state)
-				set({
-					facts: o.facts,
-					eggFragments: o.eggFragments,
-					eggStarBank: o.eggStarBank,
-					eggsEarned: o.eggsEarned,
-					pendingEggs: o.pendingEggs,
-					unlockedStage: o.unlockedStage,
-					// o.iskierki niesie już żołd i tęczowe z symulacji; bez bumpów
-					// ścieżkowych (symulacja omija pressConfirm i nie jest rundą-wizytą)
-					...roundClosePatch(state, settled, o.iskierki, {}, Date.now()),
-				})
+				set(patch)
 				get().checkAchievements()
 			},
 
 			// ekran rundy: kończy trwającą rundę z sumą `totalStars` gwiazdek i przechodzi
-			// w fazę summary — odpala te same eventy końca rundy co prawdziwe odpowiedzi
-			// (jajka tej rundy, ewentualna animacja bramy, CTA wyklucia)
+			// w fazę summary — te same eventy końca rundy co prawdziwe odpowiedzi (jajka
+			// tej rundy, animacja bramy, karta powrotu, CTA wyklucia). Rozgrywana od nowa
+			// od aktualnego pytania jako zwykła runda (wizyta: bez bonusu i licznika).
 			debugFinishRound: (totalStars) => {
 				const state = get()
 				const { round } = state
 				if (!round) return
-				const o = simulateRoundOutcome(
+				const r = simulateRound(
 					state,
+					round.mode,
 					totalStars,
 					Math.random,
 					Date.now(),
-					FACTS_BY_KEY.get(round.question.key),
-					round.mode,
+					round.question,
 				)
-				// wyprawa rozstrzyga się jak przy prawdziwej finalizacji — runda
-				// wchodzi w summary z pełnymi eventami, więc karta powrotu też gra
-				const settled = settleExpedition(state)
-				set({
-					facts: o.facts,
-					eggFragments: o.eggFragments,
-					eggStarBank: o.eggStarBank,
-					eggsEarned: o.eggsEarned,
-					pendingEggs: o.pendingEggs,
-					unlockedStage: o.unlockedStage,
-					// symulacja nie przechodzi przez pressConfirm/nextQuestion, więc liczniki
-					// zdarzeniowe ustawiamy tu wprost — by dało się przetestować z ekranu
-					// debug. visitRoundsCompleted ŚWIADOMIE pomijany (jak bonus wizyty) —
-					// rundy-wizyty liczą się tylko na realnej ścieżce finalizacji.
-					...roundClosePatch(
-						state,
-						settled,
-						o.iskierki,
-						{
-							totalStars,
-							perfectRounds: totalStars === MAX_STARS_PER_ROUND ? 1 : 0,
-						},
-						Date.now(),
-					),
-					round: {
-						...round,
-						index: QUESTIONS_PER_ROUND,
-						phase: "summary",
-						answer: "",
-						stars: totalStars,
-						asked: o.asked,
-						eggsCreated: o.createdIndices,
-						unlockedThisRound: o.unlockedThisRound,
-						wageEarned: o.wage,
-						expeditionReturn: settled.expeditionReturn,
-					},
-				})
+				set({ ...r.patch, round: r.round })
 				get().checkAchievements()
 			},
 
