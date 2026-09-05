@@ -218,7 +218,7 @@ document.getElementById("tiles").innerHTML = [
 
 // goals table
 (() => {
-	const rows = [["gates", "Mapa: wszystkie bramy"], ["firstLegendary", "Pierwszy legendarny"], ["baseLegendary", "Legendarne bazowe 4/4"], ["owned20", "20 potworków"], ["owned40", "40 potworków"], ["owned60", "60 potworków"], ["commons", "Komplet pospolitych"], ["rares", "Komplet rzadkich"], ["epics", "Komplet epickich (72/80)"], ["cosmetics", "Sklepik komplet (22 przedmioty)"], ["village", "Wioska komplet"], ["div4", "Strażnicy Mostu 4/4"], ["gap4", "Mistrzowie Doliny 4/4"], ["all80", "Kolekcja 80/80"], ["rainbow1", "Pierwsze tęczowe"], ["rainbow3", "Trzy tęczowe"]];
+	const rows = [["gates", "Mapa: wszystkie bramy"], ["firstLegendary", "Pierwszy legendarny"], ["baseLegendary", "Legendarne bazowe 4/4"], ["owned20", "20 potworków"], ["owned40", "40 potworków"], ["owned60", "60 potworków"], ["commons", "Komplet pospolitych"], ["rares", "Komplet rzadkich"], ["epics", "Komplet epickich (72/80)"], ["cosmetics", "Sklepik komplet (22 przedmioty)"], ["village", "Wioska komplet"], ["div4", "Strażnicy Mostu 4/4"], ["gap4", "Mistrzowie Doliny 4/4"], ["all80", "Kolekcja 80/80"], ["rainbow1", "Pierwsze tęczowe"], ["rainbow3", "Trzy tęczowe (osiągnięcie wymaga 2)"]];
 	const P = ["szybki", "dobry", "wolny"];
 	let h = `<tr><th>Cel</th>${P.map((p) => `<th>${p} · rundy</th><th>${p} · czas</th>`).join("")}</tr>`;
 	for (const [k, label] of rows) h += `<tr><td>${label}</td>${P.map((p) => { const g = D[p].goals[k]; return `<td class="${g.reached < 0.5 ? "bad" : ""}">${g.reached === 0 ? "nigdy" : g.reached < 1 ? `${pct(g.reached)} · ${rng(g)}` : rng(g)}</td><td class="dim">${g.reached === 0 ? "—" : fmtDays(g.d50)}</td>`; }).join("")}</tr>`;
