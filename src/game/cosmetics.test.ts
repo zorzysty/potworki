@@ -1,7 +1,6 @@
 /// <reference types="bun-types" />
 import { describe, expect, test } from "bun:test"
 import {
-	availableCosmetics,
 	COSMETICS,
 	COSMETICS_BY_ID,
 	type CosmeticsState,
@@ -69,21 +68,6 @@ describe("ramki kart (plan 014) — integralność", () => {
 			expect(f.cardClasses ?? "").not.toBe("")
 			expect([1, 2, 3]).toContain(f.tier)
 		}
-	})
-})
-
-describe("availableCosmetics", () => {
-	test("sklepik L0 → pusto; L1 → tylko tier 1; L3 → cały katalog", () => {
-		expect(availableCosmetics(0)).toEqual([])
-		const t1 = availableCosmetics(1)
-		expect(t1.length).toBeGreaterThan(0)
-		for (const c of t1) expect(c.tier).toBe(1)
-		expect(availableCosmetics(3).length).toBe(COSMETICS.length)
-	})
-	test("L2 → tiery 1 i 2, bez 3", () => {
-		const t2 = availableCosmetics(2)
-		for (const c of t2) expect(c.tier).toBeLessThanOrEqual(2)
-		expect(t2.length).toBe(COSMETICS.filter((c) => c.tier <= 2).length)
 	})
 })
 

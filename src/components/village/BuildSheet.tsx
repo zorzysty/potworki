@@ -11,6 +11,7 @@ import {
 	BUILDINGS_BY_ID,
 	buildingLevel,
 	DECORATIONS,
+	DECORATIONS_BY_ID,
 	MAX_BUILDING_LEVEL,
 	nextLevelCost,
 } from "../../game/village"
@@ -292,7 +293,7 @@ function DecorationRow({
 	iskierki: number
 	onBuy: (id: DecorationId) => void
 }) {
-	const def = DECORATIONS.find((d) => d.id === id)
+	const def = DECORATIONS_BY_ID.get(id)
 	if (!def) return null
 	const owned = village.decorations.includes(id)
 	const affordable = iskierki >= def.cost

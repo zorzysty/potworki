@@ -1,6 +1,6 @@
 /// <reference types="bun-types" />
 import { describe, expect, test } from "bun:test"
-import { INITIAL_SAVE, migrateSave, SAVE_VERSION } from "./schema"
+import { INITIAL_SAVE, MIGRATIONS, migrateSave, SAVE_VERSION } from "./schema"
 
 // ---------------------------------------------------------------------------
 // Łańcuch migracji zapisu — najważniejszy test w tym pliku.
@@ -8,6 +8,11 @@ import { INITIAL_SAVE, migrateSave, SAVE_VERSION } from "./schema"
 // ---------------------------------------------------------------------------
 
 describe("migrateSave", () => {
+	test("tripwire: każda wersja 1..SAVE_VERSION-1 ma krok migracji (migrateSave cicho pomija brakujący)", () => {
+		for (let v = 1; v < SAVE_VERSION; v++)
+			expect(MIGRATIONS[v], `brak MIGRATIONS[${v}]`).toBeTypeOf("function")
+	})
+
 	test("brak migracji przy aktualnej wersji", () => {
 		const x = { foo: "bar", iskierki: 5 }
 		expect(migrateSave(x, SAVE_VERSION)).toEqual(x)

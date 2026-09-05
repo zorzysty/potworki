@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react"
 import { useId } from "react"
 import type { BuildingId, DecorationId } from "../../game/village"
+import { MAX_BUILDING_LEVEL } from "../../game/village"
 import { FlowerGlyph } from "./Scenery"
 
 // Art budynków wioski: poziom = WIDOCZNY wzrost (rozmiar, wieże, światła) —
@@ -2068,7 +2069,7 @@ export function BuildingArt({
 	size?: number | string
 	silhouette?: boolean
 }) {
-	const lvl = Math.max(1, Math.min(3, level))
+	const lvl = Math.max(1, Math.min(MAX_BUILDING_LEVEL, level))
 	let art: React.ReactElement
 	switch (id) {
 		case "zamek":

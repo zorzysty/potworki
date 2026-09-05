@@ -191,11 +191,6 @@ export interface CosmeticsState {
 
 export const INITIAL_COSMETICS: CosmeticsState = { owned: [], equipped: {} }
 
-// Dostępne w sklepiku przy danym poziomie budynku (tier <= level).
-export function availableCosmetics(sklepikLevel: number): CosmeticDef[] {
-	return COSMETICS.filter((c) => c.tier <= sklepikLevel)
-}
-
 // Poziom sklepiku wprost ze stanu wioski — cienki helper dla UI/akcji.
 export function sklepikLevel(v: VillageState): number {
 	return buildingLevel(v, "sklepik")
