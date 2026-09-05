@@ -54,6 +54,12 @@ export function HatchScreen() {
 
 	const nestOrder =
 		order.length === pendingEggs.length ? order : pendingEggs.map((_, i) => i)
+	// sloty dostają jajka bez wybranego; zwolniony slot łata pierwsze jajko
+	// spoza slotów, więc każde jajko da się w końcu wybrać (nadmiar = chip)
+	const shown = nestOrder
+		.filter((i) => i !== safeIndex)
+		.slice(0, NEST_SLOTS.length)
+	const overflow = pendingEggs.length - 1 - shown.length
 
 	const selectEgg = (i: number) => {
 		const upEl = nestRefs.current.get(i)
@@ -109,7 +115,7 @@ export function HatchScreen() {
 			// przejścia, inaczej przeglądarka scala oba zapisy i nie ma animacji
 			void el.offsetWidth
 		}
-		const raf = requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
 			for (const [el] of pairs) {
 				el.style.transition = "transform 0.5s cubic-bezier(0.34, 1.3, 0.64, 1)"
 				el.style.transform = ""
@@ -117,16 +123,15 @@ export function HatchScreen() {
 		})
 		// po locie zdejmujemy tylko warstwę; `transition` zostaje (zdjęcie go
 		// w trakcie spóźnionego przejścia ucinało lot skokiem do celu)
-		const timer = setTimeout(() => {
+		setTimeout(() => {
 			for (const el of raised) {
 				el.style.position = ""
 				el.style.zIndex = ""
 			}
 		}, 800)
-		return () => {
-			cancelAnimationFrame(raf)
-			clearTimeout(timer)
-		}
+		// bez cleanupu: efekt nie ma deps, więc cleanup leciałby przy KAŻDYM
+		// rerenderze (tap w jajko w trakcie lotu) i zjadał przywrócenie warstwy;
+		// spóźniony timer na odmontowanym elemencie jest nieszkodliwy
 	})
 
 	useEffect(() => {
@@ -265,18 +270,18 @@ export function HatchScreen() {
 						</div>
 						{/* gniazdo zawsze widoczne (puste przy jednym jajku) — stały układ ekranu */}
 						<div className="flex w-full flex-col items-center gap-1">
-							{/* gniazdo = wybór jajka: sloty wg permutacji nestOrder, slot
-							    wybranego jajka pusty; nadmiar ponad liczbę slotów pokazuje chip */}
+							{/* gniazdo = wybór jajka: sloty wg permutacji nestOrder bez
+							    wybranego jajka; nadmiar ponad liczbę slotów pokazuje chip */}
 							<NestArt
 								className="max-w-[34rem]"
 								style={{
 									width: "min(100%, calc((var(--app-vh) - 270px) * 0.75))",
 								}}
 							>
-								{nestOrder.map((i, slotIdx) => {
+								{shown.map((i, slotIdx) => {
 									const e = pendingEggs[i]
 									const slot = NEST_SLOTS[slotIdx]
-									if (!e || !slot || i === safeIndex) return null
+									if (!e || !slot) return null
 									return (
 										<button
 											key={i}
@@ -314,12 +319,12 @@ export function HatchScreen() {
 										</button>
 									)
 								})}
-								{pendingEggs.length > NEST_SLOTS.length && (
+								{overflow > 0 && (
 									<div
 										className="absolute right-2 top-2 rounded-full bg-white/20 px-3 py-1 text-sm font-extrabold text-white"
 										style={{ zIndex: 11 }}
 									>
-										+{pendingEggs.length - NEST_SLOTS.length} 🥚
+										+{overflow} 🥚
 									</div>
 								)}
 							</NestArt>

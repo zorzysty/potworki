@@ -2,6 +2,7 @@ import { registerSW } from "virtual:pwa-register"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { App } from "./App"
+import { useGame } from "./store/store"
 import "./styles.css"
 
 // Wstrzyknięty przez plugin registerSW.js tylko rejestrował SW: nowy build
@@ -9,11 +10,22 @@ import "./styles.css"
 // karta / wybudzony tablet w ogóle nie sprawdzały aktualizacji — dzieci
 // tygodniami grały na starej wersji. Tu: autoUpdate = reload po aktywacji
 // nowego SW, plus jawne sprawdzenie przy każdym powrocie do karty.
+// Runda nie jest persystowana, więc reload w jej trakcie gubi żołd i bonusy —
+// odkładamy go do momentu, gdy `round` wróci do null (koniec/przerwanie rundy).
 registerSW({
 	immediate: true,
 	onRegisteredSW(_url, r) {
 		document.addEventListener("visibilitychange", () => {
-			if (document.visibilityState === "visible") r?.update()
+			// update() odrzuca promise offline — to nie błąd, tylko brak sieci
+			if (document.visibilityState === "visible") r?.update().catch(() => {})
+		})
+	},
+	onNeedReload() {
+		if (useGame.getState().round === null) return window.location.reload()
+		const unsub = useGame.subscribe((s) => {
+			if (s.round !== null) return
+			unsub()
+			window.location.reload()
 		})
 	},
 })

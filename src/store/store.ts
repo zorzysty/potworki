@@ -565,8 +565,9 @@ export const useGame = create<GameState>()(
 					achievements: r.achievements,
 					iskierki: credit(s.iskierki, r.reward).wallet,
 				})
-				// jak każda akcja zmieniająca portfel — np. „Skarbnica iskier" (100 ✨)
-				get().checkAchievements()
+				// portfel mógł przekroczyć próg (np. „Skarbnica iskier" 100 ✨); cicho —
+				// dziecko jest na ekranie osiągnięć, nowy wiersz sam się podświetli
+				get().reconcileAchievements()
 			},
 
 			// Zdejmuje pierwszy toast z kolejki (po wyświetleniu/auto-zniknięciu).
@@ -623,7 +624,9 @@ export const useGame = create<GameState>()(
 			debugFinishRound: (totalStars) => {
 				const state = get()
 				const { round } = state
-				if (!round) return
+				// tylko przed pierwszym commitem (jak przycisk w RoundScreen) — później
+				// replay zaliczyłby bieżące pytanie drugi raz
+				if (round?.phase !== "answering" || round.index !== 0) return
 				const r = simulateRound(
 					state,
 					round.mode,
