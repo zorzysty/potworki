@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test"
 import { BUILDINGS } from "../../game/village"
-import { layoutPlots } from "./layout"
+import {
+	GROUND_Y,
+	layoutGate,
+	layoutPlots,
+	layoutResident,
+	RESIDENT_SPOTS,
+} from "./layout"
 
 // prostokąty artów (stopa na linii gruntu + dy) nie mogą się przecinać —
 // na telefonie, tablecie w pionie/poziomie i laptopie
@@ -56,6 +62,34 @@ describe("layoutPlots", () => {
 			const z = layoutPlots(w, h).zamek
 			const cx = z.left + z.width / 2
 			expect(Math.abs(cx - w / 2)).toBeLessThan(w * 0.08)
+		}
+	})
+
+	test.each(SCENES)("brama w osi zamku i nad linią gruntu (%dx%d)", (w, h) => {
+		const plots = layoutPlots(w, h)
+		const gate = layoutGate(plots, { w, h })
+		const z = plots.zamek
+		expect(gate.x).toBeGreaterThan((z.left / w) * 100)
+		expect(gate.x).toBeLessThan(((z.left + z.width) / w) * 100)
+		expect(gate.y).toBeLessThan(GROUND_Y)
+		expect(gate.y).toBeGreaterThan(0)
+	})
+
+	test.each(
+		SCENES,
+	)("mieszkańcy stoją w scenie, w obrysie swojej działki (%dx%d)", (w, h) => {
+		const plots = layoutPlots(w, h)
+		for (const [bid, spot] of RESIDENT_SPOTS) {
+			const plot = plots[bid]
+			const r = layoutResident(plot, spot.dx, { w, h })
+			expect(r.leftPct).toBeGreaterThanOrEqual(0)
+			expect(r.leftPct).toBeLessThan(100)
+			expect(r.bottomPct).toBeGreaterThan(0)
+			expect(r.bottomPct).toBeLessThan(100)
+			// środek mieszkańca w poziomym zasięgu budynku
+			const cxPct = r.leftPct + (54 / 2 / w) * 100
+			expect(cxPct).toBeGreaterThanOrEqual((plot.left / w) * 100)
+			expect(cxPct).toBeLessThanOrEqual(((plot.left + plot.width) / w) * 100)
 		}
 	})
 })

@@ -1,4 +1,9 @@
 import type { BuildingId } from "../../game/village"
+import type { ResidentMode } from "./Resident"
+
+// Linia gruntu przedniego rzędu budynków w % wysokości sceny: kontener działek
+// kotwiczy na niej stopy, teren i droga (Scenery) startują dokładnie na niej.
+export const GROUND_Y = 47
 
 // Układ działek wioski liczony z ROZMIARU SCENY (px), nie ze stałych
 // procentów — 7 budynków ma się mieścić bez nakładania i na laptopie,
@@ -175,4 +180,47 @@ export function layoutGreenery(
 	)
 	bush(Math.min(sceneW - 46, ogrodek.left + ogrodek.width - 10))
 	return out
+}
+
+// Brama zamku w % sceny (środek działki + stopa): początek drogi Ścieżki ma
+// trafiać w nią na każdym ekranie. +8 px zakładki chowa początek drogi POD
+// artem zamku (budynki mają wyższy z-index).
+export function layoutGate(
+	plots: Record<BuildingId, Plot>,
+	scene: { w: number; h: number },
+): { x: number; y: number } {
+	return {
+		x: ((plots.zamek.left + plots.zamek.width / 2) / scene.w) * 100,
+		y: GROUND_Y - ((plots.zamek.dy + 8) / scene.h) * 100,
+	}
+}
+
+// Mieszkańcy: zbudowany budynek przyciąga jednego z pokazywanych potworków
+// (deterministycznie: najstarsi z listy) — wioska jest zamieszkana, nie
+// umeblowana. dx = ułamek szerokości działki od jej środka.
+export const RESIDENT_SIZE = 54 // px artu potworka (Resident), źródło dla kotwic
+export const RESIDENT_SPOTS: readonly [
+	BuildingId,
+	{ dx: number; mode: ResidentMode },
+][] = [
+	["domki", { dx: 0, mode: "doze" }],
+	["plac-zabaw", { dx: -0.3, mode: "play" }],
+	["zamek", { dx: 0.05, mode: "guard" }],
+	["fontanna", { dx: 0.3, mode: "doze" }],
+]
+
+// Kotwica mieszkańca w % sceny: stoi przed budynkiem, tuż pod jego stopą
+// (tył rzędu = na zboczu, więc dy działki podnosi go razem z budynkiem);
+// zanurzony 8 px poniżej stopy, żeby nie „lewitował" na krawędzi łąki.
+export function layoutResident(
+	plot: Plot,
+	dx: number,
+	scene: { w: number; h: number },
+): { leftPct: number; bottomPct: number } {
+	const cx = plot.left + plot.width / 2 + dx * plot.width - RESIDENT_SIZE / 2
+	return {
+		leftPct: (cx / scene.w) * 100,
+		bottomPct:
+			100 - GROUND_Y + ((plot.dy - (RESIDENT_SIZE - 8)) / scene.h) * 100,
+	}
 }

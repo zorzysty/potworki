@@ -34,6 +34,16 @@ export interface NestSlot {
 	w: number
 	z: number
 }
+// Styl pozycji slotu (% wrappera): `bottom` slotu jest mierzony od GÓRY
+// viewBoxu (jak współrzędne SVG), stąd odwrócenie — ekran nie musi tego wiedzieć.
+export function nestSlotStyle(slot: NestSlot): CSSProperties {
+	return {
+		left: `${slot.cx - slot.w / 2}%`,
+		bottom: `${100 - slot.bottom}%`,
+		width: `${slot.w}%`,
+		zIndex: slot.z,
+	}
+}
 export const NEST_SLOTS: readonly NestSlot[] = [
 	{ cx: 41, bottom: 72, w: 21, z: 2 },
 	{ cx: 59, bottom: 72, w: 21, z: 2 },

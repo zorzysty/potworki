@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { EGG_LABELS, EggView } from "../components/EggView"
 import { MonsterStage } from "../components/MonsterStage"
-import { NEST_SLOTS, NestArt } from "../components/NestArt"
+import { NEST_SLOTS, NestArt, nestSlotStyle } from "../components/NestArt"
 import { RARITY_META } from "../components/rarity"
 import { MONSTERS } from "../monsters/catalog"
 import { useGame } from "../store/store"
@@ -287,12 +287,7 @@ export function HatchScreen() {
 											type="button"
 											onClick={() => selectEgg(i)}
 											className="pointer-events-none absolute touch-manipulation [filter:drop-shadow(0_3px_3px_#0006)] transition-[filter] hover:[filter:drop-shadow(0_0_5px_#fff)_drop-shadow(0_0_12px_#fffa)] active:scale-90"
-											style={{
-												left: `${slot.cx - slot.w / 2}%`,
-												bottom: `${100 - slot.bottom}%`,
-												width: `${slot.w}%`,
-												zIndex: slot.z,
-											}}
+											style={nestSlotStyle(slot)}
 											aria-label={`Wybierz: ${EGG_LABELS[e.quality]}`}
 										>
 											<EggView

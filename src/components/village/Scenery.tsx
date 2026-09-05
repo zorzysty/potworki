@@ -1,4 +1,5 @@
 import { memo, type ReactNode, useId } from "react"
+import { GROUND_Y } from "./layout"
 
 // Sceneria wioski: warstwowy krajobraz (góry w mgiełce → wzgórza → zbocze
 // tylnego rzędu → łąka), wektorowe niebo (słońce/księżyc, chmury, tęcza)
@@ -12,14 +13,13 @@ import { memo, type ReactNode, useId } from "react"
 
 // ---------------------------------------------------------------------------
 // Geometria terenu. `Terrain` rozciąga się na całą scenę (preserveAspectRatio
-// "none"): współrzędne viewBoxu 0..100 = procenty sceny. GROUND_Y to linia
-// gruntu przedniego rzędu budynków — VillageScreen kotwiczy na niej kontener
-// działek (GROUND_LINE_TOP), a droga zaczyna się dokładnie na niej.
+// "none"): współrzędne viewBoxu 0..100 = procenty sceny. GROUND_Y (layout.ts)
+// to linia gruntu przedniego rzędu budynków — VillageScreen kotwiczy na niej
+// kontener działek, a droga zaczyna się dokładnie na niej.
 // W rozciąganym SVG siedzą TYLKO kształty tolerujące zniekształcenie (pasy
 // terenu, sylwetki gór/lasu); detale o stałych proporcjach (drzewa, kwiaty)
 // to osobne, nierozciągane arty pozycjonowane przez ekran.
 // ---------------------------------------------------------------------------
-export const GROUND_Y = 47
 
 // grzbiety pasów terenu (od tyłu): jedna krzywa na pas — wypełnienie i jasna
 // linia grzbietu wynikają z TEJ SAMEJ ścieżki (Ridge), więc nie mogą się rozjechać

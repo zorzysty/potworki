@@ -8,8 +8,15 @@ import { SpeechBubble } from "../components/SpeechBubble"
 import { BuildingArt } from "../components/village/BuildingArt"
 import { BuildReveal } from "../components/village/BuildReveal"
 import { BuildSheet, type SheetView } from "../components/village/BuildSheet"
-import { layoutGreenery, layoutPlots } from "../components/village/layout"
-import { Resident, type ResidentMode } from "../components/village/Resident"
+import {
+	GROUND_Y,
+	layoutGate,
+	layoutGreenery,
+	layoutPlots,
+	layoutResident,
+	RESIDENT_SPOTS,
+} from "../components/village/layout"
+import { Resident } from "../components/village/Resident"
 import {
 	BirdsArt,
 	BushArt,
@@ -18,7 +25,6 @@ import {
 	DuckArt,
 	FlowerArt,
 	type FlowerKind,
-	GROUND_Y,
 	GrassTuft,
 	MeadowTexture,
 	MoonArt,
@@ -68,20 +74,7 @@ import { useGame } from "../store/store"
 // Pozycje i rozmiary w px liczy CZYSTA `layoutPlots` (components/village/
 // layout.ts) ze zmierzonego rozmiaru sceny: dwa rzędy z przesunięciem, bez
 // nakładania na żadnej szerokości. Z działki zamku wynika brama (start drogi).
-const GROUND_LINE_TOP = `${GROUND_Y}%` // linia gruntu należy do Scenery (teren + droga startują na niej)
-
-// mieszkańcy: zbudowany budynek przyciąga jednego z pokazywanych potworków
-// (deterministycznie: najstarsi z listy) — wioska jest zamieszkana, nie
-// umeblowana. Pozycja względem działki: dx = ułamek szerokości od środka.
-const RESIDENT_SPOTS: readonly [
-	BuildingId,
-	{ dx: number; mode: ResidentMode },
-][] = [
-	["domki", { dx: 0, mode: "doze" }],
-	["plac-zabaw", { dx: -0.3, mode: "play" }],
-	["zamek", { dx: 0.05, mode: "guard" }],
-	["fontanna", { dx: 0.3, mode: "doze" }],
-]
+const GROUND_LINE_TOP = `${GROUND_Y}%` // linia gruntu z layout.ts (teren + droga startują na niej)
 
 // kwiaty ogródka rozsiane po łące (3 na poziom); e = indeks emoji w palecie
 // poziomu; pozycje omijają pas drogi (x ~40–52 przy dole)
@@ -217,12 +210,7 @@ export function VillageScreen() {
 		() => layoutGreenery(plots, scene.w),
 		[plots, scene.w],
 	)
-	// brama zamku w % sceny: środek działki + stopa; +8 px zakładki chowa
-	// początek drogi POD artem zamku (budynki mają wyższy z-index)
-	const gate = {
-		x: ((plots.zamek.left + plots.zamek.width / 2) / scene.w) * 100,
-		y: GROUND_Y - ((plots.zamek.dy + 8) / scene.h) * 100,
-	}
+	const gate = layoutGate(plots, scene)
 
 	// Skład wioski liczy CZYSTA `villageRoster` (src/game/village.ts — tam żyją
 	// reguły i ich testy); ekran dokłada tylko to, co jest jego: które działki
@@ -656,15 +644,11 @@ export function VillageScreen() {
 					{activeSpots.slice(0, residentIds.length).map(([bid, spot], i) => {
 						const id = residentIds[i]
 						if (id === undefined) return null
-						const plot = plots[bid]
-						// stoi przed budynkiem, tuż pod jego stopą (tył rzędu = na zboczu)
-						const cx = plot.left + plot.width / 2 + spot.dx * plot.width - 27
 						return (
 							<Resident
 								key={id}
 								id={id}
-								leftPct={(cx / scene.w) * 100}
-								bottomPct={100 - GROUND_Y + ((plot.dy - 46) / scene.h) * 100}
+								{...layoutResident(plots[bid], spot.dx, scene)}
 								mode={spot.mode}
 								cheerNonce={cheerNonce}
 							/>

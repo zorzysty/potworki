@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { HeartBurst } from "../Companion"
 import { MonsterStage } from "../MonsterStage"
+import { RESIDENT_SIZE } from "./layout"
 
 export type ResidentMode = "doze" | "play" | "guard"
 
@@ -62,7 +63,7 @@ export function Resident({
 				>
 					<MonsterStage
 						id={id}
-						size={54}
+						size={RESIDENT_SIZE}
 						animate
 						// kosmetyka komponuje się z reakcją (fragment)
 						overlay={
