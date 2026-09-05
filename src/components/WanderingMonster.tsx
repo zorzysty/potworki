@@ -138,19 +138,23 @@ export const WanderingMonster = memo(function WanderingMonster({
 						key={react?.nonce ?? "rest"}
 						className={react ? "anim-companion-hop" : ""}
 					>
-						<MonsterStage
-							id={id}
-							size={size}
-							animate
-							// kosmetyka komponuje się z reakcją/znacznikiem (fragment)
-							overlay={
-								react ? (
-									<HeartBurst nonce={react.nonce} />
-								) : isCompanion ? (
-									<CompanionMarker />
-								) : null
-							}
-						/>
+						{/* podskok na wrapperze HTML (kompozytor), nie w SVG — animacje
+						    wewnątrz SVG przemalowują wioskę w każdej klatce */}
+						<div className="anim-bob">
+							<MonsterStage
+								id={id}
+								size={size}
+								animate="outer"
+								// kosmetyka komponuje się z reakcją/znacznikiem (fragment)
+								overlay={
+									react ? (
+										<HeartBurst nonce={react.nonce} />
+									) : isCompanion ? (
+										<CompanionMarker />
+									) : null
+								}
+							/>
+						</div>
 					</div>
 					{react?.bubble && (
 						<div className="absolute -top-7 left-1/2 z-20 -translate-x-1/2">

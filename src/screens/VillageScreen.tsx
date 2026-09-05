@@ -190,7 +190,10 @@ export function VillageScreen() {
 	// Ścieżki ma trafiać w nią wszędzie. Callback ref, nie useEffect — scena
 	// potrafi zamontować się PÓŹNIEJ (pusty stan → pierwszy potworek), a
 	// callback łapie każdy montaż.
-	const [scene, setScene] = useState({ w: 1024, h: 700 })
+	// null do pomiaru: scena renderuje się RAZ, z prawdziwym rozmiarem — nie
+	// „na zapas" z domyślnym i drugi raz po pomiarze (79 drzew SVG)
+	const [measured, setScene] = useState<{ w: number; h: number } | null>(null)
+	const scene = measured ?? { w: 1024, h: 700 }
 	const sceneObserver = useRef<ResizeObserver | null>(null)
 	const sceneRef = useCallback((el: HTMLDivElement | null) => {
 		sceneObserver.current?.disconnect()
@@ -205,7 +208,7 @@ export function VillageScreen() {
 		ro.observe(el)
 		sceneObserver.current = ro
 	}, [])
-	const plots = useMemo(() => layoutPlots(scene.w, scene.h), [scene])
+	const plots = useMemo(() => layoutPlots(scene.w, scene.h), [scene.w, scene.h])
 	const greenery = useMemo(
 		() => layoutGreenery(plots, scene.w),
 		[plots, scene.w],
@@ -376,358 +379,372 @@ export function VillageScreen() {
 					ref={sceneRef}
 					className="isolate relative mx-auto w-full max-w-5xl flex-1 overflow-hidden rounded-3xl bg-[linear-gradient(180deg,#5eb0f3_0%,#97cff9_16%,#d3ecfc_28%,#fff0d4_36%,#dcefe3_44%)] ring-4 ring-white/40"
 				>
-					{/* niebo: gradient na kontenerze (błękit → jasny, ciepły
+					{measured && (
+						<>
+							{/* niebo: gradient na kontenerze (błękit → jasny, ciepły
 					    horyzont pod górami) + wektorowe słońce, ptaki i chmury —
 					    słońce chowa się na wieczór (księżyc przejmuje jego miejsce
 					    w nakładce wieczoru; nigdy oba naraz) */}
-					{!night && (
-						<span className="pointer-events-none absolute left-[3%] top-[2%]">
-							<SunArt />
-						</span>
-					)}
-					<span
-						className="pointer-events-none absolute left-[60%] top-[12%]"
-						style={{ width: "clamp(40px, 6%, 70px)" }}
-					>
-						<BirdsArt />
-					</span>
-					{CLOUDS.map((c) => (
-						<span
-							key={c.left}
-							className="anim-cloud-drift pointer-events-none absolute"
-							style={{
-								left: c.left,
-								top: c.top,
-								width: c.width,
-								opacity: c.opacity,
-								animationDuration: c.dur ?? undefined,
-								animationDelay: c.delay ?? undefined,
-							}}
-						>
-							<CloudArt />
-						</span>
-					))}
-					{/* tęcza POD terenem (z-1 < z-2): kotwiczona DOŁEM w paśmie gór
+							{!night && (
+								<span className="pointer-events-none absolute left-[3%] top-[2%]">
+									<SunArt />
+								</span>
+							)}
+							<span
+								className="pointer-events-none absolute left-[60%] top-[12%]"
+								style={{ width: "clamp(40px, 6%, 70px)" }}
+							>
+								<BirdsArt />
+							</span>
+							{CLOUDS.map((c) => (
+								<span
+									key={c.left}
+									className="anim-cloud-drift pointer-events-none absolute"
+									style={{
+										left: c.left,
+										top: c.top,
+										width: c.width,
+										opacity: c.opacity,
+										animationDuration: c.dur ?? undefined,
+										animationDelay: c.delay ?? undefined,
+									}}
+								>
+									<CloudArt />
+								</span>
+							))}
+							{/* tęcza POD terenem (z-1 < z-2): kotwiczona DOŁEM w paśmie gór
 					    (bottom 74% = dół łuku na 26% wysokości sceny; szczyty gór sięgają
 					    ~16–28%), więc nogi wyrastają zza gór, a łuk jest cały widoczny */}
-					{has("tecza") && (
-						<span
-							className="pointer-events-none absolute bottom-[74%] left-[56%] z-[1] opacity-80"
-							style={{ width: "clamp(170px, 30%, 320px)" }}
-						>
-							<RainbowArc />
-						</span>
-					)}
-
-					{/* teren: warstwowe wzgórza + łąka + droga (dekoracja „Ścieżka") */}
-					<div className="pointer-events-none absolute inset-0 z-[2]">
-						<Terrain />
-						<MeadowTexture />
-						{has("sciezka") && <RoadArt gateX={gate.x} gateY={gate.y} />}
-					</div>
-
-					{/* efekty sceny (zakupy zmieniają całą scenę, nie tylko działkę) */}
-					<div className="pointer-events-none absolute inset-0 z-[5]">
-						{/* kępki trawy — stały wypełniacz łąki */}
-						{GRASS_TUFTS.map((t) => (
-							<span
-								key={`${t.l}-${t.b}`}
-								className="absolute"
-								style={{ left: `${t.l}%`, bottom: `${t.b}%`, width: 22 }}
-							>
-								<GrassTuft />
-							</span>
-						))}
-						{/* ścieżka: płaskie kamienie na osi drogi (droga w Terrain) */}
-						{has("sciezka") &&
-							STEPPING_STONES.map((p) => (
+							{has("tecza") && (
 								<span
-									key={p.b}
-									className="absolute -translate-x-1/2 rounded-full bg-[#f4e4b4] shadow-sm"
-									style={{
-										left: `${roadXAt(100 - p.b, gate.x, gate.y)}%`,
-										bottom: `${p.b}%`,
-										width: p.w,
-										height: p.w * 0.42,
-									}}
+									className="pointer-events-none absolute bottom-[74%] left-[56%] z-[1] opacity-80"
+									style={{ width: "clamp(170px, 30%, 320px)" }}
+								>
+									<RainbowArc />
+								</span>
+							)}
+
+							{/* teren: warstwowe wzgórza + łąka + droga (dekoracja „Ścieżka") */}
+							<div className="pointer-events-none absolute inset-0 z-[2]">
+								<Terrain />
+								<MeadowTexture />
+								{has("sciezka") && <RoadArt gateX={gate.x} gateY={gate.y} />}
+							</div>
+
+							{/* efekty sceny (zakupy zmieniają całą scenę, nie tylko działkę) */}
+							<div className="pointer-events-none absolute inset-0 z-[5]">
+								{/* kępki trawy — stały wypełniacz łąki */}
+								{GRASS_TUFTS.map((t) => (
+									<span
+										key={`${t.l}-${t.b}`}
+										className="absolute"
+										style={{ left: `${t.l}%`, bottom: `${t.b}%`, width: 22 }}
+									>
+										<GrassTuft />
+									</span>
+								))}
+								{/* ścieżka: płaskie kamienie na osi drogi (droga w Terrain) */}
+								{has("sciezka") &&
+									STEPPING_STONES.map((p) => (
+										<span
+											key={p.b}
+											className="absolute -translate-x-1/2 rounded-full bg-[#f4e4b4] shadow-sm"
+											style={{
+												left: `${roadXAt(100 - p.b, gate.x, gate.y)}%`,
+												bottom: `${p.b}%`,
+												width: p.w,
+												height: p.w * 0.42,
+											}}
+										/>
+									))}
+								{/* kwiaty ogródka na łące */}
+								{FLOWER_SPOTS.slice(0, ogrodek * 3).map((f) => (
+									<span
+										key={`${f.l}-${f.b}`}
+										className="absolute block"
+										style={{ left: `${f.l}%`, bottom: `${f.b}%`, width: 22 }}
+									>
+										<FlowerArt kind={flowerPalette?.[f.e] ?? "daisy"} />
+									</span>
+								))}
+								{ogrodek >= 2 && (
+									<>
+										<span
+											className="anim-float absolute block"
+											style={{ left: "36%", bottom: "36%", width: 22 }}
+										>
+											<ButterflyArt />
+										</span>
+										<span
+											className="anim-float absolute block"
+											style={{
+												left: "70%",
+												bottom: "30%",
+												width: 18,
+												animationDelay: "1.2s",
+											}}
+										>
+											<ButterflyArt color="#9b7cf6" />
+										</span>
+									</>
+								)}
+								{ogrodek >= 3 && (
+									<span
+										className="anim-sparkle absolute block"
+										style={{ left: "45%", bottom: "8%", width: 18 }}
+									>
+										<SparkleArt />
+									</span>
+								)}
+								{/* dekoracje jednorazowe */}
+								{has("kwiatki") && (
+									<span
+										className="absolute flex items-end gap-0.5"
+										style={{ left: "58%", bottom: "4%" }}
+									>
+										<span className="block w-5">
+											<FlowerArt kind="daisy" />
+										</span>
+										<span className="block w-6">
+											<FlowerArt kind="tulip" color="#ff8fb0" />
+										</span>
+										<span className="block w-5">
+											<FlowerArt kind="daisy" />
+										</span>
+									</span>
+								)}
+								{has("staw") && (
+									<span
+										className="absolute block"
+										style={{
+											left: "3%",
+											bottom: "2%",
+											width: "clamp(110px, 15%, 170px)",
+										}}
+									>
+										<PondArt />
+										<span className="anim-swim absolute left-[26%] top-[8%] block w-[22%]">
+											<DuckArt />
+										</span>
+									</span>
+								)}
+								{has("hustawka") && (
+									<span
+										className="absolute block"
+										style={{
+											left: "70%",
+											bottom: "15%",
+											width: "clamp(52px, 8%, 92px)",
+										}}
+									>
+										<TreeArt variant="spring" swing />
+									</span>
+								)}
+								{has("pomnik") && firstHatchedId !== undefined && (
+									<span
+										className="absolute flex flex-col items-center"
+										style={{ left: "26%", bottom: "8%" }}
+									>
+										<MonsterStage
+											id={firstHatchedId}
+											size={38}
+											animate={false}
+										/>
+										<span className="-mt-1 block w-14">
+											<PedestalArt />
+										</span>
+									</span>
+								)}
+							</div>
+
+							{/* pas budynków: kontener o zerowej wysokości NA linii wzgórz —
+					    każdy budynek kotwiczy stopę do gruntu (bottom: dy) */}
+							<div
+								className="pointer-events-none absolute inset-x-0 z-20"
+								style={{ top: GROUND_LINE_TOP }}
+							>
+								{/* zieleń w lukach działek: te same kotwice co budynki (stopa
+						    przez bottom: dy), więc drzewa STOJĄ na zboczu, nie pływają */}
+								{greenery.map((g, i) => (
+									<span
+										key={`${g.kind}-${i}`}
+										aria-hidden="true"
+										className="absolute block"
+										style={{
+											left: g.left,
+											bottom: g.dy,
+											width: g.width,
+											zIndex: g.z,
+										}}
+									>
+										{g.kind === "tree" ? (
+											<TreeArt variant={g.variant} />
+										) : (
+											<BushArt />
+										)}
+									</span>
+								))}
+								{BUILDINGS.map((b) => {
+									const level = buildingLevel(village, b.id)
+									const plot = plots[b.id]
+									const cost = nextLevelCost(village, b.id)
+									return (
+										<button
+											key={b.id}
+											type="button"
+											onClick={() => openPlot(b.id)}
+											aria-label={`${b.name}${level === 0 ? " (do zbudowania)" : ""}`}
+											className="pointer-events-auto absolute flex min-h-16 min-w-16 touch-manipulation flex-col items-center active:scale-95"
+											style={{
+												left: plot.left,
+												bottom: plot.dy,
+												width: plot.width,
+												zIndex: plot.z,
+											}}
+										>
+											{/* podest działki pod stopą artu: wydeptany placyk + cień
+									    kontaktowy — budynek stoi NA łące, nie jest wklejony */}
+											<PlotGround>
+												<BuildingArt
+													id={b.id}
+													level={Math.max(1, level)}
+													size="100%"
+													silhouette={level === 0}
+												/>
+											</PlotGround>
+											{/* Fontanna Marzeń: odbicie wymarzonego potworka w wodzie
+									    (dolna ćwiartka artu = basen) */}
+											{b.id === "fontanna" &&
+												fontanna >= MAX_BUILDING_LEVEL &&
+												dreamMonsterId !== null && (
+													<span
+														className="pointer-events-none absolute left-1/2 opacity-30"
+														style={{
+															bottom: "12%",
+															width: "26%",
+															transform: "translateX(-50%) scaleY(-1)",
+														}}
+													>
+														<MonsterSvg
+															id={dreamMonsterId}
+															size="100%"
+															animate={false}
+															className="monster-silhouette"
+														/>
+													</span>
+												)}
+											{level === 0 && cost !== null && (
+												<span
+													className={`-mt-2 rounded-full px-2.5 py-0.5 text-sm font-extrabold shadow ${
+														iskierki >= cost
+															? "bg-gradient-to-r from-amber-300 to-orange-400 text-white"
+															: "bg-white/90 text-slate-500"
+													}`}
+												>
+													✨{cost}
+												</span>
+											)}
+										</button>
+									)
+								})}
+							</div>
+
+							{/* mieszkańcy przy budynkach */}
+							{activeSpots
+								.slice(0, residentIds.length)
+								.map(([bid, spot], i) => {
+									const id = residentIds[i]
+									if (id === undefined) return null
+									return (
+										<Resident
+											key={id}
+											id={id}
+											{...layoutResident(plots[bid], spot.dx, scene)}
+											mode={spot.mode}
+											cheerNonce={cheerNonce}
+										/>
+									)
+								})}
+
+							{/* wędrowcy */}
+							{wanderers.map(({ id, params }, i) => (
+								<WanderingMonster
+									key={id}
+									id={id}
+									params={params}
+									isCompanion={id === companionId}
+									cheerNonce={i < 3 ? cheerNonce : 0}
 								/>
 							))}
-						{/* kwiaty ogródka na łące */}
-						{FLOWER_SPOTS.slice(0, ogrodek * 3).map((f) => (
-							<span
-								key={`${f.l}-${f.b}`}
-								className="absolute block"
-								style={{ left: `${f.l}%`, bottom: `${f.b}%`, width: 22 }}
-							>
-								<FlowerArt kind={flowerPalette?.[f.e] ?? "daisy"} />
-							</span>
-						))}
-						{ogrodek >= 2 && (
-							<>
-								<span
-									className="anim-float absolute block"
-									style={{ left: "36%", bottom: "36%", width: 22 }}
-								>
-									<ButterflyArt />
-								</span>
-								<span
-									className="anim-float absolute block"
-									style={{
-										left: "70%",
-										bottom: "30%",
-										width: 18,
-										animationDelay: "1.2s",
-									}}
-								>
-									<ButterflyArt color="#9b7cf6" />
-								</span>
-							</>
-						)}
-						{ogrodek >= 3 && (
-							<span
-								className="anim-sparkle absolute block"
-								style={{ left: "45%", bottom: "8%", width: 18 }}
-							>
-								<SparkleArt />
-							</span>
-						)}
-						{/* dekoracje jednorazowe */}
-						{has("kwiatki") && (
-							<span
-								className="absolute flex items-end gap-0.5"
-								style={{ left: "58%", bottom: "4%" }}
-							>
-								<span className="block w-5">
-									<FlowerArt kind="daisy" />
-								</span>
-								<span className="block w-6">
-									<FlowerArt kind="tulip" color="#ff8fb0" />
-								</span>
-								<span className="block w-5">
-									<FlowerArt kind="daisy" />
-								</span>
-							</span>
-						)}
-						{has("staw") && (
-							<span
-								className="absolute block"
-								style={{
-									left: "3%",
-									bottom: "2%",
-									width: "clamp(110px, 15%, 170px)",
-								}}
-							>
-								<PondArt />
-								<span className="anim-swim absolute left-[26%] top-[8%] block w-[22%]">
-									<DuckArt />
-								</span>
-							</span>
-						)}
-						{has("hustawka") && (
-							<span
-								className="absolute block"
-								style={{
-									left: "70%",
-									bottom: "15%",
-									width: "clamp(52px, 8%, 92px)",
-								}}
-							>
-								<TreeArt variant="spring" swing />
-							</span>
-						)}
-						{has("pomnik") && firstHatchedId !== undefined && (
-							<span
-								className="absolute flex flex-col items-center"
-								style={{ left: "26%", bottom: "8%" }}
-							>
-								<MonsterStage id={firstHatchedId} size={38} animate={false} />
-								<span className="-mt-1 block w-14">
-									<PedestalArt />
-								</span>
-							</span>
-						)}
-					</div>
 
-					{/* pas budynków: kontener o zerowej wysokości NA linii wzgórz —
-					    każdy budynek kotwiczy stopę do gruntu (bottom: dy) */}
-					<div
-						className="pointer-events-none absolute inset-x-0 z-20"
-						style={{ top: GROUND_LINE_TOP }}
-					>
-						{/* zieleń w lukach działek: te same kotwice co budynki (stopa
-						    przez bottom: dy), więc drzewa STOJĄ na zboczu, nie pływają */}
-						{greenery.map((g, i) => (
-							<span
-								key={`${g.kind}-${i}`}
-								aria-hidden="true"
-								className="absolute block"
-								style={{
-									left: g.left,
-									bottom: g.dy,
-									width: g.width,
-									zIndex: g.z,
-								}}
-							>
-								{g.kind === "tree" ? (
-									<TreeArt variant={g.variant} />
-								) : (
-									<BushArt />
-								)}
-							</span>
-						))}
-						{BUILDINGS.map((b) => {
-							const level = buildingLevel(village, b.id)
-							const plot = plots[b.id]
-							const cost = nextLevelCost(village, b.id)
-							return (
-								<button
-									key={b.id}
-									type="button"
-									onClick={() => openPlot(b.id)}
-									aria-label={`${b.name}${level === 0 ? " (do zbudowania)" : ""}`}
-									className="pointer-events-auto absolute flex min-h-16 min-w-16 touch-manipulation flex-col items-center active:scale-95"
-									style={{
-										left: plot.left,
-										bottom: plot.dy,
-										width: plot.width,
-										zIndex: plot.z,
-									}}
-								>
-									{/* podest działki pod stopą artu: wydeptany placyk + cień
-									    kontaktowy — budynek stoi NA łące, nie jest wklejony */}
-									<PlotGround>
-										<BuildingArt
-											id={b.id}
-											level={Math.max(1, level)}
-											size="100%"
-											silhouette={level === 0}
-										/>
-									</PlotGround>
-									{/* Fontanna Marzeń: odbicie wymarzonego potworka w wodzie
-									    (dolna ćwiartka artu = basen) */}
-									{b.id === "fontanna" &&
-										fontanna >= MAX_BUILDING_LEVEL &&
-										dreamMonsterId !== null && (
-											<span
-												className="pointer-events-none absolute left-1/2 opacity-30"
-												style={{
-													bottom: "12%",
-													width: "26%",
-													transform: "translateX(-50%) scaleY(-1)",
-												}}
-											>
-												<MonsterSvg
-													id={dreamMonsterId}
-													size="100%"
-													animate={false}
-													className="monster-silhouette"
-												/>
-											</span>
-										)}
-									{level === 0 && cost !== null && (
-										<span
-											className={`-mt-2 rounded-full px-2.5 py-0.5 text-sm font-extrabold shadow ${
-												iskierki >= cost
-													? "bg-gradient-to-r from-amber-300 to-orange-400 text-white"
-													: "bg-white/90 text-slate-500"
-											}`}
-										>
-											✨{cost}
-										</span>
-									)}
-								</button>
-							)
-						})}
-					</div>
-
-					{/* mieszkańcy przy budynkach */}
-					{activeSpots.slice(0, residentIds.length).map(([bid, spot], i) => {
-						const id = residentIds[i]
-						if (id === undefined) return null
-						return (
-							<Resident
-								key={id}
-								id={id}
-								{...layoutResident(plots[bid], spot.dx, scene)}
-								mode={spot.mode}
-								cheerNonce={cheerNonce}
-							/>
-						)
-					})}
-
-					{/* wędrowcy */}
-					{wanderers.map(({ id, params }, i) => (
-						<WanderingMonster
-							key={id}
-							id={id}
-							params={params}
-							isCompanion={id === companionId}
-							cheerNonce={i < 3 ? cheerNonce : 0}
-						/>
-					))}
-
-					{/* 🏕️ obóz wyprawy (WYMAGANY, gdy ktoś jest w drodze): namiot +
+							{/* 🏕️ obóz wyprawy (WYMAGANY, gdy ktoś jest w drodze): namiot +
 					    mini-sylwetka podróżnika na stałym skraju łąki — dziecko zawsze
 					    wie, GDZIE jest jej potworek; tap → dymek z postępem x/y rund */}
-					{expedition && camp && (
-						<div
-							className="absolute z-[15]"
-							style={{ right: "2%", bottom: "2%" }}
-						>
-							{showCamp && (
-								<div className="absolute bottom-full right-0 w-max pb-1">
-									{/* dymek postępu wyprawy */}
-									<SpeechBubble
-										text={`🎒 ${travelerName}: ${camp.done}/${camp.total} rund`}
-									/>
+							{expedition && camp && (
+								<div
+									className="absolute z-[15]"
+									style={{ right: "2%", bottom: "2%" }}
+								>
+									{showCamp && (
+										<div className="absolute bottom-full right-0 w-max pb-1">
+											{/* dymek postępu wyprawy */}
+											<SpeechBubble
+												text={`🎒 ${travelerName}: ${camp.done}/${camp.total} rund`}
+											/>
+										</div>
+									)}
+									<button
+										type="button"
+										onClick={() => setShowCamp((v) => !v)}
+										aria-label={`${travelerName} jest na wyprawie — pokaż postęp`}
+										className="flex min-h-16 min-w-16 touch-manipulation flex-col items-center active:scale-95"
+									>
+										<span className="block w-14 drop-shadow">
+											<TentArt />
+										</span>
+										<MonsterSvg
+											id={expedition.monsterId}
+											size={36}
+											animate={false}
+											className="monster-silhouette opacity-80"
+										/>
+									</button>
 								</div>
 							)}
-							<button
-								type="button"
-								onClick={() => setShowCamp((v) => !v)}
-								aria-label={`${travelerName} jest na wyprawie — pokaż postęp`}
-								className="flex min-h-16 min-w-16 touch-manipulation flex-col items-center active:scale-95"
-							>
-								<span className="block w-14 drop-shadow">
-									<TentArt />
-								</span>
-								<MonsterSvg
-									id={expedition.monsterId}
-									size={36}
-									animate={false}
-									className="monster-silhouette opacity-80"
-								/>
-							</button>
-						</div>
-					)}
 
-					{/* wieczór (zabawka maks latarni): przygasza scenę, latarnie świecą */}
-					{night && (
-						<div className="pointer-events-none absolute inset-0 z-[120] bg-gradient-to-b from-indigo-950/70 via-indigo-900/40 to-indigo-950/25">
-							{/* księżyc w miejscu słońca (podmiana, nie duet) */}
-							<span className="absolute left-[4%] top-[3%]">
-								<MoonArt />
-							</span>
-							{NIGHT_STARS.map((star) => (
-								<span
-									key={star.l}
-									className={`anim-sparkle absolute ${star.s} text-white`}
-									style={{ left: star.l, top: star.t, animationDelay: star.d }}
-								>
-									✦
-								</span>
-							))}
-						</div>
-					)}
+							{/* wieczór (zabawka maks latarni): przygasza scenę, latarnie świecą */}
+							{night && (
+								<div className="pointer-events-none absolute inset-0 z-[120] bg-gradient-to-b from-indigo-950/70 via-indigo-900/40 to-indigo-950/25">
+									{/* księżyc w miejscu słońca (podmiana, nie duet) */}
+									<span className="absolute left-[4%] top-[3%]">
+										<MoonArt />
+									</span>
+									{NIGHT_STARS.map((star) => (
+										<span
+											key={star.l}
+											className={`anim-sparkle absolute ${star.s} text-white`}
+											style={{
+												left: star.l,
+												top: star.t,
+												animationDelay: star.d,
+											}}
+										>
+											✦
+										</span>
+									))}
+								</div>
+							)}
 
-					{/* winieta: miękki cień przy krawędziach — scena jest dioramą,
+							{/* winieta: miękki cień przy krawędziach — scena jest dioramą,
 					    nie płaskim wypełnieniem; nad wszystkim prócz nakładki wieczoru */}
-					<div className="pointer-events-none absolute inset-0 z-[110] rounded-3xl shadow-[inset_0_0_48px_rgba(30,58,42,0.16)]" />
+							<div className="pointer-events-none absolute inset-0 z-[110] rounded-3xl shadow-[inset_0_0_48px_rgba(30,58,42,0.16)]" />
 
-					{isCollectionComplete(ownedMonsters) && (
-						<div className="anim-pop absolute left-1/2 top-2 z-[130] -translate-x-1/2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-5 py-2 text-lg font-extrabold text-white shadow-lg">
-							🎉 Cała wioska w komplecie!
-						</div>
+							{isCollectionComplete(ownedMonsters) && (
+								<div className="anim-pop absolute left-1/2 top-2 z-[130] -translate-x-1/2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-5 py-2 text-lg font-extrabold text-white shadow-lg">
+									🎉 Cała wioska w komplecie!
+								</div>
+							)}
+						</>
 					)}
 				</div>
 			)}

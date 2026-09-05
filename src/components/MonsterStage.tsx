@@ -5,7 +5,11 @@ import { EquippedOverlay } from "./CosmeticArt"
 interface Props {
 	id: number
 	size?: number | string
-	animate?: boolean
+	// true: potworek żyje w SVG (bob/mruganie/kapelusz); false: w pełni statyczny
+	// (kafle listy); "outer": podskok robi CALLER na wrapperze HTML (Wioska —
+	// kompozytor zamiast przemalowywania SVG), więc SVG i kapelusz stoją, ale
+	// drobinki aury (tanie spany HTML) dalej pływają
+	animate?: boolean | "outer"
 	className?: string // przekazywane do MonsterSvg (np. monster-silhouette)
 	style?: CSSProperties
 	wrapClassName?: string // klasy kontenera (np. w-full dla kafla listy)
@@ -45,7 +49,7 @@ export function MonsterStage({
 				<MonsterSvg
 					id={id}
 					size={size}
-					animate={animate}
+					animate={animate === true}
 					className={className}
 				/>
 			</div>

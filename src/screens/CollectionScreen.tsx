@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { memo, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { CARD_SHELL, CardModal } from "../components/CardModal"
 import { CosmeticArt, EquippedBackground } from "../components/CosmeticArt"
@@ -7,7 +7,7 @@ import { HelpTip } from "../components/HelpTip"
 import { MonsterStage } from "../components/MonsterStage"
 import { CARD_THEME, RARITY_META } from "../components/rarity"
 import { ownedCount as collectionCount } from "../game/collection"
-import type { CosmeticSlot } from "../game/cosmetics"
+import type { CosmeticSlot, CosmeticsState } from "../game/cosmetics"
 import {
 	COSMETICS,
 	COSMETICS_BY_ID,
@@ -606,6 +606,103 @@ function MonsterCardLocked({
 	)
 }
 
+// Kafel listy jako memo: otwarcie karty zmienia stan CollectionScreen i bez
+// tego przerenderowywało wszystkie 80 kafli (80 drzew SVG) przy każdym tapie.
+// `content-visibility: auto`: kafle poza viewportem nie dostają stylów,
+// layoutu ani malowania (na tablecie widać ~16 z 80) — na wrapperze z
+// marginesem ujemnym, bo paint containment przycinałoby wystające badge'e
+// (÷/🧩/✨, -6px) i ring wymarzonego.
+const CollectionTile = memo(function CollectionTile({
+	monster,
+	owned,
+	isDream,
+	traveling,
+	cosmetics,
+	onSelect,
+}: {
+	monster: (typeof MONSTERS)[number]
+	owned: boolean
+	isDream: boolean
+	traveling: boolean
+	cosmetics: CosmeticsState
+	onSelect: (id: number) => void
+}) {
+	// kafel nosi strój potworka (kapelusz/aura/ramka) STATYCZNIE —
+	// 80 animowanych kafli to za dużo, a lista ma być spokojna.
+	// Założona ramka podmienia rzadkościowy kolor krawędzi (świadoma
+	// decyzja maintainera; anim-glow złotej ramki wycięty na kaflu).
+	const equipped = owned ? equippedFor(cosmetics, monster.id) : {}
+	const tileFrameId = equipped.frame
+	const tileFrame =
+		tileFrameId !== undefined
+			? COSMETICS_BY_ID.get(tileFrameId)
+					?.cardClasses?.replace("anim-glow", "")
+					.trim()
+			: undefined
+	return (
+		<div className="-m-2 p-2 [contain-intrinsic-size:auto_160px] [content-visibility:auto]">
+			<button
+				type="button"
+				onClick={() => onSelect(monster.id)}
+				className={`touch-manipulation relative flex w-full flex-col items-center rounded-2xl border-4 bg-white/80 p-2 shadow-sm transition-transform active:scale-95
+					${tileFrame ?? RARITY_META[monster.rarity].border} ${isDream ? "ring-4 ring-amber-300" : ""}`}
+			>
+				{/* tło wypełnia cały kafel (nie okno z artem jak na karcie);
+				    rounded-xl = rounded-2xl kafla minus border-4 */}
+				{owned && (
+					<EquippedBackground
+						monsterId={monster.id}
+						animate={false}
+						className="rounded-xl"
+					/>
+				)}
+				{traveling ? (
+					// podróżnik: plecak zamiast sprite'a (reszta kafla bez zmian)
+					<div className="relative flex aspect-square w-full items-center justify-center text-6xl">
+						🎒
+					</div>
+				) : owned ? (
+					<MonsterStage
+						id={monster.id}
+						size="100%"
+						animate={false}
+						wrapClassName="w-full"
+					/>
+				) : (
+					<MonsterSvg
+						id={monster.id}
+						size="100%"
+						animate={false}
+						className="monster-silhouette"
+					/>
+				)}
+				<div
+					className={`relative mt-1 max-w-full truncate text-xs font-extrabold text-slate-600 ${
+						equipped.background ? "rounded-full bg-white/85 px-2" : ""
+					}`}
+				>
+					{owned ? monster.name : "???"}
+				</div>
+				{isDream && (
+					<div className="anim-sparkle absolute -right-1.5 -top-1.5 text-xl">
+						✨
+					</div>
+				)}
+				{isDivisionOnly(monster.id) && (
+					<div className="absolute -left-1.5 -top-1.5 rounded-full bg-violet-500 px-2 py-0.5 text-sm font-extrabold text-white shadow">
+						÷
+					</div>
+				)}
+				{isGapOnly(monster.id) && (
+					<div className="absolute -left-1.5 -top-1.5 rounded-full bg-fuchsia-500 px-1.5 py-0.5 text-sm font-extrabold text-white shadow">
+						🧩
+					</div>
+				)}
+			</button>
+		</div>
+	)
+})
+
 export function CollectionScreen() {
 	const ownedMonsters = useGame((s) => s.ownedMonsters)
 	const dreamMonsterId = useGame((s) => s.dreamMonsterId)
@@ -692,83 +789,17 @@ export function CollectionScreen() {
 			)}
 
 			<div className="grid grid-cols-3 gap-3 pb-6 min-[420px]:grid-cols-4">
-				{SORTED_MONSTERS.map((monster) => {
-					const owned = monster.id in ownedMonsters
-					const isDream = monster.id === dreamMonsterId
-					// kafel nosi strój potworka (kapelusz/aura/ramka) STATYCZNIE —
-					// 80 animowanych kafli to za dużo, a lista ma być spokojna.
-					// Założona ramka podmienia rzadkościowy kolor krawędzi (świadoma
-					// decyzja maintainera; anim-glow złotej ramki wycięty na kaflu).
-					const equipped = owned ? equippedFor(cosmetics, monster.id) : {}
-					const tileFrameId = equipped.frame
-					const tileFrame =
-						tileFrameId !== undefined
-							? COSMETICS_BY_ID.get(tileFrameId)
-									?.cardClasses?.replace("anim-glow", "")
-									.trim()
-							: undefined
-					return (
-						<button
-							key={monster.id}
-							type="button"
-							onClick={() => setSelectedId(monster.id)}
-							className={`touch-manipulation relative flex flex-col items-center rounded-2xl border-4 bg-white/80 p-2 shadow-sm transition-transform active:scale-95
-								${tileFrame ?? RARITY_META[monster.rarity].border} ${isDream ? "ring-4 ring-amber-300" : ""}`}
-						>
-							{/* tło wypełnia cały kafel (nie okno z artem jak na karcie);
-							    rounded-xl = rounded-2xl kafla minus border-4 */}
-							{owned && (
-								<EquippedBackground
-									monsterId={monster.id}
-									animate={false}
-									className="rounded-xl"
-								/>
-							)}
-							{monster.id === expedition?.monsterId ? (
-								// podróżnik: plecak zamiast sprite'a (reszta kafla bez zmian)
-								<div className="relative flex aspect-square w-full items-center justify-center text-6xl">
-									🎒
-								</div>
-							) : owned ? (
-								<MonsterStage
-									id={monster.id}
-									size="100%"
-									animate={false}
-									wrapClassName="w-full"
-								/>
-							) : (
-								<MonsterSvg
-									id={monster.id}
-									size="100%"
-									animate={false}
-									className="monster-silhouette"
-								/>
-							)}
-							<div
-								className={`relative mt-1 max-w-full truncate text-xs font-extrabold text-slate-600 ${
-									equipped.background ? "rounded-full bg-white/85 px-2" : ""
-								}`}
-							>
-								{owned ? monster.name : "???"}
-							</div>
-							{isDream && (
-								<div className="anim-sparkle absolute -right-1.5 -top-1.5 text-xl">
-									✨
-								</div>
-							)}
-							{isDivisionOnly(monster.id) && (
-								<div className="absolute -left-1.5 -top-1.5 rounded-full bg-violet-500 px-2 py-0.5 text-sm font-extrabold text-white shadow">
-									÷
-								</div>
-							)}
-							{isGapOnly(monster.id) && (
-								<div className="absolute -left-1.5 -top-1.5 rounded-full bg-fuchsia-500 px-1.5 py-0.5 text-sm font-extrabold text-white shadow">
-									🧩
-								</div>
-							)}
-						</button>
-					)
-				})}
+				{SORTED_MONSTERS.map((monster) => (
+					<CollectionTile
+						key={monster.id}
+						monster={monster}
+						owned={monster.id in ownedMonsters}
+						isDream={monster.id === dreamMonsterId}
+						traveling={monster.id === expedition?.monsterId}
+						cosmetics={cosmetics}
+						onSelect={setSelectedId}
+					/>
+				))}
 			</div>
 
 			{selected && (

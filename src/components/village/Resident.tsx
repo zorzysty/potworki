@@ -61,13 +61,17 @@ export function Resident({
 					key={react ?? "rest"}
 					className={react ? "anim-companion-hop" : idle}
 				>
-					<MonsterStage
-						id={id}
-						size={RESIDENT_SIZE}
-						animate
-						// kosmetyka komponuje się z reakcją (fragment)
-						overlay={react !== null ? <HeartBurst nonce={react} /> : null}
-					/>
+					{/* podskok na wrapperze HTML (kompozytor), nie w SVG — animacje
+					    wewnątrz SVG przemalowują wioskę w każdej klatce */}
+					<div className="anim-bob">
+						<MonsterStage
+							id={id}
+							size={RESIDENT_SIZE}
+							animate="outer"
+							// kosmetyka komponuje się z reakcją (fragment)
+							overlay={react !== null ? <HeartBurst nonce={react} /> : null}
+						/>
+					</div>
 				</div>
 				{mode === "doze" && react === null && (
 					<span className="anim-float pointer-events-none absolute -right-2 -top-2 text-base">

@@ -385,20 +385,19 @@ export function EquippedOverlay({
 	monsterId: number
 	// true (domyślnie): kapelusz podskakuje w rytm .monster-bob potworka,
 	// a drobinki aury pływają/iskrzą; false = w pełni statyczny strój (kafle
-	// listy kolekcji) —
-	// wszyscy dzisiejsi callerzy renderują żywe potworki; false dla
-	// ewentualnych przyszłych statycznych użyć
-	animate?: boolean
+	// listy kolekcji); "outer" = podskok robi wrapper HTML nad Stage (Wioska),
+	// więc kapelusz stoi (jedzie z wrapperem), ale aura dalej żyje
+	animate?: boolean | "outer"
 }) {
 	const cosmetics = useGame((s) => s.cosmetics)
 	const eq = equippedFor(cosmetics, monsterId)
 	if (!eq.hat && !eq.aura) return null
 	return (
 		<>
-			{eq.aura && <AuraFx id={eq.aura} animate={animate} />}
+			{eq.aura && <AuraFx id={eq.aura} animate={animate !== false} />}
 			{eq.hat && (
 				<div
-					className={`absolute left-1/2 ${animate ? "anim-hat-bob" : ""}`}
+					className={`absolute left-1/2 ${animate === true ? "anim-hat-bob" : ""}`}
 					style={{
 						top: "-6%",
 						width: "44%",

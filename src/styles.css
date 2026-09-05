@@ -101,6 +101,14 @@ body {
 	transform-origin: center;
 }
 
+/* ten sam podskok, ale na elemencie HTML wokół całego MonsterStage (potworek +
+   strój razem): kompozytor GPU zamiast przemalowywania SVG co klatkę —
+   w wiosce z ~20 potworkami to różnica między płynnym a ospałym ekranem */
+.anim-bob {
+	animation: bob 2.4s ease-in-out infinite;
+	transform-origin: center bottom;
+}
+
 .monster-aura {
 	animation: aura-pulse 2.8s ease-in-out infinite;
 	transform-box: fill-box;
