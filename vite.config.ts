@@ -15,7 +15,10 @@ export default defineConfig({
 			// localStorage jest poza zasięgiem SW — aktualizacja niczego w nim nie
 			// rusza, a migracje SAVE_VERSION i tak biegną przy załadowaniu appki.
 			registerType: "autoUpdate",
-			injectRegister: "auto", // rejestracja wstrzyknięta w build — zero zmian w src/
+			// rejestracja jawnie w src/main.tsx (virtual:pwa-register) — wstrzyknięty
+			// skrypt nie robi reloadu po aktywacji nowego SW; przy imporcie z virtual
+			// modułu plugin sam pomija wstrzykiwanie
+			injectRegister: null,
 			includeAssets: ["favicon.svg", "apple-touch-icon.png"],
 			manifest: {
 				// nazwy widoczne przy instalacji na urządzeniu

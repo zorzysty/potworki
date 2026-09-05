@@ -1,7 +1,22 @@
+import { registerSW } from "virtual:pwa-register"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { App } from "./App"
 import "./styles.css"
+
+// Wstrzyknięty przez plugin registerSW.js tylko rejestrował SW: nowy build
+// instalował się w tle, ale strona jechała dalej na starym JS-ie, a przywrócona
+// karta / wybudzony tablet w ogóle nie sprawdzały aktualizacji — dzieci
+// tygodniami grały na starej wersji. Tu: autoUpdate = reload po aktywacji
+// nowego SW, plus jawne sprawdzenie przy każdym powrocie do karty.
+registerSW({
+	immediate: true,
+	onRegisteredSW(_url, r) {
+		document.addEventListener("visibilitychange", () => {
+			if (document.visibilityState === "visible") r?.update()
+		})
+	},
+})
 
 // Realnie widoczna wysokość viewportu → --vvh. Firefox na Androidzie trzyma
 // layout w rozmiarze „z ukrytym paskiem narzędzi" (bugzilla 1586144), więc

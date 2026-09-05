@@ -25,7 +25,7 @@ Linter i formatter: **biome** (konfiguracja w `biome.json` — wcięcia tabami, 
 
 Weryfikacja: `bun test` (testy jednostkowe logiki gry i katalogu potworków), `bun run typecheck`, `bun run check`, ekran debug (`?debug` w URL → link „debug" na ekranie głównym: tabela mastery, galeria 80 potworków, przełącznik trybu, przyciski oszukiwania) oraz ręczny click-through.
 
-Deploy: push do `main` → GitHub Actions uruchamia `bun test` i `biome ci` (blokują deploy przy błędzie), buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`. Build emituje service worker PWA (`vite-plugin-pwa` w `vite.config.ts`, `registerType: "autoUpdate"`: po deployu appka aktualizuje się sama przy pierwszym uruchomieniu online; offline działa z precache całego builda) — appka jest instalowalna z ekranu głównego (manifest `scope`/`start_url` MUSZĄ siedzieć pod `/potworki/`).
+Deploy: push do `main` → GitHub Actions uruchamia `bun test` i `biome ci` (blokują deploy przy błędzie), buduje i publikuje na GitHub Pages (`https://zorzysty.github.io/potworki/`). Nazwa repo jest zaszyta w `base` w `vite.config.ts`. Build emituje service worker PWA (`vite-plugin-pwa` w `vite.config.ts`, `registerType: "autoUpdate"`; rejestracja jawnie w `src/main.tsx` przez `virtual:pwa-register`, bo wstrzyknięty skrypt nie robi reloadu ani nie sprawdza aktualizacji przy powrocie do karty — bez tego dzieci tygodniami grały na starym buildzie; offline działa z precache całego builda) — appka jest instalowalna z ekranu głównego (manifest `scope`/`start_url` MUSZĄ siedzieć pod `/potworki/`).
 
 ## Architektura (przegląd)
 
