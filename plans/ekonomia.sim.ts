@@ -1,31 +1,35 @@
 // biome-ignore-all lint/style/noNonNullAssertion: skrypt analizy, nie kod gry
-// Symulacja ekonomii Potworków na PRAWDZIWYCH funkcjach gry (import z repo).
-// Gra pełne rundy (round.ts), wykluwa (rewards.ts), kupuje (village/cosmetics/wishEgg),
-// odbiera osiągnięcia (achievements/evaluate), wysyła wyprawy, przyjmuje wizyty.
-// Kalendarz dni: decay na starcie dnia jak w store.applyDecay.
-// Uruchomienie: bun run plans/030-analiza-ekonomii-2026-09.sim.ts <przebiegi> "" wyniki.json
-// (drugi argument = nazwa jednego profilu albo "" = wszystkie). Raport: plans/030-analiza-ekonomii-2026-09.html.
+// Symulacja ekonomii Potworków na PRAWDZIWYCH funkcjach gry (import z src/).
+// Gra pełne rundy we wszystkich trybach (round.ts), wykluwa (rewards.ts),
+// kupuje (village/cosmetics/wishEgg), odbiera osiągnięcia (achievements),
+// wysyła wyprawy (znaleziska wchodzą przez finishRound), przyjmuje wizyty.
+// Kalendarz dni: decay na starcie dnia jak store.applyDecay.
+//
+// Uruchomienie: bun run plans/ekonomia.sim.ts <przebiegi> "" wyniki.json
+//   (drugi argument = nazwa jednego profilu albo "" = wszystkie),
+// potem: bun run plans/ekonomia.agg.ts wyniki.json podsumowanie.json
+// Raporty: plans/03x-analiza-ekonomii-*.html.
 
 import { ACHIEVEMENTS } from "../src/achievements/catalog"
 import {
 	claimAchievement,
 	unlockAchievements,
 } from "../src/achievements/evaluate"
-import { decayStats } from "../src/game/adaptive"
-import {
-	isCollectionComplete,
-	isPoolComplete,
-	ownedCount,
-} from "../src/game/collection"
+import { decayStats, VISIT_BONUS } from "../src/game/adaptive"
+import { isCollectionComplete, ownedCount } from "../src/game/collection"
 import { COSMETICS, sklepikLevel } from "../src/game/cosmetics"
 import { EXPEDITIONS, expeditionUnlocked } from "../src/game/expeditions"
 import {
 	budgetMs,
+	divisorPairs,
 	expectedAnswer,
 	FACTS_BY_KEY,
 	type FactKey,
 	type GameMode,
+	modeUnlocked,
+	pairBudgetMs,
 	STAGES,
+	unlockedFactors,
 } from "../src/game/facts"
 import {
 	credit,
@@ -35,17 +39,17 @@ import {
 	rollMonsterWithPity,
 	rollWish,
 	spend,
-	WISH_COST,
-	WISH_COST_NO_DREAM,
 	WISH_MODE,
-	wishEggPrice,
 } from "../src/game/rewards"
 import {
 	advance,
+	feedAnswer,
 	newRound,
 	newVisitRound,
 	type RoundState,
 	submitAnswer,
+	submitFeed,
+	submitPair,
 } from "../src/game/round"
 import {
 	BUILDINGS,
@@ -54,67 +58,57 @@ import {
 	DECORATIONS,
 	nextLevelCost,
 	villageValue,
-	wishEggDiscount,
-	wishEggUnlocked,
 } from "../src/game/village"
 import { wishEgg } from "../src/game/wishEgg"
 import {
 	DIVISION_ONLY_IDS,
+	FEED_ONLY_IDS,
 	FIRST_MONSTER_ID,
 	GAP_ONLY_IDS,
 	IDS_BY_RARITY,
 	idsByRarityForMode,
+	MONSTER_COUNT,
 	mulberry32,
+	PAIRS_ONLY_IDS,
 	rarityOf,
 } from "../src/monsters/catalog"
 import { INITIAL_SAVE, type SaveState } from "../src/store/schema"
+
+export const MODES: readonly GameMode[] = [
+	"mult",
+	"div",
+	"gap",
+	"pairs",
+	"feed",
+]
+export const EXCLUSIVE: Record<GameMode, ReadonlySet<number>> = {
+	mult: new Set(),
+	div: DIVISION_ONLY_IDS,
+	gap: GAP_ONLY_IDS,
+	pairs: PAIRS_ONLY_IDS,
+	feed: FEED_ONLY_IDS,
+}
+const BASE_LEG = IDS_BY_RARITY.legendary.filter(
+	(id) => !MODES.some((m) => EXCLUSIVE[m].has(id)),
+)
+const DAY = 86_400_000
+const MAX_ROUNDS = 1000
 
 export interface Profile {
 	name: string
 	p3: number // P(3★ | poprawna)
 	err: number // bazowa szansa pomyłki (skalowana mastery)
-	modeW: [number, number, number] // wagi mult/div/gap
+	modeW: Partial<Record<GameMode, number>> // wagi trybów (tylko odblokowane)
+	targeted?: boolean // gra trybami, którym brakuje legendarnych (waga ×3)
 	roundsPerDay: number
 	pPlay: number // szansa, że danego dnia dziecko gra
-	variant?: "pity8" | "p1b" | "bilet" | "bilet+pity8" | "sharedPity"
 	learn?: boolean // p3 rośnie z mastery (dziecko przyspiesza, gdy umie)
+	variant?: "sharedPity"
+	pityEvery?: number // wariant: inny próg gwarancji (emulowany offsetem)
 	breakEvery?: number // co ile dni przerwa (wakacje)
 	breakLen?: number
 }
 
-const BASE_LEG = IDS_BY_RARITY.legendary.filter(
-	(id) => !DIVISION_ONLY_IDS.has(id) && !GAP_ONLY_IDS.has(id),
-)
-const DAY = 86_400_000
-const MAX_ROUNDS = 800
-
-export interface RunResult {
-	goals: Record<string, { round: number; day: number } | null>
-	income: Record<string, number>
-	spent: Record<string, number>
-	eggs: Record<string, number>
-	legendaryByPity: number
-	legendaryNatural: number
-	wishBought: number
-	wishNew: number
-	roundsAtCap: number
-	roundsNoSink: number
-	capWaste: number
-	bilety: number
-	rounds: number
-	days: number
-	snapshots: Snapshot[]
-	newHatchRounds: number[] // rundy, w których wykluł się NOWY potworek
-	visits: number
-	expeditions: number
-	found: number // potworki przyprowadzone przez wyprawy (znaleziska)
-	perfectRounds: number
-	stars: number
-	wageByRound: number[] // żołd per runda (do średnich per faza)
-	achievementsUnlocked: Record<string, number> // id → runda odblokowania
-	mastery: Record<string, number | null> // all55@t / f7@t / f8@t / n30@t → runda; maxAll80 = maks. liczba faktów ≥0.8 naraz
-	everMastered80: number // ile faktów kiedykolwiek ≥ 0.8 (high-water)
-}
 export interface Snapshot {
 	round: number
 	day: number
@@ -126,8 +120,34 @@ export interface Snapshot {
 	eggs: number
 }
 const SNAP_AT = [
-	10, 25, 50, 75, 100, 150, 200, 250, 300, 350, 400, 500, 600, 800,
+	10, 25, 50, 75, 100, 150, 200, 250, 300, 350, 400, 500, 600, 800, 1000,
 ]
+
+export interface RunResult {
+	goals: Record<string, { round: number; day: number } | null>
+	income: Record<string, number>
+	spent: Record<string, number>
+	eggs: Record<string, number>
+	eggsByMode: Record<GameMode, number>
+	legendaryByPity: number
+	legendaryNatural: number
+	wishBought: number
+	wishNew: number
+	roundsAtCap: number
+	roundsNoSink: number
+	capWaste: number
+	rounds: number
+	days: number
+	snapshots: Snapshot[]
+	newHatchRounds: number[] // rundy, w których przybył NOWY potworek (wyklucie lub znalezisko)
+	visits: number
+	expeditions: number
+	found: number
+	perfectRounds: number
+	stars: number
+	wageByRound: number[]
+	achievementsUnlocked: Record<string, number> // id → runda odblokowania
+}
 
 function pick<T>(arr: readonly T[], rand: () => number): T {
 	return arr[Math.floor(rand() * arr.length)] as T
@@ -145,78 +165,39 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		visits: 0,
 		rainbow: 0,
 	}
-	const spent = { wish: 0, village: 0, cosmetics: 0, bilet: 0 }
+	const spent = { wish: 0, village: 0, cosmetics: 0 }
 	const eggs = { normal: 0, silver: 0, gold: 0, rainbow: 0, wish: 0 }
-	let legendaryByPity = 0,
-		legendaryNatural = 0,
-		wishBought = 0,
-		wishNew = 0
-	let found = 0
-	let roundsAtCap = 0,
-		roundsNoSink = 0,
-		capWaste = 0,
-		bilety = 0,
-		visits = 0,
-		expeditions = 0
-	const pityOffset = profile.variant?.includes("pity8")
-		? LEGENDARY_PITY_EVERY - 8
-		: 0
-	const targetMode = (): GameMode | null => {
-		const un = (ids: Iterable<number>) =>
-			[...ids].some((id) => !(id in save.ownedMonsters))
-		if (un(DIVISION_ONLY_IDS) && un(GAP_ONLY_IDS))
-			return save.legendaryPity.div >= save.legendaryPity.gap ? "div" : "gap"
-		return un(DIVISION_ONLY_IDS) ? "div" : un(GAP_ONLY_IDS) ? "gap" : null
+	const eggsByMode: Record<GameMode, number> = {
+		mult: 0,
+		div: 0,
+		gap: 0,
+		pairs: 0,
+		feed: 0,
 	}
+	let legendaryByPity = 0
+	let legendaryNatural = 0
+	let wishBought = 0
+	let wishNew = 0
+	let found = 0
+	let roundsAtCap = 0
+	let roundsNoSink = 0
+	let capWaste = 0
+	let visits = 0
+	let expeditions = 0
 	const snapshots: Snapshot[] = []
 	const newHatchRounds: number[] = []
 	const wageByRound: number[] = []
 	const achievementsUnlocked: Record<string, number> = {}
-	const masteryGoal: Record<string, number | null> = {
-		"all55@0.65": null,
-		"all55@0.7": null,
-		"all55@0.8": null,
-		"f7@0.65": null,
-		"f7@0.8": null,
-		"f8@0.65": null,
-		"f8@0.8": null,
-		"n30@0.65": null,
-		"n30@0.8": null,
-		maxAll80: 0,
-	}
-	const ever80 = new Set<string>()
-	const trackMastery = () => {
-		const m = (k: string) => save.facts[k as FactKey]?.mastery ?? 0
-		const keys = [...FACTS_BY_KEY.keys()]
-		for (const k of keys) if (m(k) >= 0.8) ever80.add(k)
-		const cnt = (t: number, f?: number) =>
-			keys.filter((k) => {
-				const [a, b] = k.split("x").map(Number)
-				return (f === undefined || a === f || b === f) && m(k) >= t
-			}).length
-		masteryGoal.maxAll80 = Math.max(masteryGoal.maxAll80 ?? 0, cnt(0.8))
-		const set = (key: string, cond: boolean) => {
-			if (cond && masteryGoal[key] === null) masteryGoal[key] = round
-		}
-		set("all55@0.65", cnt(0.65) === 55)
-		set("all55@0.7", cnt(0.7) === 55)
-		set("all55@0.8", cnt(0.8) === 55)
-		set("f7@0.65", cnt(0.65, 7) === 10)
-		set("f7@0.8", cnt(0.8, 7) === 10)
-		set("f8@0.65", cnt(0.65, 8) === 10)
-		set("f8@0.8", cnt(0.8, 8) === 10)
-		set("n30@0.65", cnt(0.65) >= 30)
-		set("n30@0.8", cnt(0.8) >= 30)
-	}
-	let round = 0,
-		day = 0
+	let round = 0
+	let day = 0
 	let companion: number | null = null
 
+	const own = (id: number) => id in save.ownedMonsters
+	const unowned = (ids: Iterable<number>) => [...ids].filter((id) => !own(id))
 	const mark = (key: string, cond: boolean) => {
 		if (cond && !(key in goals)) goals[key] = { round, day }
 	}
 	const checkGoals = () => {
-		const own = (id: number) => id in save.ownedMonsters
 		const cnt = (ids: readonly number[]) => ids.filter(own).length
 		mark("gates", save.unlockedStage >= STAGES.length - 1)
 		mark("firstLegendary", IDS_BY_RARITY.legendary.some(own))
@@ -224,12 +205,12 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		mark("commons", cnt(IDS_BY_RARITY.common) === IDS_BY_RARITY.common.length)
 		mark("rares", cnt(IDS_BY_RARITY.rare) === IDS_BY_RARITY.rare.length)
 		mark("epics", cnt(IDS_BY_RARITY.epic) === IDS_BY_RARITY.epic.length)
-		mark("div4", cnt([...DIVISION_ONLY_IDS]) === 4)
-		mark("gap4", cnt([...GAP_ONLY_IDS]) === 4)
-		mark("owned20", ownedCount(save.ownedMonsters) >= 20)
-		mark("owned40", ownedCount(save.ownedMonsters) >= 40)
-		mark("owned60", ownedCount(save.ownedMonsters) >= 60)
-		mark("all80", isCollectionComplete(save.ownedMonsters))
+		for (const m of MODES)
+			if (EXCLUSIVE[m].size > 0)
+				mark(`excl-${m}`, unowned(EXCLUSIVE[m]).length === 0)
+		for (const n of [20, 40, 60, 72, 80])
+			mark(`owned${n}`, ownedCount(save.ownedMonsters) >= n)
+		mark("complete", isCollectionComplete(save.ownedMonsters))
 		mark(
 			"village",
 			BUILDINGS.every((b) => nextLevelCost(save.village, b.id) === null) &&
@@ -237,7 +218,7 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		)
 		mark("cosmetics", save.cosmetics.owned.length === COSMETICS.length)
 		mark("rainbow1", save.achievementStats.rainbowEggsHatched >= 1)
-		mark("rainbow3", save.achievementStats.rainbowEggsHatched >= 3)
+		mark("rainbow2", save.achievementStats.rainbowEggsHatched >= 2)
 		mark("fountain", buildingLevel(save.village, "fontanna") >= 1)
 		mark("zamek3", buildingLevel(save.village, "zamek") >= 3)
 		mark(
@@ -282,23 +263,21 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		if (egg.quality === "wish") monsterId = rollWish(ctx)
 		else if (ctx.owned.size === 0) monsterId = FIRST_MONSTER_ID
 		else {
+			eggsByMode[egg.mode]++
 			const shared = profile.variant === "sharedPity"
 			const before = shared
-				? Math.max(
-						save.legendaryPity.mult,
-						save.legendaryPity.div,
-						save.legendaryPity.gap,
-					)
+				? Math.max(...MODES.map((m) => save.legendaryPity[m]))
 				: save.legendaryPity[egg.mode]
-			const r = rollMonsterWithPity(egg.quality, ctx, before + pityOffset)
+			const offset =
+				LEGENDARY_PITY_EVERY - (profile.pityEvery ?? LEGENDARY_PITY_EVERY)
+			const r = rollMonsterWithPity(egg.quality, ctx, before + offset)
 			monsterId = r.id
-			const next = r.pity === 0 ? 0 : r.pity - pityOffset
+			const next = r.pity === 0 ? 0 : r.pity - offset
 			legendaryPity = shared
-				? { mult: next, div: next, gap: next }
+				? { mult: next, div: next, gap: next, pairs: next, feed: next }
 				: { ...save.legendaryPity, [egg.mode]: next }
-			if (rarityOf(monsterId) === "legendary" && !ctx.owned.has(monsterId)) {
-				viaPity = before + pityOffset + 1 >= LEGENDARY_PITY_EVERY
-			}
+			if (rarityOf(monsterId) === "legendary" && !ctx.owned.has(monsterId))
+				viaPity = before + offset + 1 >= LEGENDARY_PITY_EVERY
 		}
 		eggs[egg.quality]++
 		const pendingEggs = save.pendingEggs.filter((_, i) => i !== idx)
@@ -344,69 +323,31 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		}
 	}
 
-	// Polityka wymarzonego: nieposiadany legendarny bazowy (pula mnożeniowa); potem
-	// nieposiadany ekskluzywny trybu, w który dziecko gra najczęściej poza mult; potem null.
+	// Wymarzony: nieposiadany legendarny bazowy (pula mnożeniowa), potem
+	// nieposiadany ekskluzywny dowolnego trybu, potem null.
 	const setDream = () => {
-		if (
-			save.dreamMonsterId !== null &&
-			!(save.dreamMonsterId in save.ownedMonsters)
-		)
-			return
-		const un = (ids: readonly number[]) =>
-			ids.filter((id) => !(id in save.ownedMonsters))
-		const base = un(BASE_LEG)
+		if (save.dreamMonsterId !== null && !own(save.dreamMonsterId)) return
+		const base = unowned(BASE_LEG)
 		if (base.length) {
 			save = { ...save, dreamMonsterId: pick(base, rand) }
 			return
 		}
-		const ex = un([...DIVISION_ONLY_IDS, ...GAP_ONLY_IDS])
+		const ex = MODES.flatMap((m) => unowned(EXCLUSIVE[m]))
 		save = { ...save, dreamMonsterId: ex.length ? pick(ex, rand) : null }
 	}
 
 	// Zakupy: najtańszy z {Jajko Życzeń, cel wioski, kosmetyka}; pętla póki stać.
-	const shop = () => {
+	// Zwraca cenę najtańszej pozostałej rzeczy (null = nie ma już nic do kupienia).
+	const shop = (): number | null => {
 		for (let guard = 0; guard < 50; guard++) {
 			const options: {
-				kind: "wish" | "village" | "cosmetic" | "bilet"
+				kind: "wish" | "village" | "cosmetic"
 				cost: number
 				id?: string
-				mode?: GameMode
 			}[] = []
 			const w = wishEgg(save)
-			if (profile.variant === "p1b") {
-				const tm = targetMode() ?? WISH_MODE
-				if (
-					wishEggUnlocked(save.village) &&
-					!isPoolComplete(save.ownedMonsters, tm)
-				) {
-					const d = save.dreamMonsterId
-					const base =
-						d !== null &&
-						!(d in save.ownedMonsters) &&
-						idsByRarityForMode(tm)[rarityOf(d)].includes(d)
-							? WISH_COST[rarityOf(d)]
-							: WISH_COST_NO_DREAM
-					options.push({
-						kind: "wish",
-						cost: wishEggPrice(
-							base,
-							save.achievementStats.wishEggsBought,
-							wishEggDiscount(save.village),
-						),
-						mode: tm,
-					})
-				}
-			} else if (w.unlocked && w.available)
-				options.push({ kind: "wish", cost: w.cost, mode: WISH_MODE })
-			if (profile.variant?.startsWith("bilet")) {
-				const tm = targetMode()
-				if (
-					tm &&
-					save.legendaryPity[tm] < LEGENDARY_PITY_EVERY - 1 - pityOffset &&
-					wishEggUnlocked(save.village)
-				)
-					options.push({ kind: "bilet", cost: 150, mode: tm })
-			}
+			if (w.unlocked && w.available)
+				options.push({ kind: "wish", cost: w.cost })
 			for (const b of BUILDINGS) {
 				const c = nextLevelCost(save.village, b.id)
 				if (c !== null) options.push({ kind: "village", cost: c, id: b.id })
@@ -423,18 +364,7 @@ export function runOne(profile: Profile, seed: number): RunResult {
 			const best = options[0]!
 			const wallet = spend(save.iskierki, best.cost)
 			if (wallet === null) return best.cost
-			if (best.kind === "bilet") {
-				bilety++
-				spent.bilet += best.cost
-				save = {
-					...save,
-					iskierki: wallet,
-					legendaryPity: {
-						...save.legendaryPity,
-						[best.mode as GameMode]: LEGENDARY_PITY_EVERY - 1 - pityOffset,
-					},
-				}
-			} else if (best.kind === "wish") {
+			if (best.kind === "wish") {
 				wishBought++
 				spent.wish += best.cost
 				save = {
@@ -442,7 +372,7 @@ export function runOne(profile: Profile, seed: number): RunResult {
 					iskierki: wallet,
 					pendingEggs: [
 						...save.pendingEggs,
-						{ quality: "wish", mode: best.mode as GameMode },
+						{ quality: "wish", mode: WISH_MODE },
 					],
 					achievementStats: {
 						...save.achievementStats,
@@ -483,7 +413,6 @@ export function runOne(profile: Profile, seed: number): RunResult {
 			} else {
 				spent.cosmetics += best.cost
 				const id = best.id as string
-				// zakłada na przyjaciela (osiągnięcie „wystrojony")
 				const def = COSMETICS.find((c) => c.id === id)!
 				const eq =
 					companion !== null
@@ -527,51 +456,94 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		}
 	}
 
+	// Model odpowiedzi: pomyłka wg mastery faktu, gwiazdki wg profilu.
+	const answerModel = (key: FactKey) => {
+		const mastery = save.facts[key]?.mastery ?? 0
+		const pErr = Math.min(0.6, profile.err * (1.5 - mastery))
+		const correct = rand() >= pErr
+		if (!correct) return { correct, factor: 1.3 }
+		const u = rand()
+		const p3 = profile.learn
+			? profile.p3 + (0.95 - profile.p3) * mastery
+			: profile.p3
+		const stars =
+			u < p3 ? 3 : u < p3 + (1 - p3) * 0.6 ? 2 : u < p3 + (1 - p3) * 0.9 ? 1 : 0
+		return { correct, factor: [3, 2, 1.25, 0.6][stars] as number }
+	}
+
+	const answerQuestion = (rs: RoundState, now: number): RoundState => {
+		const q = rs.question
+		if (rs.mode === "pairs") {
+			const targets = divisorPairs(q.a, save.unlockedStage)
+			const factors = [...unlockedFactors(save.unlockedStage)]
+			let at = rs.startedAt
+			for (const t of targets) {
+				const m = answerModel(t.key)
+				if (!m.correct) {
+					// pomyłka: para o innym iloczynie z odblokowanych liczb
+					const x = pick(factors, rand)
+					const ys = factors.filter((y) => x * y !== q.a)
+					at += pairBudgetMs(t) * 1.3
+					const s = submitPair(save, rs, x, pick(ys, rand), rand, at)
+					if (s) {
+						save = { ...save, ...s.patch }
+						rs = s.round
+					}
+				}
+				at += pairBudgetMs(t) * m.factor
+				const s = submitPair(save, rs, t.a, t.b, rand, at)!
+				save = { ...save, ...s.patch }
+				rs = s.round
+			}
+			return rs
+		}
+		if (rs.mode === "feed") {
+			const fact = FACTS_BY_KEY.get(q.key)!
+			const rival = FACTS_BY_KEY.get(q.rival!.key)!
+			const m = answerModel(q.key)
+			const right = feedAnswer(q)
+			const at = rs.startedAt + (budgetMs(fact) + budgetMs(rival)) * m.factor
+			const s1 = submitFeed(
+				save,
+				rs,
+				m.correct ? right : right === 0 ? 1 : 0,
+				rand,
+				at,
+			)!
+			save = { ...save, ...s1.patch }
+			rs = s1.round
+			if (rs.phase === "wrong")
+				rs = submitFeed(save, rs, right, rand, now)!.round
+			return rs
+		}
+		const fact = FACTS_BY_KEY.get(q.key)!
+		const m = answerModel(q.key)
+		const expected = expectedAnswer(q, rs.mode)
+		const s1 = submitAnswer(
+			save,
+			{ ...rs, answer: String(m.correct ? expected : expected + 1) },
+			rand,
+			rs.startedAt + budgetMs(fact) * m.factor,
+		)!
+		save = { ...save, ...s1.patch }
+		rs = s1.round
+		if (rs.phase === "wrong")
+			rs = submitAnswer(
+				save,
+				{ ...rs, answer: String(expected) },
+				rand,
+				now,
+			)!.round
+		return rs
+	}
+
 	const playRound = (mode: GameMode, now: number) => {
 		let r: RoundState | null = newVisitRound(save, rand, now)
 		if (r) visits++
 		else r = newRound(save, mode, rand, now)
 		let rs = r
 		while (rs.phase !== "summary") {
-			const fact = FACTS_BY_KEY.get(rs.question.key)!
-			const mastery = save.facts[rs.question.key as FactKey]?.mastery ?? 0
-			const pErr = Math.min(0.6, profile.err * (1.5 - mastery))
-			const correct = rand() >= pErr
-			let elapsed: number
-			if (correct) {
-				const u = rand()
-				const p3 = profile.learn
-					? profile.p3 + (0.95 - profile.p3) * mastery
-					: profile.p3
-				const stars =
-					u < p3
-						? 3
-						: u < profile.p3 + (1 - profile.p3) * 0.6
-							? 2
-							: u < profile.p3 + (1 - profile.p3) * 0.9
-								? 1
-								: 0
-				elapsed = budgetMs(fact) * ([3, 2, 1.25, 0.6][stars] as number)
-			} else elapsed = budgetMs(fact) * 1.3
-			const expected = expectedAnswer(rs.question, rs.mode)
-			const ans = String(correct ? expected : expected + 1)
-			const s1 = submitAnswer(
-				save,
-				{ ...rs, answer: ans },
-				rand,
-				rs.startedAt + elapsed,
-			)!
-			save = { ...save, ...s1.patch }
-			rs = s1.round
-			if (rs.phase === "wrong") {
-				const s2 = submitAnswer(
-					save,
-					{ ...rs, answer: String(expected) },
-					rand,
-					now,
-				)!
-				rs = s2.round
-			}
+			rs = answerQuestion(rs, now)
 			const walletBefore = save.iskierki
 			const s3 = advance(save, rs, rand, now)!
 			save = { ...save, ...s3.patch }
@@ -579,14 +551,14 @@ export function runOne(profile: Profile, seed: number): RunResult {
 			if (rs.phase === "summary") {
 				const gross =
 					rs.wageEarned +
-					(rs.visitStage !== null ? 2 : 0) +
+					(rs.visitStage !== null ? VISIT_BONUS : 0) +
 					(rs.expeditionReturn?.rewardIskierki ?? 0)
 				capWaste += gross - (save.iskierki - walletBefore)
 			}
 		}
-		const wageBefore = income.wage
 		income.wage += rs.wageEarned
-		if (rs.visitStage !== null) income.visits += 2
+		wageByRound.push(rs.wageEarned)
+		if (rs.visitStage !== null) income.visits += VISIT_BONUS
 		if (rs.expeditionReturn) {
 			income.expeditions += rs.expeditionReturn.rewardIskierki
 			expeditions++
@@ -595,16 +567,27 @@ export function runOne(profile: Profile, seed: number): RunResult {
 				newHatchRounds.push(round)
 			}
 		}
-		wageByRound.push(income.wage - wageBefore)
 		return rs
 	}
 
-	const modes: GameMode[] = ["mult", "div", "gap"]
-	const pickMode = () => {
-		let u = rand() * (profile.modeW[0] + profile.modeW[1] + profile.modeW[2])
-		for (let i = 0; i < 3; i++) {
-			u -= profile.modeW[i]!
-			if (u <= 0) return modes[i]!
+	const pickMode = (): GameMode => {
+		const avail = MODES.filter((m) => modeUnlocked(m, save.unlockedStage))
+		const weights = avail.map((m) => {
+			let w = profile.modeW[m] ?? 0
+			if (
+				profile.targeted &&
+				EXCLUSIVE[m].size > 0 &&
+				unowned(EXCLUSIVE[m]).length > 0
+			)
+				w *= 3
+			return w
+		})
+		const total = weights.reduce((a, b) => a + b, 0)
+		if (total <= 0) return "mult"
+		let u = rand() * total
+		for (let i = 0; i < avail.length; i++) {
+			u -= weights[i]!
+			if (u <= 0) return avail[i]!
 		}
 		return "mult"
 	}
@@ -618,7 +601,6 @@ export function runOne(profile: Profile, seed: number): RunResult {
 			continue
 		if (rand() >= profile.pPlay) continue
 		const dayStart = day * DAY
-		// decay na starcie sesji (store.applyDecay)
 		const facts = { ...save.facts }
 		for (const k of Object.keys(facts) as FactKey[])
 			facts[k] = decayStats(facts[k]!, dayStart)
@@ -626,9 +608,7 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		for (let i = 0; i < profile.roundsPerDay && round < MAX_ROUNDS; i++) {
 			round++
 			const now = dayStart + i * 600_000
-			const rs = playRound(pickMode(), now)
-			void rs
-			// po rundzie: wyklucia, osiągnięcia, wymarzony, wyprawa, zakupy
+			playRound(pickMode(), now)
 			while (save.pendingEggs.length > 0) hatch(save.pendingEggs[0]!, 0)
 			checkAch()
 			setDream()
@@ -638,7 +618,6 @@ export function runOne(profile: Profile, seed: number): RunResult {
 			if (cheapest === null) roundsNoSink++
 			if (save.iskierki >= 999) roundsAtCap++
 			checkGoals()
-			trackMastery()
 			if (SNAP_AT.includes(round))
 				snapshots.push({
 					round,
@@ -657,6 +636,7 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		income,
 		spent,
 		eggs,
+		eggsByMode,
 		legendaryByPity,
 		legendaryNatural,
 		wishBought,
@@ -664,7 +644,6 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		roundsAtCap,
 		roundsNoSink,
 		capWaste,
-		bilety,
 		rounds: round,
 		days: day,
 		snapshots,
@@ -676,160 +655,50 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		stars: save.achievementStats.totalStars,
 		wageByRound,
 		achievementsUnlocked,
-		mastery: masteryGoal,
-		everMastered80: ever80.size,
 	}
 }
 
+const ROT: Partial<Record<GameMode, number>> = {
+	mult: 40,
+	div: 15,
+	gap: 15,
+	pairs: 15,
+	feed: 15,
+}
+const base = (
+	name: string,
+	p3: number,
+	err: number,
+	extra: Partial<Profile> = {},
+): Profile => ({
+	name,
+	p3,
+	err,
+	modeW: ROT,
+	roundsPerDay: 3,
+	pPlay: 5 / 7,
+	...extra,
+})
+
 export const PROFILES: Profile[] = [
-	{
-		name: "szybki",
-		p3: 0.85,
-		err: 0.04,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-	},
-	{
-		name: "dobry",
-		p3: 0.6,
-		err: 0.08,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-	},
-	{
-		name: "wolny",
-		p3: 0.3,
-		err: 0.1,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-	},
-	{
-		name: "uczacy-sie",
-		p3: 0.3,
-		err: 0.1,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-		learn: true,
-	},
-	{
-		name: "dobry-err2",
-		p3: 0.6,
-		err: 0.02,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-	},
-	{
-		name: "dobry-celowany",
-		p3: 0.6,
-		err: 0.08,
-		modeW: [20, 40, 40],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-	},
-	{
-		name: "dobry-tylko-mnozenie",
-		p3: 0.6,
-		err: 0.08,
-		modeW: [100, 0, 0],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-	},
-	{
-		name: "dobry-z-przerwami",
-		p3: 0.6,
-		err: 0.08,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-		breakEvery: 60,
-		breakLen: 21,
-	},
-	{
-		name: "dobry-pity8",
-		p3: 0.6,
-		err: 0.08,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-		variant: "pity8",
-	},
-	{
-		name: "dobry-p1b",
-		p3: 0.6,
-		err: 0.08,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-		variant: "p1b",
-	},
-	{
-		name: "dobry-bilet",
-		p3: 0.6,
-		err: 0.08,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-		variant: "bilet",
-	},
-	{
-		name: "wolny-bilet",
-		p3: 0.3,
-		err: 0.1,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-		variant: "bilet",
-	},
-	{
-		name: "dobry-bilet+pity8",
-		p3: 0.6,
-		err: 0.08,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-		variant: "bilet+pity8",
-	},
-	{
-		name: "dobry-sharedpity",
-		p3: 0.6,
-		err: 0.08,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
+	base("szybki", 0.85, 0.04),
+	base("dobry", 0.6, 0.08),
+	base("wolny", 0.3, 0.1),
+	base("uczacy-sie", 0.3, 0.1, { learn: true }),
+	base("dobry-celowany", 0.6, 0.08, { targeted: true }),
+	base("dobry-3-tryby", 0.6, 0.08, { modeW: { mult: 50, div: 25, gap: 25 } }),
+	base("dobry-tylko-mnozenie", 0.6, 0.08, { modeW: { mult: 100 } }),
+	base("dobry-z-przerwami", 0.6, 0.08, { breakEvery: 60, breakLen: 21 }),
+	base("dobry-sharedpity", 0.6, 0.08, { variant: "sharedPity" }),
+	base("wolny-sharedpity", 0.3, 0.1, { variant: "sharedPity" }),
+	base("szybki-sharedpity", 0.85, 0.04, { variant: "sharedPity" }),
+	base("dobry-celowany-sharedpity", 0.6, 0.08, {
+		targeted: true,
 		variant: "sharedPity",
-	},
-	{
-		name: "wolny-sharedpity",
-		p3: 0.3,
-		err: 0.1,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-		variant: "sharedPity",
-	},
-	{
-		name: "szybki-sharedpity",
-		p3: 0.85,
-		err: 0.04,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-		variant: "sharedPity",
-	},
-	{
-		name: "szybki-bilet",
-		p3: 0.85,
-		err: 0.04,
-		modeW: [50, 25, 25],
-		roundsPerDay: 3,
-		pPlay: 5 / 7,
-		variant: "bilet",
-	},
+	}),
+	base("dobry-pity6", 0.6, 0.08, { pityEvery: 6 }),
+	base("dobry-sharedpity6", 0.6, 0.08, { variant: "sharedPity", pityEvery: 6 }),
+	base("dobry-sharedpity5", 0.6, 0.08, { variant: "sharedPity", pityEvery: 5 }),
 ]
 
 if (import.meta.main) {
@@ -840,8 +709,9 @@ if (import.meta.main) {
 		if (only && p.name !== only) continue
 		const t0 = Date.now()
 		out[p.name] = []
-		for (let i = 0; i < N; i++) out[p.name]?.push(runOne(p, 1000 + i))
+		for (let i = 0; i < N; i++) out[p.name]!.push(runOne(p, 1000 + i))
 		console.error(`${p.name}: ${N} runs, ${Date.now() - t0} ms`)
 	}
 	await Bun.write(process.argv[4] ?? "results.json", JSON.stringify(out))
+	console.error(`MONSTER_COUNT=${MONSTER_COUNT}`)
 }

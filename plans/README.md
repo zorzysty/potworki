@@ -211,7 +211,7 @@ Refreshed by the 2026-07-12 audit; ordered by (grounding × payoff)/effort:
   Third pass (2026-09-05) simulates whole rounds with the real engine on a
   day calendar: report
   [`plans/030-analiza-ekonomii-2026-09.html`](030-analiza-ekonomii-2026-09.html),
-  reproducible via `plans/030-analiza-ekonomii-2026-09.sim.ts` (imports `src/`;
+  reproducible via `plans/ekonomia.sim.ts` (imports `src/`;
   rerun after any retune). Recommendations R1, R2, R4, R5 shipped the same day
   (`mastered` high-water flag + SAVE_VERSION 18, legendary pity 12→8, softer
   egg-quality curve with rainbow chance from score 22, Gość Strażnika 5→2,
@@ -222,6 +222,14 @@ Refreshed by the 2026-07-12 audit; ordered by (grounding × payoff)/effort:
   (same sim, now counting finds + a shared-pity variant). Open: shared pity
   counter across modes (80/80 278 → ~197 rounds), finds window is narrow
   (4–5 per game) — accepted as narrative.
+  Fifth pass after the pairs/feed modes, 88 monsters and the new dup prices:
+  [`plans/032-analiza-ekonomii-piec-trybow.html`](032-analiza-ekonomii-piec-trybow.html).
+  Simulator rewritten for 5 modes: `plans/ekonomia.sim.ts` + `plans/ekonomia.agg.ts`
+  (replace the old 030 script; rerun after any retune). Findings: 88/88 takes
+  ~496 rounds (~7.6 months), 71% of it the 16-exclusive tail with a capped
+  wallet; a child ignoring the new modes never completes. Open: shared pity
+  counter with threshold 6 (88/88 → ~282 rounds), Home hint for the missing
+  mode.
 - **Parent progress view.** `DebugScreen` already renders the full
   per-fact mastery table and `adaptive.ts` exposes the aggregations; a
   gated (PIN/long-press) read-only, parent-legible presentation (color
