@@ -640,12 +640,15 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 	{
 		id: "gosc-straznika",
 		title: "Gość Strażnika",
-		description: "Ukończ 5 rund-odwiedzin u Strażnika.",
+		// Target 2 (było 5): wizyty odpalają się tylko, gdy stare tabliczki
+		// podupadną (praktycznie: po kilkutygodniowej przerwie), więc 5 wizyt
+		// nagradzało wyłącznie długie przerwy; po jednych wakacjach wpada 2–3.
+		description: "Ukończ 2 rundy-odwiedziny u Strażnika.",
 		icon: "🏰",
 		difficulty: "medium",
 		progress: ({ counters }) => ({
 			current: counters.visitRoundsCompleted,
-			target: 5,
+			target: 2,
 		}),
 	},
 ]
