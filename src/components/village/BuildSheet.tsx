@@ -17,6 +17,7 @@ import {
 } from "../../game/village"
 import { BigButton } from "../BigButton"
 import { CosmeticArt } from "../CosmeticArt"
+import { ModalCloseX } from "../ModalCloseX"
 import { useScrollLock } from "../useScrollLock"
 import { BuildingArt, DECORATION_EMOJI } from "./BuildingArt"
 
@@ -363,72 +364,68 @@ export function BuildSheet({
 				onClick={onClose}
 				className="absolute inset-0 bg-slate-900/40"
 			/>
-			<div className="relative max-h-[calc(var(--app-vh)*0.92)] w-full max-w-md scrollbar-none overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl">
-				<div className="mb-3 flex items-center justify-between">
+			{/* nieprzewijany wrapper — przypięty ✕ jak na karcie potworka */}
+			<div className="relative w-full max-w-md">
+				<ModalCloseX onClose={onClose} label="Zamknij arkusz" />
+				<div className="max-h-[calc(var(--app-vh)*0.92)] w-full scrollbar-none overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl">
+					<div className="mb-3 flex items-center justify-between pl-7">
+						{view.kind === "building" ? (
+							<button
+								type="button"
+								onClick={onShowList}
+								className="touch-manipulation rounded-full bg-violet-100 px-4 py-2 text-base font-extrabold text-grape-dark active:scale-95"
+							>
+								‹ wszystko
+							</button>
+						) : (
+							<div className="text-2xl font-extrabold text-grape-dark">
+								🛠️ Budowanie
+							</div>
+						)}
+						<div className="rounded-full bg-amber-100 px-4 py-2 text-lg font-extrabold text-amber-600">
+							✨ {iskierki}
+						</div>
+					</div>
+
 					{view.kind === "building" ? (
-						<button
-							type="button"
-							onClick={onShowList}
-							className="touch-manipulation rounded-full bg-violet-100 px-4 py-2 text-base font-extrabold text-grape-dark active:scale-95"
-						>
-							‹ wszystko
-						</button>
+						<BuildingDetail
+							id={view.id}
+							village={village}
+							cosmetics={cosmetics}
+							iskierki={iskierki}
+							onBuild={onBuild}
+							onSetGoal={onSetGoal}
+							onBuyCosmetic={onBuyCosmetic}
+						/>
 					) : (
-						<div className="text-2xl font-extrabold text-grape-dark">
-							🛠️ Budowanie
+						<div className="flex flex-col gap-2">
+							<div className="text-sm font-extrabold uppercase tracking-wide text-slate-400">
+								Budynki
+							</div>
+							{BUILDINGS.map((b) => (
+								<BuildingRow
+									key={b.id}
+									id={b.id}
+									village={village}
+									iskierki={iskierki}
+									onOpen={onOpenBuilding}
+								/>
+							))}
+							<div className="mt-2 text-sm font-extrabold uppercase tracking-wide text-slate-400">
+								Dekoracje
+							</div>
+							{DECORATIONS.map((d) => (
+								<DecorationRow
+									key={d.id}
+									id={d.id}
+									village={village}
+									iskierki={iskierki}
+									onBuy={onBuyDecoration}
+								/>
+							))}
 						</div>
 					)}
-					<div className="rounded-full bg-amber-100 px-4 py-2 text-lg font-extrabold text-amber-600">
-						✨ {iskierki}
-					</div>
-					<button
-						type="button"
-						onClick={onClose}
-						aria-label="Zamknij arkusz"
-						className="touch-manipulation rounded-full bg-violet-100 px-4 py-2 text-base font-extrabold text-grape-dark active:scale-95"
-					>
-						✕
-					</button>
 				</div>
-
-				{view.kind === "building" ? (
-					<BuildingDetail
-						id={view.id}
-						village={village}
-						cosmetics={cosmetics}
-						iskierki={iskierki}
-						onBuild={onBuild}
-						onSetGoal={onSetGoal}
-						onBuyCosmetic={onBuyCosmetic}
-					/>
-				) : (
-					<div className="flex flex-col gap-2">
-						<div className="text-sm font-extrabold uppercase tracking-wide text-slate-400">
-							Budynki
-						</div>
-						{BUILDINGS.map((b) => (
-							<BuildingRow
-								key={b.id}
-								id={b.id}
-								village={village}
-								iskierki={iskierki}
-								onOpen={onOpenBuilding}
-							/>
-						))}
-						<div className="mt-2 text-sm font-extrabold uppercase tracking-wide text-slate-400">
-							Dekoracje
-						</div>
-						{DECORATIONS.map((d) => (
-							<DecorationRow
-								key={d.id}
-								id={d.id}
-								village={village}
-								iskierki={iskierki}
-								onBuy={onBuyDecoration}
-							/>
-						))}
-					</div>
-				)}
 			</div>
 		</div>
 	)
