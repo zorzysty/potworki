@@ -66,11 +66,7 @@ export function Resident({
 						size={RESIDENT_SIZE}
 						animate
 						// kosmetyka komponuje się z reakcją (fragment)
-						overlay={
-							<>
-								{react !== null ? <HeartBurst nonce={react} /> : null}
-							</>
-						}
+						overlay={react !== null ? <HeartBurst nonce={react} /> : null}
 					/>
 				</div>
 				{mode === "doze" && react === null && (

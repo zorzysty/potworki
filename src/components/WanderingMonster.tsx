@@ -144,13 +144,11 @@ export const WanderingMonster = memo(function WanderingMonster({
 							animate
 							// kosmetyka komponuje się z reakcją/znacznikiem (fragment)
 							overlay={
-								<>
-									{react ? (
-										<HeartBurst nonce={react.nonce} />
-									) : isCompanion ? (
-										<CompanionMarker />
-									) : null}
-								</>
+								react ? (
+									<HeartBurst nonce={react.nonce} />
+								) : isCompanion ? (
+									<CompanionMarker />
+								) : null
 							}
 						/>
 					</div>

@@ -178,9 +178,7 @@ export function Companion({ size = 150 }: { size?: number }) {
 					background={<EquippedBackground monsterId={companionId} />}
 					// kosmetyka KOMPONUJE się z reakcją (fragment) — nigdy jej nie wypiera
 					overlay={
-						<>
-							{reaction?.hearts ? <HeartBurst nonce={reaction.nonce} /> : null}
-						</>
+						reaction?.hearts ? <HeartBurst nonce={reaction.nonce} /> : null
 					}
 				/>
 			</div>
@@ -277,11 +275,7 @@ export function CheerCompanion({
 								: undefined
 						}
 						overlay={
-							<>
-								{reaction?.hearts ? (
-									<HeartBurst nonce={reaction.nonce} />
-								) : null}
-							</>
+							reaction?.hearts ? <HeartBurst nonce={reaction.nonce} /> : null
 						}
 					/>
 				</div>
