@@ -493,7 +493,7 @@ describe("hatchEgg — gwarancje", () => {
 })
 
 describe("pity legendarnych per tryb", () => {
-	test("12 jajek z dzielenia bez legendarnego = gwarantowany legendarny tylko-dzielenie", () => {
+	test("LEGENDARY_PITY_EVERY jajek z dzielenia bez legendarnego = gwarantowany legendarny tylko-dzielenie", () => {
 		suppressAchievements()
 		// pierwszy potworek (gwarantowany) poza licznikiem
 		useGame.setState({

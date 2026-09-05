@@ -240,8 +240,11 @@ function pickInTier(tier: Rarity, ctx: RollContext): number {
 // Ochrona przed pechem („pity"): `pity` = jajka z rund od ostatniego legendarnego
 // w tym trybie; na progu następne gwarantuje tier legendarny, o ile pula trybu ma
 // jeszcze nieposiadanego legendarnego — bez tego gwarancja dawałaby duplikaty.
-// 12 ≈ szansa legendarnego ×~3 w najgorszym razie; zamienia loterię w cel.
-export const LEGENDARY_PITY_EVERY = 12
+// 8 (było 12): przy rotacji trybów 50/25/25 jajko z dzielenia powstaje co ~8
+// rund, więc pity 12 = ~100 rund pecha na JEDNEGO ekskluzywnego; ostatnie 8
+// potworków zjadało ~45 % czasu gry przy pustym portfelu (analiza 030).
+// Pity 8 skraca komplet ~30 % i nadal zostawia miejsce na naturalny los.
+export const LEGENDARY_PITY_EVERY = 8
 export type LegendaryPity = Record<GameMode, number>
 export const INITIAL_LEGENDARY_PITY: LegendaryPity = { mult: 0, div: 0, gap: 0 }
 
