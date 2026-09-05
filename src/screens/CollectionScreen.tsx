@@ -5,6 +5,7 @@ import { CosmeticArt, EquippedBackground } from "../components/CosmeticArt"
 import { ExpeditionDetails } from "../components/ExpeditionDetails"
 import { HelpTip } from "../components/HelpTip"
 import { MonsterStage } from "../components/MonsterStage"
+import { MODE_BADGES, MODE_NAMES } from "../components/modeLabels"
 import { CARD_THEME, RARITY_META } from "../components/rarity"
 import { ownedCount as collectionCount } from "../game/collection"
 import type { CosmeticSlot, CosmeticsState } from "../game/cosmetics"
@@ -25,7 +26,9 @@ import { buildingLevel } from "../game/village"
 import { wishEgg } from "../game/wishEgg"
 import {
 	isDivisionOnly,
+	isFeedOnly,
 	isGapOnly,
+	isPairsOnly,
 	MONSTER_COUNT,
 	MONSTERS,
 } from "../monsters/catalog"
@@ -414,6 +417,16 @@ function MonsterCard({
 						🧩
 					</div>
 				)}
+				{isPairsOnly(monsterId) && (
+					<div className="absolute top-2 left-2 z-10 rounded-full bg-sky-500 px-2.5 py-1 text-sm font-extrabold text-white shadow">
+						{MODE_BADGES.pairs}
+					</div>
+				)}
+				{isFeedOnly(monsterId) && (
+					<div className="absolute top-2 left-2 z-10 rounded-full bg-rose-500 px-2.5 py-1 text-sm font-extrabold text-white shadow">
+						{MODE_BADGES.feed}
+					</div>
+				)}
 				<div className="relative flex justify-center">
 					{/* przez MonsterStage — karta pokazuje założony strój
 				    (każdy potworek z kosmetyką renderuje się przez Stage);
@@ -573,6 +586,16 @@ function MonsterCardLocked({
 					🧩 Tylko za zgadywanie liczby
 				</div>
 			)}
+			{isPairsOnly(monsterId) && (
+				<div className="rounded-full bg-sky-100 px-4 py-1 text-sm font-extrabold text-sky-600">
+					{MODE_BADGES.pairs} Tylko za {MODE_NAMES.pairs}
+				</div>
+			)}
+			{isFeedOnly(monsterId) && (
+				<div className="rounded-full bg-rose-100 px-4 py-1 text-sm font-extrabold text-rose-600">
+					{MODE_BADGES.feed} Tylko za {MODE_NAMES.feed}
+				</div>
+			)}
 			{monsterId === dreamMonsterId ? (
 				<BigButton
 					onClick={() => {
@@ -696,6 +719,16 @@ const CollectionTile = memo(function CollectionTile({
 				{isGapOnly(monster.id) && (
 					<div className="absolute -left-1.5 -top-1.5 rounded-full bg-fuchsia-500 px-1.5 py-0.5 text-sm font-extrabold text-white shadow">
 						🧩
+					</div>
+				)}
+				{isPairsOnly(monster.id) && (
+					<div className="absolute -left-1.5 -top-1.5 rounded-full bg-sky-500 px-2 py-0.5 text-sm font-extrabold text-white shadow">
+						{MODE_BADGES.pairs}
+					</div>
+				)}
+				{isFeedOnly(monster.id) && (
+					<div className="absolute -left-1.5 -top-1.5 rounded-full bg-rose-500 px-2 py-0.5 text-sm font-extrabold text-white shadow">
+						{MODE_BADGES.feed}
 					</div>
 				)}
 			</button>

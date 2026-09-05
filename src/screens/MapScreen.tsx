@@ -185,7 +185,7 @@ function DividerBridge({
 				<HelpTip
 					placement="top"
 					align="right"
-					text="Te cztery Dzielniki mieszkają na Moście. Zdobędziesz je tylko grając w dzielenie ➗!"
+					text="Te cztery Dzielniki mieszkają na Moście. Zdobędziesz je tylko grając w ich zabawę — Dzielniki — którą otwiera brama ×4!"
 				/>
 			</div>
 			<div className="relative mt-1 h-28">

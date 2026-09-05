@@ -12,7 +12,7 @@ import {
 import type { VillageState } from "../game/village"
 import { INITIAL_VILLAGE } from "../game/village"
 
-export const SAVE_VERSION = 18
+export const SAVE_VERSION = 19
 
 // Wpis ledgera osiągnięć. `claimed`: iskierki za osiągnięcie NIE wpadają same — dziecko
 // odbiera je tapnięciem na ekranie osiągnięć; do tego czasu Home pokazuje badge.
@@ -27,6 +27,8 @@ export interface AchievementCounters {
 	perfectRounds: number
 	divCorrect: number
 	gapCorrect: number // poprawne pierwsze próby w trybie luki (brakujący czynnik)
+	pairsCorrect: number // trafione pary w trybie Dzielników (każda para = jedno trafienie)
+	feedCorrect: number // poprawne pierwsze próby w trybie porównywania
 	totalStars: number
 	rainbowEggsHatched: number
 	wishEggsBought: number
@@ -85,6 +87,8 @@ export const INITIAL_SAVE: SaveState = {
 		perfectRounds: 0,
 		divCorrect: 0,
 		gapCorrect: 0,
+		pairsCorrect: 0,
+		feedCorrect: 0,
 		totalStars: 0,
 		rainbowEggsHatched: 0,
 		wishEggsBought: 0,
@@ -318,6 +322,24 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 			facts[key] = { ...st, mastered: mastery >= 0.8 }
 		}
 		return { ...s, facts }
+	},
+	// v18→v19: tryby-zabawy „pairs" (Dzielniki) i „feed" (Porównywanie) —
+	// pity ich jajek i liczniki osiągnięć od zera (wzorce v14→v15 i v9→v10).
+	18: (state) => {
+		const s = state as Record<string, unknown>
+		const pity =
+			s.legendaryPity && typeof s.legendaryPity === "object"
+				? (s.legendaryPity as Record<string, unknown>)
+				: {}
+		const stats =
+			s.achievementStats && typeof s.achievementStats === "object"
+				? (s.achievementStats as Record<string, unknown>)
+				: {}
+		return {
+			...s,
+			legendaryPity: { ...pity, pairs: 0, feed: 0 },
+			achievementStats: { ...stats, pairsCorrect: 0, feedCorrect: 0 },
+		}
 	},
 }
 

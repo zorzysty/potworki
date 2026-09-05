@@ -23,6 +23,8 @@ const maxCounters: AchievementCounters = {
 	lastPlayedDay: "2026-1-1",
 	expeditionsCompleted: 10,
 	visitRoundsCompleted: 5,
+	pairsCorrect: 500,
+	feedCorrect: 500,
 }
 const maxSave: SaveState = {
 	...INITIAL_SAVE,
@@ -67,7 +69,7 @@ describe("unlockAchievements", () => {
 		expect(r.achievements).toEqual({})
 	})
 
-	test("maksymalny zapis → wszystkie 53, każde nieodebrane ze stemplem now", () => {
+	test("maksymalny zapis → wszystkie 63, każde nieodebrane ze stemplem now", () => {
 		const r = unlockAchievements(maxSave, 7)
 		expect(r.newlyUnlocked.length).toBe(ACHIEVEMENTS.length)
 		for (const id of r.newlyUnlocked)

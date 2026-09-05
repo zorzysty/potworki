@@ -110,6 +110,13 @@ describe("dupIskierki", () => {
 		expect(dupIskierki("common", "normal")).toBe(ISKIERKI_FOR_DUP.common)
 		expect(dupIskierki("epic", "wish")).toBe(ISKIERKI_FOR_DUP.epic)
 	})
+	test("baza rośnie z rzadkością; skraje: pospolity/zwykłe = 1, legendarny/tęczowe = 30", () => {
+		expect(ISKIERKI_FOR_DUP.rare).toBeGreaterThan(ISKIERKI_FOR_DUP.common)
+		expect(ISKIERKI_FOR_DUP.epic).toBeGreaterThan(ISKIERKI_FOR_DUP.rare)
+		expect(ISKIERKI_FOR_DUP.legendary).toBeGreaterThan(ISKIERKI_FOR_DUP.epic)
+		expect(dupIskierki("common", "normal")).toBe(1)
+		expect(dupIskierki("legendary", "rainbow")).toBe(30)
+	})
 	test("mnożnik rośnie z jakością jajka", () => {
 		let prev = 0
 		for (const q of QUALITY_ORDER) {

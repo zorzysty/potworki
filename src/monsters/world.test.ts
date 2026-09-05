@@ -2,15 +2,21 @@
 import { describe, expect, test } from "bun:test"
 import { STAGES } from "../game/facts"
 import {
+	DIVISION_ONLY_IDS,
+	FEED_ONLY_IDS,
 	GAP_ONLY_IDS,
 	isDivisionOnly,
+	isFeedOnly,
 	isGapOnly,
+	isPairsOnly,
 	MONSTER_COUNT,
 	rarityOf,
 } from "./catalog"
 import {
 	BRIDGE_DIVIDER_IDS,
 	BRIDGE_ORIGIN,
+	ISLAND_ORIGIN,
+	ORCHARD_ORIGIN,
 	originOf,
 	REGIONS,
 	regionOf,
@@ -71,11 +77,11 @@ describe("strażnicy", () => {
 })
 
 describe("Most Dzielników", () => {
-	test("4 legendarne tylko-dzielenie (72–75)", () => {
-		expect([...BRIDGE_DIVIDER_IDS]).toEqual([72, 73, 74, 75])
+	test("4 legendarne tylko-Dzielniki (80–83)", () => {
+		expect([...BRIDGE_DIVIDER_IDS]).toEqual([80, 81, 82, 83])
 		for (const id of BRIDGE_DIVIDER_IDS) {
 			expect(rarityOf(id)).toBe("legendary")
-			expect(isDivisionOnly(id)).toBe(true)
+			expect(isPairsOnly(id)).toBe(true)
 		}
 	})
 })
@@ -92,15 +98,27 @@ describe("regionOf / originOf", () => {
 		expect(seen.size).toBe(STAGES.length)
 	})
 
-	test("originOf: tylko-dzielenie → Most, tylko-luka → Dolina, reszta → region", () => {
+	test("originOf: tylko-Dzielniki → Most, tylko-dzielenie → Wyspa, tylko-luka → Dolina, reszta → region", () => {
 		for (const id of BRIDGE_DIVIDER_IDS) {
 			expect(originOf(id)).toBe(BRIDGE_ORIGIN)
+		}
+		for (const id of DIVISION_ONLY_IDS) {
+			expect(originOf(id)).toBe(ISLAND_ORIGIN)
 		}
 		for (const id of GAP_ONLY_IDS) {
 			expect(originOf(id)).toBe(VALLEY_ORIGIN)
 		}
+		for (const id of FEED_ONLY_IDS) {
+			expect(originOf(id)).toBe(ORCHARD_ORIGIN)
+		}
 		for (let id = 0; id < MONSTER_COUNT; id++) {
-			if (isDivisionOnly(id) || isGapOnly(id)) continue
+			if (
+				isDivisionOnly(id) ||
+				isGapOnly(id) ||
+				isPairsOnly(id) ||
+				isFeedOnly(id)
+			)
+				continue
 			const origin = originOf(id)
 			expect(origin === REGIONS[regionOf(id)]).toBe(true)
 			expect("stage" in origin).toBe(true)
@@ -112,6 +130,10 @@ describe("regionOf / originOf", () => {
 		expect("stage" in BRIDGE_ORIGIN).toBe(false)
 		expect(VALLEY_ORIGIN.kind).toBe("valley")
 		expect("stage" in VALLEY_ORIGIN).toBe(false)
+		expect(ISLAND_ORIGIN.kind).toBe("island")
+		expect(ORCHARD_ORIGIN.kind).toBe("orchard")
+		expect("stage" in ORCHARD_ORIGIN).toBe(false)
+		expect("stage" in ISLAND_ORIGIN).toBe(false)
 		for (const r of REGIONS) expect(r.kind).toBe("region")
 	})
 })

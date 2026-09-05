@@ -2,6 +2,7 @@ import { type CSSProperties, useEffect, useState } from "react"
 import type { GameMode } from "../game/facts"
 import type { PendingEgg } from "../game/rewards"
 import { EGG_LABELS, EggView } from "./EggView"
+import { MODE_BADGES } from "./modeLabels"
 
 interface Props {
 	roundStars: number // gwiazdki tej rundy (0–30) — dla jajka JESZCZE w budowie
@@ -103,15 +104,9 @@ export function EggReward({
 						>
 							✨
 						</span>
-						{mode === "div" && (
+						{MODE_BADGES[mode] && (
 							<span className="absolute -bottom-1 -left-1 rounded-full bg-grape px-2 py-0.5 text-sm font-extrabold text-white shadow">
-								÷
-							</span>
-						)}
-						{/* 🧩 (nie „?") — „?" koliduje z konwencją „???" = nieznany potworek */}
-						{mode === "gap" && (
-							<span className="absolute -bottom-1 -left-1 rounded-full bg-grape px-2 py-0.5 text-sm font-extrabold text-white shadow">
-								🧩
+								{MODE_BADGES[mode]}
 							</span>
 						)}
 					</div>

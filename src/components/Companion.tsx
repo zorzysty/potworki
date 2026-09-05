@@ -202,12 +202,17 @@ export function CheerCompanion({
 	size = 80,
 	overrideId,
 	overrideSilhouette = false,
+	inline = false,
 }: {
 	phase: RoundPhase | undefined
 	lastStars: number
 	size?: number
 	overrideId?: number
 	overrideSilhouette?: boolean
+	// inline: w pionie siedzi W PRZEPŁYWIE (caller decyduje gdzie), w poziomie
+	// jak zwykle w rogu — żetony trybu par zajmują cały dół ekranu telefonu i
+	// róg zasłaniał żeton
+	inline?: boolean
 }) {
 	const companionId = useGame((s) => s.companionId)
 	const owned = useGame((s) => s.ownedMonsters)
@@ -260,7 +265,13 @@ export function CheerCompanion({
 				: ""
 
 	return (
-		<div className="pointer-events-none fixed bottom-2 left-2 z-30 land:bottom-4 land:left-4">
+		<div
+			className={
+				inline
+					? "pointer-events-none z-30 self-start land:fixed land:bottom-4 land:left-4"
+					: "pointer-events-none fixed bottom-2 left-2 z-30 land:bottom-4 land:left-4"
+			}
+		>
 			<div key={reaction?.nonce ?? "rest"} className={animClass}>
 				{/* tęczowy odcień tylko przy szybkiej 3★ (filter na osobnej warstwie,
 				    żeby nie kasował transformu skoku) */}

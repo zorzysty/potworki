@@ -44,17 +44,19 @@ export function decayStats(stats: FactStats, now: number): FactStats {
 	return { ...stats, mastery: stats.mastery * 0.97 ** Math.min(days, 30) }
 }
 
-// Aktualizacja po pierwszej próbie („szybko" = budżet 3 gwiazdek)
+// Aktualizacja po pierwszej próbie („szybko" = budżet 3 gwiazdek; tryb par
+// podaje własny, luźniejszy budżet)
 export function applyAnswer(
 	stats: FactStats,
 	fact: Fact,
 	correctAnswer: boolean,
 	elapsedMs: number,
 	now: number,
+	budget = budgetMs(fact),
 ): FactStats {
 	const next = { ...stats, attempts: stats.attempts + 1, lastSeen: now }
 	if (correctAnswer) {
-		const fast = elapsedMs <= budgetMs(fact)
+		const fast = elapsedMs <= budget
 		const gain = fast ? 0.3 : 0.15
 		next.mastery = stats.mastery + (1 - stats.mastery) * gain
 		next.correct = stats.correct + 1

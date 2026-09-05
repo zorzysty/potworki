@@ -7,10 +7,18 @@ import { EggView } from "../components/EggView"
 import { ExpeditionDetails } from "../components/ExpeditionDetails"
 import { HelpTip } from "../components/HelpTip"
 import { MonsterStage } from "../components/MonsterStage"
+import { MODE_LABELS, MODE_ROWS } from "../components/modeLabels"
 import { VISIT_BONUS, visitStage } from "../game/adaptive"
 import * as collection from "../game/collection"
 import { expeditionProgress } from "../game/expeditions"
-import { fragmentsForEgg, isMaxStage, unlockedFactors } from "../game/facts"
+import {
+	fragmentsForEgg,
+	isMaxStage,
+	MODE_UNLOCK_STAGE,
+	modeUnlocked,
+	STAGES,
+	unlockedFactors,
+} from "../game/facts"
 import { canAffordSomething } from "../game/village"
 import { MONSTER_COUNT, MONSTERS } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
@@ -145,28 +153,40 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 			)}
 
 			<div className="relative w-full max-w-xs">
-				<div className="flex gap-1.5 rounded-3xl bg-white/50 p-1.5">
-					{/* etykiety trybów — tokeny mult/div/gap są KODEM i nie zmieniają się
-					    (persystowane w jajkach) */}
-					{(
-						[
-							["mult", "× Mnożenie"],
-							["div", "÷ Dzielenie"],
-							["gap", "? Zgadnij"],
-						] as const
-					).map(([value, label]) => (
-						<button
-							key={value}
-							type="button"
-							onClick={() => setMode(value)}
-							className={`min-h-16 flex-1 touch-manipulation rounded-2xl px-1 py-3 text-base font-extrabold transition-transform active:scale-95 ${
-								mode === value
-									? "bg-gradient-to-b from-grape to-grape-dark text-white shadow-md"
-									: "text-grape-dark"
-							}`}
-						>
-							{label}
-						</button>
+				<div className="flex flex-col gap-1.5 rounded-3xl bg-white/50 p-1.5">
+					{/* etykiety trybów — tokeny mult/div/gap/pairs są KODEM i nie zmieniają się
+					    (persystowane w jajkach). Rząd 1: bazowe widoki faktu; rząd 2: nowe
+					    zabawy odblokowywane bramami (MODE_UNLOCK_STAGE) — zamknięta to
+					    zajawka z chipem 🔒, nie wyszarzony przycisk */}
+					{MODE_ROWS.map((row) => (
+						<div key={row[0]} className="flex gap-1.5">
+							{row.map((value) =>
+								modeUnlocked(value, unlockedStage) ? (
+									<button
+										key={value}
+										type="button"
+										onClick={() => setMode(value)}
+										className={`min-h-16 flex-1 touch-manipulation rounded-2xl px-1 py-3 text-base font-extrabold transition-transform active:scale-95 ${
+											mode === value
+												? "bg-gradient-to-b from-grape to-grape-dark text-white shadow-md"
+												: "text-grape-dark"
+										}`}
+									>
+										{MODE_LABELS[value]}
+									</button>
+								) : (
+									<div
+										key={value}
+										className="flex min-h-16 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 text-base font-extrabold text-grape-dark"
+									>
+										<span>{MODE_LABELS[value]}</span>
+										<span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-bold text-slate-500">
+											🔒 otworzy brama ×{STAGES[MODE_UNLOCK_STAGE[value]]?.[0]}
+										</span>
+									</div>
+								),
+							)}
+						</div>
 					))}
 				</div>
 				<div className="absolute -right-2 -top-2">
@@ -174,7 +194,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					<HelpTip
 						placement="bottom"
 						align="right"
-						text="Wybierz, czego chcesz ćwiczyć: mnożenie, dzielenie albo zgadywanie brakującej liczby. Niektóre wyjątkowe potworki wykluwają się tylko z takich jajek!"
+						text="Wybierz, czego chcesz ćwiczyć: mnożenie, dzielenie albo zgadywanie brakującej liczby. Niektóre wyjątkowe potworki wykluwają się tylko z takich jajek! W Dzielnikach szukasz wszystkich par liczb, które dają wynik, a w Porównywaniu dajesz ciastko potworkowi, który przyniósł większą liczbę — każda zabawa ma swoje wyjątkowe potworki. Nowe zabawy otwierają kolejne bramy."
 					/>
 				</div>
 			</div>

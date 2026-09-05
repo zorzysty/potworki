@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { EGG_LABELS, EggView } from "../components/EggView"
 import { MonsterStage } from "../components/MonsterStage"
+import { MODE_BADGES } from "../components/modeLabels"
 import { NEST_SLOTS, NestArt, nestSlotStyle } from "../components/NestArt"
 import { RARITY_META } from "../components/rarity"
 import { isCollectionComplete } from "../game/collection"
@@ -310,14 +311,9 @@ export function HatchScreen() {
 												className="pointer-events-auto absolute inset-0"
 												style={{ clipPath: EGG_CLIP }}
 											/>
-											{e.mode === "div" && (
+											{MODE_BADGES[e.mode] && (
 												<div className="absolute right-0 top-0 rounded-full bg-violet-500 px-1.5 text-xs font-extrabold text-white">
-													÷
-												</div>
-											)}
-											{e.mode === "gap" && (
-												<div className="absolute right-0 top-0 rounded-full bg-violet-500 px-1.5 text-xs font-extrabold text-white">
-													🧩
+													{MODE_BADGES[e.mode]}
 												</div>
 											)}
 										</button>

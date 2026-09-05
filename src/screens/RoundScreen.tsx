@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import { BigButton } from "../components/BigButton"
 import { CheerCompanion } from "../components/Companion"
 import { Keypad } from "../components/Keypad"
+import { PairPicker } from "../components/PairPicker"
 import { QuestionCard } from "../components/QuestionCard"
 import { StarMeter } from "../components/StarMeter"
 import { useScrollLock } from "../components/useScrollLock"
@@ -68,41 +69,65 @@ export function RoundScreen({
 				<div className="flex flex-1 items-center land:flex-none">
 					<QuestionCard />
 				</div>
+				{/* tryb par: kibic w przepływie pod kartą (w pionie), by nie zasłaniać
+				    żetonów; w poziomie i w innych trybach — w rogu (fixed) */}
+				{round.mode === "pairs" && (
+					<CheerCompanion
+						inline
+						phase={round.phase}
+						lastStars={round.lastStars}
+						overrideId={guardianId}
+						overrideSilhouette={
+							guardianId !== undefined &&
+							!guardianOwned(visitRegion, ownedMonsters)
+						}
+					/>
+				)}
 			</div>
-			<div className="land:w-80">
-				<Keypad />
-			</div>
+			{/* porównywanie: odpowiedzią jest tap w potworka NA karcie — bez kolumny wejścia */}
+			{round.mode !== "feed" && (
+				<div className="land:w-80">
+					{round.mode === "pairs" ? <PairPicker /> : <Keypad />}
+				</div>
+			)}
 
 			{/* przyjaciel kibicuje z rogu (gdy wybrany) — nigdy nie zasłania karty;
 			    w rundzie-wizycie zamiast niego kibicuje Strażnik regionu */}
-			<CheerCompanion
-				phase={round.phase}
-				lastStars={round.lastStars}
-				overrideId={guardianId}
-				overrideSilhouette={
-					guardianId !== undefined && !guardianOwned(visitRegion, ownedMonsters)
-				}
-			/>
-
-			{debugEnabled && round.phase === "answering" && round.index === 0 && (
-				<div className="fixed right-2 bottom-2 z-40 flex flex-col items-end gap-1">
-					<span className="text-[10px] font-bold text-grape-dark/60">
-						debug: zakończ rundę
-					</span>
-					<div className="flex gap-1">
-						{[20, 26, 28, 30].map((stars) => (
-							<button
-								key={stars}
-								type="button"
-								onClick={() => debugFinishRound(stars)}
-								className="touch-manipulation rounded-lg bg-white/80 px-2 py-1 text-xs font-bold text-slate-700 shadow active:scale-95"
-							>
-								+{stars} ⭐
-							</button>
-						))}
-					</div>
-				</div>
+			{round.mode !== "pairs" && (
+				<CheerCompanion
+					phase={round.phase}
+					lastStars={round.lastStars}
+					overrideId={guardianId}
+					overrideSilhouette={
+						guardianId !== undefined &&
+						!guardianOwned(visitRegion, ownedMonsters)
+					}
+				/>
 			)}
+
+			{debugEnabled &&
+				round.phase === "answering" &&
+				round.index === 0 &&
+				round.found.length === 0 &&
+				!round.missed && (
+					<div className="fixed right-2 bottom-2 z-40 flex flex-col items-end gap-1">
+						<span className="text-[10px] font-bold text-grape-dark/60">
+							debug: zakończ rundę
+						</span>
+						<div className="flex gap-1">
+							{[20, 26, 28, 30].map((stars) => (
+								<button
+									key={stars}
+									type="button"
+									onClick={() => debugFinishRound(stars)}
+									className="touch-manipulation rounded-lg bg-white/80 px-2 py-1 text-xs font-bold text-slate-700 shadow active:scale-95"
+								>
+									+{stars} ⭐
+								</button>
+							))}
+						</div>
+					</div>
+				)}
 
 			{paused && (
 				<div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-slate-900/70 p-6 backdrop-blur-sm">

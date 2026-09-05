@@ -12,7 +12,7 @@ import {
 	FINDABLE_IDS,
 	findChanceLabel,
 } from "../game/expeditions"
-import type { FactKey } from "../game/facts"
+import { divisorPairs, type FactKey } from "../game/facts"
 import {
 	dupIskierki,
 	ISKIERKI_CAP,
@@ -25,6 +25,7 @@ import {
 	WISH_PRICE_FLOOR,
 	WISH_SURCHARGE_MAX,
 } from "../game/rewards"
+import { feedAnswer } from "../game/round"
 import { BUILDINGS, DECORATIONS } from "../game/village"
 import { wishEgg } from "../game/wishEgg"
 import {
@@ -518,7 +519,7 @@ describe("pity legendarnych per tryb", () => {
 		suppressAchievements()
 		useGame.setState({
 			ownedMonsters: { [FIRST_MONSTER_ID]: { hatchedAt: 1 } },
-			legendaryPity: { mult: 4, div: 0, gap: 0 },
+			legendaryPity: { mult: 4, div: 0, gap: 0, pairs: 0, feed: 0 },
 			village: { buildings: { fontanna: 1 }, decorations: [], goalId: null },
 		})
 		game().debugAddIskierki(50)
@@ -1956,5 +1957,100 @@ describe("wyprawy potworków", () => {
 		game().debugReset()
 		expect(game().expedition).toBeNull()
 		expect(game().achievementStats.expeditionsCompleted).toBe(0)
+	})
+})
+
+describe("tryb par (pairs) — store", () => {
+	test("setMode odmawia zamkniętego trybu; po bramie etapu 2 wchodzi", () => {
+		game().setMode("pairs")
+		expect(game().mode).toBe("mult")
+		useGame.setState({ unlockedStage: 2 })
+		game().setMode("pairs")
+		expect(game().mode).toBe("pairs")
+	})
+
+	test("pickFactor: żeton czeka, drugi zatwierdza; cyfry z klawiatury = żetony; backspace czyści", () => {
+		useGame.setState({ unlockedStage: 3 })
+		game().setMode("pairs")
+		game().startRound()
+		const target = requireRound().question.a
+		const [p] = divisorPairs(target, 3)
+		if (!p) throw new Error("brak pary")
+		game().pickFactor(7) // 7 zamknięte → ignorowane
+		expect(requireRound().picked).toBeNull()
+		game().pressDigit(p.a === 10 ? 0 : p.a)
+		expect(requireRound().picked).toBe(p.a)
+		game().pressBackspace()
+		expect(requireRound().picked).toBeNull()
+		game().pickFactor(p.a)
+		game().pickFactor(p.b)
+		const r = requireRound()
+		expect(r.found).toEqual([p.key])
+		expect(game().facts[p.key]?.correct).toBe(1)
+		// ta sama para drugi raz: nic nie zapisuje i nie zawiesza wyboru
+		game().pickFactor(p.a)
+		game().pickFactor(p.b)
+		expect(requireRound().picked).toBeNull()
+		expect(requireRound().found).toEqual([p.key])
+		// pressConfirm w trybie par to no-op
+		game().pressConfirm()
+		expect(requireRound()).toEqual(r)
+	})
+
+	test("pauza wycisza żetony; pełna runda par kończy się jak zwykła (żołd, totalRounds)", () => {
+		suppressAchievements()
+		useGame.setState({ unlockedStage: 3 })
+		game().setMode("pairs")
+		game().startRound()
+		game().setPaused(true)
+		game().pickFactor(2)
+		expect(requireRound().picked).toBeNull()
+		game().setPaused(false)
+		while (requireRound().phase !== "summary") {
+			const r = requireRound()
+			for (const t of divisorPairs(r.question.a, 3)) {
+				if (r.found.includes(t.key)) continue
+				game().pickFactor(t.a)
+				game().pickFactor(t.b)
+			}
+			game().nextQuestion()
+		}
+		expect(game().totalRounds).toBe(1)
+		expect(requireRound().wageEarned).toBeGreaterThan(0)
+		expect(game().eggFragments + (game().pendingEggs.length ? 10 : 0)).toBe(10)
+		expect(game().pendingEggs[0]?.mode).toBe("pairs")
+	})
+})
+
+describe("tryb karmienia (feed) — store", () => {
+	test("setMode odmawia karmienia przed etapem 4", () => {
+		useGame.setState({ unlockedStage: 3 })
+		game().setMode("feed")
+		expect(game().mode).toBe("mult")
+		useGame.setState({ unlockedStage: 4 })
+		game().setMode("feed")
+		expect(game().mode).toBe("feed")
+	})
+
+	test("feedSide + cyfry 1/2 z klawiatury; pauza wycisza; pełna runda kończy się jak zwykła", () => {
+		suppressAchievements()
+		useGame.setState({ unlockedStage: 4 })
+		game().setMode("feed")
+		game().startRound()
+		game().setPaused(true)
+		game().feedSide(0)
+		expect(requireRound().phase).toBe("answering")
+		game().setPaused(false)
+		while (requireRound().phase !== "summary") {
+			const r = requireRound()
+			const side = feedAnswer(r.question)
+			if (r.phase === "answering") game().pressDigit(side === 0 ? 1 : 2)
+			else if (r.phase === "wrong") game().feedSide(side)
+			game().nextQuestion()
+		}
+		expect(game().totalRounds).toBe(1)
+		expect(requireRound().stars).toBe(30)
+		expect(game().achievementStats.feedCorrect).toBe(10)
+		expect(game().pendingEggs[0]?.mode).toBe("feed")
 	})
 })

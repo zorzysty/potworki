@@ -1,18 +1,78 @@
 /// <reference types="bun-types" />
 import { describe, expect, test } from "bun:test"
+import { mulberry32 } from "../monsters/catalog"
 import {
 	ALL_FACTS,
 	budgetMs,
+	divisorPairs,
 	EGG_THRESHOLD_CAP,
 	expectedAnswer,
 	FACTS_BY_KEY,
 	fragmentsForEgg,
 	isMaxStage,
+	MODE_UNLOCK_STAGE,
 	makeQuestion,
+	modeUnlocked,
+	pickRival,
 	STAGES,
 	starsFor,
 	unlockedFacts,
 } from "./facts"
+
+describe("tryb par (pairs)", () => {
+	test("divisorPairs: tylko odblokowane pary o danym iloczynie, maks 2", () => {
+		// etap 2 = {1,2,5,10,3,4}: 12 → 3×4 (2×6 czeka na 6), 20 → 2×10 i 4×5
+		expect(divisorPairs(12, 2).map((f) => f.key)).toEqual(["3x4"])
+		expect(divisorPairs(20, 2).map((f) => f.key)).toEqual(["2x10", "4x5"])
+		expect(divisorPairs(12, 3).map((f) => f.key)).toEqual(["2x6", "3x4"])
+		for (const f of ALL_FACTS)
+			expect(divisorPairs(f.a * f.b, 6).length).toBeLessThanOrEqual(2)
+	})
+
+	test("karmienie: rywal ma inny iloczyn i jest odblokowany; pytanie niesie oba działania", () => {
+		const fact = FACTS_BY_KEY.get("6x9") as never
+		const rng = mulberry32(7)
+		for (let i = 0; i < 50; i++) {
+			const r = pickRival(fact, 4, rng)
+			expect(r.a * r.b).not.toBe(54)
+			expect(unlockedFacts(4).map((f) => f.key)).toContain(r.key)
+		}
+		const q = makeQuestion(
+			fact,
+			false,
+			"feed",
+			null,
+			() => 0.9,
+			FACTS_BY_KEY.get("5x10"),
+		)
+		expect(q.key).toBe("6x9")
+		expect(q.rival?.key).toBe("5x10")
+		expect(q.a * q.b).toBe(54)
+		expect(expectedAnswer(q, "feed")).toBe(54)
+	})
+
+	test("makeQuestion: a = iloczyn-cel; expectedAnswer zwraca cel", () => {
+		const q = makeQuestion(
+			FACTS_BY_KEY.get("3x8") as never,
+			false,
+			"pairs",
+			null,
+			() => 0,
+		)
+		expect(q).toEqual({ key: "3x8", a: 24, b: 0, isRequeue: false })
+		expect(expectedAnswer(q, "pairs")).toBe(24)
+	})
+
+	test("odblokowanie: bazowe tryby od etapu 0, pary za bramą etapu 2, karmienie za etapem 4", () => {
+		expect(MODE_UNLOCK_STAGE.pairs).toBe(2)
+		expect(MODE_UNLOCK_STAGE.feed).toBe(4)
+		expect(modeUnlocked("feed", 3)).toBe(false)
+		expect(modeUnlocked("feed", 4)).toBe(true)
+		expect(modeUnlocked("mult", 0)).toBe(true)
+		expect(modeUnlocked("pairs", 1)).toBe(false)
+		expect(modeUnlocked("pairs", 2)).toBe(true)
+	})
+})
 
 describe("ALL_FACTS", () => {
 	test("has exactly 55 facts", () => {

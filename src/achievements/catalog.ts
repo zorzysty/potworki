@@ -4,9 +4,11 @@ import { ALL_FACTS, isMaxStage, STAGES } from "../game/facts"
 import { BUILDINGS, DECORATIONS, MAX_BUILDING_LEVEL } from "../game/village"
 import {
 	DIVISION_ONLY_IDS,
+	FEED_ONLY_IDS,
 	GAP_ONLY_IDS,
 	IDS_BY_RARITY,
 	MONSTER_COUNT,
+	PAIRS_ONLY_IDS,
 } from "../monsters/catalog"
 import { REGIONS } from "../monsters/world"
 import type { AchievementCounters, SaveState } from "../store/schema"
@@ -69,6 +71,20 @@ function masteredForFactor(save: SaveState, n: number): number {
 function ownedGapOnly(save: SaveState): number {
 	let n = 0
 	for (const id of GAP_ONLY_IDS) if (id in save.ownedMonsters) n++
+	return n
+}
+
+// Potworki tylko-Dzielniki (Most Dzielników) — lustro ownedDivisionOnly.
+function ownedPairsOnly(save: SaveState): number {
+	let n = 0
+	for (const id of PAIRS_ONLY_IDS) if (id in save.ownedMonsters) n++
+	return n
+}
+
+// Potworki tylko-porównywanie (Sad Łakomczuchów) — lustro ownedPairsOnly.
+function ownedFeedOnly(save: SaveState): number {
+	let n = 0
+	for (const id of FEED_ONLY_IDS) if (id in save.ownedMonsters) n++
 	return n
 }
 
@@ -342,9 +358,11 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 	},
 	{
 		id: "straznik-mostu",
-		title: "Dzielnik Mostu",
+		// id historyczne (potworki tylko-dzielenie mieszkały na Moście; Most należy
+		// dziś do Dzielników) — ledger persystuje id, więc zostaje
+		title: "Legenda Wyspy Ilorazów",
 		description: "Zdobądź legendarnego potworka tylko z dzielenia.",
-		icon: "🌉",
+		icon: "🏝️",
 		difficulty: "hard",
 		progress: ({ save }) => ({ current: ownedDivisionOnly(save), target: 1 }),
 	},
@@ -452,9 +470,9 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 	},
 	{
 		id: "wszyscy-straznicy-mostu",
-		title: "Dzielniki Mostu",
+		title: "Wyspa Ilorazów w komplecie",
 		description: "Zdobądź wszystkie legendarne potworki z dzielenia.",
-		icon: "🐉",
+		icon: "🐊",
 		difficulty: "hard",
 		progress: ({ save }) => ({
 			current: ownedDivisionOnly(save),
@@ -646,6 +664,104 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		progress: ({ counters }) => ({
 			current: counters.visitRoundsCompleted,
 			target: 2,
+		}),
+	},
+	{
+		id: "pierwsza-para",
+		title: "Pierwsza para",
+		description: "Znajdź parę liczb w Dzielnikach.",
+		icon: "🔗",
+		difficulty: "easy",
+		progress: ({ counters }) => ({ current: counters.pairsCorrect, target: 1 }),
+	},
+	{
+		id: "pary-50",
+		title: "Łowca par",
+		description: "Znajdź 50 par liczb w Dzielnikach.",
+		icon: "🧮",
+		difficulty: "medium",
+		progress: ({ counters }) => ({
+			current: counters.pairsCorrect,
+			target: 50,
+		}),
+	},
+	{
+		id: "mistrz-par",
+		title: "Mistrz Dzielników",
+		description: "Znajdź 200 par liczb w Dzielnikach.",
+		icon: "🎓",
+		difficulty: "hard",
+		progress: ({ counters }) => ({
+			current: counters.pairsCorrect,
+			target: 200,
+		}),
+	},
+	{
+		id: "dzielnik-mostu",
+		title: "Dzielnik Mostu",
+		description: "Zdobądź legendarnego potworka z Mostu Dzielników.",
+		icon: "🌉",
+		difficulty: "hard",
+		progress: ({ save }) => ({ current: ownedPairsOnly(save), target: 1 }),
+	},
+	{
+		id: "dzielniki-mostu",
+		title: "Dzielniki Mostu",
+		description: "Zdobądź wszystkie potworki z Mostu Dzielników.",
+		icon: "🐉",
+		difficulty: "hard",
+		progress: ({ save }) => ({
+			current: ownedPairsOnly(save),
+			target: PAIRS_ONLY_IDS.size,
+		}),
+	},
+	{
+		id: "pierwsze-porownanie",
+		title: "Pierwszy kęs",
+		description: "Daj ciastko właściwemu potworkowi w Porównywaniu.",
+		icon: "🍪",
+		difficulty: "easy",
+		progress: ({ counters }) => ({ current: counters.feedCorrect, target: 1 }),
+	},
+	{
+		id: "porownania-50",
+		title: "Kucharz potworków",
+		description: "Daj ciastko właściwemu potworkowi 50 razy w Porównywaniu.",
+		icon: "🧮",
+		difficulty: "medium",
+		progress: ({ counters }) => ({
+			current: counters.feedCorrect,
+			target: 50,
+		}),
+	},
+	{
+		id: "mistrz-porownywania",
+		title: "Mistrz Porównywania",
+		description: "Daj ciastko właściwemu potworkowi 200 razy w Porównywaniu.",
+		icon: "🎓",
+		difficulty: "hard",
+		progress: ({ counters }) => ({
+			current: counters.feedCorrect,
+			target: 200,
+		}),
+	},
+	{
+		id: "lakomczuch-z-sadu",
+		title: "Łakomczuch z Sadu",
+		description: "Zdobądź legendarnego potworka z Sadu Łakomczuchów.",
+		icon: "🍎",
+		difficulty: "hard",
+		progress: ({ save }) => ({ current: ownedFeedOnly(save), target: 1 }),
+	},
+	{
+		id: "sad-w-komplecie",
+		title: "Sad Łakomczuchów w komplecie",
+		description: "Zdobądź wszystkie potworki z Sadu Łakomczuchów.",
+		icon: "🍏",
+		difficulty: "hard",
+		progress: ({ save }) => ({
+			current: ownedFeedOnly(save),
+			target: FEED_ONLY_IDS.size,
 		}),
 	},
 ]

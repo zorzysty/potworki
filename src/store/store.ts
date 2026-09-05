@@ -15,7 +15,13 @@ import type { FactKey, GameMode } from "../game/facts"
 
 export type { RoundQuestion } from "../game/facts"
 
-import { expectedAnswer, FACTS_BY_KEY, isMaxStage } from "../game/facts"
+import {
+	expectedAnswer,
+	FACTS_BY_KEY,
+	isMaxStage,
+	modeUnlocked,
+	unlockedFactors,
+} from "../game/facts"
 import type { EggQuality, Rarity } from "../game/rewards"
 import {
 	credit,
@@ -26,7 +32,14 @@ import {
 	WISH_MODE,
 } from "../game/rewards"
 import type { RoundState } from "../game/round"
-import { advance, newRound, newVisitRound, submitAnswer } from "../game/round"
+import {
+	advance,
+	newRound,
+	newVisitRound,
+	submitAnswer,
+	submitFeed,
+	submitPair,
+} from "../game/round"
 import type { BuildingId, DecorationId } from "../game/village"
 import {
 	BUILDINGS,
@@ -82,6 +95,8 @@ interface GameState extends SaveState {
 	pressDigit: (digit: number) => void
 	pressBackspace: () => void
 	pressConfirm: () => void
+	pickFactor: (n: number) => void // tryb par: stuknięty czynnik (żeton)
+	feedSide: (side: 0 | 1) => void // tryb porównywania: nakarmiona strona
 	nextQuestion: () => void
 	exitRoundEarly: () => void
 	hatchEgg: (index?: number) => void
@@ -225,7 +240,10 @@ export const useGame = create<GameState>()(
 				if (round) set({ round: { ...round, paused } })
 			},
 
-			setMode: (mode) => set({ mode }),
+			// tryb zamknięty za bramą (MODE_UNLOCK_STAGE) — cichy no-op, UI pokazuje zajawkę
+			setMode: (mode) => {
+				if (modeUnlocked(mode, get().unlockedStage)) set({ mode })
+			},
 
 			startRound: () => {
 				const state = get()
@@ -252,6 +270,16 @@ export const useGame = create<GameState>()(
 			pressDigit: (digit) => {
 				const { round } = get()
 				if (!round || round.paused) return
+				// klawiatura fizyczna w trybie par: cyfra = żeton (0 = 10)
+				if (round.mode === "pairs") {
+					get().pickFactor(digit === 0 ? 10 : digit)
+					return
+				}
+				// tryb porównywania: 1 = lewy, 2 = prawy potworek
+				if (round.mode === "feed") {
+					if (digit === 1 || digit === 2) get().feedSide(digit === 1 ? 0 : 1)
+					return
+				}
 				if (round.phase !== "answering" && round.phase !== "wrong") return
 				if (round.answer.length >= 3) return
 				const answer = round.answer + String(digit)
@@ -264,14 +292,61 @@ export const useGame = create<GameState>()(
 			pressBackspace: () => {
 				const { round } = get()
 				if (!round || round.paused) return
+				if (round.mode === "pairs") {
+					set({ round: { ...round, picked: null } })
+					return
+				}
 				if (round.phase !== "answering" && round.phase !== "wrong") return
 				set({ round: { ...round, answer: round.answer.slice(0, -1) } })
+			},
+
+			// Tryb par: pierwszy żeton czeka (picked), drugi zatwierdza parę —
+			// także ten sam żeton dwa razy (6×6). Commit jak pressConfirm.
+			pickFactor: (n) => {
+				const state = get()
+				const { round } = state
+				if (!round || round.paused || round.mode !== "pairs") return
+				if (round.phase !== "answering") return
+				if (!unlockedFactors(state.unlockedStage).has(n)) return
+				if (round.picked === null) {
+					set({ round: { ...round, picked: n } })
+					return
+				}
+				const r = submitPair(
+					state,
+					round,
+					round.picked,
+					n,
+					Math.random,
+					Date.now(),
+				)
+				// para już znaleziona → nic do zapisania, ale wybór nie może zostać
+				// „zawieszony" na pierwszym żetonie
+				if (!r) {
+					set({ round: { ...round, picked: null } })
+					return
+				}
+				set({ ...r.patch, round: r.round })
+				get().checkAchievements()
+			},
+
+			// Tryb porównywania: tap na potworka = odpowiedź (commit jak pressConfirm);
+			// w fazie „wrong" tap właściwego = rytuał (patrz game/round.ts)
+			feedSide: (side) => {
+				const state = get()
+				const { round } = state
+				if (!round || round.paused || round.mode !== "feed") return
+				const r = submitFeed(state, round, side, Math.random, Date.now())
+				if (!r) return
+				set({ ...r.patch, round: r.round })
+				get().checkAchievements()
 			},
 
 			pressConfirm: () => {
 				const state = get()
 				const { round } = state
 				if (!round || round.paused) return
+				if (round.mode === "pairs" || round.mode === "feed") return
 				const r = submitAnswer(state, round, Math.random, Date.now())
 				if (!r) return
 				set({ ...r.patch, round: r.round })

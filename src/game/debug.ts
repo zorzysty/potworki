@@ -2,16 +2,21 @@ import type { SaveState } from "../store/schema"
 import type { GameMode, RoundQuestion } from "./facts"
 import {
 	budgetMs,
+	divisorPairs,
 	expectedAnswer,
 	FACTS_BY_KEY,
+	pairBudgetMs,
 	QUESTIONS_PER_ROUND,
 } from "./facts"
 import {
 	advance,
+	feedAnswer,
 	newRound,
 	type Rand,
 	type RoundStep,
 	submitAnswer,
+	submitFeed,
+	submitPair,
 } from "./round"
 
 // Rozkłada sumę gwiazdek na n pytań (każde 0..3): jak najwięcej trójek (szybkie
@@ -57,11 +62,37 @@ export function simulateRound(
 		const fact = FACTS_BY_KEY.get(round.question.key)
 		if (!fact)
 			throw new Error(`simulateRound: nieznany fakt ${round.question.key}`)
-		const elapsed = budgetMs(fact) * (ELAPSED_FACTOR[perQuestion[i] ?? 0] ?? 3)
-		const answer = String(expectedAnswer(round.question, mode))
-		apply(
-			submitAnswer(cur, { ...round, answer }, rand, round.startedAt + elapsed),
-		)
+		const factor = ELAPSED_FACTOR[perQuestion[i] ?? 0] ?? 3
+		if (mode === "feed") {
+			const rival = FACTS_BY_KEY.get(round.question.rival?.key ?? fact.key)
+			const budget = budgetMs(fact) + budgetMs(rival ?? fact)
+			apply(
+				submitFeed(
+					cur,
+					round,
+					feedAnswer(round.question),
+					rand,
+					round.startedAt + budget * factor,
+				),
+			)
+		} else if (mode === "pairs") {
+			// tryb par: stukamy kolejne pary celu; czas skalowany do sumy budżetów
+			const targets = divisorPairs(round.question.a, cur.unlockedStage)
+			const budget = targets.reduce((sum, f) => sum + pairBudgetMs(f), 0)
+			const at = round.startedAt + budget * factor
+			for (const t of targets) apply(submitPair(cur, round, t.a, t.b, rand, at))
+		} else {
+			const elapsed = budgetMs(fact) * factor
+			const answer = String(expectedAnswer(round.question, mode))
+			apply(
+				submitAnswer(
+					cur,
+					{ ...round, answer },
+					rand,
+					round.startedAt + elapsed,
+				),
+			)
+		}
 		apply(advance(cur, round, rand, now))
 	}
 	return { patch, round }

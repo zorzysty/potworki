@@ -72,6 +72,20 @@ export function DebugScreen() {
 				>
 					? luka
 				</button>
+				<button
+					type="button"
+					className={`${btn} ${mode === "pairs" ? "bg-grape text-white" : ""}`}
+					onClick={() => setMode("pairs")}
+				>
+					= pary (od etapu 2)
+				</button>
+				<button
+					type="button"
+					className={`${btn} ${mode === "feed" ? "bg-grape text-white" : ""}`}
+					onClick={() => setMode("feed")}
+				>
+					&gt; porównywanie (od etapu 4)
+				</button>
 			</div>
 			<div className="mb-1 font-bold text-slate-500">
 				symuluj rundę (10 pytań, suma gwiazdek):

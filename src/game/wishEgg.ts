@@ -1,4 +1,10 @@
-import { isDivisionOnly, isGapOnly, rarityOf } from "../monsters/catalog"
+import {
+	isDivisionOnly,
+	isFeedOnly,
+	isGapOnly,
+	isPairsOnly,
+	rarityOf,
+} from "../monsters/catalog"
 import type { SaveState } from "../store/schema"
 import { isPoolComplete } from "./collection"
 import {
@@ -34,7 +40,9 @@ export function wishEgg(state: WishEggState): {
 		dream !== null &&
 		!(dream in state.ownedMonsters) &&
 		!isDivisionOnly(dream) &&
-		!isGapOnly(dream)
+		!isGapOnly(dream) &&
+		!isPairsOnly(dream) &&
+		!isFeedOnly(dream)
 	return {
 		cost: wishEggPrice(
 			dreamApplies ? WISH_COST[rarityOf(dream)] : WISH_COST_NO_DREAM,

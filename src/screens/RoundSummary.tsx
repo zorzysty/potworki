@@ -5,11 +5,12 @@ import { ExpeditionReturn } from "../components/ExpeditionReturn"
 import { GoalProgressBar } from "../components/GoalProgressBar"
 import { GateReveal } from "../components/gate"
 import { MonsterStage } from "../components/MonsterStage"
+import { MODE_NAMES } from "../components/modeLabels"
 import { StarMeter } from "../components/StarMeter"
 import { useGateReveal } from "../components/useGateReveal"
 import { VISIT_BONUS } from "../game/adaptive"
 import * as collection from "../game/collection"
-import { fragmentsForEgg } from "../game/facts"
+import { fragmentsForEgg, MODE_UNLOCK_STAGE } from "../game/facts"
 import { currentGoal } from "../game/village"
 import { REGIONS } from "../monsters/world"
 import { useGame } from "../store/store"
@@ -22,6 +23,7 @@ export function RoundSummary() {
 	const eggsEarned = useGame((s) => s.eggsEarned)
 	const village = useGame((s) => s.village)
 	const iskierki = useGame((s) => s.iskierki)
+	const unlockedStage = useGame((s) => s.unlockedStage)
 	const goTo = useGame((s) => s.goTo)
 	const startRound = useGame((s) => s.startRound)
 
@@ -53,6 +55,12 @@ export function RoundSummary() {
 	const visitRegion =
 		round.visitStage !== null ? REGIONS[round.visitStage] : undefined
 	const guardianOwned = collection.guardianOwned(visitRegion, ownedMonsters)
+	// brama otwarta w tej rundzie odblokowała nową zabawę na Home
+	const unlockedMode = round.unlockedThisRound
+		? (
+				Object.keys(MODE_UNLOCK_STAGE) as (keyof typeof MODE_UNLOCK_STAGE)[]
+			).find((m) => MODE_UNLOCK_STAGE[m] === unlockedStage)
+		: undefined
 
 	return (
 		<div className="flex min-h-[var(--app-vh)] flex-col items-center justify-center gap-5 p-6">
@@ -110,6 +118,11 @@ export function RoundSummary() {
 			{round.unlockedThisRound && (
 				<div className="anim-pop rounded-3xl bg-gradient-to-r from-amber-300 to-orange-400 px-6 py-3 text-center text-2xl font-extrabold text-white shadow-lg">
 					Nowa brama otwarta! 🎉
+					{unlockedMode && (
+						<div className="mt-1 text-lg">
+							Nowa zabawa na start: {MODE_NAMES[unlockedMode]}!
+						</div>
+					)}
 				</div>
 			)}
 

@@ -20,14 +20,21 @@ import {
 } from "./expeditions"
 import type { Fact, FactKey, GameMode, RoundQuestion } from "./facts"
 import {
+	budgetMs,
+	divisorPairs,
 	expectedAnswer,
 	FACTS_BY_KEY,
+	factKey,
 	isMaxStage,
 	MAX_QUESTIONS_PER_ROUND,
 	MAX_STARS_PER_ROUND,
 	makeQuestion,
+	pairBudgetMs,
+	pickRival,
 	QUESTIONS_PER_ROUND,
 	starsFor,
+	starsForBudget,
+	unlockedFacts,
 } from "./facts"
 import { addEggFragment, credit } from "./rewards"
 import { dayStamp } from "./time"
@@ -59,6 +66,17 @@ export interface RoundState {
 	asked: FactKey[]
 	requeues: Record<number, FactKey>
 	shakeNonce: number
+	// tryb par ("pairs"): pierwszy stuknięty czynnik (null = nic), pary już
+	// znalezione w bieżącym pytaniu, chwila ostatniego trafienia (mastery pary
+	// liczy czas od poprzedniej pary, gwiazdki pytania — od startu) i czy w tym
+	// pytaniu była pomyłka (0★ + powtórka, ale pytanie gra się do końca).
+	picked: number | null
+	found: FactKey[]
+	pairAt: number
+	missed: boolean
+	// ostatnio stuknięta para w kolejności stuknięć (UI pokazuje ją chwilę w
+	// równaniu — inaczej druga liczba nigdy nie pojawiałaby się w okienku)
+	lastPair: [number, number] | null
 	eggsCreated: number[] // indeksy w pendingEggs utworzone w tej rundzie (kolor jajka jest finalny już od utworzenia)
 	unlockedThisRound: boolean
 	wageEarned: number // żołd przyznany przy finalizacji (faza summary); 0 do końca rundy
@@ -102,6 +120,7 @@ function baseRound(
 		plan: FactKey[] | null
 		visitStage: number | null
 	},
+	stage: number,
 	rand: Rand,
 	now: number,
 ): RoundState {
@@ -113,7 +132,14 @@ function baseRound(
 		planPos: 1,
 		index: 0,
 		total: QUESTIONS_PER_ROUND,
-		question: makeQuestion(firstFact, false, mode, opts.introFactor, rand),
+		question: makeQuestion(
+			firstFact,
+			false,
+			mode,
+			opts.introFactor,
+			rand,
+			mode === "feed" ? pickRival(firstFact, stage, rand) : undefined,
+		),
 		phase: "answering",
 		answer: "",
 		stars: 0,
@@ -122,6 +148,11 @@ function baseRound(
 		asked: [],
 		requeues: {},
 		shakeNonce: 0,
+		picked: null,
+		found: [],
+		pairAt: now,
+		missed: false,
+		lastPair: null,
 		eggsCreated: [],
 		unlockedThisRound: false,
 		wageEarned: 0,
@@ -141,11 +172,23 @@ export function newRound(
 	const stage = save.unlockedStage
 	const intro = isIntroRound(save.facts, stage)
 	const introFactor = intro ? newlyUnlockedFactor(stage) : null
-	const plan = intro
+	let plan = intro
 		? introRoundPlan(save.facts, stage, QUESTIONS_PER_ROUND, rand).map(
 				(f) => f.key,
 			)
 		: null
+	// tryb par: dwa fakty o tym samym iloczynie to to samo pytanie — zostaje
+	// pierwszy; brakujące pytania dobierze selekcja (advance), gdy plan się skończy
+	if (plan && mode === "pairs") {
+		const seen = new Set<number>()
+		plan = plan.filter((k) => {
+			const f = FACTS_BY_KEY.get(k)
+			const p = f ? f.a * f.b : 0
+			if (seen.has(p)) return false
+			seen.add(p)
+			return true
+		})
+	}
 	const firstFact =
 		(plan?.[0] && FACTS_BY_KEY.get(plan[0])) ??
 		pickNextFact(save.facts, stage, [], rand)
@@ -153,6 +196,7 @@ export function newRound(
 		mode,
 		firstFact,
 		{ introFactor, plan, visitStage: null },
+		stage,
 		rand,
 		now,
 	)
@@ -185,6 +229,7 @@ export function newVisitRound(
 		"mult",
 		firstFact,
 		{ introFactor: null, plan, visitStage: visited },
+		stage,
 		rand,
 		now,
 	)
@@ -233,11 +278,9 @@ export function submitAnswer(
 	const gained = q.isRequeue ? Math.min(1, earned) : earned
 	const stars = round.stars + gained
 
-	// liczniki osiągnięć: kariera gwiazdek rośnie zawsze (gained=0 nieszkodliwe),
-	// poprawne pierwsze próby w dzieleniu i w luce liczymy osobno
+	// liczniki osiągnięć: poprawne pierwsze próby w dzieleniu i w luce osobno
 	const achievementStats: AchievementCounters = {
 		...save.achievementStats,
-		totalStars: save.achievementStats.totalStars + gained,
 		divCorrect:
 			save.achievementStats.divCorrect +
 			(correct && round.mode === "div" ? 1 : 0),
@@ -245,9 +288,50 @@ export function submitAnswer(
 			save.achievementStats.gapCorrect +
 			(correct && round.mode === "gap" ? 1 : 0),
 	}
+	const committed = commitFragment(
+		{ ...save, achievementStats },
+		round,
+		gained,
+		rand,
+	)
+	const patch: Partial<SaveState> = { facts, ...committed.patch }
+	const { eggsCreated } = committed
 
-	// fragment + gwiazdki niezależnie od wyniku — postęp nigdy nie przepada.
-	// addEggFragment domyka jajko po przekroczeniu progu (finalny kolor z banku).
+	if (correct) {
+		return {
+			patch,
+			round: {
+				...round,
+				phase: "correct",
+				stars,
+				lastStars: gained,
+				eggsCreated,
+			},
+		}
+	}
+	return {
+		patch,
+		round: {
+			...withRequeue(round),
+			phase: "wrong",
+			answer: "",
+			stars,
+			lastStars: 0,
+			eggsCreated,
+			shakeNonce: round.shakeNonce + 1,
+		},
+	}
+}
+
+// Fragment jajka + kariera gwiazdek za JEDNO pytanie, niezależnie od wyniku —
+// postęp nigdy nie przepada. addEggFragment domyka jajko po przekroczeniu
+// progu (finalny kolor z banku). Wspólne dla odpowiedzi liczbowej i pary.
+function commitFragment(
+	save: SaveState,
+	round: RoundState,
+	gained: number,
+	rand: Rand,
+): { patch: Partial<SaveState>; eggsCreated: number[] } {
 	const { bank, created } = addEggFragment(
 		{
 			eggFragments: save.eggFragments,
@@ -265,47 +349,117 @@ export function submitAnswer(
 		pendingEggs = [...pendingEggs, created]
 		eggsCreated.push(pendingEggs.length - 1)
 	}
-	const patch: Partial<SaveState> = {
-		facts,
-		eggFragments: bank.eggFragments,
-		eggStarBank: bank.eggStarBank,
-		eggsEarned: bank.eggsEarned,
-		iskierki: bank.iskierki,
-		pendingEggs,
-		achievementStats,
+	return {
+		patch: {
+			eggFragments: bank.eggFragments,
+			eggStarBank: bank.eggStarBank,
+			eggsEarned: bank.eggsEarned,
+			iskierki: bank.iskierki,
+			pendingEggs,
+			achievementStats: {
+				...save.achievementStats,
+				totalStars: save.achievementStats.totalStars + gained,
+			},
+		},
+		eggsCreated,
 	}
+}
 
-	if (correct) {
+// Powtórka błędnego działania za 3 pytania (max 12 pytań w rundzie); powtórka
+// powtórki nie wchodzi.
+function withRequeue(round: RoundState): RoundState {
+	const q = round.question
+	if (q.isRequeue || round.total >= MAX_QUESTIONS_PER_ROUND) return round
+	return {
+		...round,
+		requeues: {
+			...round.requeues,
+			[Math.min(round.index + 3, round.total)]: q.key,
+		},
+		total: round.total + 1,
+	}
+}
+
+// Tryb par: stuknięta para czynników (x, y) do celu `question.a`. Trafienie =
+// nauka faktu x×y (czas od poprzedniej pary); pomyłka = nauka „na minus"
+// faktu, w który dziecko uwierzyło (4×7 = 24?), pytanie gra się dalej bez
+// gwiazdek i z powtórką (szybkość tylko nagradza: fragment i tak wpada, gdy
+// wszystkie pary są znalezione). Ostatnia para domyka pytanie: gwiazdki z
+// łącznego czasu względem sumy budżetów par, fragment, faza „correct".
+// null = nie tryb par / nie faza odpowiadania / para już znaleziona.
+export function submitPair(
+	save: SaveState,
+	round: RoundState,
+	x: number,
+	y: number,
+	rand: Rand,
+	now: number,
+): RoundStep | null {
+	if (round.mode !== "pairs" || round.phase !== "answering") return null
+	const key = factKey(x, y)
+	const fact = FACTS_BY_KEY.get(key)
+	if (!fact || round.found.includes(key)) return null
+	const correct = x * y === round.question.a
+	const facts = {
+		...save.facts,
+		[key]: applyAnswer(
+			save.facts[key] ?? emptyStats(),
+			fact,
+			correct,
+			now - round.pairAt,
+			now,
+			pairBudgetMs(fact),
+		),
+	}
+	if (!correct) {
+		// powtórkę dokłada tylko PIERWSZA pomyłka w pytaniu
 		return {
-			patch,
+			patch: { facts },
 			round: {
-				...round,
-				phase: "correct",
-				stars,
-				lastStars: gained,
-				eggsCreated,
+				...(round.missed ? round : withRequeue(round)),
+				missed: true,
+				picked: null,
+				pairAt: now, // czas namysłu nad pomyłką nie obciąża następnej pary
+				lastPair: [x, y],
+				shakeNonce: round.shakeNonce + 1,
 			},
 		}
 	}
-	// powtórka błędnego działania za 3 pytania (max 12 pytań w rundzie)
-	const requeues = { ...round.requeues }
-	let total = round.total
-	if (!q.isRequeue && total < MAX_QUESTIONS_PER_ROUND) {
-		requeues[Math.min(round.index + 3, total)] = q.key
-		total++
+	const found = [...round.found, key]
+	const targets = divisorPairs(round.question.a, save.unlockedStage)
+	// licznik osiągnięć: każda trafiona para (lustro divCorrect/gapCorrect)
+	const achievementStats: AchievementCounters = {
+		...save.achievementStats,
+		pairsCorrect: save.achievementStats.pairsCorrect + 1,
 	}
+	if (found.length < targets.length) {
+		return {
+			patch: { facts, achievementStats },
+			round: { ...round, found, picked: null, pairAt: now, lastPair: [x, y] },
+		}
+	}
+	const budget = targets.reduce((sum, f) => sum + pairBudgetMs(f), 0)
+	const earned = round.missed
+		? 0
+		: starsForBudget(now - round.startedAt, budget)
+	const gained = round.question.isRequeue ? Math.min(1, earned) : earned
+	const committed = commitFragment(
+		{ ...save, achievementStats },
+		round,
+		gained,
+		rand,
+	)
 	return {
-		patch,
+		patch: { facts, ...committed.patch },
 		round: {
 			...round,
-			phase: "wrong",
-			answer: "",
-			stars,
-			lastStars: 0,
-			requeues,
-			total,
-			eggsCreated,
-			shakeNonce: round.shakeNonce + 1,
+			found,
+			picked: null,
+			lastPair: [x, y],
+			phase: "correct",
+			stars: round.stars + gained,
+			lastStars: gained,
+			eggsCreated: committed.eggsCreated,
 		},
 	}
 }
@@ -338,7 +492,9 @@ export function advance(
 		baseFact ??= pickNextFact(
 			save.facts,
 			save.unlockedStage,
-			asked.slice(-3),
+			round.mode === "pairs"
+				? sameProductKeys(asked.slice(-3), save.unlockedStage)
+				: asked.slice(-3),
 			rand,
 		)
 	}
@@ -355,14 +511,134 @@ export function advance(
 				round.mode,
 				round.introFactor,
 				rand,
+				round.mode === "feed"
+					? pickRival(fact, save.unlockedStage, rand)
+					: undefined,
 			),
 			phase: "answering",
 			answer: "",
 			lastStars: 0,
 			startedAt: now,
+			picked: null,
+			found: [],
+			pairAt: now,
+			missed: false,
+			lastPair: null,
+			shakeNonce: 0, // karta par trzęsie się przy montażu, gdy > 0 — nowe pytanie startuje czysto
 			asked,
 		},
 	}
+}
+
+// Tryb porównywania: stuknięta strona (0 = lewa, 1 = prawa). Poprawnie = strona
+// z większym iloczynem. Trafienie uczy OBA fakty (porównanie wymaga obu
+// wyników); pomyłka uczy „na minus" tylko fakt pytania — nie wiemy, które z
+// dwóch działań zawiodło, a podwójna kara za jeden tap byłaby nieuczciwa.
+// Gwiazdki z sumy budżetów obu faktów. Pomyłka → faza „wrong" (karta odsłania
+// wyniki), stuknięcie właściwej strony to rytuał utrwalający (pusty patch,
+// 0★), jak przepisanie wyniku w innych trybach. null = nie tryb porównywania.
+export function submitFeed(
+	save: SaveState,
+	round: RoundState,
+	side: 0 | 1,
+	rand: Rand,
+	now: number,
+): RoundStep | null {
+	if (round.mode !== "feed") return null
+	const q = round.question
+	const fact = FACTS_BY_KEY.get(q.key)
+	const rival = q.rival ? FACTS_BY_KEY.get(q.rival.key) : undefined
+	if (!fact || !rival) return null
+	const bigger = feedAnswer(q)
+	const correct = side === bigger
+
+	if (round.phase === "wrong") {
+		return {
+			patch: {},
+			round: correct
+				? { ...round, phase: "correct", lastStars: 0 }
+				: { ...round, shakeNonce: round.shakeNonce + 1 },
+		}
+	}
+	if (round.phase !== "answering") return null
+
+	const elapsed = now - round.startedAt
+	const budget = budgetMs(fact) + budgetMs(rival)
+	const facts: SaveState["facts"] = {
+		...save.facts,
+		[q.key]: applyAnswer(
+			save.facts[q.key] ?? emptyStats(),
+			fact,
+			correct,
+			elapsed,
+			now,
+			budget,
+		),
+	}
+	if (correct) {
+		facts[rival.key] = applyAnswer(
+			save.facts[rival.key] ?? emptyStats(),
+			rival,
+			true,
+			elapsed,
+			now,
+			budget,
+		)
+	}
+	const earned = correct ? starsForBudget(elapsed, budget) : 0
+	const gained = q.isRequeue ? Math.min(1, earned) : earned
+	const achievementStats: AchievementCounters = {
+		...save.achievementStats,
+		feedCorrect: save.achievementStats.feedCorrect + (correct ? 1 : 0),
+	}
+	const committed = commitFragment(
+		{ ...save, achievementStats },
+		round,
+		gained,
+		rand,
+	)
+	const patch: Partial<SaveState> = { facts, ...committed.patch }
+	if (correct) {
+		return {
+			patch,
+			round: {
+				...round,
+				phase: "correct",
+				stars: round.stars + gained,
+				lastStars: gained,
+				eggsCreated: committed.eggsCreated,
+			},
+		}
+	}
+	return {
+		patch,
+		round: {
+			...withRequeue(round),
+			phase: "wrong",
+			lastStars: 0,
+			eggsCreated: committed.eggsCreated,
+			shakeNonce: round.shakeNonce + 1,
+		},
+	}
+}
+
+// Strona z większym iloczynem (0 = lewa, 1 = prawa) wg `swap`.
+export function feedAnswer(q: RoundQuestion): 0 | 1 {
+	const own = q.a * q.b
+	const other = q.rival ? q.rival.a * q.rival.b : 0
+	const ownIsLeft = !q.swap
+	return own > other === ownIsLeft ? 0 : 1
+}
+
+// W trybie par cel to iloczyn, więc „nie powtarzaj ostatnich" musi omijać
+// wszystkie działania o tych samych iloczynach (3×8 i 4×6 to ten sam cel 24).
+function sameProductKeys(keys: FactKey[], stage: number): FactKey[] {
+	const products = new Set(
+		keys.map((k) => FACTS_BY_KEY.get(k)).map((f) => (f ? f.a * f.b : 0)),
+	)
+	return unlockedFacts(stage)
+		.filter((f) => products.has(f.a * f.b))
+		.map((f) => f.key)
 }
 
 // Koniec rundy: jajka mają już finalny kolor z chwili domknięcia (eggStarBank),

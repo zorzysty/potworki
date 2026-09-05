@@ -80,11 +80,14 @@ export const RARITY_ODDS: Record<
 	rainbow: [10, 40, 30, 20],
 }
 
+// Baza za duplikat wg rzadkości. Skrajne iloczyny z DUP_QUALITY_MULT są
+// decyzją maintainera: pospolity ze zwykłego jajka = 1 ✨, legendarny z
+// tęczowego = 30 ✨ (test pilnuje), reszta równomiernie pomiędzy.
 export const ISKIERKI_FOR_DUP: Record<Rarity, number> = {
 	common: 1,
 	rare: 2,
-	epic: 3,
-	legendary: 5,
+	epic: 4,
+	legendary: 6,
 }
 
 // Duplikat płaci wg rzadkości × jakość jajka: po domknięciu tierów ~90 % wykluć
@@ -252,7 +255,13 @@ function pickInTier(tier: Rarity, ctx: RollContext): number {
 // Pity 8 skraca komplet ~30 % i nadal zostawia miejsce na naturalny los.
 export const LEGENDARY_PITY_EVERY = 8
 export type LegendaryPity = Record<GameMode, number>
-export const INITIAL_LEGENDARY_PITY: LegendaryPity = { mult: 0, div: 0, gap: 0 }
+export const INITIAL_LEGENDARY_PITY: LegendaryPity = {
+	mult: 0,
+	div: 0,
+	gap: 0,
+	pairs: 0,
+	feed: 0,
+}
 
 export function rollMonsterWithPity(
 	quality: EggQuality,

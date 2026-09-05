@@ -25,6 +25,8 @@ const maxCounters: AchievementCounters = {
 	lastPlayedDay: "2026-1-1",
 	expeditionsCompleted: 10,
 	visitRoundsCompleted: 5,
+	pairsCorrect: 500,
+	feedCorrect: 500,
 }
 const maxSave: SaveState = {
 	...INITIAL_SAVE,
@@ -68,8 +70,8 @@ const emptyCtx: AchievementCtx = {
 }
 
 describe("ACHIEVEMENTS catalog", () => {
-	test("jest dokładnie 53 osiągnięcia", () => {
-		expect(ACHIEVEMENTS.length).toBe(53)
+	test("jest dokładnie 63 osiągnięcia", () => {
+		expect(ACHIEVEMENTS.length).toBe(63)
 	})
 
 	test("id są unikalne", () => {
@@ -134,6 +136,16 @@ describe("ACHIEVEMENTS catalog", () => {
 			"dekorator",
 			"mistrzowie-doliny",
 			"gosc-straznika",
+			"pierwsza-para",
+			"pary-50",
+			"mistrz-par",
+			"dzielnik-mostu",
+			"dzielniki-mostu",
+			"pierwsze-porownanie",
+			"porownania-50",
+			"mistrz-porownywania",
+			"lakomczuch-z-sadu",
+			"sad-w-komplecie",
 		])
 	})
 

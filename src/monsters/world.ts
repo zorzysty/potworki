@@ -1,5 +1,5 @@
 import { STAGES } from "../game/facts"
-import { isDivisionOnly, isGapOnly } from "./catalog"
+import { isDivisionOnly, isFeedOnly, isGapOnly, isPairsOnly } from "./catalog"
 
 // „Mapa Świata": każdemu etapowi odblokowań (STAGES) odpowiada region
 // z nazwą o motywie liczbowym wprowadzanego czynnika i potworkiem-strażnikiem.
@@ -149,10 +149,12 @@ export const REGIONS: readonly Region[] = [
 	},
 ]
 
-// Most Dzielników: 4 legendarne tylko-dzielenie (id 72–75) z krainy zza Mostu. „Dzielnik" to celowo NIE „Strażnik" — strażnik to potworek krainy (Region.guardianId).
-export const BRIDGE_DIVIDER_IDS = [72, 73, 74, 75] as const
+// Most Dzielników: 4 legendarne tylko-Dzielniki (id 80–83, tryb par) — to oni
+// uczą swojej zabawy. „Dzielnik" to celowo NIE „Strażnik" — strażnik to potworek
+// krainy (Region.guardianId).
+export const BRIDGE_DIVIDER_IDS = [80, 81, 82, 83] as const
 
-// Pochodzenie potworków tylko-dzielenie. Rozróżniane od regionów polem `kind`
+// Pochodzenie potworków tylko-Dzielniki. Rozróżniane od regionów polem `kind`
 // ("bridge" vs "region") — UI sprawdza `origin.kind`, nie brak pola.
 export const BRIDGE_ORIGIN = {
 	kind: "bridge" as const,
@@ -161,8 +163,26 @@ export const BRIDGE_ORIGIN = {
 	color: "bg-violet-100 text-violet-600",
 }
 
-// Pochodzenie potworków tylko-luka (tryb „brakujący czynnik"). Trzeci wariant
-// unii pochodzenia (kind "valley"), lustro BRIDGE_ORIGIN.
+// Pochodzenie potworków tylko-dzielenie (dawniej mieszkały na Moście; Most
+// należy dziś do trybu par). Wariant unii kind "island".
+export const ISLAND_ORIGIN = {
+	kind: "island" as const,
+	name: "Wyspa Ilorazów",
+	emoji: "➗",
+	color: "bg-sky-100 text-sky-600",
+}
+
+// Pochodzenie potworków tylko-porównywanie (tryb „feed"). Wariant unii kind
+// "orchard"; na mapie celowo bez własnej karty (decyzja maintainera).
+export const ORCHARD_ORIGIN = {
+	kind: "orchard" as const,
+	name: "Sad Łakomczuchów",
+	emoji: "🍎",
+	color: "bg-rose-100 text-rose-600",
+}
+
+// Pochodzenie potworków tylko-luka (tryb „brakujący czynnik"). Wariant unii
+// kind "valley", lustro BRIDGE_ORIGIN.
 export const VALLEY_ORIGIN = {
 	kind: "valley" as const,
 	name: "Dolina Zagadek",
@@ -170,13 +190,21 @@ export const VALLEY_ORIGIN = {
 	color: "bg-fuchsia-100 text-fuchsia-600",
 }
 
-// Kraina pochodzenia potworka (paszport). Potworki tylko-dzielenie przybywają zza
-// Mostu Dzielników, tylko-luka — z Doliny Zagadek; żadne z nich nie ma zwykłego
-// regionu (id % 7 kłamałby o krainie). Czysta — bez stanu gry.
+// Kraina pochodzenia potworka (paszport). Potworki tylko-Dzielniki przybywają
+// zza Mostu Dzielników, tylko-dzielenie — z Wyspy Ilorazów, tylko-luka — z
+// Doliny Zagadek; żadne z nich nie ma zwykłego regionu (id % 7 kłamałby o
+// krainie). Czysta — bez stanu gry.
 export function originOf(
 	id: number,
-): Region | typeof BRIDGE_ORIGIN | typeof VALLEY_ORIGIN {
-	if (isDivisionOnly(id)) return BRIDGE_ORIGIN
+):
+	| Region
+	| typeof BRIDGE_ORIGIN
+	| typeof ISLAND_ORIGIN
+	| typeof ORCHARD_ORIGIN
+	| typeof VALLEY_ORIGIN {
+	if (isPairsOnly(id)) return BRIDGE_ORIGIN
+	if (isFeedOnly(id)) return ORCHARD_ORIGIN
+	if (isDivisionOnly(id)) return ISLAND_ORIGIN
 	if (isGapOnly(id)) return VALLEY_ORIGIN
 	return REGIONS[regionOf(id)] as Region
 }
