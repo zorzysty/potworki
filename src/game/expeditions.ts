@@ -3,11 +3,13 @@
 // niczego nie kosztuje (zasada z roota: „szybkość tylko nagradza, nigdy nie
 // karze"; wyprawa zaparkowana na dwa tygodnie jest dokładnie tam, gdzie
 // dziecko ją zostawiło). WSZYSTKIE liczby strojenia (czasy trwania, nagrody,
-// szanse tropu) żyją w TYM pliku — wzór village.ts. Testy pilnują proporcji
+// szanse znaleziska) żyją w TYM pliku — wzór village.ts. Testy pilnują proporcji
 // i przedziałów (≤ 2.5 ✨/rundę, stawka rośnie z długością), nie dokładnych
 // wartości. Dźwignie cięcia przy zbyt hojnej ekonomii (kolejno): połowa
-// rewardIskierki → trop tylko na `wielka` → dłuższe durationRounds.
+// rewardIskierki → znalezisko tylko na `wielka` → dłuższe durationRounds.
 
+import { type OwnedMonsters, poolIds } from "./collection"
+import { WISH_MODE } from "./rewards"
 import { buildingLevel, type VillageState } from "./village"
 
 export type ExpeditionTypeId = "zwiad" | "wyprawa" | "wielka"
@@ -18,7 +20,7 @@ export interface ExpeditionDef {
 	description: string // PL: dokąd i po co
 	durationRounds: number // ukończone rundy do powrotu
 	rewardIskierki: number
-	tropChance: number // 0..1 — szansa na trop (wskazówkę o nieposiadanym potworku)
+	findChance: number // 0..1 — szansa, że wyprawa wróci z NOWYM potworkiem (nieposiadanym)
 	// Wymagany poziom Placu Zabaw (wzór sklepik→tier kosmetyki): potworki
 	// trenują kondycję, zanim ruszą w drogę. Jawne pole zamiast indeksu w
 	// katalogu — dopisany kiedyś 4. typ musi dostać osiągalny próg świadomie.
@@ -34,7 +36,7 @@ export const EXPEDITIONS: readonly ExpeditionDef[] = [
 		description: "Szybki wypad na skraj łąki — sprawdzić, co słychać.",
 		durationRounds: 3,
 		rewardIskierki: 4,
-		tropChance: 0,
+		findChance: 0,
 		requiredPlacZabaw: 1,
 	},
 	{
@@ -43,22 +45,41 @@ export const EXPEDITIONS: readonly ExpeditionDef[] = [
 		description: "Wędrówka przez wzgórza do sąsiedniej krainy.",
 		durationRounds: 7,
 		rewardIskierki: 12,
-		tropChance: 0.25,
+		findChance: 0.25,
 		requiredPlacZabaw: 2,
 	},
 	{
 		id: "wielka",
 		name: "Wielka Wyprawa",
-		description: "Daleka podróż za wszystkie bramy — wróci z tropem!",
+		description: "Daleka podróż za wszystkie bramy — wróci z nowym potworkiem!",
 		durationRounds: 12,
 		rewardIskierki: 25,
-		tropChance: 1,
+		findChance: 1,
 		requiredPlacZabaw: 3,
 	},
 ]
 
 export const EXPEDITIONS_BY_ID: ReadonlyMap<ExpeditionTypeId, ExpeditionDef> =
 	new Map(EXPEDITIONS.map((e) => [e.id, e]))
+
+// Pula znalezisk = pula Jajka Życzeń (mnożeniowa: bez legendarnych
+// ekskluzywnych dzielenia/luki — te zdobywa się wyłącznie jajkiem).
+export const FINDABLE_IDS: readonly number[] = poolIds(WISH_MODE)
+
+export const findablePoolComplete = (owned: OwnedMonsters): boolean =>
+	FINDABLE_IDS.every((id) => id in owned)
+
+// Etykieta obietnicy znaleziska (lista wypraw i szczegóły czytają TĘ SAMĄ
+// funkcję). null = nic nie obiecujemy: typ bez szansy albo pula skompletowana.
+export function findChanceLabel(
+	def: ExpeditionDef,
+	owned: OwnedMonsters,
+): string | null {
+	if (def.findChance <= 0 || findablePoolComplete(owned)) return null
+	return def.findChance >= 1
+		? "👾 wróci z nowym potworkiem!"
+		: "👾 może przyprowadzić nowego potworka"
+}
 
 // Stan w zapisie: tylko dane nieodtwarzalne. duration/reward NIE są
 // persystowane — pochodzą z katalogu po typeId, więc retuning katalogu dotyczy
@@ -106,19 +127,20 @@ export function isExpeditionDone(
 }
 
 // Rozstrzygnięcie powrotu (czyste, rand wstrzykiwany): nagroda z katalogu +
-// ewentualny trop — losowy NIEPOSIADANY potworek (null przy
-// komplecie kolekcji; null też, gdy szansa nie trafiła).
+// ewentualne znalezisko — losowy NIEPOSIADANY potworek z puli `allIds`, który
+// trafia do kolekcji (null przy komplecie puli; null też, gdy szansa nie
+// trafiła). Rozkład jest jednostajny po nieposiadanych (bez wag rzadkości).
 export function resolveExpedition(
 	e: ExpeditionState,
 	ownedIds: ReadonlySet<number>,
 	allIds: readonly number[],
 	rand: () => number,
-): { rewardIskierki: number; tropMonsterId: number | null } {
+): { rewardIskierki: number; foundMonsterId: number | null } {
 	const def = defOf(e.typeId)
 	const unowned = allIds.filter((id) => !ownedIds.has(id))
-	const tropMonsterId =
-		unowned.length > 0 && rand() < def.tropChance
+	const foundMonsterId =
+		unowned.length > 0 && rand() < def.findChance
 			? (unowned[Math.floor(rand() * unowned.length)] as number)
 			: null
-	return { rewardIskierki: def.rewardIskierki, tropMonsterId }
+	return { rewardIskierki: def.rewardIskierki, foundMonsterId }
 }

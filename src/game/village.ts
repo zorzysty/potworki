@@ -63,7 +63,7 @@ export const BUILDINGS: readonly BuildingDef[] = [
 		descriptions: [
 			"Potworki będą zjeżdżać ze zjeżdżalni — wytrenowane ruszą na Zwiad!",
 			"Dojdzie huśtawka dla potworków — otworzy się Wyprawa!",
-			"Trampolina — hop, hop! Otworzy się Wielka Wyprawa z tropem!",
+			"Trampolina — hop, hop! Otworzy się Wielka Wyprawa — wróci z nowym potworkiem!",
 		],
 		costs: [10, 30, 70],
 	},

@@ -2,6 +2,7 @@ import confetti from "canvas-confetti"
 import { useEffect, useState } from "react"
 import type { BuildingId } from "../../game/village"
 import { BUILDINGS_BY_ID } from "../../game/village"
+import { useScrollLock } from "../useScrollLock"
 import { BuildingArt } from "./BuildingArt"
 
 // Pełnoekranowa celebracja DUŻEJ budowy (każdy poziom Zamku i każde L3) —
@@ -18,6 +19,7 @@ export function BuildReveal({
 }) {
 	const [revealed, setRevealed] = useState(false)
 	const def = BUILDINGS_BY_ID.get(id)
+	useScrollLock()
 
 	useEffect(() => {
 		const t = setTimeout(() => {

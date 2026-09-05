@@ -39,6 +39,16 @@ body {
 	overscroll-behavior: none;
 }
 
+/* Przewijana karta-modal: pasek przewijania systemowy ignoruje border-radius
+   i wystaje poza zaokrąglone rogi — chowamy go (na tablecie i tak go nie ma,
+   na laptopie karta przewija się kółkiem/gestem). */
+.scrollbar-none {
+	scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+	display: none;
+}
+
 /* Płótno pod aplikacją NIE może być białe: Firefox na Androidzie przy chowaniu
    paska narzędzi odsłania pas płótna html poniżej layout viewportu (layout ma
    tam stałą wysokość „z paskiem") — biały pas wyglądał jak ucięty ekran. Kolor

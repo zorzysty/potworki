@@ -17,6 +17,7 @@ import {
 } from "../../game/village"
 import { BigButton } from "../BigButton"
 import { CosmeticArt } from "../CosmeticArt"
+import { useScrollLock } from "../useScrollLock"
 import { BuildingArt, DECORATION_EMOJI } from "./BuildingArt"
 
 export type SheetView = { kind: "building"; id: BuildingId } | { kind: "list" }
@@ -351,6 +352,7 @@ export function BuildSheet({
 	onSetGoal: (id: BuildingId | null) => void
 	onBuyCosmetic: (id: CosmeticId) => void
 }) {
+	useScrollLock()
 	return (
 		// wyśrodkowany modal (wzór karty kolekcjonerskiej), NIE bottom sheet —
 		// na niskich/szerokich ekranach arkusz przyklejony do dołu wyglądał na ucięty
@@ -361,7 +363,7 @@ export function BuildSheet({
 				onClick={onClose}
 				className="absolute inset-0 bg-slate-900/40"
 			/>
-			<div className="relative max-h-[calc(var(--app-vh)*0.92)] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl">
+			<div className="relative max-h-[calc(var(--app-vh)*0.92)] w-full max-w-md scrollbar-none overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl">
 				<div className="mb-3 flex items-center justify-between">
 					{view.kind === "building" ? (
 						<button

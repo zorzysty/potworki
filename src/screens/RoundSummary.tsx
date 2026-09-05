@@ -1,17 +1,16 @@
+import { useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { EggReward } from "../components/EggReward"
+import { ExpeditionReturn } from "../components/ExpeditionReturn"
 import { GoalProgressBar } from "../components/GoalProgressBar"
 import { GateReveal } from "../components/gate"
 import { MonsterStage } from "../components/MonsterStage"
-import { RARITY_META } from "../components/rarity"
 import { StarMeter } from "../components/StarMeter"
 import { useGateReveal } from "../components/useGateReveal"
 import { VISIT_BONUS } from "../game/adaptive"
 import * as collection from "../game/collection"
 import { fragmentsForEgg } from "../game/facts"
 import { currentGoal } from "../game/village"
-import { rarityOf } from "../monsters/catalog"
-import { MonsterSvg } from "../monsters/MonsterSvg"
 import { REGIONS } from "../monsters/world"
 import { useGame } from "../store/store"
 
@@ -23,8 +22,6 @@ export function RoundSummary() {
 	const eggsEarned = useGame((s) => s.eggsEarned)
 	const village = useGame((s) => s.village)
 	const iskierki = useGame((s) => s.iskierki)
-	const dreamMonsterId = useGame((s) => s.dreamMonsterId)
-	const setDreamMonster = useGame((s) => s.setDreamMonster)
 	const goTo = useGame((s) => s.goTo)
 	const startRound = useGame((s) => s.startRound)
 
@@ -36,7 +33,11 @@ export function RoundSummary() {
 		return s.round?.unlockedThisRound ? { stage: s.unlockedStage } : null
 	})
 
+	// splash powrotu z wyprawy nad podsumowaniem (gra PO splashu bramy)
+	const [returnDismissed, setReturnDismissed] = useState(false)
+
 	if (round?.phase !== "summary") return null
+	const returnSplash = returnDismissed ? null : round.expeditionReturn
 
 	const eggsThisRound = round.eggsCreated.length
 	const lastCreatedIndex = round.eggsCreated[eggsThisRound - 1]
@@ -52,11 +53,6 @@ export function RoundSummary() {
 	const visitRegion =
 		round.visitStage !== null ? REGIONS[round.visitStage] : undefined
 	const guardianOwned = collection.guardianOwned(visitRegion, ownedMonsters)
-	// powrót z wyprawy: nagroda już doliczona przy finalizacji; trop pokazuje
-	// TYLKO sylwetkę + rzadkość (nigdy imię — konwencja „???" do wyklucia)
-	const back = round.expeditionReturn
-	const tropRarity =
-		back?.tropMonsterId != null ? rarityOf(back.tropMonsterId) : null
 
 	return (
 		<div className="flex min-h-[var(--app-vh)] flex-col items-center justify-center gap-5 p-6">
@@ -97,63 +93,10 @@ export function RoundSummary() {
 				</button>
 			)}
 
-			{/* karta powrotu z wyprawy — POD chipem żołdu, rodzeństwo EggReward
-			    (kontrakt animacji jajka nietknięty); kompaktowa karta, nie pełny
-			    ekran (hierarchia payoffów: pełny ekran tylko dla rzadszych zdarzeń) */}
-			{back && (
-				<div className="anim-pop flex w-full max-w-sm flex-col gap-3 rounded-3xl bg-white/90 p-4 shadow-lg">
-					<div className="flex items-center gap-3">
-						{/* powracający nosi swój strój — przez MonsterStage */}
-						<MonsterStage id={back.monsterId} size={72} />
-						{/* powitanie z wyprawy */}
-						<div className="flex-1 text-lg font-extrabold leading-tight text-grape-dark">
-							Wrócił(a) z wyprawy!{" "}
-							<span className="whitespace-nowrap text-amber-500">
-								+{back.rewardIskierki} ✨
-							</span>
-						</div>
-					</div>
-					{back.tropMonsterId !== null && tropRarity !== null && (
-						<div className="flex items-center gap-3 rounded-2xl bg-violet-50 px-3 py-2">
-							{/* trop: sylwetka + rzadkość, NIGDY imię (tajemnica do wyklucia) */}
-							<MonsterSvg
-								id={back.tropMonsterId}
-								size={52}
-								animate={false}
-								className="monster-silhouette"
-							/>
-							<div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-								{/* tekst tropu */}
-								<span className="text-sm font-extrabold leading-tight text-slate-600">
-									Ktoś tajemniczy zostawił ślad!
-								</span>
-								<span
-									className={`rounded-full px-2.5 py-0.5 text-xs font-extrabold ${RARITY_META[tropRarity].badge}`}
-								>
-									{RARITY_META[tropRarity].label}
-								</span>
-							</div>
-							{/* oferta TYLKO przy pustym slocie wymarzonego — nigdy podmiana
-							    wybranego przez dziecko (decyzja maintainera) */}
-							{dreamMonsterId === null && (
-								<button
-									type="button"
-									onClick={() => setDreamMonster(back.tropMonsterId)}
-									className="touch-manipulation min-h-16 shrink-0 rounded-2xl bg-gradient-to-b from-amber-300 to-amber-400 px-3 py-2 text-sm font-extrabold text-white shadow active:scale-95"
-								>
-									Ustaw jako
-									<br />
-									wymarzonego! ✨
-								</button>
-							)}
-						</div>
-					)}
-				</div>
-			)}
-
-			{/* gdy brama otwiera się w tej rundzie, GateReveal (z-50) zasłania całość —
-			    odpalamy animację jajka dopiero po jej zamknięciu, by dziecko ją zobaczyło */}
-			{!reveal && (
+			{/* gdy brama otwiera się w tej rundzie (albo ktoś wraca z wyprawy),
+			    splash (z-50) zasłania całość — odpalamy animację jajka dopiero po
+			    jego zamknięciu, by dziecko ją zobaczyło */}
+			{!reveal && !returnSplash && (
 				<EggReward
 					roundStars={round.stars}
 					completedEgg={completedEgg}
@@ -209,8 +152,15 @@ export function RoundSummary() {
 				</BigButton>
 			</div>
 
-			{/* splash otwarcia bramy gra automatycznie nad podsumowaniem */}
+			{/* splash otwarcia bramy gra automatycznie nad podsumowaniem; powrót z
+			    wyprawy czeka na jego zamknięcie (dwa payoffy po kolei, nie naraz) */}
 			{reveal && <GateReveal stage={reveal.stage} onDone={dismiss} />}
+			{!reveal && returnSplash && (
+				<ExpeditionReturn
+					back={returnSplash}
+					onDone={() => setReturnDismissed(true)}
+				/>
+			)}
 		</div>
 	)
 }

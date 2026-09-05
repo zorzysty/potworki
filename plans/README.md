@@ -154,8 +154,9 @@ what's already there, in this fixed composition:
   Token trybu w kodzie: `"gap"`.
 - **016**: bonus strażnika (+2✨) jako OSOBNA linia w podsumowaniu — chip
   żołdu zostaje czysty; jak w planie.
-- **017**: trop proponuje wymarzonego wyłącznie przy PUSTYM slocie (nigdy
-  podmiana) — jak w planie.
+- **017**: pojęcie „tropu" wycofane 2026-09-05 — wyprawa przynosi od razu
+  NOWEGO potworka (szansa dawnego tropu), niezależnie od wymarzonego; powrót
+  = pełnoekranowy splash nad podsumowaniem, chip na Home → ekran wyprawy.
 
 ## Archive
 

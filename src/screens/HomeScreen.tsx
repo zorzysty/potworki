@@ -1,7 +1,10 @@
+import { useState } from "react"
 import { ACHIEVEMENTS } from "../achievements/catalog"
 import { BigButton } from "../components/BigButton"
+import { CARD_SHELL, CardModal } from "../components/CardModal"
 import { Companion } from "../components/Companion"
 import { EggView } from "../components/EggView"
+import { ExpeditionDetails } from "../components/ExpeditionDetails"
 import { HelpTip } from "../components/HelpTip"
 import { MonsterStage } from "../components/MonsterStage"
 import { visitStage } from "../game/adaptive"
@@ -37,6 +40,8 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 	const startRound = useGame((s) => s.startRound)
 	const startVisitRound = useGame((s) => s.startVisitRound)
 	const goTo = useGame((s) => s.goTo)
+	// modal szczegółów wyprawy (z chipa) — stan sesyjny ekranu, nie store
+	const [expeditionOpen, setExpeditionOpen] = useState(false)
 
 	const ownedCount = collection.ownedCount(ownedMonsters)
 	const factors = unlockedFactors(unlockedStage)
@@ -237,7 +242,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 			{trip && (
 				<button
 					type="button"
-					onClick={() => goTo("collection")}
+					onClick={() => setExpeditionOpen(true)}
 					className="touch-manipulation flex min-h-16 w-full max-w-xs items-center gap-2 rounded-3xl bg-white/80 px-4 py-2 shadow-md active:scale-95"
 				>
 					<span className="text-xl">🎒</span>
@@ -362,6 +367,23 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 				>
 					debug
 				</button>
+			)}
+
+			{expeditionOpen && expedition && (
+				<CardModal
+					onClose={() => setExpeditionOpen(false)}
+					closeLabel="Zamknij wyprawę"
+				>
+					<div className={`${CARD_SHELL} border-emerald-200`}>
+						<div className="anim-float">
+							<MonsterStage id={expedition.monsterId} size={150} />
+						</div>
+						<div className="text-2xl font-extrabold text-grape-dark">
+							{travelerName}
+						</div>
+						<ExpeditionDetails onRecalled={() => setExpeditionOpen(false)} />
+					</div>
+				</CardModal>
 			)}
 		</div>
 	)

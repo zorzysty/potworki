@@ -6,7 +6,12 @@ import type { FactStats } from "../game/adaptive"
 import { emptyStats, stageFacts, VISIT_BONUS } from "../game/adaptive"
 import { isCollectionComplete } from "../game/collection"
 import { COSMETICS } from "../game/cosmetics"
-import { EXPEDITIONS_BY_ID } from "../game/expeditions"
+import {
+	EXPEDITIONS_BY_ID,
+	type ExpeditionDef,
+	FINDABLE_IDS,
+	findChanceLabel,
+} from "../game/expeditions"
 import type { FactKey } from "../game/facts"
 import {
 	dupIskierki,
@@ -28,6 +33,8 @@ import {
 	GAP_ONLY_IDS,
 	IDS_BY_RARITY,
 	idsByRarityForMode,
+	isDivisionOnly,
+	isGapOnly,
 	MONSTER_COUNT,
 	rarityOf,
 } from "../monsters/catalog"
@@ -1804,8 +1811,9 @@ describe("wyprawy potworków", () => {
 		const s = game()
 		expect(s.round?.expeditionReturn).toEqual({
 			monsterId: 0,
+			typeId: "zwiad",
 			rewardIskierki: zwiadReward,
-			tropMonsterId: null, // zwiad: tropChance 0
+			foundMonsterId: null, // zwiad: findChance 0
 		})
 		expect(s.expedition).toBeNull()
 		expect(s.achievementStats.expeditionsCompleted).toBe(1)
@@ -1815,6 +1823,62 @@ describe("wyprawy potworków", () => {
 		const rainbow1 = s.pendingEggs[0]?.quality === "rainbow" ? 1 : 0
 		const rainbow2 = s.pendingEggs[1]?.quality === "rainbow" ? 1 : 0
 		expect(s.iskierki).toBe(4 + 3 + 3 + zwiadReward + rainbow1 + rainbow2)
+	})
+
+	test("wielka: znaleziony potworek trafia do kolekcji przy finalizacji (nigdy ekskluzywny trybu)", () => {
+		suppressAchievements()
+		ownSome()
+		useGame.setState({ dreamMonsterId: null })
+		game().sendExpedition(0, "wielka")
+		const duration = EXPEDITIONS_BY_ID.get("wielka")?.durationRounds as number
+		for (let i = 0; i < duration; i++) playCleanRound()
+		const s = game()
+		const found = s.round?.expeditionReturn?.foundMonsterId
+		expect(found).not.toBeNull()
+		expect(found).not.toBeUndefined()
+		expect(found).not.toBe(0)
+		expect(found).not.toBe(1)
+		expect(isDivisionOnly(found as number)).toBe(false)
+		expect(isGapOnly(found as number)).toBe(false)
+		expect(s.ownedMonsters[found as number]).toBeDefined()
+		expect(Object.keys(s.ownedMonsters).length).toBe(3)
+		expect(s.expedition).toBeNull()
+	})
+
+	test("znalezisko będące wymarzonym zwalnia slot wymarzonego (jak wyklucie)", () => {
+		suppressAchievements()
+		ownSome()
+		game().sendExpedition(0, "wielka")
+		const duration = EXPEDITIONS_BY_ID.get("wielka")?.durationRounds as number
+		for (let i = 0; i < duration - 1; i++) playCleanRound()
+		// pula znalezisk = wszystko posiadane oprócz id 2 → wielka (findChance 1)
+		// MUSI znaleźć 2; deterministycznie bez podpinania Math.random
+		const owned: Record<number, { hatchedAt: number }> = {}
+		for (const id of FINDABLE_IDS) if (id !== 2) owned[id] = { hatchedAt: 0 }
+		useGame.setState({ ownedMonsters: owned, dreamMonsterId: 2 })
+		playCleanRound()
+		const s = game()
+		expect(s.round?.expeditionReturn?.foundMonsterId).toBe(2)
+		expect(s.dreamMonsterId).toBeNull()
+	})
+
+	test("pula znalezisk skompletowana → wielka wraca z samymi iskierkami (bez obietnicy)", () => {
+		suppressAchievements()
+		ownSome()
+		game().sendExpedition(0, "wielka")
+		const duration = EXPEDITIONS_BY_ID.get("wielka")?.durationRounds as number
+		for (let i = 0; i < duration - 1; i++) playCleanRound()
+		const owned: Record<number, { hatchedAt: number }> = {}
+		for (const id of FINDABLE_IDS) owned[id] = { hatchedAt: 0 }
+		useGame.setState({ ownedMonsters: owned })
+		const wielka = EXPEDITIONS_BY_ID.get("wielka") as ExpeditionDef
+		expect(findChanceLabel(wielka, owned)).toBeNull()
+		expect(findChanceLabel(wielka, {})).not.toBeNull()
+		playCleanRound()
+		expect(game().round?.expeditionReturn?.foundMonsterId).toBeNull()
+		expect(Object.keys(game().ownedMonsters).length).toBe(
+			Object.keys(owned).length,
+		)
 	})
 
 	test("nagroda powrotu respektuje cap portfela (998 → 999)", () => {

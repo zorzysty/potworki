@@ -12,8 +12,8 @@ Logika pedagogiczna i ekonomia nagród jako czyste funkcje — bez Reacta, DOM-u
 - `rewards.ts` — jakość jajek, szanse rzadkości, pity legendarnych per tryb (`rollMonsterWithPity`), Jajko Życzeń (`wishEggPrice`), bank gwiazdek (`addEggFragment`), portfel iskierek (`credit`/`spend` — jedyne miejsce znające `ISKIERKI_CAP` i regułę „nie stać")
 - `village.ts` — katalog budynków i dekoracji (każdy budynek ma realny perk), żołd (`roundWage`), koszty, `villageRoster`, cel budowy
 - `cosmetics.ts` — katalog kosmetyki Sklepiku (tiery per poziom budynku); import jednokierunkowy z `village.ts`
-- `expeditions.ts` — katalog typów wypraw i czyste helpery; brama Placu Zabaw; import jednokierunkowy z `village.ts`
-- `collection.ts` — fakty o kolekcji z `ownedMonsters`: `byRecency`/`newestOwned`/`firstHatched` (jeden komparator, remis → niższy `id`), `ownedCount`, `isCollectionComplete` (katalog) vs `isPoolComplete(mode)` (pula trybu), `guardianOwned`; ekrany nie liczą tego same
+- `expeditions.ts` — katalog typów wypraw, pula i etykieta znaleziska, brama Placu Zabaw; importy jednokierunkowe z `village.ts`, `collection.ts`, `rewards.ts`
+- `collection.ts` — fakty o kolekcji z `ownedMonsters` i JEDYNA reguła przyjęcia potworka (`grantMonster`: wyklucie i znalezisko); `poolIds(mode)`; `byRecency`/`newestOwned`/`firstHatched` (jeden komparator, remis → niższy `id`), `ownedCount`, `isCollectionComplete` (katalog) vs `isPoolComplete(mode)` (pula trybu), `guardianOwned`; ekrany nie liczą tego same
 - `wishEgg.ts` — `wishEgg(save) → { cost, dreamApplies, unlocked, available }`: jedyne źródło prawdy o Jajku Życzeń (pula, cena, odblokowanie); import z `rewards.ts`, `village.ts` i katalogu potworków
 - `time.ts` — `dayStamp(now)`: lokalny znacznik dnia, czysty względem wstrzykiwanego `now`
 - `debug.ts` — `simulateRound`: gra pełną rundę funkcjami z `round.ts` (nie lustro logiki — nie ma czego utrzymywać w dwóch miejscach); `distributeStars` steruje czasem odpowiedzi tak, by wyszła zadana suma gwiazdek
@@ -33,6 +33,7 @@ Logika pedagogiczna i ekonomia nagród jako czyste funkcje — bez Reacta, DOM-u
 - Jajko Życzeń: store (guard `buyWishEgg`) i UI (przycisk, etykieta „(wymarzony!)") czytają TEN SAM obiekt `wishEgg(save)` — cena i etykieta zgadzają się z konstrukcji; podłogę `WISH_PRICE_FLOOR` egzekwuje samo `wishEggPrice` (żaden konsument nie może jej zgubić); sufit ogranicza **dopłatę, nie cenę końcową** (premia za rzadkość wymarzonego przeżywa sufit i zniżkę fontanny); cena maks ≤ `ISKIERKI_CAP`. Licznik kupionych = `achievementStats.wishEggsBought` — świadomie bez nowego pola zapisu.
 - Żołd: wolna runda zawsze dostaje bazę; bonusy obecności bez streaka — przerwa niczego nie zabiera.
 - Wyprawy: postęp = UKOŃCZONE rundy, **nigdy zegar** (żadnych `Date.now()`/timerów w tej mechanice); strata nagrody niemożliwa; ekonomia uzupełnia żołd, nie zastępuje go.
+- Znalezisko z wyprawy jest niezależne od wymarzonego i jajek: gotowy potworek z puli Jajka Życzeń (`FINDABLE_IDS` w `expeditions.ts`) przyjęty przez `grantMonster` przy finalizacji; przy skompletowanej puli UI nic nie obiecuje. Pojęcie „tropu" wycofane — nie wracać.
 - Kosmetyka: kupowana raz, zakładanie darmowe i nielimitowane (jeden przedmiot na wielu potworkach naraz — przebieranki mają być zabawą, nie grindem); katalog append-friendly (projektowany powtarzalny zlew iskierek); stock rotacyjny/timery odrzucone (presja/FOMO).
 - Zasada roota „szybkość tylko nagradza" obowiązuje przy każdej zmianie w tym module.
 

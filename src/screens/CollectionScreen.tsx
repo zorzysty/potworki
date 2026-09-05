@@ -1,8 +1,9 @@
 import { useState } from "react"
 import { BigButton } from "../components/BigButton"
+import { CARD_SHELL, CardModal } from "../components/CardModal"
 import { CosmeticArt, EquippedBackground } from "../components/CosmeticArt"
+import { ExpeditionDetails } from "../components/ExpeditionDetails"
 import { HelpTip } from "../components/HelpTip"
-import { ModalCloseX } from "../components/ModalCloseX"
 import { MonsterStage } from "../components/MonsterStage"
 import { CARD_THEME, RARITY_META } from "../components/rarity"
 import { ownedCount as collectionCount } from "../game/collection"
@@ -17,6 +18,7 @@ import {
 	EXPEDITIONS,
 	expeditionProgress,
 	expeditionUnlocked,
+	findChanceLabel,
 } from "../game/expeditions"
 import { RARITY_ORDER } from "../game/rewards"
 import { buildingLevel } from "../game/village"
@@ -184,16 +186,17 @@ function ExpeditionSection({
 }) {
 	const expedition = useGame((s) => s.expedition)
 	const totalRounds = useGame((s) => s.totalRounds)
+	const ownedMonsters = useGame((s) => s.ownedMonsters)
 	const companionId = useGame((s) => s.companionId)
 	const village = useGame((s) => s.village)
 	const sendExpedition = useGame((s) => s.sendExpedition)
-	const recallExpedition = useGame((s) => s.recallExpedition)
 	const [open, setOpen] = useState(false)
 
 	const isTraveler = expedition?.monsterId === monsterId
-	const progress = expedition
-		? expeditionProgress(expedition, totalRounds)
-		: null
+	const progress =
+		isTraveler && expedition
+			? expeditionProgress(expedition, totalRounds)
+			: null
 
 	return (
 		<div className="w-full rounded-2xl bg-emerald-50">
@@ -205,7 +208,7 @@ function ExpeditionSection({
 				>
 					<span>
 						Wyprawa 🎒
-						{isTraveler && progress && (
+						{progress && (
 							<span className="ml-2 text-sm font-extrabold text-emerald-600">
 								{progress.done}/{progress.total}
 							</span>
@@ -220,23 +223,14 @@ function ExpeditionSection({
 				<HelpTip
 					placement="top"
 					align="right"
-					text="Wyślij potworka na wyprawę! Każda ukończona runda przybliża go do powrotu — wróci z iskierkami ✨. Kolejne wyprawy otwiera Plac Zabaw w Wiosce. W każdej chwili możesz go zawrócić, nic się nie stanie."
+					text="Wyślij potworka na wyprawę! Każda ukończona runda przybliża go do powrotu — wróci z iskierkami ✨, a z dalszych wypraw czasem przyprowadzi nowego potworka! Kolejne wyprawy otwiera Plac Zabaw w Wiosce. W każdej chwili możesz go zawrócić, nic się nie stanie."
 				/>
 			</div>
 			{open &&
-				(isTraveler && progress ? (
+				(isTraveler ? (
 					<div className="flex flex-col gap-2 px-3 pb-3">
-						{/* status podróżnika */}
-						<div className="flex items-center justify-center gap-1.5 rounded-2xl bg-white px-4 py-3 text-lg font-extrabold text-emerald-600">
-							🎒 W drodze: {progress.done}/{progress.total} rund
-						</div>
-						<BigButton
-							onClick={recallExpedition}
-							variant="secondary"
-							className="w-full py-3 text-lg"
-						>
-							Zawróć
-						</BigButton>
+						{/* te same szczegóły co modal na Home */}
+						<ExpeditionDetails />
 					</div>
 				) : monsterId === companionId ? (
 					// przyjaciel nigdy nie wyjeżdża:
@@ -253,6 +247,7 @@ function ExpeditionSection({
 					<div className="flex flex-col gap-2 px-3 pb-3">
 						{EXPEDITIONS.map((def) => {
 							const unlocked = expeditionUnlocked(village, def.id)
+							const label = findChanceLabel(def, ownedMonsters)
 							// treść wiersza WSPÓLNA dla obu gałęzi — typ zablokowany bramą
 							// Placu Zabaw to zajawka (wzór półek Sklepiku): nazwa i nagroda
 							// w pełnym kontraście, chip kieruje do budowy, nigdy ton błędu
@@ -267,13 +262,17 @@ function ExpeditionSection({
 											<span className="text-amber-500">
 												+{def.rewardIskierki} ✨
 											</span>
-											{/* podpowiedź tropu tylko dla pewniaka (wielka) */}
-											{def.tropChance >= 1 && " · 🔍 trop!"}
 										</span>
 									</span>
 									<span className="text-xs font-bold text-slate-400">
 										{def.description}
 									</span>
+									{/* własny chip, nie w nagłówku (długi tekst rozpychał kartę) */}
+									{label && (
+										<span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-extrabold text-violet-600">
+											{label}
+										</span>
+									)}
 									{!unlocked && (
 										<span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-extrabold text-sky-600">
 											{buildingLevel(village, "plac-zabaw") === 0
@@ -284,7 +283,7 @@ function ExpeditionSection({
 								</>
 							)
 							const rowClass =
-								"flex min-h-16 flex-col items-start justify-center gap-0.5 rounded-2xl px-4 py-2"
+								"flex min-h-16 w-full min-w-0 flex-col items-start justify-center gap-1 rounded-2xl px-4 py-2"
 							return unlocked ? (
 								<button
 									key={def.id}
@@ -309,13 +308,6 @@ function ExpeditionSection({
 	)
 }
 
-// Powłoka karty (przewijalny kontener modala) jest WSPÓLNA dla obu gałęzi —
-// różni je tylko klasa ramki, więc klasy siedzą w jednym miejscu: strojenie
-// wysokości/scrolla karty (max-h + overflow-y) było już raz dopasowywane i
-// nie może się rozjechać między posiadanym a nieposiadanym.
-const CARD_SHELL =
-	"flex max-h-[88vh] w-full flex-col items-center gap-3 overflow-y-auto rounded-[2rem] border-4 bg-white p-5 shadow-2xl"
-
 // Karta kolekcjonerska POSIADANEGO potworka: strefy okno z artem → baner →
 // opis → mini-staty → ciekawostka → przyjaciel → Ubierz 🎩 → Wyprawa 🎒
 // (kolejność sekcji binding w plans/README.md „Shared-surface governance”).
@@ -332,6 +324,7 @@ function MonsterCard({
 	const owned = useGame((s) => s.ownedMonsters[monsterId])
 	const companionId = useGame((s) => s.companionId)
 	const expedition = useGame((s) => s.expedition)
+	const isTraveler = expedition?.monsterId === monsterId
 	const setCompanion = useGame((s) => s.setCompanion)
 	const unlockedStage = useGame((s) => s.unlockedStage)
 	const cosmetics = useGame((s) => s.cosmetics)
@@ -423,8 +416,15 @@ function MonsterCard({
 				)}
 				<div className="relative flex justify-center">
 					{/* przez MonsterStage — karta pokazuje założony strój
-				    (każdy potworek z kosmetyką renderuje się przez Stage) */}
-					<MonsterStage id={monsterId} size={180} animate={true} />
+				    (każdy potworek z kosmetyką renderuje się przez Stage);
+				    podróżnik „poszedł" — w oknie zostaje plecak, reszta karty bez zmian */}
+					{isTraveler ? (
+						<div className="anim-float flex h-[180px] items-center justify-center text-[7rem] leading-none">
+							🎒
+						</div>
+					) : (
+						<MonsterStage id={monsterId} size={180} animate={true} />
+					)}
 				</div>
 			</div>
 
@@ -616,6 +616,7 @@ export function CollectionScreen() {
 	const village = useGame((s) => s.village)
 	// cena Jajka Życzeń rośnie z każdym kupionym (licznik w achievementStats)
 	const achievementStats = useGame((s) => s.achievementStats)
+	const expedition = useGame((s) => s.expedition)
 	const [selectedId, setSelectedId] = useState<number | null>(null)
 
 	const ownedCount = collectionCount(ownedMonsters)
@@ -723,7 +724,12 @@ export function CollectionScreen() {
 									className="rounded-xl"
 								/>
 							)}
-							{owned ? (
+							{monster.id === expedition?.monsterId ? (
+								// podróżnik: plecak zamiast sprite'a (reszta kafla bez zmian)
+								<div className="relative flex aspect-square w-full items-center justify-center text-6xl">
+									🎒
+								</div>
+							) : owned ? (
 								<MonsterStage
 									id={monster.id}
 									size="100%"
@@ -766,34 +772,22 @@ export function CollectionScreen() {
 			</div>
 
 			{selected && (
-				<div
-					className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-5 backdrop-blur-sm"
-					onClick={() => setSelectedId(null)}
+				<CardModal
+					onClose={() => setSelectedId(null)}
+					closeLabel="Zamknij kartę"
 				>
-					{/* wrapper NIE przewija się (przewija karta w środku), więc ✕
-					    w rogu jest ZAWSZE widoczny — „Zamknij" na dole długiej karty
-					    bywa poza viewportem */}
-					<div
-						className="anim-pop relative w-full max-w-sm"
-						onClick={(e) => e.stopPropagation()}
-					>
-						<ModalCloseX
+					{selectedOwned ? (
+						<MonsterCard
+							monsterId={selected.id}
 							onClose={() => setSelectedId(null)}
-							label="Zamknij kartę"
 						/>
-						{selectedOwned ? (
-							<MonsterCard
-								monsterId={selected.id}
-								onClose={() => setSelectedId(null)}
-							/>
-						) : (
-							<MonsterCardLocked
-								monsterId={selected.id}
-								onClose={() => setSelectedId(null)}
-							/>
-						)}
-					</div>
-				</div>
+					) : (
+						<MonsterCardLocked
+							monsterId={selected.id}
+							onClose={() => setSelectedId(null)}
+						/>
+					)}
+				</CardModal>
 			)}
 		</div>
 	)

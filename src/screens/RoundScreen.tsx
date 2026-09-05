@@ -4,6 +4,7 @@ import { CheerCompanion } from "../components/Companion"
 import { Keypad } from "../components/Keypad"
 import { QuestionCard } from "../components/QuestionCard"
 import { StarMeter } from "../components/StarMeter"
+import { useScrollLock } from "../components/useScrollLock"
 import { guardianOwned } from "../game/collection"
 import { REGIONS } from "../monsters/world"
 import { useGame } from "../store/store"
@@ -23,6 +24,7 @@ export function RoundScreen({
 	// w akcjach store — nakładka zasłania tylko keypad, patrz store/
 	const paused = round?.paused ?? false
 	const setPaused = useGame((s) => s.setPaused)
+	useScrollLock(paused)
 
 	const phase = round?.phase
 	useEffect(() => {

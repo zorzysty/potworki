@@ -16,11 +16,26 @@ export const ownedCount = (owned: OwnedMonsters): number =>
 export const isCollectionComplete = (owned: OwnedMonsters): boolean =>
 	ownedCount(owned) === MONSTER_COUNT
 
-// Pula trybu (np. mnożeniowa dla Jajka Życzeń) domyka się PRZED kompletem katalogu.
+// Płaska pula trybu (Jajko Życzeń i znaleziska wypraw losują z mnożeniowej —
+// bez legendarnych ekskluzywnych innych trybów); domyka się PRZED kompletem katalogu.
+export const poolIds = (mode: GameMode): number[] =>
+	Object.values(idsByRarityForMode(mode)).flat()
+
 export const isPoolComplete = (owned: OwnedMonsters, mode: GameMode): boolean =>
-	Object.values(idsByRarityForMode(mode))
-		.flat()
-		.every((id) => id in owned)
+	poolIds(mode).every((id) => id in owned)
+
+// Przyjęcie potworka do kolekcji — JEDNA reguła dla wyklucia i znaleziska z
+// wyprawy: wpis z hatchedAt + zwolnienie slotu wymarzonego, gdy to on.
+export function grantMonster(
+	save: { ownedMonsters: OwnedMonsters; dreamMonsterId: number | null },
+	id: number,
+	now: number,
+): { ownedMonsters: OwnedMonsters; dreamMonsterId: number | null } {
+	return {
+		ownedMonsters: { ...save.ownedMonsters, [id]: { hatchedAt: now } },
+		dreamMonsterId: save.dreamMonsterId === id ? null : save.dreamMonsterId,
+	}
+}
 
 // Od najnowszego do najstarszego; remis w hatchedAt rozstrzyga niższy `id`
 // (kolejność katalogu) — deterministycznie, niezależnie od kolejności kluczy.

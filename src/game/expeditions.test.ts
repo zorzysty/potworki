@@ -64,12 +64,12 @@ describe("katalog wypraw — integralność", () => {
 		expect(expeditionUnlocked(withPlac(2), "wielka")).toBe(false)
 		expect(expeditionUnlocked(withPlac(3), "wielka")).toBe(true)
 	})
-	test("każdy typ ma niepuste teksty i tropChance w 0..1", () => {
+	test("każdy typ ma niepuste teksty i findChance w 0..1", () => {
 		for (const e of EXPEDITIONS) {
 			expect(e.name.length).toBeGreaterThan(0)
 			expect(e.description.length).toBeGreaterThan(0)
-			expect(e.tropChance).toBeGreaterThanOrEqual(0)
-			expect(e.tropChance).toBeLessThanOrEqual(1)
+			expect(e.findChance).toBeGreaterThanOrEqual(0)
+			expect(e.findChance).toBeLessThanOrEqual(1)
 		}
 	})
 })
@@ -146,23 +146,23 @@ describe("resolveExpedition", () => {
 			expect(r.rewardIskierki).toBe(e.rewardIskierki)
 		}
 	})
-	test("zwiad (tropChance 0) → trop zawsze null, nawet przy rand → 0", () => {
+	test("zwiad (findChance 0) → znalezisko zawsze null, nawet przy rand → 0", () => {
 		const r = resolveExpedition(
 			trip({ typeId: "zwiad" }),
 			none,
 			allIds,
 			() => 0,
 		)
-		expect(r.tropMonsterId).toBeNull()
+		expect(r.foundMonsterId).toBeNull()
 	})
-	test("wyprawa: rand wysoki → null, rand niski → trop", () => {
+	test("wyprawa: rand wysoki → null, rand niski → znalezisko", () => {
 		const high = resolveExpedition(
 			trip({ typeId: "wyprawa" }),
 			none,
 			allIds,
 			() => 0.99,
 		)
-		expect(high.tropMonsterId).toBeNull()
+		expect(high.foundMonsterId).toBeNull()
 		const rolls = [0.1, 0]
 		const low = resolveExpedition(
 			trip({ typeId: "wyprawa" }),
@@ -170,18 +170,18 @@ describe("resolveExpedition", () => {
 			allIds,
 			() => rolls.shift() ?? 0,
 		)
-		expect(low.tropMonsterId).toBe(0)
+		expect(low.foundMonsterId).toBe(0)
 	})
-	test("wielka (tropChance 1) → trop zawsze, gdy coś nieposiadane", () => {
+	test("wielka (findChance 1) → znalezisko zawsze, gdy coś nieposiadane", () => {
 		const r = resolveExpedition(
 			trip({ typeId: "wielka" }),
 			none,
 			allIds,
 			() => 0.999,
 		)
-		expect(r.tropMonsterId).not.toBeNull()
+		expect(r.foundMonsterId).not.toBeNull()
 	})
-	test("trop NIGDY nie jest posiadanym id (200 seedowanych losowań)", () => {
+	test("znalezisko NIGDY nie jest posiadanym id (200 seedowanych losowań)", () => {
 		const owned: ReadonlySet<number> = new Set(
 			allIds.filter((id) => id % 2 === 0),
 		)
@@ -193,11 +193,11 @@ describe("resolveExpedition", () => {
 				allIds,
 				rand,
 			)
-			expect(r.tropMonsterId).not.toBeNull()
-			expect(owned.has(r.tropMonsterId as number)).toBe(false)
+			expect(r.foundMonsterId).not.toBeNull()
+			expect(owned.has(r.foundMonsterId as number)).toBe(false)
 		}
 	})
-	test("komplet kolekcji → trop null (nagroda zostaje)", () => {
+	test("komplet puli → znalezisko null (nagroda zostaje)", () => {
 		const all: ReadonlySet<number> = new Set(allIds)
 		const r = resolveExpedition(
 			trip({ typeId: "wielka" }),
@@ -205,7 +205,7 @@ describe("resolveExpedition", () => {
 			allIds,
 			() => 0,
 		)
-		expect(r.tropMonsterId).toBeNull()
+		expect(r.foundMonsterId).toBeNull()
 		expect(r.rewardIskierki).toBe(
 			EXPEDITIONS_BY_ID.get("wielka")?.rewardIskierki as number,
 		)

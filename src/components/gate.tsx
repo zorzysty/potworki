@@ -8,6 +8,7 @@ import {
 } from "react"
 import { STAGES } from "../game/facts"
 import { REGIONS } from "../monsters/world"
+import { useScrollLock } from "./useScrollLock"
 
 export const CRYSTALS = 8
 
@@ -274,6 +275,7 @@ export function GateReveal({
 	onDone: () => void
 }) {
 	const [revealed, setRevealed] = useState(false)
+	useScrollLock()
 
 	useEffect(() => {
 		confetti({ particleCount: 140, spread: 90, origin: { y: 0.5 } })

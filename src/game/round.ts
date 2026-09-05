@@ -1,4 +1,3 @@
-import { MONSTERS } from "../monsters/catalog"
 import type { AchievementCounters, SaveState } from "../store/schema"
 import {
 	applyAnswer,
@@ -12,8 +11,13 @@ import {
 	visitRoundPlan,
 	visitStage,
 } from "./adaptive"
-import { ownedIds } from "./collection"
-import { isExpeditionDone, resolveExpedition } from "./expeditions"
+import { grantMonster, ownedIds } from "./collection"
+import {
+	type ExpeditionTypeId,
+	FINDABLE_IDS,
+	isExpeditionDone,
+	resolveExpedition,
+} from "./expeditions"
 import type { Fact, FactKey, GameMode, RoundQuestion } from "./facts"
 import {
 	expectedAnswer,
@@ -70,14 +74,15 @@ export interface RoundState {
 	// wybiera region/Strażnika i włącza podziękowanie (+VISIT_BONUS ✨) przy finalizacji.
 	// Efemeryczne (RoundState nie jest persystowany). null = zwykła runda.
 	visitStage: number | null
-	// powrót z wyprawy rozstrzygnięty przy finalizacji TEJ rundy (karta w
-	// podsumowaniu): nagroda już doliczona do iskierek; trop = wskazówka o
-	// nieposiadanym potworku (null gdy brak). Efemeryczne jak wageEarned —
-	// bez migracji. null = nikt nie wrócił w tej rundzie.
+	// powrót z wyprawy rozstrzygnięty przy finalizacji TEJ rundy (splash nad
+	// podsumowaniem): nagroda już doliczona do iskierek, znaleziony potworek
+	// już dopisany do kolekcji (null gdy wyprawa wróciła bez). Efemeryczne jak
+	// wageEarned — bez migracji. null = nikt nie wrócił w tej rundzie.
 	expeditionReturn: {
 		monsterId: number
+		typeId: ExpeditionTypeId
 		rewardIskierki: number
-		tropMonsterId: number | null
+		foundMonsterId: number | null
 	} | null
 }
 
@@ -385,7 +390,7 @@ function finishRound(
 	// podziękowanie Strażnika za rundę-wizytę — OSOBNO od żołdu (wageEarned zostaje
 	// czystym żołdem; podsumowanie pokazuje bonus własną linią)
 	const visitBonus = round.visitStage !== null ? VISIT_BONUS : 0
-	const settled = settleExpedition(save, rand)
+	const settled = settleExpedition(save, rand, now)
 
 	const stats = { ...save.achievementStats }
 	if (round.stars === MAX_STARS_PER_ROUND) stats.perfectRounds++
@@ -395,10 +400,14 @@ function finishRound(
 	return {
 		patch: {
 			unlockedStage,
-			iskierki: credit(save.iskierki, wageEarned + visitBonus + settled.reward)
-				.wallet,
+			iskierki: credit(
+				save.iskierki,
+				wageEarned +
+					visitBonus +
+					(settled.expeditionReturn?.rewardIskierki ?? 0),
+			).wallet,
 			totalRounds: save.totalRounds + 1,
-			expedition: settled.expedition,
+			...settled.patch,
 			achievementStats: bumpDaysPlayed(stats, now),
 		},
 		round: {
@@ -422,33 +431,33 @@ function bumpDaysPlayed(
 	return { ...stats, daysPlayed: stats.daysPlayed + 1, lastPlayedDay: today }
 }
 
-// Pula tropu z wyprawy: WSZYSTKIE id katalogu (wskazówka może dotyczyć każdego
-// nieposiadanego — także ekskluzywnych trybów, bo wymarzonym może być każdy).
-const ALL_MONSTER_IDS: readonly number[] = MONSTERS.map((m) => m.id)
-
-// Powrót wyprawy przy finalizacji rundy (totalRounds+1 = właśnie ukończona runda).
-// Gdy nikt nie wraca — stan wyprawy bez zmian, reward 0.
+// Powrót wyprawy przy finalizacji rundy (totalRounds+1 = właśnie ukończona
+// runda). Znaleziony potworek wchodzi do kolekcji TUTAJ (grantMonster), nie w
+// UI — splash tylko pokazuje. Gdy nikt nie wraca: null + pusty patch.
 function settleExpedition(
 	save: SaveState,
 	rand: Rand,
+	now: number,
 ): {
-	expedition: SaveState["expedition"]
 	expeditionReturn: RoundState["expeditionReturn"]
-	reward: number
+	patch: Partial<SaveState>
 } {
 	const e = save.expedition
 	if (!e || !isExpeditionDone(e, save.totalRounds + 1)) {
-		return { expedition: e, expeditionReturn: null, reward: 0 }
+		return { expeditionReturn: null, patch: {} }
 	}
 	const r = resolveExpedition(
 		e,
 		new Set(ownedIds(save.ownedMonsters)),
-		ALL_MONSTER_IDS,
+		FINDABLE_IDS,
 		rand,
 	)
+	const found = r.foundMonsterId
 	return {
-		expedition: null,
-		expeditionReturn: { monsterId: e.monsterId, ...r },
-		reward: r.rewardIskierki,
+		expeditionReturn: { monsterId: e.monsterId, typeId: e.typeId, ...r },
+		patch: {
+			expedition: null,
+			...(found === null ? {} : grantMonster(save, found, now)),
+		},
 	}
 }

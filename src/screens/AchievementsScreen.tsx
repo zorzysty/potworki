@@ -2,8 +2,9 @@ import { type CSSProperties, useEffect, useRef, useState } from "react"
 import { REWARD_BY_DIFFICULTY } from "../achievements/catalog"
 import { type AchievementRow, achievementRows } from "../achievements/evaluate"
 import { TIER_META } from "../components/achievementTier"
+import { CardModal } from "../components/CardModal"
 import { HelpTip } from "../components/HelpTip"
-import { ModalCloseX } from "../components/ModalCloseX"
+import { useScrollLock } from "../components/useScrollLock"
 import { useGame } from "../store/store"
 
 // Lot iskierek po odbiorze (zgrane z .anim-claim-fly w styles.css): rozprysk ze środka ekranu,
@@ -213,6 +214,7 @@ function ResetModal({
 	onConfirm: () => void
 	onCancel: () => void
 }) {
+	useScrollLock()
 	return (
 		<div
 			className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-5 backdrop-blur-sm"
@@ -266,16 +268,10 @@ function AchievementModal({
 	const shown = Math.min(progress.current, progress.target)
 
 	return (
-		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-5 backdrop-blur-sm"
-			onClick={onClose}
-		>
+		<CardModal onClose={onClose} closeLabel="Zamknij">
 			<div
-				className={`anim-pop relative flex w-full max-w-sm flex-col gap-4 rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${unlocked ? tier.border : "border-slate-300"}`}
-				onClick={(e) => e.stopPropagation()}
+				className={`flex w-full flex-col gap-4 rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${unlocked ? tier.border : "border-slate-300"}`}
 			>
-				{/* karta się nie przewija, więc ✕ może siedzieć na niej wprost */}
-				<ModalCloseX onClose={onClose} />
 				{/* ===== PANEL-BOHATER: ikona + odznaka nagrody w rogu ===== */}
 				<div
 					className={`relative flex items-center justify-center rounded-3xl bg-gradient-to-br py-9 ${unlocked ? tier.tint : "from-slate-100 to-slate-200"}`}
@@ -358,6 +354,6 @@ function AchievementModal({
 					</div>
 				)}
 			</div>
-		</div>
+		</CardModal>
 	)
 }

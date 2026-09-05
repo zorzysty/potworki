@@ -5,7 +5,7 @@ import {
 	unlockAchievements,
 } from "../achievements/evaluate"
 import { decayStats, emptyStats, reachedGoal } from "../game/adaptive"
-import { ownedIds } from "../game/collection"
+import { grantMonster, ownedIds } from "../game/collection"
 import type { CosmeticId, CosmeticSlot } from "../game/cosmetics"
 import { COSMETICS_BY_ID, isOwned, sklepikLevel } from "../game/cosmetics"
 import { simulateRound } from "../game/debug"
@@ -345,15 +345,10 @@ export const useGame = create<GameState>()(
 					})
 				} else {
 					const isDream = state.dreamMonsterId === monsterId
-					const ownedMonsters = {
-						...state.ownedMonsters,
-						[monsterId]: { hatchedAt: Date.now() },
-					}
 					set({
 						pendingEggs,
 						legendaryPity,
-						ownedMonsters,
-						dreamMonsterId: isDream ? null : state.dreamMonsterId,
+						...grantMonster(state, monsterId, Date.now()),
 						achievementStats,
 						lastHatch: {
 							monsterId,
