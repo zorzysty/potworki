@@ -18,6 +18,11 @@ export interface FactStats {
 // „opanować" to więcej niż „odblokować bramę"; ~kilka szybkich poprawnych.
 export const MASTERY_GOAL = 0.8
 
+// Flaga „opanowane" po ustawieniu mastery na `mastery` — JEDYNE miejsce reguły
+// (applyAnswer i debug setter).
+export const reachedGoal = (stats: FactStats, mastery: number): boolean =>
+	stats.mastered || mastery >= MASTERY_GOAL
+
 export function emptyStats(): FactStats {
 	return {
 		attempts: 0,
@@ -54,7 +59,7 @@ export function applyAnswer(
 		next.mastery = stats.mastery + (1 - stats.mastery) * gain
 		next.correct = stats.correct + 1
 		next.streak = stats.streak + 1
-		next.mastered = stats.mastered || next.mastery >= MASTERY_GOAL
+		next.mastered = reachedGoal(stats, next.mastery)
 	} else {
 		next.mastery = stats.mastery * 0.5
 		next.streak = 0

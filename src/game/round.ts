@@ -12,6 +12,7 @@ import {
 	visitRoundPlan,
 	visitStage,
 } from "./adaptive"
+import { ownedIds } from "./collection"
 import { isExpeditionDone, resolveExpedition } from "./expeditions"
 import type { Fact, FactKey, GameMode, RoundQuestion } from "./facts"
 import {
@@ -186,14 +187,14 @@ export function newVisitRound(
 
 // Zatwierdzenie wpisanej odpowiedzi (`round.answer`). Pierwsza próba = commit
 // statystyk i fragmentu od razu (zamknięcie karty w środku rundy nie traci
-// nauki) — `committed: true`. W fazie „wrong" przepisanie poprawnego wyniku to
-// czysty rytuał utrwalający (bez commitu). null = nic do zrobienia.
+// nauki). W fazie „wrong" przepisanie poprawnego wyniku to czysty rytuał
+// utrwalający (pusty patch). null = nic do zrobienia.
 export function submitAnswer(
 	save: SaveState,
 	round: RoundState,
 	rand: Rand,
 	now: number,
-): (RoundStep & { committed: boolean }) | null {
+): RoundStep | null {
 	if (round.answer === "") return null
 	const q = round.question
 	const correct = Number(round.answer) === expectedAnswer(q, round.mode)
@@ -201,7 +202,6 @@ export function submitAnswer(
 	if (round.phase === "wrong") {
 		return {
 			patch: {},
-			committed: false,
 			round: correct
 				? { ...round, phase: "correct", lastStars: 0 }
 				: { ...round, answer: "", shakeNonce: round.shakeNonce + 1 },
@@ -273,7 +273,6 @@ export function submitAnswer(
 	if (correct) {
 		return {
 			patch,
-			committed: true,
 			round: {
 				...round,
 				phase: "correct",
@@ -292,7 +291,6 @@ export function submitAnswer(
 	}
 	return {
 		patch,
-		committed: true,
 		round: {
 			...round,
 			phase: "wrong",
@@ -390,16 +388,9 @@ function finishRound(
 	const settled = settleExpedition(save, rand)
 
 	const stats = { ...save.achievementStats }
-	const deltas: Partial<Record<NumericCounter, number>> = {
-		perfectRounds: round.stars === MAX_STARS_PER_ROUND ? 1 : 0,
-		visitRoundsCompleted: round.visitStage !== null ? 1 : 0,
-		expeditionsCompleted: settled.expeditionReturn !== null ? 1 : 0,
-	}
-	for (const [key, delta] of Object.entries(deltas) as [
-		NumericCounter,
-		number,
-	][])
-		stats[key] += delta
+	if (round.stars === MAX_STARS_PER_ROUND) stats.perfectRounds++
+	if (round.visitStage !== null) stats.visitRoundsCompleted++
+	if (settled.expeditionReturn !== null) stats.expeditionsCompleted++
 
 	return {
 		patch: {
@@ -419,12 +410,6 @@ function finishRound(
 		},
 	}
 }
-
-type NumericCounter = {
-	[K in keyof AchievementCounters]: AchievementCounters[K] extends number
-		? K
-		: never
-}[keyof AchievementCounters]
 
 // Podbija licznik dni gry przy PIERWSZEJ ukończonej rundzie danego dnia
 // (kumulacyjnie, nie streak — przerwa nie zeruje).
@@ -457,7 +442,7 @@ function settleExpedition(
 	}
 	const r = resolveExpedition(
 		e,
-		new Set(Object.keys(save.ownedMonsters).map(Number)),
+		new Set(ownedIds(save.ownedMonsters)),
 		ALL_MONSTER_IDS,
 		rand,
 	)

@@ -1,8 +1,10 @@
 /// <reference types="bun-types" />
+
 import { beforeEach, describe, expect, test } from "bun:test"
 import { ACHIEVEMENTS } from "../achievements/catalog"
 import type { FactStats } from "../game/adaptive"
 import { emptyStats, stageFacts, VISIT_BONUS } from "../game/adaptive"
+import { isCollectionComplete } from "../game/collection"
 import { COSMETICS } from "../game/cosmetics"
 import { EXPEDITIONS_BY_ID } from "../game/expeditions"
 import type { FactKey } from "../game/facts"
@@ -442,7 +444,7 @@ describe("hatchEgg — gwarancje", () => {
 		expect(game().iskierki).toBe(999)
 	})
 
-	test("ostatni brakujący potworek: lastHatch.collectionComplete = true", () => {
+	test("ostatni brakujący potworek: isNew i katalog domknięty (ekran liczy fanfary z ownedMonsters)", () => {
 		suppressAchievements()
 		const allButZero = Object.fromEntries(
 			Array.from({ length: MONSTER_COUNT - 1 }, (_, i) => [
@@ -458,14 +460,7 @@ describe("hatchEgg — gwarancje", () => {
 		})
 		game().hatchEgg()
 		expect(game().lastHatch?.isNew).toBe(true)
-		expect(game().lastHatch?.collectionComplete).toBe(true)
-		// zwykłe wyklucie wcześniej — false
-		useGame.setState({
-			ownedMonsters: {},
-			pendingEggs: [{ quality: "normal", mode: "mult" }],
-		})
-		game().hatchEgg()
-		expect(game().lastHatch?.collectionComplete).toBe(false)
+		expect(isCollectionComplete(game().ownedMonsters)).toBe(true)
 	})
 
 	test("duplikat przy prawie pełnym portfelu: ekran obiecuje tyle, ile dostał portfel", () => {

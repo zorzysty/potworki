@@ -5,6 +5,7 @@ import { EGG_LABELS, EggView } from "../components/EggView"
 import { MonsterStage } from "../components/MonsterStage"
 import { NEST_SLOTS, NestArt, nestSlotStyle } from "../components/NestArt"
 import { RARITY_META } from "../components/rarity"
+import { isCollectionComplete } from "../game/collection"
 import { MONSTERS } from "../monsters/catalog"
 import { useGame } from "../store/store"
 
@@ -24,6 +25,7 @@ function iskierkiWord(n: number): string {
 export function HatchScreen() {
 	const pendingEggs = useGame((s) => s.pendingEggs)
 	const lastHatch = useGame((s) => s.lastHatch)
+	const ownedMonsters = useGame((s) => s.ownedMonsters)
 	const hatchEgg = useGame((s) => s.hatchEgg)
 	const clearLastHatch = useGame((s) => s.clearLastHatch)
 	const goTo = useGame((s) => s.goTo)
@@ -50,7 +52,9 @@ export function HatchScreen() {
 	const safeIndex = Math.min(selectedIndex, Math.max(0, pendingEggs.length - 1))
 	const egg = pendingEggs[safeIndex]
 	const monster = lastHatch ? MONSTERS[lastHatch.monsterId] : undefined
-	const collectionComplete = lastHatch?.collectionComplete === true
+	// ten wyklut domknął katalog (fanfary): ownedMonsters jest już po wpisie
+	const collectionComplete =
+		lastHatch?.isNew === true && isCollectionComplete(ownedMonsters)
 
 	const nestOrder =
 		order.length === pendingEggs.length ? order : pendingEggs.map((_, i) => i)

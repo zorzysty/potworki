@@ -373,9 +373,9 @@ function AuraFx({ id, animate }: { id: CosmeticId; animate: boolean }) {
 	)
 }
 
-// Założone rzeczy potworka (kapelusz na głowie + aura wokół) — do slotu
-// `overlay` MonsterStage. Callerzy komponują ją FRAGMENTEM z nakładką reakcji:
-// overlay={<><EquippedOverlay …/>{reakcja}</>}. Brak wpisów → null (zero DOM).
+// Założone rzeczy potworka (kapelusz na głowie + aura wokół). Renderuje ją
+// WYŁĄCZNIE MonsterStage (caller podaje tylko nakładkę reakcji przez `overlay`).
+// Brak wpisów → null (zero DOM).
 // Ramka (slot "frame") celowo NIE tutaj: renderuje ją kontener karty
 // kolekcjonerskiej w CollectionScreen (cardClasses), nie nakładka na potworku.
 export function EquippedOverlay({

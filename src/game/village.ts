@@ -187,7 +187,7 @@ export const WAGE_GOOD_ROUND_STARS = 15
 // + poziom ogródka (0–3) — „poranna rosa": dolicza się WYŁĄCZNIE do pierwszej
 //   rundy dnia (kwiaty zbierają rosę przez noc). Jak bonus dnia: bez streaka,
 //   przerwa niczego nie zabiera.
-// Zakres 1..10; cap portfela (ISKIERKI_CAP) egzekwuje store.
+// Zakres 1..10; cap portfela nakłada `credit` w rewards.ts.
 export function roundWage(
 	v: VillageState,
 	stars: number,
@@ -233,7 +233,6 @@ export function villageRoster(
 		residentSpots: number
 	},
 ): VillageRoster {
-	const ownedIds = Object.keys(ownedMonsters).map(Number)
 	const cap = villageCap(v)
 	const sorted = byRecency(ownedMonsters)
 	const present = sorted.filter((id) => id !== opts.travelerId)
@@ -252,7 +251,7 @@ export function villageRoster(
 		Math.max(0, shown.length - 1),
 	)
 	return {
-		ownedIds,
+		ownedIds: sorted,
 		residentIds: shown.slice(shown.length - residentCount),
 		wanderIds: shown.slice(0, shown.length - residentCount),
 	}

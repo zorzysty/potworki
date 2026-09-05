@@ -28,7 +28,7 @@ function answer(
 	round: RoundState,
 	correct: boolean,
 	elapsed = 0,
-): RoundStep & { committed: boolean } {
+): RoundStep {
 	const expected = expectedAnswer(round.question, round.mode)
 	const r = submitAnswer(
 		save,
@@ -58,7 +58,6 @@ function play(
 		if (r.phase === "wrong") {
 			// rytuał przepisania: bez commitu, przejście w "correct"
 			a = answer(cur, r, true)
-			expect(a.committed).toBe(false)
 			expect(a.patch).toEqual({})
 			r = a.round
 		}

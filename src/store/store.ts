@@ -4,7 +4,8 @@ import {
 	claimAchievement as claimLedger,
 	unlockAchievements,
 } from "../achievements/evaluate"
-import { decayStats, emptyStats, MASTERY_GOAL } from "../game/adaptive"
+import { decayStats, emptyStats, reachedGoal } from "../game/adaptive"
+import { ownedIds } from "../game/collection"
 import type { CosmeticId, CosmeticSlot } from "../game/cosmetics"
 import { COSMETICS_BY_ID, isOwned, sklepikLevel } from "../game/cosmetics"
 import { simulateRound } from "../game/debug"
@@ -14,7 +15,6 @@ import type { FactKey, GameMode } from "../game/facts"
 
 export type { RoundQuestion } from "../game/facts"
 
-import { isCollectionComplete } from "../game/collection"
 import { expectedAnswer, FACTS_BY_KEY, isMaxStage } from "../game/facts"
 import type { EggQuality, Rarity } from "../game/rewards"
 import {
@@ -62,7 +62,6 @@ export interface HatchResult {
 	isNew: boolean
 	isDream: boolean
 	iskierkiGained: number
-	collectionComplete: boolean // ten wyklut domknął katalog (fanfary na ekranie)
 }
 
 interface GameState extends SaveState {
@@ -103,7 +102,7 @@ interface GameState extends SaveState {
 	) => void
 	applyDecay: () => void
 	markGatesCelebrated: () => void
-	checkAchievements: () => void
+	checkAchievements: (silent?: boolean) => void
 	claimAchievement: (id: string) => void
 	reconcileAchievements: () => void
 	shiftAchievementToast: () => void
@@ -132,7 +131,7 @@ function rollContext(state: SaveState, mode: GameMode) {
 			: null
 	return {
 		idsByRarity,
-		owned: new Set(Object.keys(state.ownedMonsters).map(Number)),
+		owned: new Set(ownedIds(state.ownedMonsters)),
 		dreamId,
 		rarityOf,
 		rand: Math.random,
@@ -276,7 +275,7 @@ export const useGame = create<GameState>()(
 				const r = submitAnswer(state, round, Math.random, Date.now())
 				if (!r) return
 				set({ ...r.patch, round: r.round })
-				if (r.committed) get().checkAchievements()
+				get().checkAchievements()
 			},
 
 			// następne pytanie albo finalizacja (żołd, bonus wizyty, wyprawa, liczniki —
@@ -342,7 +341,6 @@ export const useGame = create<GameState>()(
 							isNew: false,
 							isDream: false,
 							iskierkiGained: gained,
-							collectionComplete: false,
 						},
 					})
 				} else {
@@ -362,7 +360,6 @@ export const useGame = create<GameState>()(
 							isNew: true,
 							isDream,
 							iskierkiGained: 0,
-							collectionComplete: isCollectionComplete(ownedMonsters),
 						},
 					})
 				}
@@ -540,7 +537,8 @@ export const useGame = create<GameState>()(
 			// Sprawdza i odblokowuje świeżo spełnione osiągnięcia (badge „nowe!" do odbioru).
 			// Iskierek NIE wypłaca — odbiera je claimAchievement. Wołane na końcu akcji
 			// zmieniających stan. Idempotentne: te już w ledgerze są pomijane (alreadyUnlocked).
-			checkAchievements: () => {
+			// `silent` = bez toastów (kolejka „zdobyte!" pokazywana przez AchievementToast).
+			checkAchievements: (silent = false) => {
 				const s = get()
 				const { achievements, newlyUnlocked } = unlockAchievements(
 					s,
@@ -549,9 +547,9 @@ export const useGame = create<GameState>()(
 				if (newlyUnlocked.length === 0) return
 				set({
 					achievements,
-					// kolejka toastów „zdobyte!" (efemeryczna) — pokazuje je AchievementToast.
-					// reconcileAchievements NIE dokłada tu nic (odblokowania startowe są ciche).
-					achievementQueue: [...s.achievementQueue, ...newlyUnlocked],
+					achievementQueue: silent
+						? s.achievementQueue
+						: [...s.achievementQueue, ...newlyUnlocked],
 				})
 			},
 
@@ -577,13 +575,7 @@ export const useGame = create<GameState>()(
 			// Jak checkAchievements, ale bez toastów — przy starcie sesji odblokowuje
 			// osiągnięcia, które dziecko już spełnia (po wdrożeniu funkcji / migracji v5→v6),
 			// bez lawiny powiadomień; iskierki czekają do odbioru (postęp dziecka jest święty).
-			reconcileAchievements: () => {
-				const { achievements, newlyUnlocked } = unlockAchievements(
-					get(),
-					Date.now(),
-				)
-				if (newlyUnlocked.length > 0) set({ achievements })
-			},
+			reconcileAchievements: () => get().checkAchievements(true),
 
 			debugSetAllMastery: (value) => {
 				const facts = { ...get().facts }
@@ -592,7 +584,7 @@ export const useGame = create<GameState>()(
 					facts[fact.key] = {
 						...prev,
 						mastery: value,
-						mastered: prev.mastered || value >= MASTERY_GOAL,
+						mastered: reachedGoal(prev, value),
 						attempts: Math.max(1, prev.attempts),
 						lastSeen: Date.now(),
 					}

@@ -1,5 +1,4 @@
-import { MASTERY_GOAL } from "../game/adaptive"
-import { ownedCount } from "../game/collection"
+import { guardianOwned, ownedCount } from "../game/collection"
 import { COSMETICS_BY_ID } from "../game/cosmetics"
 import { ALL_FACTS, isMaxStage, STAGES } from "../game/facts"
 import { BUILDINGS, DECORATIONS, MAX_BUILDING_LEVEL } from "../game/village"
@@ -21,8 +20,6 @@ export const REWARD_BY_DIFFICULTY: Record<Difficulty, number> = {
 	hard: 15,
 	legendary: 25,
 }
-
-export { MASTERY_GOAL }
 
 // Kontekst oceny: trwały zapis + liczniki zdarzeniowe (oba z SaveState).
 export interface AchievementCtx {
@@ -109,7 +106,7 @@ function buildingsAtLeast(save: SaveState, level: number): number {
 
 // Ilu strażników krain (po jednym na region) już posiadamy.
 function ownedGuardians(save: SaveState): number {
-	return REGIONS.filter((r) => r.guardianId in save.ownedMonsters).length
+	return REGIONS.filter((r) => guardianOwned(r, save.ownedMonsters)).length
 }
 
 const MAX_STAGE = STAGES.length - 1

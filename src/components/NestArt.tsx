@@ -1,4 +1,5 @@
-import { type CSSProperties, type ReactNode, useId, useMemo } from "react"
+import { type CSSProperties, memo, type ReactNode, useId } from "react"
+import { mulberry32 } from "../monsters/catalog"
 
 // Gniazdo na ekranie wyklucia: wektorowa miska z plecionych gałązek w idiomie
 // artu wioski (gradienty, kontur w ciemniejszym tonie materiału, światło
@@ -25,9 +26,10 @@ const TWIGS = ["#6B4423", "#8B5A2B", "#A0703C", "#B9834A", "#C99A63"]
 const SHADE = ["#4A2E17", "#5C3A1E", "#6B4423", "#7A5030"]
 
 // slot jajka w % wrappera: środek x, dolna krawędź y, szerokość. Kolejność
-// od środka na zewnątrz — jajko i zajmuje slot i (wybór to podświetlenie,
-// nie przestawianie). Przedni rząd zanurzony w wieńcu (dolna część jajka
-// schowana za przednią warstwą), tylny rząd wyżej i za nim.
+// od środka na zewnątrz; które jajko siedzi w którym slocie decyduje
+// HatchScreen (wybrane jajko jest wyjęte z gniazda). Przedni rząd zanurzony
+// w wieńcu (dolna część jajka schowana za przednią warstwą), tylny rząd wyżej
+// i za nim.
 export interface NestSlot {
 	cx: number
 	bottom: number
@@ -56,16 +58,6 @@ export const NEST_SLOTS: readonly NestSlot[] = [
 	{ cx: 88, bottom: 59, w: 18, z: 1 },
 ]
 
-function mulberry(seed: number) {
-	let a = seed
-	return () => {
-		a = (a + 0x6d2b79f5) | 0
-		let t = Math.imul(a ^ (a >>> 15), 1 | a)
-		t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-	}
-}
-
 // punkt na wieńcu: kąt a, r ∈ [0,1] od krawędzi wewnętrznej do zewnętrznej
 // (poza zakresem = sterczy do środka/na zewnątrz); ryo = zewnętrzna półoś y
 const pt = (a: number, r: number, ryo: number) =>
@@ -92,7 +84,7 @@ function twigs(
 	rMin = -0.05,
 	rMax = 1.05,
 ): Twig[] {
-	const rnd = mulberry(seed)
+	const rnd = mulberry32(seed)
 	const out: Twig[] = []
 	const band = rMax - rMin
 	for (let i = 0; i < n; i++) {
@@ -120,7 +112,7 @@ function straws(
 	n: number,
 	ryo: number,
 ): Twig[] {
-	const rnd = mulberry(seed)
+	const rnd = mulberry32(seed)
 	const out: Twig[] = []
 	for (let i = 0; i < n; i++) {
 		const a = a0 + (a1 - a0) * rnd()
@@ -246,118 +238,121 @@ export function NestArt({
 	style?: CSSProperties
 }) {
 	const uid = useId()
-	const ids = useMemo(
-		() => ({ bowl: `nest-bowl-${uid}`, rim: `nest-rim-${uid}` }),
-		[uid],
-	)
-	const box = `0 0 ${VW} ${VH}`
 	return (
 		<div
 			className={`relative w-full ${className}`}
 			style={{ aspectRatio: `${VW} / ${VH}`, ...style }}
 		>
-			{/* TYŁ: dno miski + tylny brzeg (w cieniu) */}
-			<svg
-				viewBox={box}
-				className="absolute inset-0 h-full w-full"
-				aria-hidden="true"
-			>
-				<defs>
-					<radialGradient id={ids.bowl} cx="50%" cy="35%" r="65%">
-						<stop offset="0%" stopColor="#5C3A1E" />
-						<stop offset="70%" stopColor="#3E2613" />
-						<stop offset="100%" stopColor="#2A1A0C" />
-					</radialGradient>
-				</defs>
-				{/* cień pod gniazdem */}
-				<ellipse
-					cx={CX}
-					cy={CY + RYO_FRONT + 36}
-					rx={RXO}
-					ry={24}
-					fill="#00000055"
-				/>
-				{/* tylny wieniec (w cieniu) */}
-				<path
-					d={`M${CX - RXO} ${CY} A${RXO} ${RYO_BACK} 0 0 1 ${CX + RXO} ${CY} L${CX + RXI} ${CY} A${RXI} ${RYI} 0 0 0 ${CX - RXI} ${CY} Z`}
-					fill="#4A2E17"
-				/>
-				<Strokes list={BACK} />
-				<Strokes list={BACK_LIGHT} opacity={0.6} />
-				<Strokes list={STRAW_BACK} opacity={0.7} />
-				{/* dno gniazda */}
-				<ellipse cx={CX} cy={CY} rx={RXI} ry={RYI} fill={`url(#${ids.bowl})`} />
-				{/* mech i słoma na dnie */}
-				<g fill="none" strokeLinecap="round" opacity={0.55}>
-					<path
-						d="M100 135 Q140 125 176 137"
-						stroke="#E9C46A"
-						strokeWidth={2}
-					/>
-					<path
-						d="M226 131 Q262 121 300 135"
-						stroke="#F4D58D"
-						strokeWidth={2}
-					/>
-					<path
-						d="M130 159 Q200 145 270 161"
-						stroke="#C99A63"
-						strokeWidth={2.5}
-					/>
-					<path
-						d="M160 171 Q200 181 244 169"
-						stroke="#8B5A2B"
-						strokeWidth={2.5}
-					/>
-				</g>
-			</svg>
-
+			<NestBack uid={uid} />
 			{/* JAJKA — pozycjonowane przez HatchScreen wg NEST_SLOTS */}
 			{children}
-
-			{/* PRZÓD: przedni wieniec nad jajkami */}
-			<svg
-				viewBox={box}
-				className="pointer-events-none absolute inset-0 h-full w-full"
-				aria-hidden="true"
-				style={{ zIndex: 10 }}
-			>
-				<defs>
-					<linearGradient id={ids.rim} x1="0" y1="0" x2="1" y2="1">
-						<stop offset="0%" stopColor="#A0703C" />
-						<stop offset="100%" stopColor="#6B4423" />
-					</linearGradient>
-				</defs>
-				{/* korpus miski pod wieńcem */}
-				<path
-					d={`M${CX - RXO} ${CY} A${RXO} ${RYO_FRONT + 34} 0 0 0 ${CX + RXO} ${CY} A${RXO} ${RYO_FRONT} 0 0 1 ${CX - RXO} ${CY} Z`}
-					fill="#3E2613"
-				/>
-				<Strokes list={BODY} opacity={0.9} />
-				{/* przedni wieniec */}
-				<path
-					d={`M${CX - RXO} ${CY} A${RXO} ${RYO_FRONT} 0 0 0 ${CX + RXO} ${CY} L${CX + RXI} ${CY} A${RXI} ${RYI} 0 0 1 ${CX - RXI} ${CY} Z`}
-					fill={`url(#${ids.rim})`}
-				/>
-				<Strokes list={FRONT_DEEP} />
-				<Strokes list={FRONT} />
-				<Strokes list={FRONT_LIGHT} opacity={0.75} />
-				<Strokes list={STRAW_FRONT} opacity={0.9} />
-				{/* sterczące gałązki po bokach */}
-				<g fill="none" stroke="#6B4423" strokeWidth={3.5} strokeLinecap="round">
-					<path d="M30 157 C12 143 6 127 10 111" />
-					<path d="M14 129 C6 125 2 119 2 111" />
-					<path d="M370 155 C388 143 394 129 390 113" />
-					<path d="M388 129 C396 125 398 117 398 109" />
-					<path d="M60 221 C44 231 30 235 20 231" />
-					<path d="M340 223 C356 233 370 237 380 233" />
-				</g>
-				<Leaf x={356} y={185} rot={-30} size={0.95} />
-				<Leaf x={40} y={179} rot={200} size={0.85} />
-				<Leaf x={292} y={225} rot={14} size={0.75} />
-				<Leaf x={92} y={231} rot={172} size={0.65} />
-				<Feather x={150} y={258} rot={-8} />
-			</svg>
+			<NestFront uid={uid} />
 		</div>
 	)
 }
+
+const BOX = `0 0 ${VW} ${VH}`
+
+// Obie warstwy zależą tylko od uid → memo: HatchScreen rerenderuje gniazdo
+// przy każdym tapie w jajko, a ~300 ścieżek gałązek nigdy się nie zmienia.
+// TYŁ: dno miski + tylny brzeg (w cieniu)
+const NestBack = memo(function NestBack({ uid }: { uid: string }) {
+	const bowl = `nest-bowl-${uid}`
+	return (
+		<svg
+			viewBox={BOX}
+			className="absolute inset-0 h-full w-full"
+			aria-hidden="true"
+		>
+			<defs>
+				<radialGradient id={bowl} cx="50%" cy="35%" r="65%">
+					<stop offset="0%" stopColor="#5C3A1E" />
+					<stop offset="70%" stopColor="#3E2613" />
+					<stop offset="100%" stopColor="#2A1A0C" />
+				</radialGradient>
+			</defs>
+			{/* cień pod gniazdem */}
+			<ellipse
+				cx={CX}
+				cy={CY + RYO_FRONT + 36}
+				rx={RXO}
+				ry={24}
+				fill="#00000055"
+			/>
+			{/* tylny wieniec (w cieniu) */}
+			<path
+				d={`M${CX - RXO} ${CY} A${RXO} ${RYO_BACK} 0 0 1 ${CX + RXO} ${CY} L${CX + RXI} ${CY} A${RXI} ${RYI} 0 0 0 ${CX - RXI} ${CY} Z`}
+				fill="#4A2E17"
+			/>
+			<Strokes list={BACK} />
+			<Strokes list={BACK_LIGHT} opacity={0.6} />
+			<Strokes list={STRAW_BACK} opacity={0.7} />
+			{/* dno gniazda */}
+			<ellipse cx={CX} cy={CY} rx={RXI} ry={RYI} fill={`url(#${bowl})`} />
+			{/* mech i słoma na dnie */}
+			<g fill="none" strokeLinecap="round" opacity={0.55}>
+				<path d="M100 135 Q140 125 176 137" stroke="#E9C46A" strokeWidth={2} />
+				<path d="M226 131 Q262 121 300 135" stroke="#F4D58D" strokeWidth={2} />
+				<path
+					d="M130 159 Q200 145 270 161"
+					stroke="#C99A63"
+					strokeWidth={2.5}
+				/>
+				<path
+					d="M160 171 Q200 181 244 169"
+					stroke="#8B5A2B"
+					strokeWidth={2.5}
+				/>
+			</g>
+		</svg>
+	)
+})
+
+// PRZÓD: przedni wieniec nad jajkami
+const NestFront = memo(function NestFront({ uid }: { uid: string }) {
+	const rim = `nest-rim-${uid}`
+	return (
+		<svg
+			viewBox={BOX}
+			className="pointer-events-none absolute inset-0 h-full w-full"
+			aria-hidden="true"
+			style={{ zIndex: 10 }}
+		>
+			<defs>
+				<linearGradient id={rim} x1="0" y1="0" x2="1" y2="1">
+					<stop offset="0%" stopColor="#A0703C" />
+					<stop offset="100%" stopColor="#6B4423" />
+				</linearGradient>
+			</defs>
+			{/* korpus miski pod wieńcem */}
+			<path
+				d={`M${CX - RXO} ${CY} A${RXO} ${RYO_FRONT + 34} 0 0 0 ${CX + RXO} ${CY} A${RXO} ${RYO_FRONT} 0 0 1 ${CX - RXO} ${CY} Z`}
+				fill="#3E2613"
+			/>
+			<Strokes list={BODY} opacity={0.9} />
+			{/* przedni wieniec */}
+			<path
+				d={`M${CX - RXO} ${CY} A${RXO} ${RYO_FRONT} 0 0 0 ${CX + RXO} ${CY} L${CX + RXI} ${CY} A${RXI} ${RYI} 0 0 1 ${CX - RXI} ${CY} Z`}
+				fill={`url(#${rim})`}
+			/>
+			<Strokes list={FRONT_DEEP} />
+			<Strokes list={FRONT} />
+			<Strokes list={FRONT_LIGHT} opacity={0.75} />
+			<Strokes list={STRAW_FRONT} opacity={0.9} />
+			{/* sterczące gałązki po bokach */}
+			<g fill="none" stroke="#6B4423" strokeWidth={3.5} strokeLinecap="round">
+				<path d="M30 157 C12 143 6 127 10 111" />
+				<path d="M14 129 C6 125 2 119 2 111" />
+				<path d="M370 155 C388 143 394 129 390 113" />
+				<path d="M388 129 C396 125 398 117 398 109" />
+				<path d="M60 221 C44 231 30 235 20 231" />
+				<path d="M340 223 C356 233 370 237 380 233" />
+			</g>
+			<Leaf x={356} y={185} rot={-30} size={0.95} />
+			<Leaf x={40} y={179} rot={200} size={0.85} />
+			<Leaf x={292} y={225} rot={14} size={0.75} />
+			<Leaf x={92} y={231} rot={172} size={0.65} />
+			<Feather x={150} y={258} rot={-8} />
+		</svg>
+	)
+})
