@@ -217,6 +217,11 @@ Refreshed by the 2026-07-12 audit; ordered by (grounding × payoff)/effort:
   egg-quality curve with rainbow chance from score 22, Gość Strażnika 5→2,
   Kolekcjoner tęczy 3→2, Perfekcjonista 25→10); R3 (no new iskierki sink)
   deliberately unchanged. Post-change numbers are in section 0 of the report.
+  Fourth pass the same evening, after expedition finds shipped:
+  [`plans/031-analiza-ekonomii-znaleziska.html`](031-analiza-ekonomii-znaleziska.html)
+  (same sim, now counting finds + a shared-pity variant). Open: shared pity
+  counter across modes (80/80 278 → ~197 rounds), finds window is narrow
+  (4–5 per game) — accepted as narrative.
 - **Parent progress view.** `DebugScreen` already renders the full
   per-fact mastery table and `adaptive.ts` exposes the aggregations; a
   gated (PIN/long-press) read-only, parent-legible presentation (color

@@ -76,7 +76,7 @@ export interface Profile {
 	modeW: [number, number, number] // wagi mult/div/gap
 	roundsPerDay: number
 	pPlay: number // szansa, że danego dnia dziecko gra
-	variant?: "pity8" | "p1b" | "bilet" | "bilet+pity8"
+	variant?: "pity8" | "p1b" | "bilet" | "bilet+pity8" | "sharedPity"
 	learn?: boolean // p3 rośnie z mastery (dziecko przyspiesza, gdy umie)
 	breakEvery?: number // co ile dni przerwa (wakacje)
 	breakLen?: number
@@ -107,6 +107,7 @@ export interface RunResult {
 	newHatchRounds: number[] // rundy, w których wykluł się NOWY potworek
 	visits: number
 	expeditions: number
+	found: number // potworki przyprowadzone przez wyprawy (znaleziska)
 	perfectRounds: number
 	stars: number
 	wageByRound: number[] // żołd per runda (do średnich per faza)
@@ -150,6 +151,7 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		legendaryNatural = 0,
 		wishBought = 0,
 		wishNew = 0
+	let found = 0
 	let roundsAtCap = 0,
 		roundsNoSink = 0,
 		capWaste = 0,
@@ -280,13 +282,20 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		if (egg.quality === "wish") monsterId = rollWish(ctx)
 		else if (ctx.owned.size === 0) monsterId = FIRST_MONSTER_ID
 		else {
-			const before = save.legendaryPity[egg.mode]
+			const shared = profile.variant === "sharedPity"
+			const before = shared
+				? Math.max(
+						save.legendaryPity.mult,
+						save.legendaryPity.div,
+						save.legendaryPity.gap,
+					)
+				: save.legendaryPity[egg.mode]
 			const r = rollMonsterWithPity(egg.quality, ctx, before + pityOffset)
 			monsterId = r.id
-			legendaryPity = {
-				...save.legendaryPity,
-				[egg.mode]: r.pity === 0 ? 0 : r.pity - pityOffset,
-			}
+			const next = r.pity === 0 ? 0 : r.pity - pityOffset
+			legendaryPity = shared
+				? { mult: next, div: next, gap: next }
+				: { ...save.legendaryPity, [egg.mode]: next }
 			if (rarityOf(monsterId) === "legendary" && !ctx.owned.has(monsterId)) {
 				viaPity = before + pityOffset + 1 >= LEGENDARY_PITY_EVERY
 			}
@@ -581,6 +590,10 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		if (rs.expeditionReturn) {
 			income.expeditions += rs.expeditionReturn.rewardIskierki
 			expeditions++
+			if (rs.expeditionReturn.foundMonsterId !== null) {
+				found++
+				newHatchRounds.push(round)
+			}
 		}
 		wageByRound.push(income.wage - wageBefore)
 		return rs
@@ -658,6 +671,7 @@ export function runOne(profile: Profile, seed: number): RunResult {
 		newHatchRounds,
 		visits,
 		expeditions,
+		found,
 		perfectRounds: save.achievementStats.perfectRounds,
 		stars: save.achievementStats.totalStars,
 		wageByRound,
@@ -779,6 +793,33 @@ export const PROFILES: Profile[] = [
 		roundsPerDay: 3,
 		pPlay: 5 / 7,
 		variant: "bilet+pity8",
+	},
+	{
+		name: "dobry-sharedpity",
+		p3: 0.6,
+		err: 0.08,
+		modeW: [50, 25, 25],
+		roundsPerDay: 3,
+		pPlay: 5 / 7,
+		variant: "sharedPity",
+	},
+	{
+		name: "wolny-sharedpity",
+		p3: 0.3,
+		err: 0.1,
+		modeW: [50, 25, 25],
+		roundsPerDay: 3,
+		pPlay: 5 / 7,
+		variant: "sharedPity",
+	},
+	{
+		name: "szybki-sharedpity",
+		p3: 0.85,
+		err: 0.04,
+		modeW: [50, 25, 25],
+		roundsPerDay: 3,
+		pPlay: 5 / 7,
+		variant: "sharedPity",
 	},
 	{
 		name: "szybki-bilet",
