@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Czym jest ten projekt
 
-Gra przeglądarkowa do nauki tabliczki mnożenia i dzielenia (do 10×10) dla 9-letniego dziecka. Dziecko wybiera tryb (mnożenie/dzielenie/brakujący czynnik, a od drugiej bramy zabawę „Dzielniki": `24 = ? × ?`, wszystkie pary, od czwartej „Porównywanie": który z dwóch potworków ma większy wynik, od szóstej „Memory": plansza 4×5 kart, para = działanie i jego wynik) przed każdą rundą; wszystkie tryby to inne widoki tych samych faktów, ze wspólnym postępem. Motyw: kolekcjonowanie potworków — matma jest walutą, nie tematem; po kilka legendarnych potworków zdobywa się wyłącznie przez dzielenie, wyłącznie przez tryb luki, wyłącznie przez Dzielniki, wyłącznie przez Porównywanie albo wyłącznie przez Memory. Cel: tablet (dotyk) + laptop (klawiatura), UI wyłącznie po polsku (bez i18n). Brak backendu — postęp w localStorage, osobno na każdym urządzeniu.
+Gra przeglądarkowa do nauki tabliczki mnożenia i dzielenia (do 10×10) dla 9-letniego dziecka. Dziecko wybiera tryb (mnożenie/dzielenie/brakujący czynnik, a od drugiej bramy zabawę „Dzielniki": `24 = ? × ?`, wszystkie pary, od czwartej „Porównywanie": który z dwóch potworków ma większy wynik, od szóstej „Memory": plansza 4×5 kart, para = działanie i jego wynik) przed każdą rundą; wszystkie tryby to inne widoki tych samych faktów, ze wspólnym postępem. Motyw: kolekcjonowanie potworków — matma jest walutą, nie tematem; po kilka legendarnych potworków zdobywa się wyłącznie przez dzielenie, wyłącznie przez tryb luki, wyłącznie przez Dzielniki, wyłącznie przez Porównywanie albo wyłącznie przez Memory. Cel: przede wszystkim telefon (dotyk), dodatkowo tablet i laptop (klawiatura), UI wyłącznie po polsku (bez i18n). Brak backendu — postęp w localStorage, osobno na każdym urządzeniu.
 
 ## Komendy
 
@@ -35,7 +35,7 @@ Jeden store zustand (`src/store/store.ts`) koordynuje całość: ekrany to maszy
 
 1. **Szybkość tylko nagradza, nigdy nie karze**: brak widocznego stopera, błędna odpowiedź i tak daje fragment jajka, wolna poprawna odpowiedź daje pełny postęp przy 0 gwiazdek. Każda nowa mechanika musi respektować tę zasadę. (Odpowiedź zatwierdza się automatycznie po wpisaniu właściwej liczby cyfr — literówka liczy się jako pomyłka, świadoma decyzja na rzecz tempa.)
 2. Postęp dziecka jest święty: zamrożony seed katalogu potworków (szczegóły w `src/monsters/CLAUDE.md`) i obowiązkowe migracje zapisu (szczegóły w `src/store/CLAUDE.md`).
-3. UI wyłącznie po polsku; tablet-first (duże cele dotykowe, aktywacja na `click`, żadnych natywnych `<input>` — szczegóły w `src/CLAUDE.md`).
+3. UI wyłącznie po polsku; phone-first (duże cele dotykowe, aktywacja na `click`, żadnych natywnych `<input>` — szczegóły w `src/CLAUDE.md`).
 
 ## Testowanie w przeglądarce
 

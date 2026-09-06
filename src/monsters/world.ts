@@ -24,13 +24,9 @@ export interface Region {
 	blurb: string
 	color: string // klasy Tailwind na plakietkę nazwy (literały — skanowane przez JIT)
 	guardianId: number // common|rare, !isDivisionOnly, regionOf(id)===stage, unikalny
-	// sceneria wyspy-krainy na mapie (MapScreen): gradient panelu, akcent tekstu
-	// i trzy emoji dekoracji — literały Tailwind (JIT skanuje ten plik)
-	scenery: {
-		panel: string
-		accent: string
-		deco: readonly [string, string, string]
-	}
+	// akcent tekstu na wyspie-krainie (MapScreen) — literał Tailwind (JIT skanuje ten plik);
+	// sceneria wyspy to wektor per etap w components/MapArt
+	scenery: { accent: string }
 }
 
 // Indeks regionu po id potworka (= stage). Deterministyczny, nieperystowany —
@@ -51,11 +47,7 @@ export const REGIONS: readonly Region[] = [
 		blurb: "Tu zaczyna się Twoja przygoda — dom pierwszych potworków.",
 		color: "bg-violet-100 text-violet-600",
 		guardianId: 0,
-		scenery: {
-			panel: "from-lime-200 via-emerald-200 to-emerald-300",
-			accent: "text-emerald-700",
-			deco: ["🌼", "🌳", "🐌"],
-		},
+		scenery: { accent: "text-emerald-700" },
 	},
 	{
 		kind: "region",
@@ -67,11 +59,7 @@ export const REGIONS: readonly Region[] = [
 		blurb: "Piramida o trzech ścianach, gdzie wszystko układa się trójkami.",
 		color: "bg-orange-100 text-orange-600",
 		guardianId: 29,
-		scenery: {
-			panel: "from-amber-200 via-orange-200 to-orange-300",
-			accent: "text-orange-700",
-			deco: ["🔺", "🌵", "🐫"],
-		},
+		scenery: { accent: "text-orange-700" },
 	},
 	{
 		kind: "region",
@@ -83,11 +71,7 @@ export const REGIONS: readonly Region[] = [
 		blurb: "Łąki pełne koniczyn, gdzie wszystko rośnie czwórkami.",
 		color: "bg-sky-100 text-sky-600",
 		guardianId: 30,
-		scenery: {
-			panel: "from-green-200 via-lime-200 to-green-300",
-			accent: "text-green-700",
-			deco: ["🍀", "🌸", "🐞"],
-		},
+		scenery: { accent: "text-green-700" },
 	},
 	{
 		kind: "region",
@@ -99,11 +83,7 @@ export const REGIONS: readonly Region[] = [
 		blurb: "Sześciokątne plastry brzęczące od pracowitych potworków.",
 		color: "bg-amber-100 text-amber-600",
 		guardianId: 24,
-		scenery: {
-			panel: "from-yellow-200 via-amber-200 to-amber-300",
-			accent: "text-amber-700",
-			deco: ["🍯", "🐝", "🌻"],
-		},
+		scenery: { accent: "text-amber-700" },
 	},
 	{
 		kind: "region",
@@ -115,11 +95,7 @@ export const REGIONS: readonly Region[] = [
 		blurb: "Przystań pod dziewięcioma gwiazdami, skąd widać cały świat.",
 		color: "bg-indigo-100 text-indigo-600",
 		guardianId: 25,
-		scenery: {
-			panel: "from-indigo-300 via-indigo-400 to-violet-500",
-			accent: "text-indigo-700",
-			deco: ["⭐", "🌙", "✨"],
-		},
+		scenery: { accent: "text-indigo-700" },
 	},
 	{
 		kind: "region",
@@ -131,11 +107,7 @@ export const REGIONS: readonly Region[] = [
 		blurb: "Most z siedmiu barw tęczy, lśniący po każdym deszczu.",
 		color: "bg-pink-100 text-pink-600",
 		guardianId: 26,
-		scenery: {
-			panel: "from-pink-200 via-rose-200 to-fuchsia-300",
-			accent: "text-pink-700",
-			deco: ["🌈", "☁️", "🦋"],
-		},
+		scenery: { accent: "text-pink-700" },
 	},
 	{
 		kind: "region",
@@ -147,11 +119,7 @@ export const REGIONS: readonly Region[] = [
 		blurb: "Niekończąca się spirala ósemek, która kręci się bez końca.",
 		color: "bg-fuchsia-100 text-fuchsia-600",
 		guardianId: 27,
-		scenery: {
-			panel: "from-fuchsia-200 via-purple-200 to-fuchsia-300",
-			accent: "text-fuchsia-700",
-			deco: ["🌀", "💫", "♾️"],
-		},
+		scenery: { accent: "text-fuchsia-700" },
 	},
 ]
 

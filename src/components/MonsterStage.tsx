@@ -14,7 +14,6 @@ interface Props {
 	style?: CSSProperties
 	wrapClassName?: string // klasy kontenera (np. w-full dla kafla listy)
 	// --- szwy kosmetyki (Sklepik) ---
-	background?: ReactNode // tło ZA potworkiem (slot "background", EquippedBackground)
 	overlay?: ReactNode // nakładki reakcji (serca, iskry, znacznik) NA WIERZCHU stroju
 }
 
@@ -22,8 +21,9 @@ interface Props {
 // założony strój (kapelusz/aura) Stage dokłada SAM — każdy potworek narysowany
 // przez Stage nosi to, co ma w garderobie (nieposiadany nic nie ma → zero DOM).
 // Reakcje emocjonalne przychodzą jako `overlay` i malują się NAD strojem —
-// rodzeństwo SVG, nigdy zmiana twarzy (DNA potworków jest zamrożone). Tło
-// decyduje caller (`background`): przyjaciel na Home tak, wioska i wędrowcy nie.
+// rodzeństwo SVG, nigdy zmiana twarzy (DNA potworków jest zamrożone). Tła
+// (slot "background") Stage nie rysuje: to warstwa całego kontenera u callera
+// (scena hero na Home, karta/kafel w Kolekcji); wioska i wędrowcy są bez tła.
 // `align-top`: w kontenerze blokowym inline-flex nie zostawia szczeliny linii.
 export function MonsterStage({
 	id,
@@ -32,7 +32,6 @@ export function MonsterStage({
 	className,
 	style,
 	wrapClassName = "",
-	background,
 	overlay,
 }: Props) {
 	return (
@@ -40,12 +39,7 @@ export function MonsterStage({
 			className={`relative inline-flex justify-center align-top ${wrapClassName}`}
 			style={style}
 		>
-			{background && (
-				<div className="pointer-events-none absolute inset-0">{background}</div>
-			)}
-			{/* relative: potworek ma malować się NAD absolutnym tłem (kolejność DOM
-			    nie wystarcza — element pozycjonowany wygrywa z niepozycjonowanym).
-			    w-full: przy size="100%" i szerszym wrapperze (kafel listy) SVG
+			{/* w-full: przy size="100%" i szerszym wrapperze (kafel listy) SVG
 			    liczy procent z tego diva — bez tego kurczył się i siedział z lewej */}
 			<div className="relative w-full">
 				<MonsterSvg

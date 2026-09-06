@@ -232,7 +232,7 @@ function BackgroundGlyph({ id }: { id: CosmeticId }) {
 	)
 }
 
-// Pełna scenka ZA potworkiem (prop `background` MonsterStage): `slice`
+// Pełna scenka ZA potworkiem (warstwa kontenera callera): `slice`
 // wypełnia kontener dowolnych proporcji, potworek zostaje bohaterem.
 function BackgroundScene({
 	id,
@@ -260,7 +260,7 @@ function BackgroundScene({
 	)
 }
 
-// Założone tło potworka — do slotu `background` MonsterStage. Brak → null.
+// Założone tło potworka — absolutna warstwa kontenera callera. Brak → null.
 // animate=false na statycznych kaflach listy (wzór EquippedOverlay); `className`
 // nadpisuje kształt (kafel listy wypełnia tłem cały kafel, nie okno z artem).
 export function EquippedBackground({

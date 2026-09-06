@@ -138,7 +138,7 @@ export const COSMETICS: readonly CosmeticDef[] = [
 		cardClasses: "frame-teczowa border-transparent",
 	},
 	// Tła (slot "background"): scenka ZA potworkiem na karcie kolekcji i u
-	// przyjaciela na Home (prop `background` MonsterStage). Scenki SVG w
+	// bohatera na Home (warstwa całej sceny hero). Scenki SVG w
 	// components/BackgroundArt.tsx (SCENES).
 	{ id: "tlo-laka", name: "Tło: Łąka", slot: "background", tier: 1, cost: 20 },
 	{

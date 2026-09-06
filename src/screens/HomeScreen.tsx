@@ -3,9 +3,11 @@ import { ACHIEVEMENTS } from "../achievements/catalog"
 import { BigButton } from "../components/BigButton"
 import { CARD_SHELL, CardModal } from "../components/CardModal"
 import { Companion } from "../components/Companion"
+import { EquippedBackground } from "../components/CosmeticArt"
 import { EggView } from "../components/EggView"
 import { ExpeditionDetails } from "../components/ExpeditionDetails"
 import { HelpTip } from "../components/HelpTip"
+import { HomeArt } from "../components/HomeArt"
 import { MonsterStage } from "../components/MonsterStage"
 import { MODE_LABELS, MODE_ROWS } from "../components/modeLabels"
 import { VISIT_BONUS, visitStage } from "../game/adaptive"
@@ -87,128 +89,142 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 		: undefined
 
 	return (
-		<div className="flex min-h-[var(--app-vh)] flex-col items-center gap-4 p-5 pt-8">
-			<h1 className="bg-gradient-to-r from-grape to-bubblegum bg-clip-text text-6xl font-extrabold text-transparent">
-				Potworki
-			</h1>
-
-			{collection.isCollectionComplete(ownedMonsters) && (
-				<div className="anim-pop rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-5 py-2 text-xl font-extrabold text-white shadow-lg">
-					🏆 Mistrzyni Kolekcji!
+		<div className="home-screen">
+			<header className="home-header">
+				<h1 className="home-logo">Potworki</h1>
+				<div className="home-wallet">
+					<span aria-hidden="true">✦</span> {iskierki}
+					<span className="sr-only"> iskierek</span>
 				</div>
-			)}
+			</header>
+			<section className="home-hero" aria-label="Twój potworek">
+				<HomeArt kind="landscape" />
+				{/* założone tło bohatera wypełnia całą scenę hero (pejzaż = placeholder) */}
+				{heroId !== undefined && (
+					<EquippedBackground monsterId={heroId} className="home-hero-bg" />
+				)}
 
-			<div className="flex items-end justify-center gap-6">
-				{companionPresent ? (
-					<Companion size={150} />
-				) : newestOwned !== undefined ? (
-					<MonsterStage id={newestOwned} size={150} />
-				) : (
-					<div className="anim-float">
-						<EggView quality="normal" size={100} />
+				{collection.isCollectionComplete(ownedMonsters) && (
+					<div className="anim-pop rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-5 py-2 text-xl font-extrabold text-white shadow-lg">
+						🏆 Mistrzyni Kolekcji!
 					</div>
 				)}
-				{dreamMonsterId !== null && (
-					<div className="relative">
-						<button
-							type="button"
-							onClick={() => goTo("collection")}
-							className="touch-manipulation flex flex-col items-center active:scale-95"
-						>
-							<div className="anim-glow rounded-3xl border-4 border-amber-300 bg-white/60 p-2">
-								<MonsterSvg
-									id={dreamMonsterId}
-									size={84}
-									animate={false}
-									className="monster-silhouette"
+
+				<div className="home-hero-monsters flex items-end justify-center gap-6">
+					{companionPresent ? (
+						<Companion size={150} />
+					) : newestOwned !== undefined ? (
+						<MonsterStage id={newestOwned} size={150} />
+					) : (
+						<div className="anim-float">
+							<EggView quality="normal" size={110} />
+						</div>
+					)}
+					{dreamMonsterId !== null && (
+						<div className="relative">
+							<button
+								type="button"
+								onClick={() => goTo("collection")}
+								className="touch-manipulation flex flex-col items-center active:scale-95"
+							>
+								<div className="anim-glow rounded-3xl border-4 border-amber-300 bg-white/60 p-2">
+									<MonsterSvg
+										id={dreamMonsterId}
+										size={84}
+										animate={false}
+										className="monster-silhouette"
+									/>
+								</div>
+								<div className="mt-1 text-sm font-extrabold text-amber-500">
+									Wymarzony ✨
+								</div>
+							</button>
+							<div className="absolute -right-2 -top-2">
+								<HelpTip
+									placement="bottom"
+									align="right"
+									text="To potworek, o którym marzysz. Teraz częściej będzie się wykluwał, a Jajko Życzeń (w „Moich Potworkach”, gdy zbudujesz Fontannę w Wiosce) da ci dokładnie jego. Stuknij obrazek, żeby go obejrzeć."
 								/>
 							</div>
-							<div className="mt-1 text-sm font-extrabold text-amber-500">
-								Wymarzony ✨
-							</div>
-						</button>
-						<div className="absolute -right-2 -top-2">
-							<HelpTip
-								placement="bottom"
-								align="right"
-								text="To potworek, o którym marzysz. Teraz częściej będzie się wykluwał, a Jajko Życzeń (w „Moich Potworkach”, gdy zbudujesz Fontannę w Wiosce) da ci dokładnie jego. Stuknij obrazek, żeby go obejrzeć."
-							/>
 						</div>
-					</div>
-				)}
-			</div>
-			{heroId !== undefined && (
-				<div className="-mt-2 text-lg font-extrabold text-grape-dark">
-					{MONSTERS[heroId]?.name}
+					)}
 				</div>
-			)}
-			{companionId === null && ownedCount >= 3 && (
-				<button
-					type="button"
-					onClick={() => goTo("collection")}
-					className="anim-fade-up -mt-1 touch-manipulation rounded-full bg-white/70 px-4 py-1 text-sm font-extrabold text-grape-dark shadow active:scale-95"
-				>
-					Wybierz swojego przyjaciela 💛
-				</button>
-			)}
-
-			<div className="relative w-full max-w-xs">
-				<div className="flex flex-col gap-1.5 rounded-3xl bg-white/50 p-1.5">
-					{/* etykiety trybów — tokeny mult/div/gap/pairs są KODEM i nie zmieniają się
+				{heroId !== undefined && (
+					<div className="home-hero-name">{MONSTERS[heroId]?.name}</div>
+				)}
+				{companionId === null && ownedCount >= 3 && (
+					<button
+						type="button"
+						onClick={() => goTo("collection")}
+						className="anim-fade-up -mt-1 touch-manipulation rounded-full bg-white/70 px-4 py-1 text-sm font-extrabold text-grape-dark shadow active:scale-95"
+					>
+						Wybierz swojego przyjaciela 💛
+					</button>
+				)}
+			</section>
+			<section className="home-play" aria-label="Wybierz zabawę">
+				<div className="relative w-full max-w-xs">
+					<div className="home-modes flex flex-col gap-2">
+						{/* etykiety trybów — tokeny mult/div/gap/pairs są KODEM i nie zmieniają się
 					    (persystowane w jajkach). Rząd 1: bazowe widoki faktu; rząd 2: nowe
 					    zabawy odblokowywane bramami (MODE_UNLOCK_STAGE) — zamknięta to
 					    zajawka z chipem 🔒, nie wyszarzony przycisk */}
-					{/* etykiety NIGDY nie łamią się na dwie linie: rząd z trzema zabawami
+						{/* etykiety NIGDY nie łamią się na dwie linie: rząd z trzema zabawami
 					    dostaje mniejszy font, a kolumny rosną z treścią (flex-auto), nie po równo — inaczej „> Porównywanie" wchodziło pod zaznaczony przycisk */}
-					{MODE_ROWS.map((row, r) => (
-						<div
-							key={row[0]}
-							className={`flex gap-1.5 ${r > 0 ? "text-sm" : "text-base"}`}
-						>
-							{row.map((value) =>
-								modeUnlocked(value, unlockedStage) ? (
-									<button
-										key={value}
-										type="button"
-										onClick={() => setMode(value)}
-										className={`min-h-16 min-w-0 flex-auto touch-manipulation whitespace-nowrap rounded-2xl px-1 py-3 font-extrabold transition-transform active:scale-95 ${
-											mode === value
-												? "bg-gradient-to-b from-grape to-grape-dark text-white shadow-md"
-												: "text-grape-dark"
-										}`}
-									>
-										{MODE_LABELS[value]}
-									</button>
-								) : (
-									<div
-										key={value}
-										className="flex min-h-16 min-w-0 flex-auto flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 font-extrabold text-grape-dark"
-									>
-										<span className="whitespace-nowrap">
+						{MODE_ROWS.map((row, r) => (
+							<div
+								key={row[0]}
+								className={`flex gap-1.5 ${r > 0 ? "text-sm" : "text-base"}`}
+							>
+								{row.map((value) =>
+									modeUnlocked(value, unlockedStage) ? (
+										<button
+											key={value}
+											type="button"
+											onClick={() => setMode(value)}
+											aria-pressed={mode === value}
+											className={`home-mode min-h-16 min-w-0 flex-auto touch-manipulation whitespace-nowrap rounded-2xl px-1 py-3 font-extrabold transition-transform active:scale-95 ${
+												mode === value
+													? "bg-gradient-to-b from-grape to-grape-dark text-white shadow-md"
+													: "text-grape-dark"
+											}`}
+										>
 											{MODE_LABELS[value]}
-										</span>
-										<span className="rounded-full bg-white/80 whitespace-nowrap px-1.5 py-0.5 text-[11px] font-bold text-slate-500">
-											🔒 za bramą ×{STAGES[MODE_UNLOCK_STAGE[value]]?.[0]}
-										</span>
-									</div>
-								),
-							)}
-						</div>
-					))}
+										</button>
+									) : (
+										<div
+											key={value}
+											className="home-mode home-mode-locked flex min-h-16 min-w-0 flex-auto flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 font-extrabold text-grape-dark"
+										>
+											<span className="whitespace-nowrap">
+												{MODE_LABELS[value]}
+											</span>
+											<span className="rounded-full bg-white/80 whitespace-nowrap px-1.5 py-0.5 text-[11px] font-bold text-slate-500">
+												🔒 za bramą ×{STAGES[MODE_UNLOCK_STAGE[value]]?.[0]}
+											</span>
+										</div>
+									),
+								)}
+							</div>
+						))}
+					</div>
+					<div className="absolute -right-2 -top-2">
+						{/* tekst pomocy przełącznika trybów */}
+						<HelpTip
+							placement="bottom"
+							align="right"
+							text="Każdy rodzaj zabawy ma swoje wyjątkowe potworki. Nowe zabawy otwierają kolejne bramy."
+						/>
+					</div>
 				</div>
-				<div className="absolute -right-2 -top-2">
-					{/* tekst pomocy przełącznika trybów */}
-					<HelpTip
-						placement="bottom"
-						align="right"
-						text="Wybierz, czego chcesz ćwiczyć: mnożenie, dzielenie albo zgadywanie brakującej liczby. Niektóre wyjątkowe potworki wykluwają się tylko z takich jajek! W Dzielnikach szukasz wszystkich par liczb, które dają wynik, a w Porównywaniu dajesz ciastko potworkowi, który przyniósł większą liczbę — każda zabawa ma swoje wyjątkowe potworki. Nowe zabawy otwierają kolejne bramy."
-					/>
-				</div>
-			</div>
 
-			<BigButton onClick={startRound} className="w-full max-w-xs py-6 text-4xl">
-				Graj! 🚀
-			</BigButton>
+				<BigButton
+					onClick={startRound}
+					className="home-start w-full max-w-xs py-6 text-4xl"
+				>
+					Graj! 🚀
+				</BigButton>
+			</section>
 
 			{visitRegion && (
 				<button
@@ -286,87 +302,92 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 				</button>
 			)}
 
-			<div className="relative w-full max-w-xs">
-				<BigButton
-					onClick={() => goTo("collection")}
-					variant="secondary"
-					className="w-full"
-				>
-					<div>
-						Moje Potworki 👾 {ownedCount}/{MONSTER_COUNT}
-					</div>
-					{/* stały status fragmentów jajka (🪺 + pasek + x/y) — zawsze
+			<nav className="home-nav" aria-label="Twój świat">
+				<div className="relative w-full max-w-xs">
+					<BigButton
+						onClick={() => goTo("collection")}
+						variant="secondary"
+						className="home-destination home-destination-collection w-full"
+					>
+						<HomeArt kind="collection" />
+						<div>
+							Moje Potworki 👾 {ownedCount}/{MONSTER_COUNT}
+						</div>
+						{/* stały status fragmentów jajka (🪺 + pasek + x/y) — zawsze
 					    widoczny, także gdy jajka już czekają w gnieździe */}
-					<div className="mt-1.5 flex items-center gap-2">
-						<span className="text-base leading-none">🪺</span>
-						<span className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
-							<span
-								className="block h-full rounded-full bg-amber-400 transition-[width]"
-								style={{
-									width: `${Math.min(100, (eggFragments / eggThreshold) * 100)}%`,
-								}}
-							/>
-						</span>
-						<span className="text-xs font-bold text-slate-400">
-							{Math.min(eggFragments, eggThreshold)}/{eggThreshold}
-						</span>
+						<div className="mt-1.5 flex items-center gap-2">
+							<span className="text-base leading-none">🪺</span>
+							<span className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
+								<span
+									className="block h-full rounded-full bg-amber-400 transition-[width]"
+									style={{
+										width: `${Math.min(100, (eggFragments / eggThreshold) * 100)}%`,
+									}}
+								/>
+							</span>
+							<span className="text-xs font-bold text-slate-400">
+								{Math.min(eggFragments, eggThreshold)}/{eggThreshold}
+							</span>
+						</div>
+					</BigButton>
+					<div className="absolute -right-2 -top-2">
+						<HelpTip
+							placement="bottom"
+							align="right"
+							text="W środku znajdziesz wszystkie swoje potworki. Pasek na dole pokazuje, ile brakuje do nowego jajka — kiedy się zapełni, pojawi się przycisk do wyklucia!"
+						/>
 					</div>
-				</BigButton>
-				<div className="absolute -right-2 -top-2">
-					<HelpTip
-						placement="bottom"
-						align="right"
-						text="W środku znajdziesz wszystkie swoje potworki. Pasek na dole pokazuje, ile brakuje do nowego jajka — kiedy się zapełni, pojawi się przycisk do wyklucia!"
-					/>
 				</div>
-			</div>
 
-			<div className="relative w-full max-w-xs">
-				<BigButton
-					onClick={() => goTo("village")}
-					variant="secondary"
-					className="w-full"
-				>
-					Wioska 🏡
-				</BigButton>
-				{canBuild && (
-					<div className="anim-pop absolute -right-2 -top-2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-3 py-0.5 text-sm font-extrabold text-white shadow-lg">
-						✨ stać cię na budowę!
-					</div>
-				)}
-			</div>
+				<div className="relative w-full max-w-xs">
+					<BigButton
+						onClick={() => goTo("village")}
+						variant="secondary"
+						className="home-destination home-destination-village w-full"
+					>
+						<HomeArt kind="village" />
+						Wioska 🏡
+					</BigButton>
+					{canBuild && (
+						<div className="anim-pop absolute -right-2 -top-2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-3 py-0.5 text-sm font-extrabold text-white shadow-lg">
+							✨ stać cię na budowę!
+						</div>
+					)}
+				</div>
 
-			<div className="relative w-full max-w-xs">
-				<BigButton
-					onClick={() => goTo("map")}
-					variant="secondary"
-					className="w-full"
-				>
-					Mapa Świata {allGatesOpen ? "👑" : "🗺️"}
-				</BigButton>
-				{hasNewGate && (
-					<div className="anim-pop absolute -right-2 -top-2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-3 py-0.5 text-sm font-extrabold text-white shadow-lg">
-						✨ nowa brama!
-					</div>
-				)}
-			</div>
+				<div className="relative w-full max-w-xs">
+					<BigButton
+						onClick={() => goTo("map")}
+						variant="secondary"
+						className="home-destination home-destination-map w-full"
+					>
+						<HomeArt kind="map" />
+						Mapa Świata {allGatesOpen ? "👑" : "🗺️"}
+					</BigButton>
+					{hasNewGate && (
+						<div className="anim-pop absolute -right-2 -top-2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-3 py-0.5 text-sm font-extrabold text-white shadow-lg">
+							✨ nowa brama!
+						</div>
+					)}
+				</div>
 
-			<div className="relative w-full max-w-xs">
-				<BigButton
-					onClick={() => goTo("achievements")}
-					variant="secondary"
-					className="w-full"
-				>
-					Osiągnięcia 🏅 {unlockedAchievements}/{ACHIEVEMENTS.length}
-				</BigButton>
-				{hasNewAchievements && (
-					<div className="anim-pop absolute -right-2 -top-2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-3 py-0.5 text-sm font-extrabold text-white shadow-lg">
-						✨ nowe osiągnięcie!
-					</div>
-				)}
-			</div>
-
-			<div className="mt-auto flex flex-wrap items-center justify-center gap-2 pb-2">
+				<div className="relative w-full max-w-xs">
+					<BigButton
+						onClick={() => goTo("achievements")}
+						variant="secondary"
+						className="home-destination home-destination-achievements w-full"
+					>
+						<HomeArt kind="achievements" />
+						Osiągnięcia 🏅 {unlockedAchievements}/{ACHIEVEMENTS.length}
+					</BigButton>
+					{hasNewAchievements && (
+						<div className="anim-pop absolute -right-2 -top-2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-3 py-0.5 text-sm font-extrabold text-white shadow-lg">
+							✨ nowe osiągnięcie!
+						</div>
+					)}
+				</div>
+			</nav>
+			<div className="home-tables flex flex-wrap items-center justify-center gap-2 pb-2">
 				<HelpTip
 					placement="top"
 					align="left"

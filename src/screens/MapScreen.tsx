@@ -3,6 +3,7 @@ import { BigButton } from "../components/BigButton"
 import { EggView } from "../components/EggView"
 import { CRYSTALS, GateArch, GateReveal, litCrystals } from "../components/gate"
 import { HelpTip } from "../components/HelpTip"
+import { MapIslandArt, MapPortalArt } from "../components/MapArt"
 import { MonsterStage } from "../components/MonsterStage"
 import { useGateReveal } from "../components/useGateReveal"
 import { needsMaintenance, stageProgress } from "../game/adaptive"
@@ -24,14 +25,14 @@ function Trail({ from, to }: { from: Side; to: Side }) {
 		<svg
 			viewBox="0 0 480 60"
 			preserveAspectRatio="none"
-			className="h-14 w-full shrink-0"
+			className="map-trail w-full shrink-0"
 			aria-hidden="true"
 		>
 			<path
 				d={d}
 				fill="none"
-				stroke="#000000"
-				strokeOpacity={0.07}
+				stroke="#688f9a"
+				strokeOpacity={0.2}
 				strokeWidth={14}
 				strokeLinecap="round"
 				strokeDasharray="0.1 22"
@@ -40,7 +41,7 @@ function Trail({ from, to }: { from: Side; to: Side }) {
 			<path
 				d={d}
 				fill="none"
-				stroke="#ffffff"
+				stroke="#fff8e8"
 				strokeOpacity={0.9}
 				strokeWidth={9}
 				strokeLinecap="round"
@@ -62,49 +63,31 @@ function MysteryMonster({ size }: { size: number }) {
 	)
 }
 
-// mgliste przyszłe krainy: chmury + sylwetki śpiących bram w oddali
+// Distant lands remain a compact teaser above the current gate.
 function FutureLands({ gatesLeft }: { gatesLeft: number }) {
 	return (
-		<div className="relative flex flex-col items-center gap-1 pb-1 pt-1">
-			<div
-				aria-hidden
-				className="anim-float pointer-events-none absolute -top-1 left-[10%] h-8 w-24 rounded-full bg-white/80 blur-md"
-			/>
-			<div
-				aria-hidden
-				className="anim-float pointer-events-none absolute top-7 right-[8%] h-8 w-28 rounded-full bg-white/70 blur-md"
-				style={{ animationDelay: "-1.6s" }}
-			/>
-			<div className="relative flex items-end gap-4">
-				<span
-					aria-hidden
-					className="anim-float absolute top-1 -right-8 text-xl opacity-70"
-				>
-					💤
-				</span>
-				{[0, 1].map((i) => (
-					<div
-						key={i}
-						className="relative overflow-hidden rounded-t-full bg-gradient-to-b from-slate-300 to-slate-400 shadow-inner"
-						style={{
-							width: 42 - i * 8,
-							height: 50 - i * 10,
-							opacity: 0.65 - i * 0.25,
-						}}
-					>
-						<div className="absolute inset-x-[22%] top-[30%] bottom-0 rounded-t-full bg-slate-500/50" />
-					</div>
-				))}
-			</div>
-			<div className="relative rounded-full bg-white/80 px-4 py-1 text-sm font-bold text-slate-500 shadow-sm">
+		<div className="map-future">
+			<svg viewBox="0 0 44 36" aria-hidden="true">
+				<path
+					d="M4 32V16a10 10 0 0 1 20 0v16m4 0V21a7 7 0 0 1 14 0v11"
+					fill="#c2c3d4"
+					stroke="#aaaec4"
+					strokeWidth="2"
+				/>
+				<path
+					d="M11 32V17a3 3 0 0 1 6 0v15m16 0V21a2 2 0 0 1 4 0v11"
+					fill="#8e96b0"
+				/>
+			</svg>
+			<span>
 				dalej śpią kolejne krainy… (jeszcze {gatesLeft}{" "}
 				{gatesLeft === 1 ? "brama" : gatesLeft <= 4 ? "bramy" : "bram"})
-			</div>
+			</span>
 		</div>
 	)
 }
 
-// wyspa-kraina: tematyczna sceneria (region.scenery), strażnik i tabliczka z nazwą
+// wyspa-kraina: wektorowa sceneria etapu (MapArt), strażnik i podpis z nazwą
 function RegionIsland({
 	region,
 	guardianOwned,
@@ -116,49 +99,27 @@ function RegionIsland({
 	side: Side
 	badge: ReactNode
 }) {
-	const scene = region.scenery
 	return (
-		<div
-			className={`relative w-[88%] max-w-sm overflow-hidden rounded-[2.2rem] border-b-8 border-black/10 bg-gradient-to-b px-4 py-3 shadow-lg ${scene.panel} ${
-				side === "right" ? "self-end rotate-1" : "self-start -rotate-1"
-			}`}
-		>
-			<div
-				aria-hidden
-				className="pointer-events-none absolute inset-0 select-none"
-			>
-				<span className="absolute right-3 top-1 text-3xl opacity-60">
-					{scene.deco[0]}
-				</span>
-				<span className="absolute right-14 bottom-0 text-xl opacity-50">
-					{scene.deco[1]}
-				</span>
-				<span className="absolute left-1/2 top-1 text-base opacity-40">
-					{scene.deco[2]}
-				</span>
-			</div>
-			<div className="relative flex items-center gap-3">
-				<div className="flex shrink-0 flex-col items-center">
+		<article className={`map-island map-island-${side}`}>
+			<div className="map-island-scene">
+				<MapIslandArt stage={region.stage} />
+				<div className="map-guardian">
 					{guardianOwned ? (
-						<MonsterStage id={region.guardianId} size={56} animate={false} />
+						<MonsterStage id={region.guardianId} size={62} animate={false} />
 					) : (
 						<MysteryMonster size={52} />
 					)}
-					<div
-						aria-hidden
-						className="-mt-1.5 h-2 w-12 rounded-[50%] bg-black/10"
-					/>
-				</div>
-				<div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-					<span
-						className={`rounded-2xl bg-white/90 px-3 py-1 text-[15px] font-extrabold leading-tight shadow-sm ${scene.accent}`}
-					>
-						{region.emoji} {region.name}
-					</span>
-					{badge}
 				</div>
 			</div>
-		</div>
+			<div className="map-island-caption">
+				<h2
+					className={`text-[17px] font-extrabold leading-tight ${region.scenery.accent}`}
+				>
+					{region.emoji} {region.name}
+				</h2>
+				{badge}
+			</div>
+		</article>
 	)
 }
 
@@ -177,9 +138,9 @@ function DividerBridge({
 	// bez overflow-hidden: dymek HelpTip musi wystawać ponad kartę; scena i tak
 	// nie wychodzi poza zaokrąglenia (SVG przycina się do własnego viewportu)
 	return (
-		<div className="relative w-full max-w-sm self-center rounded-[2.2rem] border-b-8 border-black/10 bg-gradient-to-b from-sky-200 via-sky-300 to-blue-400 px-4 pb-3 pt-3 shadow-lg">
+		<div className="map-bridge relative w-full max-w-sm self-center px-4 pb-3 pt-3">
 			<div className="relative z-10 flex items-center justify-center gap-1.5">
-				<span className="rounded-2xl bg-white/90 px-3 py-1 text-[15px] font-extrabold text-fuchsia-600 shadow-sm">
+				<span className="rounded-2xl bg-white/90 px-3 py-1 text-[15px] font-extrabold text-teal-800 shadow-sm">
 					🌉 Most Dzielników
 				</span>
 				<HelpTip
@@ -199,14 +160,14 @@ function DividerBridge({
 					<path
 						d="M0 78 Q 20 72 40 78 T 80 78 T 120 78 T 160 78 T 200 78 T 240 78 T 280 78 T 320 78"
 						fill="none"
-						stroke="#ffffff"
+						stroke="#fff8e8"
 						strokeOpacity={0.35}
 						strokeWidth={3}
 					/>
 					<path
 						d="M0 88 Q 20 82 40 88 T 80 88 T 120 88 T 160 88 T 200 88 T 240 88 T 280 88 T 320 88"
 						fill="none"
-						stroke="#ffffff"
+						stroke="#fff8e8"
 						strokeOpacity={0.5}
 						strokeWidth={3}
 					/>
@@ -224,7 +185,7 @@ function DividerBridge({
 							y1={y1}
 							x2={x}
 							y2={y2}
-							stroke="#e879f9"
+							stroke="#caa47f"
 							strokeWidth={4}
 							strokeLinecap="round"
 						/>
@@ -233,14 +194,14 @@ function DividerBridge({
 					<path
 						d="M -4 74 Q 160 44 324 74"
 						fill="none"
-						stroke="#a21caf"
+						stroke="#806c66"
 						strokeWidth={17}
 						strokeLinecap="round"
 					/>
 					<path
 						d="M -4 72 Q 160 42 324 72"
 						fill="none"
-						stroke="#d946ef"
+						stroke="#b99173"
 						strokeWidth={12}
 						strokeLinecap="round"
 					/>
@@ -262,7 +223,7 @@ function DividerBridge({
 				</div>
 			</div>
 			<div className="relative z-10 -mt-1 flex justify-center">
-				<span className="rounded-full bg-white/85 px-3 py-0.5 text-sm font-extrabold text-fuchsia-600 shadow-sm">
+				<span className="rounded-full bg-white/85 px-3 py-0.5 text-sm font-extrabold text-teal-800 shadow-sm">
 					{bridgeOwned}/{BRIDGE_DIVIDER_IDS.length} ✨
 				</span>
 			</div>
@@ -360,37 +321,32 @@ export function MapScreen() {
 	return (
 		// max-w-lg celowo TAKŻE w landscape (App uncapuje przez land:max-w-none):
 		// mapa ma zostać wąskim pionowym szlakiem również na laptopie
-		<div className="mx-auto flex min-h-[var(--app-vh)] w-full max-w-lg flex-col p-4 pb-10">
-			<div className="mb-1 flex items-center justify-between">
+		<div className="world-map mx-auto flex min-h-[var(--app-vh)] w-full max-w-lg flex-col p-4 pb-10">
+			<header className="map-header">
 				<button
 					type="button"
 					onClick={() => goTo("home")}
-					className="touch-manipulation rounded-full bg-white/80 px-5 py-2 text-2xl font-extrabold text-grape-dark shadow active:scale-90"
+					className="map-back touch-manipulation text-2xl font-extrabold text-grape-dark active:scale-90"
 					aria-label="Wróć do domku"
 				>
 					←
 				</button>
-				<div className="text-2xl font-extrabold text-grape-dark">
+				<h1 className="text-2xl font-extrabold text-grape-dark">
 					Mapa Świata 🗺️
-				</div>
+				</h1>
 				<HelpTip
 					placement="bottom"
 					align="right"
 					text="To Twoja wyprawa! Każda brama kryje nową tabliczkę. Graj i zdobywaj kryształy — gdy zapalą się wszystkie, brama otworzy się sama i poznasz nową krainę!"
 				/>
-			</div>
+			</header>
 
 			{/* mgliste krainy w oddali */}
-			{!maxStage && gatesLeft > 1 && (
-				<>
-					<FutureLands gatesLeft={gatesLeft} />
-					<Trail from="center" to="center" />
-				</>
-			)}
+			{!maxStage && gatesLeft > 1 && <FutureLands gatesLeft={gatesLeft} />}
 
 			{/* front wyprawy: aktualna brama albo finał */}
 			{maxStage ? (
-				<div className="anim-pop flex flex-col items-center gap-3 self-center rounded-[2.2rem] border-b-8 border-black/10 bg-gradient-to-b from-amber-300 to-orange-400 p-6 text-center shadow-xl">
+				<div className="map-complete anim-pop flex w-full flex-col items-center gap-3 p-6 text-center">
 					<div className="text-6xl">👑</div>
 					<div className="text-2xl font-extrabold text-white">
 						Cała Kraina zdobyta!
@@ -406,47 +362,54 @@ export function MapScreen() {
 					</BigButton>
 				</div>
 			) : (
-				<div className="flex flex-col items-center">
-					<div className="relative">
-						{/* pagórek, na którym stoi brama */}
-						<div
-							aria-hidden
-							className="absolute -bottom-3 left-1/2 h-10 w-72 -translate-x-1/2 rounded-[50%] bg-gradient-to-b from-emerald-200/90 to-emerald-300/90 shadow-inner"
-						/>
-						<GateArch lit={lit} width={196} mist="on">
-							<div className="anim-float text-5xl font-extrabold text-white/80 blur-[2px]">
-								? ?
-							</div>
-						</GateArch>
-						{/* potwórek-podróżnik u stóp bramy */}
-						<div className="absolute -bottom-1 -left-10">
-							{traveler !== undefined ? (
-								<MonsterStage id={traveler} size={72} />
-							) : (
-								<div className="anim-float">
-									<EggView quality="normal" size={48} />
+				<section className="map-frontier" aria-label="Aktualna brama">
+					<div className="map-portal-scene">
+						<MapPortalArt />
+						<div className="map-portal">
+							<GateArch lit={lit} width={158} mist="on">
+								<div className="anim-float text-5xl font-extrabold text-white/80 blur-[2px]">
+									? ?
 								</div>
-							)}
+							</GateArch>
+							{/* potwórek-podróżnik u stóp bramy */}
+							<div className="absolute -bottom-1 -left-10">
+								{traveler !== undefined ? (
+									<MonsterStage id={traveler} size={72} />
+								) : (
+									<div className="anim-float">
+										<EggView quality="normal" size={48} />
+									</div>
+								)}
+							</div>
 						</div>
 					</div>
-
-					<div className="mt-3 rounded-full bg-white/80 px-4 py-1 text-lg font-extrabold text-amber-500 shadow-sm">
-						Kryształy: {lit}/{CRYSTALS}
+					<div className="map-gate-details">
+						<div className="map-crystal-count">
+							Kryształy: {lit}/{CRYSTALS}
+						</div>
+						<div className="map-crystal-meter" aria-hidden="true">
+							{Array.from({ length: CRYSTALS }, (_, i) => (
+								<svg key={i} viewBox="0 0 24 28" data-lit={i < lit}>
+									<path d="M7 2h10l5 8-10 16L2 10Z" />
+									<path d="m7 2 2 8 3 16 3-16 2-8M2 10h20" fill="none" />
+								</svg>
+							))}
+						</div>
+						<div className="map-gate-hint">
+							{refresh
+								? "Starsze tabliczki przygasły 🌙 — poćwicz je, żeby brama się otworzyła!"
+								: lit === 0
+									? "Zagraj rundę, żeby zacząć zbierać kryształy!"
+									: "Każda runda dokłada kryształów. Komplet otworzy bramę!"}
+						</div>
+						<BigButton
+							onClick={startRound}
+							className="map-play w-full py-4 text-xl"
+						>
+							Graj, by ją otworzyć! 🚀
+						</BigButton>
 					</div>
-					<div className="mt-1 max-w-xs text-center text-sm font-bold text-slate-500">
-						{refresh
-							? "Starsze tabliczki przygasły 🌙 — poćwicz je, żeby brama się otworzyła!"
-							: lit === 0
-								? "Zagraj rundę, żeby zacząć zbierać kryształy!"
-								: "Każda runda dokłada kryształów. Komplet otworzy bramę!"}
-					</div>
-					<BigButton
-						onClick={startRound}
-						className="mt-3 w-full max-w-xs py-4 text-2xl"
-					>
-						Graj, by ją otworzyć! 🚀
-					</BigButton>
-				</div>
+				</section>
 			)}
 
 			{/* szlak: zdobyte krainy → wioska startowa → Most Dzielników */}
