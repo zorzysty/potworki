@@ -1531,6 +1531,20 @@ describe("sklepik — kosmetyka", () => {
 		expect(game().cosmetics.equipped[FIRST_MONSTER_ID]?.hat).toBeUndefined()
 	})
 
+	test("equipCosmetic: dwie rzeczy naraz odblokowują wystrojony-potworek od razu (bez czekania na inną akcję)", () => {
+		const frame = COSMETICS.find(
+			(c) => c.slot === "frame",
+		) as (typeof COSMETICS)[number]
+		useGame.setState({
+			ownedMonsters: { [FIRST_MONSTER_ID]: { hatchedAt: 1 } },
+			cosmetics: { owned: [tier1.id, frame.id], equipped: {} },
+		})
+		game().equipCosmetic(FIRST_MONSTER_ID, "hat", tier1.id)
+		expect(game().achievements["wystrojony-potworek"]).toBeUndefined()
+		game().equipCosmetic(FIRST_MONSTER_ID, "frame", frame.id)
+		expect(game().achievements["wystrojony-potworek"]).toBeDefined()
+	})
+
 	test("equipCosmetic: ramka (slot frame, plan 014) per potworek; null zdejmuje; A nie rusza B", () => {
 		suppressAchievements()
 		const frame = COSMETICS.find(

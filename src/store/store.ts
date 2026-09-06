@@ -584,6 +584,7 @@ export const useGame = create<GameState>()(
 						},
 					},
 				})
+				get().checkAchievements()
 			},
 
 			applyDecay: () => {
