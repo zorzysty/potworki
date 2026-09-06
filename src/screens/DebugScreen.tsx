@@ -48,6 +48,7 @@ import {
 	FEED_ONLY_IDS,
 	GAP_ONLY_IDS,
 	IDS_BY_RARITY,
+	MEMORY_ONLY_IDS,
 	MONSTER_COUNT,
 	MONSTERS,
 	PAIRS_ONLY_IDS,
@@ -92,6 +93,7 @@ const EXCLUSIVE: [string, ReadonlySet<number>][] = [
 	["🧩", GAP_ONLY_IDS],
 	["=", PAIRS_ONLY_IDS],
 	[">", FEED_ONLY_IDS],
+	["∷", MEMORY_ONLY_IDS],
 ]
 const BUILDING_NOTE: Partial<Record<string, string>> = {
 	"plac-zabaw": "brama wypraw",

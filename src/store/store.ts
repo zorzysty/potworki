@@ -33,6 +33,8 @@ import {
 import type { RoundState } from "../game/round"
 import {
 	advance,
+	flipMemory,
+	hideMemory,
 	newRound,
 	newVisitRound,
 	submitAnswer,
@@ -93,6 +95,8 @@ interface GameState extends SaveState {
 	pressConfirm: () => void
 	pickFactor: (n: number) => void // tryb par: stuknięty czynnik (żeton)
 	feedSide: (side: 0 | 1) => void // tryb porównywania: nakarmiona strona
+	flipCard: (i: number) => void // tryb memory: odkrycie karty
+	hideCards: () => void // tryb memory: schowanie świeżo dopasowanej pary (timer UI)
 	nextQuestion: () => void
 	exitRoundEarly: () => void
 	hatchEgg: (index?: number) => void
@@ -276,6 +280,8 @@ export const useGame = create<GameState>()(
 					if (digit === 1 || digit === 2) get().feedSide(digit === 1 ? 0 : 1)
 					return
 				}
+				// memory: tylko dotyk/klik w kartę — cyfry nic nie znaczą
+				if (round.mode === "memory") return
 				if (round.phase !== "answering" && round.phase !== "wrong") return
 				if (round.answer.length >= 3) return
 				const answer = round.answer + String(digit)
@@ -292,6 +298,7 @@ export const useGame = create<GameState>()(
 					set({ round: { ...round, picked: null } })
 					return
 				}
+				if (round.mode === "memory") return
 				if (round.phase !== "answering" && round.phase !== "wrong") return
 				set({ round: { ...round, answer: round.answer.slice(0, -1) } })
 			},
@@ -338,11 +345,35 @@ export const useGame = create<GameState>()(
 				get().checkAchievements()
 			},
 
+			// Tryb memory: tap w kartę = odkrycie (commit pary jak pressConfirm);
+			// dopasowaną parę chowa timer UI (hideCards) albo następne odkrycie,
+			// pomyłkę — tylko następne odkrycie
+			flipCard: (i) => {
+				const state = get()
+				const { round } = state
+				if (!round || round.paused || round.mode !== "memory") return
+				const r = flipMemory(state, round, i, Math.random, Date.now())
+				if (!r) return
+				set({ ...r.patch, round: r.round })
+				get().checkAchievements()
+			},
+
+			hideCards: () => {
+				const { round } = get()
+				const r = round && hideMemory(round)
+				if (r) set({ round: r })
+			},
+
 			pressConfirm: () => {
 				const state = get()
 				const { round } = state
 				if (!round || round.paused) return
-				if (round.mode === "pairs" || round.mode === "feed") return
+				if (
+					round.mode === "pairs" ||
+					round.mode === "feed" ||
+					round.mode === "memory"
+				)
+					return
 				const r = submitAnswer(state, round, Math.random, Date.now())
 				if (!r) return
 				set({ ...r.patch, round: r.round })

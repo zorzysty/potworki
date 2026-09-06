@@ -7,6 +7,7 @@ import {
 	FEED_ONLY_IDS,
 	GAP_ONLY_IDS,
 	IDS_BY_RARITY,
+	MEMORY_ONLY_IDS,
 	MONSTER_COUNT,
 	PAIRS_ONLY_IDS,
 } from "../monsters/catalog"
@@ -85,6 +86,13 @@ function ownedPairsOnly(save: SaveState): number {
 function ownedFeedOnly(save: SaveState): number {
 	let n = 0
 	for (const id of FEED_ONLY_IDS) if (id in save.ownedMonsters) n++
+	return n
+}
+
+// Potworki tylko-memory (Zakątek Pamięci) — lustro ownedPairsOnly.
+function ownedMemoryOnly(save: SaveState): number {
+	let n = 0
+	for (const id of MEMORY_ONLY_IDS) if (id in save.ownedMonsters) n++
 	return n
 }
 
@@ -762,6 +770,58 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
 		progress: ({ save }) => ({
 			current: ownedFeedOnly(save),
 			target: FEED_ONLY_IDS.size,
+		}),
+	},
+	{
+		id: "pierwsza-para-memory",
+		title: "Pierwsza para z pamięci",
+		description: "Odkryj parę kart w Memory.",
+		icon: "🃏",
+		difficulty: "easy",
+		progress: ({ counters }) => ({
+			current: counters.memoryCorrect,
+			target: 1,
+		}),
+	},
+	{
+		id: "memory-50",
+		title: "Dobra pamięć",
+		description: "Odkryj 50 par kart w Memory.",
+		icon: "🧠",
+		difficulty: "medium",
+		progress: ({ counters }) => ({
+			current: counters.memoryCorrect,
+			target: 50,
+		}),
+	},
+	{
+		id: "mistrz-memory",
+		title: "Mistrz Memory",
+		description: "Odkryj 200 par kart w Memory.",
+		icon: "🎓",
+		difficulty: "hard",
+		progress: ({ counters }) => ({
+			current: counters.memoryCorrect,
+			target: 200,
+		}),
+	},
+	{
+		id: "gosc-zakatka",
+		title: "Gość Zakątka",
+		description: "Zdobądź legendarnego potworka z Zakątka Pamięci.",
+		icon: "🃏",
+		difficulty: "hard",
+		progress: ({ save }) => ({ current: ownedMemoryOnly(save), target: 1 }),
+	},
+	{
+		id: "zakatek-w-komplecie",
+		title: "Zakątek Pamięci w komplecie",
+		description: "Zdobądź wszystkie potworki z Zakątka Pamięci.",
+		icon: "🧠",
+		difficulty: "hard",
+		progress: ({ save }) => ({
+			current: ownedMemoryOnly(save),
+			target: MEMORY_ONLY_IDS.size,
 		}),
 	},
 ]

@@ -33,7 +33,7 @@ export interface Monster {
 	name: string
 }
 
-export const MONSTER_COUNT = 88
+export const MONSTER_COUNT = 92
 
 // Legendarne zdobywalne WYŁĄCZNIE przez dzielenie (jajka z rundy dzielenia).
 // Dołożone na końcu katalogu (id > dotychczasowego maks.), więc nie ruszają
@@ -68,6 +68,14 @@ export function isFeedOnly(id: number): boolean {
 	return FEED_ONLY_IDS.has(id)
 }
 
+// Legendarne zdobywalne WYŁĄCZNIE przez tryb memory ("memory") — z Zakątka
+// Pamięci. Dołożone na końcu, seed nietknięty.
+export const MEMORY_ONLY_IDS: ReadonlySet<number> = new Set([88, 89, 90, 91])
+
+export function isMemoryOnly(id: number): boolean {
+	return MEMORY_ONLY_IDS.has(id)
+}
+
 // Pula potworków do losowania zależna od trybu jajka: każdy blok ekskluzywny
 // widoczny TYLKO dla swojego trybu (div → tylko-dzielenie, gap → tylko-luka,
 // pairs → tylko-Dzielniki); mnożenie i Jajko Życzeń widzą bazę. Różni się
@@ -79,7 +87,8 @@ export function idsByRarityForMode(
 		(mode !== "div" && isDivisionOnly(id)) ||
 		(mode !== "gap" && isGapOnly(id)) ||
 		(mode !== "pairs" && isPairsOnly(id)) ||
-		(mode !== "feed" && isFeedOnly(id))
+		(mode !== "feed" && isFeedOnly(id)) ||
+		(mode !== "memory" && isMemoryOnly(id))
 	return {
 		...IDS_BY_RARITY,
 		legendary: IDS_BY_RARITY.legendary.filter((id) => !excluded(id)),
@@ -95,7 +104,7 @@ export function rarityOf(id: number): Rarity {
 	if (id >= 76) {
 		// 76–79: legendary tylko-luka (GAP_ONLY_IDS); 80–83: legendary
 		// tylko-Dzielniki (PAIRS_ONLY_IDS); 84–87: legendary tylko-porównywanie
-		// (FEED_ONLY_IDS)
+		// (FEED_ONLY_IDS); 88–91: legendary tylko-memory (MEMORY_ONLY_IDS)
 		return "legendary"
 	}
 	if (id >= 48) {

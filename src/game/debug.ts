@@ -10,13 +10,21 @@ import { emptyStats, reachedGoal, stageFacts } from "./adaptive"
 import { grantMonster } from "./collection"
 import { COSMETICS } from "./cosmetics"
 import { EXPEDITIONS_BY_ID, type ExpeditionDef } from "./expeditions"
-import type { Fact, FactKey, GameMode, RoundQuestion } from "./facts"
+import type {
+	Fact,
+	FactKey,
+	GameMode,
+	MemoryCard,
+	RoundQuestion,
+} from "./facts"
 import {
 	ALL_FACTS,
 	budgetMs,
 	divisorPairs,
 	expectedAnswer,
 	FACTS_BY_KEY,
+	isMemoryMatch,
+	MAX_STARS_PER_ROUND,
 	MODE_UNLOCK_STAGE,
 	pairBudgetMs,
 	QUESTIONS_PER_ROUND,
@@ -27,8 +35,10 @@ import { ISKIERKI_CAP } from "./rewards"
 import {
 	advance,
 	feedAnswer,
+	flipMemory,
 	newRound,
 	type Rand,
+	type RoundState,
 	type RoundStep,
 	submitAnswer,
 	submitFeed,
@@ -75,6 +85,15 @@ export function simulateRound(
 		cur = { ...cur, ...step.patch }
 		round = step.round
 	}
+	if (mode === "memory") {
+		playMemory(
+			(i) => apply(flipMemory(cur, round, i, rand, now)),
+			() => round,
+			Math.max(0, MAX_STARS_PER_ROUND - totalStars),
+		)
+		apply(advance(cur, round, rand, now))
+		return { patch, round }
+	}
 	const perQuestion = distributeStars(totalStars, QUESTIONS_PER_ROUND)
 	for (let i = 0; round.phase !== "summary"; i++) {
 		const fact = FACTS_BY_KEY.get(round.question.key)
@@ -114,6 +133,57 @@ export function simulateRound(
 		apply(advance(cur, round, rand, now))
 	}
 	return { patch, round }
+}
+
+// Rozgrywa planszę memory z DOKŁADNIE `misses` pomyłkami „z pamięci" (samymi
+// funkcjami z round.ts): 1) poznaje karty bez dopasowań i bez kar (pierwsza
+// odkryta zawsze z nieznaną jeszcze parą — ostatnia karta zostaje nieodkryta,
+// bo nie da się jej zobaczyć inaczej), 2) robi `misses` celowych pomyłek na
+// kartach o znanej parze, 3) dopasowuje wszystko. Kary siedzą w `debt` przed
+// pierwszą parą, więc suma gwiazdek = 30 − misses.
+function playMemory(
+	flip: (i: number) => void,
+	round: () => RoundState,
+	misses: number,
+): void {
+	const board = round().board
+	const idx = board.map((_, i) => i)
+	const match = (a: number, b: number) =>
+		isMemoryMatch(board[a] as MemoryCard, board[b] as MemoryCard)
+	const unmatched = () => idx.filter((i) => !round().matched.includes(i))
+	// pierwsza karta nie może być z zaległej pomyłki (flipMemory ją chowa,
+	// odkrywając nową); druga może — po pierwszym odkryciu jest już schowana
+	const firstable = () => unmatched().filter((i) => !round().open.includes(i))
+	const partnerSeen = (i: number) =>
+		round().seen.some((j) => !round().matched.includes(j) && match(i, j))
+	// 1) poznawanie
+	for (;;) {
+		const unseen = unmatched().filter((i) => !round().seen.includes(i))
+		const first = firstable().find((i) => !partnerSeen(i))
+		if (unseen.length === 0 || first === undefined) break
+		const second = unseen.find((j) => j !== first && !match(first, j))
+		if (second === undefined) break
+		flip(first)
+		flip(second)
+	}
+	// 2) celowe pomyłki
+	for (let m = 0; m < misses; m++) {
+		const first = firstable().find((i) => partnerSeen(i))
+		if (first === undefined) break
+		const second = unmatched().find((j) => j !== first && !match(first, j))
+		if (second === undefined) break
+		flip(first)
+		flip(second)
+	}
+	// 3) dopasowania
+	while (round().phase === "answering") {
+		const first = firstable()[0]
+		if (first === undefined) break
+		const second = unmatched().find((j) => j !== first && match(first, j))
+		if (second === undefined) throw new Error("playMemory: karta bez pary")
+		flip(first)
+		flip(second)
+	}
 }
 
 // --- Panel debug: czyste patche zapisu (store nakłada je przez debugPatch) ---
@@ -288,6 +358,24 @@ export const SCENARIOS: readonly Scenario[] = [
 			totalRounds: 30,
 			iskierki: 60,
 			ownedMonsters: withOwned({}, IDS_BY_RARITY.common, true, now),
+		}),
+	},
+	{
+		id: "gate-memory",
+		title: "∷ Brama 6: Memory",
+		hint: "etap 6, trzeci tryb-zabawa świeżo odblokowany",
+		apply: (_s, _r, now) => ({
+			...INITIAL_SAVE,
+			...atStage(MODE_UNLOCK_STAGE.memory, now),
+			totalRounds: 60,
+			iskierki: 120,
+			companionId: IDS_BY_RARITY.rare[0] ?? 0,
+			ownedMonsters: withOwned(
+				{},
+				[...IDS_BY_RARITY.common, ...IDS_BY_RARITY.rare],
+				true,
+				now,
+			),
 		}),
 	},
 	{

@@ -8,6 +8,7 @@ export const MODE_LABELS: Record<GameMode, string> = {
 	gap: "? Zgadnij",
 	pairs: "= Dzielniki",
 	feed: "> Porównywanie",
+	memory: "∷ Memory",
 }
 
 // Sama nazwa (baner „Nowa zabawa na start: …!")
@@ -17,6 +18,7 @@ export const MODE_NAMES: Record<GameMode, string> = {
 	gap: "Zgadnij",
 	pairs: "Dzielniki",
 	feed: "Porównywanie",
+	memory: "Memory",
 }
 
 // Plakietka trybu na jajku/potworku ekskluzywnym (null = bez plakietki)
@@ -25,10 +27,11 @@ export const MODE_BADGES: Partial<Record<GameMode, string>> = {
 	gap: "🧩", // nie „?" — koliduje z konwencją „???" = nieznany potworek
 	pairs: "=",
 	feed: ">",
+	memory: "∷",
 }
 
 // Rząd 1 = bazowe widoki faktu, rząd 2 = zabawy odblokowywane bramami
 export const MODE_ROWS: readonly (readonly GameMode[])[] = [
 	["mult", "div", "gap"],
-	["pairs", "feed"],
+	["pairs", "feed", "memory"],
 ]

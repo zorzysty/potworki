@@ -12,7 +12,7 @@ import {
 import type { VillageState } from "../game/village"
 import { INITIAL_VILLAGE } from "../game/village"
 
-export const SAVE_VERSION = 19
+export const SAVE_VERSION = 20
 
 // Wpis ledgera osiągnięć. `claimed`: iskierki za osiągnięcie NIE wpadają same — dziecko
 // odbiera je tapnięciem na ekranie osiągnięć; do tego czasu Home pokazuje badge.
@@ -29,6 +29,7 @@ export interface AchievementCounters {
 	gapCorrect: number // poprawne pierwsze próby w trybie luki (brakujący czynnik)
 	pairsCorrect: number // trafione pary w trybie Dzielników (każda para = jedno trafienie)
 	feedCorrect: number // poprawne pierwsze próby w trybie porównywania
+	memoryCorrect: number // dopasowane pary w Memory (każda para = jedno trafienie)
 	totalStars: number
 	rainbowEggsHatched: number
 	wishEggsBought: number
@@ -89,6 +90,7 @@ export const INITIAL_SAVE: SaveState = {
 		gapCorrect: 0,
 		pairsCorrect: 0,
 		feedCorrect: 0,
+		memoryCorrect: 0,
 		totalStars: 0,
 		rainbowEggsHatched: 0,
 		wishEggsBought: 0,
@@ -339,6 +341,23 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 			...s,
 			legendaryPity: { ...pity, pairs: 0, feed: 0 },
 			achievementStats: { ...stats, pairsCorrect: 0, feedCorrect: 0 },
+		}
+	},
+	// v19→v20: tryb „memory" — pity jego jajek i licznik par od zera (wzór v18→v19).
+	19: (state) => {
+		const s = state as Record<string, unknown>
+		const pity =
+			s.legendaryPity && typeof s.legendaryPity === "object"
+				? (s.legendaryPity as Record<string, unknown>)
+				: {}
+		const stats =
+			s.achievementStats && typeof s.achievementStats === "object"
+				? (s.achievementStats as Record<string, unknown>)
+				: {}
+		return {
+			...s,
+			legendaryPity: { ...pity, memory: 0 },
+			achievementStats: { ...stats, memoryCorrect: 0 },
 		}
 	},
 }

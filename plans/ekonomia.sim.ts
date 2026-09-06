@@ -67,6 +67,7 @@ import {
 	GAP_ONLY_IDS,
 	IDS_BY_RARITY,
 	idsByRarityForMode,
+	MEMORY_ONLY_IDS,
 	MONSTER_COUNT,
 	mulberry32,
 	PAIRS_ONLY_IDS,
@@ -87,6 +88,7 @@ export const EXCLUSIVE: Record<GameMode, ReadonlySet<number>> = {
 	gap: GAP_ONLY_IDS,
 	pairs: PAIRS_ONLY_IDS,
 	feed: FEED_ONLY_IDS,
+	memory: MEMORY_ONLY_IDS, // memory nie jest symulowane (brak w MODES) — tylko komplet Record
 }
 const BASE_LEG = IDS_BY_RARITY.legendary.filter(
 	(id) => !MODES.some((m) => EXCLUSIVE[m].has(id)),

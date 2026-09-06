@@ -711,3 +711,44 @@ body {
 		transform: translateX(-50%) rotate(-6deg) translateY(-5.7%);
 	}
 }
+
+/* ---------- memory: obracanie kart (tylko transform/opacity) ---------- */
+
+.memory-board {
+	--g: 0.375rem; /* odstęp kart — kafelki obrazka liczą z niego przesunięcie */
+	perspective: 1200px;
+}
+
+.memory-card {
+	position: relative;
+	transform-style: preserve-3d;
+	transition: transform 0.45s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.memory-card[data-up="true"] {
+	transform: rotateY(180deg);
+}
+
+/* dopasowana para znika na stałe — pusty slot w siatce, zero „duchów".
+   Wygaszanie siedzi na SLOCIE (rodzic), nie na .memory-card: opacity < 1
+   wymusza transform-style: flat, a spłaszczona karta pokazywała rewers
+   (obrazek) zamiast dalej wygaszać awers z wartością. */
+.memory-slot {
+	transition: opacity 0.6s ease;
+}
+
+.memory-slot[data-gone="true"] {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.memory-face {
+	position: absolute;
+	inset: 0;
+	backface-visibility: hidden;
+	-webkit-backface-visibility: hidden;
+}
+
+.memory-front {
+	transform: rotateY(180deg);
+}

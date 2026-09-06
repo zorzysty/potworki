@@ -28,6 +28,7 @@ import {
 	isDivisionOnly,
 	isFeedOnly,
 	isGapOnly,
+	isMemoryOnly,
 	isPairsOnly,
 	MONSTER_COUNT,
 	MONSTERS,
@@ -427,6 +428,11 @@ function MonsterCard({
 						{MODE_BADGES.feed}
 					</div>
 				)}
+				{isMemoryOnly(monsterId) && (
+					<div className="absolute top-2 left-2 z-10 rounded-full bg-teal-500 px-2.5 py-1 text-sm font-extrabold text-white shadow">
+						{MODE_BADGES.memory}
+					</div>
+				)}
 				<div className="relative flex justify-center">
 					{/* przez MonsterStage — karta pokazuje założony strój
 				    (każdy potworek z kosmetyką renderuje się przez Stage);
@@ -596,6 +602,11 @@ function MonsterCardLocked({
 					{MODE_BADGES.feed} Tylko za {MODE_NAMES.feed}
 				</div>
 			)}
+			{isMemoryOnly(monsterId) && (
+				<div className="rounded-full bg-teal-100 px-4 py-1 text-sm font-extrabold text-teal-600">
+					{MODE_BADGES.memory} Tylko za {MODE_NAMES.memory}
+				</div>
+			)}
 			{monsterId === dreamMonsterId ? (
 				<BigButton
 					onClick={() => {
@@ -729,6 +740,11 @@ const CollectionTile = memo(function CollectionTile({
 				{isFeedOnly(monster.id) && (
 					<div className="absolute -left-1.5 -top-1.5 rounded-full bg-rose-500 px-2 py-0.5 text-sm font-extrabold text-white shadow">
 						{MODE_BADGES.feed}
+					</div>
+				)}
+				{isMemoryOnly(monster.id) && (
+					<div className="absolute -left-1.5 -top-1.5 rounded-full bg-teal-500 px-2 py-0.5 text-sm font-extrabold text-white shadow">
+						{MODE_BADGES.memory}
 					</div>
 				)}
 			</button>

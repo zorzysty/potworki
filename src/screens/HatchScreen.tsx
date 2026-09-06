@@ -7,6 +7,7 @@ import { MODE_BADGES } from "../components/modeLabels"
 import { NEST_SLOTS, NestArt, nestSlotStyle } from "../components/NestArt"
 import { RARITY_META } from "../components/rarity"
 import { isCollectionComplete } from "../game/collection"
+import { ISKIERKI_CAP } from "../game/rewards"
 import { MONSTERS } from "../monsters/catalog"
 import { useGame } from "../store/store"
 
@@ -216,12 +217,20 @@ export function HatchScreen() {
 						>
 							{RARITY_META[monster.rarity].label}
 						</div>
-						{!lastHatch.isNew && (
-							<div className="anim-fade-up text-xl font-extrabold text-amber-300">
-								Już go masz! Zamienia się w ✨ +{lastHatch.iskierkiGained}{" "}
-								{iskierkiWord(lastHatch.iskierkiGained)}
-							</div>
-						)}
+						{/* gained = realny przyrost po capie portfela (credit); 0 tylko przy
+						    pełnym portfelu — wtedy „+0 iskierek" wyglądało jak błąd */}
+						{!lastHatch.isNew &&
+							(lastHatch.iskierkiGained > 0 ? (
+								<div className="anim-fade-up text-xl font-extrabold text-amber-300">
+									Już go masz! Zamienia się w ✨ +{lastHatch.iskierkiGained}{" "}
+									{iskierkiWord(lastHatch.iskierkiGained)}
+								</div>
+							) : (
+								<div className="anim-fade-up text-center text-xl font-extrabold text-amber-300">
+									Już go masz! Twój portfel jest pełny ({ISKIERKI_CAP} ✨) —
+									wydaj trochę iskierek w Wiosce!
+								</div>
+							))}
 						<div className="flex flex-col gap-3 pt-2">
 							{pendingEggs.length > 0 ? (
 								<BigButton

@@ -1,5 +1,11 @@
 import { STAGES } from "../game/facts"
-import { isDivisionOnly, isFeedOnly, isGapOnly, isPairsOnly } from "./catalog"
+import {
+	isDivisionOnly,
+	isFeedOnly,
+	isGapOnly,
+	isMemoryOnly,
+	isPairsOnly,
+} from "./catalog"
 
 // „Mapa Świata": każdemu etapowi odblokowań (STAGES) odpowiada region
 // z nazwą o motywie liczbowym wprowadzanego czynnika i potworkiem-strażnikiem.
@@ -181,6 +187,15 @@ export const ORCHARD_ORIGIN = {
 	color: "bg-rose-100 text-rose-600",
 }
 
+// Pochodzenie potworków tylko-memory (tryb „memory"). Wariant unii kind
+// "nook"; na mapie bez własnej karty (jak Sad).
+export const NOOK_ORIGIN = {
+	kind: "nook" as const,
+	name: "Zakątek Pamięci",
+	emoji: "🃏",
+	color: "bg-teal-100 text-teal-600",
+}
+
 // Pochodzenie potworków tylko-luka (tryb „brakujący czynnik"). Wariant unii
 // kind "valley", lustro BRIDGE_ORIGIN.
 export const VALLEY_ORIGIN = {
@@ -201,9 +216,11 @@ export function originOf(
 	| typeof BRIDGE_ORIGIN
 	| typeof ISLAND_ORIGIN
 	| typeof ORCHARD_ORIGIN
+	| typeof NOOK_ORIGIN
 	| typeof VALLEY_ORIGIN {
 	if (isPairsOnly(id)) return BRIDGE_ORIGIN
 	if (isFeedOnly(id)) return ORCHARD_ORIGIN
+	if (isMemoryOnly(id)) return NOOK_ORIGIN
 	if (isDivisionOnly(id)) return ISLAND_ORIGIN
 	if (isGapOnly(id)) return VALLEY_ORIGIN
 	return REGIONS[regionOf(id)] as Region

@@ -27,6 +27,7 @@ const maxCounters: AchievementCounters = {
 	visitRoundsCompleted: 5,
 	pairsCorrect: 500,
 	feedCorrect: 500,
+	memoryCorrect: 500,
 }
 const maxSave: SaveState = {
 	...INITIAL_SAVE,
@@ -70,8 +71,8 @@ const emptyCtx: AchievementCtx = {
 }
 
 describe("ACHIEVEMENTS catalog", () => {
-	test("jest dokładnie 63 osiągnięcia", () => {
-		expect(ACHIEVEMENTS.length).toBe(63)
+	test("jest dokładnie 68 osiągnięć", () => {
+		expect(ACHIEVEMENTS.length).toBe(68)
 	})
 
 	test("id są unikalne", () => {
@@ -146,6 +147,11 @@ describe("ACHIEVEMENTS catalog", () => {
 			"mistrz-porownywania",
 			"lakomczuch-z-sadu",
 			"sad-w-komplecie",
+			"pierwsza-para-memory",
+			"memory-50",
+			"mistrz-memory",
+			"gosc-zakatka",
+			"zakatek-w-komplecie",
 		])
 	})
 

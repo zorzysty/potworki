@@ -4,12 +4,17 @@ import { mulberry32 } from "../monsters/catalog"
 import {
 	ALL_FACTS,
 	budgetMs,
+	buildMemoryBoard,
 	divisorPairs,
 	EGG_THRESHOLD_CAP,
 	expectedAnswer,
 	FACTS_BY_KEY,
 	fragmentsForEgg,
 	isMaxStage,
+	isMemoryMatch,
+	MEMORY_COLS,
+	MEMORY_PAIRS,
+	MEMORY_ROWS,
 	MODE_UNLOCK_STAGE,
 	makeQuestion,
 	modeUnlocked,
@@ -66,6 +71,9 @@ describe("tryb par (pairs)", () => {
 	test("odblokowanie: bazowe tryby od etapu 0, pary za bramą etapu 2, karmienie za etapem 4", () => {
 		expect(MODE_UNLOCK_STAGE.pairs).toBe(2)
 		expect(MODE_UNLOCK_STAGE.feed).toBe(4)
+		expect(MODE_UNLOCK_STAGE.memory).toBe(6)
+		expect(modeUnlocked("memory", 5)).toBe(false)
+		expect(modeUnlocked("memory", 6)).toBe(true)
 		expect(modeUnlocked("feed", 3)).toBe(false)
 		expect(modeUnlocked("feed", 4)).toBe(true)
 		expect(modeUnlocked("mult", 0)).toBe(true)
@@ -339,5 +347,30 @@ describe("expectedAnswer", () => {
 		expect(
 			expectedAnswer({ key: "4x9", a: 9, b: 36, isRequeue: false }, "gap"),
 		).toBe(4)
+	})
+})
+
+describe("memory: plansza", () => {
+	test("20 kart, każdy fakt raz jako działanie + liczba, dopasowanie po wartości i rodzaju", () => {
+		const facts = unlockedFacts(STAGES.length - 1).slice(0, MEMORY_PAIRS)
+		const board = buildMemoryBoard(facts, mulberry32(3))
+		expect(board).toHaveLength(MEMORY_COLS * MEMORY_ROWS)
+		const exprs = board.filter((c) => c.expr !== null)
+		const nums = board.filter((c) => c.expr === null)
+		expect(exprs).toHaveLength(MEMORY_PAIRS)
+		expect(nums).toHaveLength(MEMORY_PAIRS)
+		expect(new Set(exprs.map((c) => c.key)).size).toBe(MEMORY_PAIRS)
+		for (const e of exprs) {
+			const f = FACTS_BY_KEY.get(e.key) as { a: number; b: number }
+			const m = /^(\d+) (×|÷) (\d+)$/.exec(e.expr as string)
+			if (!m) throw new Error(`zły zapis: ${e.expr}`)
+			const [x, op, y] = [Number(m[1]), m[2], Number(m[3])]
+			expect(op === "×" ? x * y : x / y).toBe(e.value)
+			expect(e.value).toBe(op === "×" ? f.a * f.b : (f.a * f.b) / y)
+			expect(nums.some((n) => isMemoryMatch(e, n))).toBe(true)
+		}
+		// liczba–liczba i działanie–działanie nigdy nie są parą
+		expect(isMemoryMatch(nums[0] as never, nums[0] as never)).toBe(false)
+		expect(isMemoryMatch(exprs[0] as never, exprs[0] as never)).toBe(false)
 	})
 })

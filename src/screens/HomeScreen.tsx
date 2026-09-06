@@ -158,15 +158,20 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 					    (persystowane w jajkach). Rząd 1: bazowe widoki faktu; rząd 2: nowe
 					    zabawy odblokowywane bramami (MODE_UNLOCK_STAGE) — zamknięta to
 					    zajawka z chipem 🔒, nie wyszarzony przycisk */}
-					{MODE_ROWS.map((row) => (
-						<div key={row[0]} className="flex gap-1.5">
+					{/* etykiety NIGDY nie łamią się na dwie linie: rząd z trzema zabawami
+					    dostaje mniejszy font, a kolumny rosną z treścią (flex-auto), nie po równo — inaczej „> Porównywanie" wchodziło pod zaznaczony przycisk */}
+					{MODE_ROWS.map((row, r) => (
+						<div
+							key={row[0]}
+							className={`flex gap-1.5 ${r > 0 ? "text-sm" : "text-base"}`}
+						>
 							{row.map((value) =>
 								modeUnlocked(value, unlockedStage) ? (
 									<button
 										key={value}
 										type="button"
 										onClick={() => setMode(value)}
-										className={`min-h-16 flex-1 touch-manipulation rounded-2xl px-1 py-3 text-base font-extrabold transition-transform active:scale-95 ${
+										className={`min-h-16 min-w-0 flex-auto touch-manipulation whitespace-nowrap rounded-2xl px-1 py-3 font-extrabold transition-transform active:scale-95 ${
 											mode === value
 												? "bg-gradient-to-b from-grape to-grape-dark text-white shadow-md"
 												: "text-grape-dark"
@@ -177,11 +182,13 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 								) : (
 									<div
 										key={value}
-										className="flex min-h-16 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 text-base font-extrabold text-grape-dark"
+										className="flex min-h-16 min-w-0 flex-auto flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 font-extrabold text-grape-dark"
 									>
-										<span>{MODE_LABELS[value]}</span>
-										<span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-bold text-slate-500">
-											🔒 otworzy brama ×{STAGES[MODE_UNLOCK_STAGE[value]]?.[0]}
+										<span className="whitespace-nowrap">
+											{MODE_LABELS[value]}
+										</span>
+										<span className="rounded-full bg-white/80 whitespace-nowrap px-1.5 py-0.5 text-[11px] font-bold text-slate-500">
+											🔒 za bramą ×{STAGES[MODE_UNLOCK_STAGE[value]]?.[0]}
 										</span>
 									</div>
 								),

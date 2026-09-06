@@ -5,6 +5,7 @@ import { feedAnswer } from "../game/round"
 import { FIRST_MONSTER_ID } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
+import { MemoryBoard } from "./MemoryBoard"
 import { MonsterStage } from "./MonsterStage"
 
 // jak długo stuknięta para (pośrednia albo błędna) zostaje w okienkach
@@ -17,6 +18,7 @@ export function QuestionCard() {
 	if (round.mode === "pairs")
 		return <PairsCard round={round} unlockedStage={unlockedStage} />
 	if (round.mode === "feed") return <FeedCard round={round} />
+	if (round.mode === "memory") return <MemoryBoard round={round} />
 	const { question, phase, answer, lastStars, shakeNonce, mode } = round
 	const op = mode === "div" ? "÷" : "×"
 	// dla luki: brakujący czynnik (podświetlany w rytuale przepisania)

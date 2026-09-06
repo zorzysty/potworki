@@ -2,22 +2,25 @@ export type FactKey = `${number}x${number}`
 
 // Tryb rundy: mnożenie, dzielenie, brakujący czynnik ("gap": 7 × _ = 42),
 // pary dzielników ("pairs": 24 = ? × ? — wszystkie pary z odblokowanych liczb)
-// albo porównywanie ("feed": które z dwóch działań daje więcej?).
+// porównywanie ("feed": które z dwóch działań daje więcej?) albo memory
+// ("memory": plansza 4×5 kart, para = działanie i jego wynik).
 // Każdy tryb to inny widok tych samych faktów — wspólny postęp.
 // TOKENY są ZAMROŻONE: persystowane w PendingEgg.mode i legendaryPity.
-export type GameMode = "mult" | "div" | "gap" | "pairs" | "feed"
+export type GameMode = "mult" | "div" | "gap" | "pairs" | "feed" | "memory"
 
 // Etap (brama), od którego tryb jest dostępny na Home. Nowe tryby wchodzą co
 // drugą bramę, żeby dziecko co jakiś czas odkrywało coś nowego, a pula
 // odblokowanych liczb była już dość bogata, by tryb miał sens (pary z samych
 // {1,2,5,10} są nudne; z 3 i 4 pojawiają się 12, 20, 8…; porównywanie z 6 i 9
-// daje ciasne porównania w rodzaju 6×9 vs 5×10).
+// daje ciasne porównania w rodzaju 6×9 vs 5×10; memory za ostatnią bramą —
+// nagroda za komplet tabliczek, plansza losuje z całej tabliczki).
 export const MODE_UNLOCK_STAGE: Record<GameMode, number> = {
 	mult: 0,
 	div: 0,
 	gap: 0,
 	pairs: 2,
 	feed: 4,
+	memory: 6,
 }
 
 export const modeUnlocked = (mode: GameMode, stage: number): boolean =>
@@ -94,6 +97,68 @@ export function pickRival(fact: Fact, stage: number, rand: () => number): Fact {
 	return best
 }
 
+// Tryb memory: plansza MEMORY_COLS × MEMORY_ROWS kart = MEMORY_PAIRS par
+// „działanie – wynik". Karta z działaniem (`expr`, np. „3 × 5" albo „24 ÷ 6")
+// pasuje do KAŻDEJ karty-liczby o tej samej wartości (4 pasuje do 2 × 2 i do
+// 24 ÷ 6); dwie liczby ani dwa działania nigdy nie tworzą pary. Działania na
+// planszy to różne FAKTY (każdy fakt raz, losowo jako mnożenie albo dzielenie),
+// więc duplikat w rodzaju 7 × 3 obok 3 × 7 albo 21 ÷ 3 jest niemożliwy.
+export const MEMORY_COLS = 4
+export const MEMORY_ROWS = 5
+export const MEMORY_PAIRS = (MEMORY_COLS * MEMORY_ROWS) / 2
+
+export interface MemoryCard {
+	key: FactKey // fakt, którego uczy para (karta-liczba: fakt, z którego powstała)
+	value: number // wynik działania / liczba na karcie
+	expr: string | null // tekst działania; null = karta-liczba
+}
+
+export const isMemoryMatch = (a: MemoryCard, b: MemoryCard): boolean =>
+	(a.expr === null) !== (b.expr === null) && a.value === b.value
+
+// Buduje potasowaną planszę z podanych faktów (selekcja faktów to sprawa
+// round.ts — tu tylko widok). rand wstrzykiwany.
+export function buildMemoryBoard(
+	facts: readonly Fact[],
+	rand: () => number,
+): MemoryCard[] {
+	const cards: MemoryCard[] = []
+	for (const f of facts) {
+		const product = f.a * f.b
+		if (rand() < 0.5) {
+			const flip = rand() < 0.5
+			cards.push({
+				key: f.key,
+				value: product,
+				expr: `${flip ? f.b : f.a} × ${flip ? f.a : f.b}`,
+			})
+		} else {
+			const divisor = rand() < 0.5 ? f.a : f.b
+			cards.push({
+				key: f.key,
+				value: product / divisor,
+				expr: `${product} ÷ ${divisor}`,
+			})
+		}
+		const last = cards[cards.length - 1] as MemoryCard
+		cards.push({ key: f.key, value: last.value, expr: null })
+	}
+	return shuffle(cards, rand)
+}
+
+// Fisher–Yates (kopia, nie w miejscu); rand wstrzykiwany — wspólne dla planów
+// rund (adaptive.ts) i planszy memory.
+export function shuffle<T>(arr: readonly T[], rand: () => number): T[] {
+	const a = [...arr]
+	for (let i = a.length - 1; i > 0; i--) {
+		const j = Math.floor(rand() * (i + 1))
+		const tmp = a[i] as T
+		a[i] = a[j] as T
+		a[j] = tmp
+	}
+	return a
+}
+
 export function isMaxStage(stage: number): boolean {
 	return stage >= STAGES.length - 1
 }
@@ -154,6 +219,9 @@ export interface RoundQuestion {
 	// Porównywanie ("feed"): a×b = działanie faktu pytania, `rival` = drugie
 	// działanie (inny iloczyn), `swap` = fakt pytania wyświetlany po PRAWEJ;
 	// odpowiedź to strona (round.ts: submitFeed).
+	// Memory ("memory"): jak pary — a = iloczyn pierwszego faktu planszy, b = 0;
+	// pytanie jest tylko licznikiem par (round.ts: flipMemory, plansza w
+	// RoundState.board).
 	a: number
 	b: number
 	isRequeue: boolean
@@ -196,7 +264,7 @@ export function makeQuestion(
 				: fact.b
 		return { key: fact.key, a: fact.a * fact.b, b: divisor, isRequeue }
 	}
-	if (mode === "pairs") {
+	if (mode === "pairs" || mode === "memory") {
 		return { key: fact.key, a: fact.a * fact.b, b: 0, isRequeue }
 	}
 	if (mode === "gap") {
@@ -226,6 +294,6 @@ export function makeQuestion(
 export function expectedAnswer(q: RoundQuestion, mode: GameMode): number {
 	if (mode === "div") return q.a / q.b
 	if (mode === "gap") return q.b / q.a
-	if (mode === "pairs") return q.a
+	if (mode === "pairs" || mode === "memory") return q.a
 	return q.a * q.b // także "feed": iloczyn działania pytania
 }

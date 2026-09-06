@@ -37,15 +37,17 @@ export function MonsterStage({
 }: Props) {
 	return (
 		<div
-			className={`relative inline-flex align-top ${wrapClassName}`}
+			className={`relative inline-flex justify-center align-top ${wrapClassName}`}
 			style={style}
 		>
 			{background && (
 				<div className="pointer-events-none absolute inset-0">{background}</div>
 			)}
 			{/* relative: potworek ma malować się NAD absolutnym tłem (kolejność DOM
-			    nie wystarcza — element pozycjonowany wygrywa z niepozycjonowanym) */}
-			<div className="relative">
+			    nie wystarcza — element pozycjonowany wygrywa z niepozycjonowanym).
+			    w-full: przy size="100%" i szerszym wrapperze (kafel listy) SVG
+			    liczy procent z tego diva — bez tego kurczył się i siedział z lewej */}
+			<div className="relative w-full">
 				<MonsterSvg
 					id={id}
 					size={size}

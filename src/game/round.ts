@@ -18,16 +18,25 @@ import {
 	isExpeditionDone,
 	resolveExpedition,
 } from "./expeditions"
-import type { Fact, FactKey, GameMode, RoundQuestion } from "./facts"
+import type {
+	Fact,
+	FactKey,
+	GameMode,
+	MemoryCard,
+	RoundQuestion,
+} from "./facts"
 import {
 	budgetMs,
+	buildMemoryBoard,
 	divisorPairs,
 	expectedAnswer,
 	FACTS_BY_KEY,
 	factKey,
 	isMaxStage,
+	isMemoryMatch,
 	MAX_QUESTIONS_PER_ROUND,
 	MAX_STARS_PER_ROUND,
+	MEMORY_PAIRS,
 	makeQuestion,
 	pairBudgetMs,
 	pickRival,
@@ -77,6 +86,18 @@ export interface RoundState {
 	// ostatnio stuknięta para w kolejności stuknięć (UI pokazuje ją chwilę w
 	// równaniu — inaczej druga liczba nigdy nie pojawiałaby się w okienku)
 	lastPair: [number, number] | null
+	// tryb memory ("memory"): plansza (pusta w innych trybach), indeksy kart
+	// odkrytych-a-niedopasowanych (0–2; dwie = pomyłka czekająca na schowanie),
+	// kart kiedykolwiek odsłoniętych i już dopasowanych. `debt` = niezdjęte
+	// jeszcze kary za pomyłki „z pamięci" (patrz flipMemory).
+	board: MemoryCard[]
+	open: number[]
+	seen: number[]
+	matched: number[]
+	// świeżo dopasowana para: zostaje odkryta do następnego stuknięcia albo do
+	// timera UI (hideMemory), potem znika z planszy jak reszta `matched`
+	lastMatched: [number, number] | null
+	debt: number
 	eggsCreated: number[] // indeksy w pendingEggs utworzone w tej rundzie (kolor jajka jest finalny już od utworzenia)
 	unlockedThisRound: boolean
 	wageEarned: number // żołd przyznany przy finalizacji (faza summary); 0 do końca rundy
@@ -153,6 +174,12 @@ function baseRound(
 		pairAt: now,
 		missed: false,
 		lastPair: null,
+		board: [],
+		open: [],
+		seen: [],
+		matched: [],
+		lastMatched: null,
+		debt: 0,
 		eggsCreated: [],
 		unlockedThisRound: false,
 		wageEarned: 0,
@@ -192,7 +219,7 @@ export function newRound(
 	const firstFact =
 		(plan?.[0] && FACTS_BY_KEY.get(plan[0])) ??
 		pickNextFact(save.facts, stage, [], rand)
-	return baseRound(
+	const round = baseRound(
 		mode,
 		firstFact,
 		{ introFactor, plan, visitStage: null },
@@ -200,6 +227,27 @@ export function newRound(
 		rand,
 		now,
 	)
+	if (mode !== "memory") return round
+	// memory: cała plansza z góry — MEMORY_PAIRS różnych faktów z tej samej
+	// selekcji adaptacyjnej (kolejne losowania omijają już wybrane); plan
+	// intro-rundy nie dotyczy (plansza i tak losuje z całej puli)
+	const picked: Fact[] = [firstFact]
+	while (picked.length < MEMORY_PAIRS) {
+		picked.push(
+			pickNextFact(
+				save.facts,
+				stage,
+				picked.map((f) => f.key),
+				rand,
+			),
+		)
+	}
+	return {
+		...round,
+		plan: null,
+		total: MEMORY_PAIRS,
+		board: buildMemoryBoard(picked, rand),
+	}
 }
 
 // Runda-wizyta u Strażnika: powtórka starszych tabliczek opowiedziana jako
@@ -620,6 +668,118 @@ export function submitFeed(
 			shakeNonce: round.shakeNonce + 1,
 		},
 	}
+}
+
+// Tryb memory: odkrycie karty `i`. Pierwsza odkryta czeka; druga rozstrzyga:
+// para = fragment i gwiazdki (zostaje odkryta chwilę — `lastMatched`, chowa ją
+// timer UI albo następne stuknięcie), pomyłka = obie zostają odkryte aż do
+// następnego stuknięcia w jakąkolwiek kartę (bez timera — dziecko ma czas
+// przyjrzeć się obu). Gwiazdki: runda startuje
+// z MAX_STARS_PER_ROUND i traci 1 za każdą pomyłkę „z pamięci" — gdy karta
+// pasująca do PIERWSZEJ odkrytej była już wcześniej odsłonięta (dziecko mogło
+// wiedzieć), a druga jednak nie pasuje. Pomyłka bez tej wiedzy (obie karty
+// nowe) nic nie kosztuje — to zwykłe poznawanie planszy. Kary nie są cofane
+// z już przyznanych fragmentów (commit per para, patrz store/): każda kara
+// wchodzi do `debt`, a para zdejmuje z niego do 3 — suma = 30 − pomyłki, chyba
+// że kary spadną, gdy nie ma już z czego ich zdjąć (wtedy zostaje wyżej).
+// Para uczy fakt karty z działaniem (dziecko policzyło właśnie jego wynik);
+// pomyłka nie uczy „na minus" — nie wiadomo, czy zawiodła matma, czy pamięć.
+// null = nie memory / nie faza odpowiadania / karta niedostępna.
+export function flipMemory(
+	save: SaveState,
+	round: RoundState,
+	i: number,
+	rand: Rand,
+	now: number,
+): RoundStep | null {
+	if (round.mode !== "memory" || round.phase !== "answering") return null
+	const card = round.board[i]
+	if (!card || round.matched.includes(i)) return null
+	const seen = round.seen.includes(i) ? round.seen : [...round.seen, i]
+	// dwie odkryte = zaległa pomyłka: chowamy ją i zaczynamy od tej karty
+	// (także gdy stuknięto jedną z tych dwóch — zostaje jako pierwsza);
+	// pairAt: czas poznawania planszy nie obciąża oceny „szybko" następnej pary
+	if (round.open.length !== 1) {
+		return {
+			patch: {},
+			round: { ...round, open: [i], seen, lastMatched: null, pairAt: now },
+		}
+	}
+	if (round.open.includes(i)) return null
+	const firstIdx = round.open[0] as number
+	const first = round.board[firstIdx] as MemoryCard
+	if (!isMemoryMatch(first, card)) {
+		const knew = round.seen.some(
+			(j) =>
+				j !== firstIdx &&
+				!round.matched.includes(j) &&
+				isMemoryMatch(first, round.board[j] as MemoryCard),
+		)
+		return {
+			patch: {},
+			round: {
+				...round,
+				open: [firstIdx, i],
+				seen,
+				lastMatched: null,
+				pairAt: now,
+				debt: round.debt + (knew ? 1 : 0),
+			},
+		}
+	}
+	const learner = first.expr !== null ? first : card
+	const fact = FACTS_BY_KEY.get(learner.key)
+	if (!fact) return null
+	const facts = {
+		...save.facts,
+		[fact.key]: applyAnswer(
+			save.facts[fact.key] ?? emptyStats(),
+			fact,
+			true,
+			now - round.pairAt,
+			now,
+			pairBudgetMs(fact),
+		),
+	}
+	const gained = Math.max(0, 3 - round.debt)
+	const achievementStats: AchievementCounters = {
+		...save.achievementStats,
+		memoryCorrect: save.achievementStats.memoryCorrect + 1,
+	}
+	const committed = commitFragment(
+		{ ...save, achievementStats },
+		round,
+		gained,
+		rand,
+	)
+	const matched = [...round.matched, firstIdx, i]
+	const done = matched.length === round.board.length
+	return {
+		patch: { facts, ...committed.patch },
+		round: {
+			...round,
+			open: [],
+			seen,
+			matched,
+			lastMatched: [firstIdx, i],
+			debt: Math.max(0, round.debt - 3),
+			pairAt: now,
+			// ostatnia para domyka rundę przez advance (faza „correct" → summary);
+			// wcześniejsze tylko podbijają licznik par — plansza gra się dalej
+			phase: done ? "correct" : "answering",
+			index: done ? round.index : round.index + 1,
+			stars: round.stars + gained,
+			lastStars: gained,
+			eggsCreated: committed.eggsCreated,
+		},
+	}
+}
+
+// Chowa świeżo dopasowaną parę (timer UI); zaległą pomyłkę chowa dopiero
+// następne odkrycie. null = nic do schowania.
+export function hideMemory(round: RoundState): RoundState | null {
+	if (round.mode !== "memory" || round.lastMatched === null) return null
+	return { ...round, lastMatched: null }
 }
 
 // Strona z większym iloczynem (0 = lewa, 1 = prawa) wg `swap`.

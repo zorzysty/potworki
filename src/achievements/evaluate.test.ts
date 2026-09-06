@@ -25,6 +25,7 @@ const maxCounters: AchievementCounters = {
 	visitRoundsCompleted: 5,
 	pairsCorrect: 500,
 	feedCorrect: 500,
+	memoryCorrect: 500,
 }
 const maxSave: SaveState = {
 	...INITIAL_SAVE,

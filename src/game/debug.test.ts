@@ -40,6 +40,24 @@ describe("distributeStars", () => {
 describe("simulateRound", () => {
 	const fixedNow = 1_700_000_000_000
 
+	test("memory: plansza rozegrana tymi samymi funkcjami, dokładnie totalStars", () => {
+		const save = { ...INITIAL_SAVE, unlockedStage: STAGES.length - 1 }
+		for (const total of [30, 27, 20, 3, 0]) {
+			const { patch, round } = simulateRound(
+				save,
+				"memory",
+				total,
+				mulberry32(5),
+				fixedNow,
+			)
+			expect(round.phase).toBe("summary")
+			expect(round.stars).toBe(total)
+			expect(round.matched.length).toBe(20)
+			expect(patch.achievementStats?.memoryCorrect).toBe(10)
+			expect(patch.totalRounds).toBe(1)
+		}
+	})
+
 	test("is deterministic given a fixed rand and now", () => {
 		const a = simulateRound(INITIAL_SAVE, "mult", 30, mulberry32(7), fixedNow)
 		const b = simulateRound(INITIAL_SAVE, "mult", 30, mulberry32(7), fixedNow)
@@ -159,7 +177,7 @@ describe("panel debug: scenariusze i patche", () => {
 	test("parseSaveJson: opakowanie persist i surowy stan, śmieci → null", () => {
 		expect(parseSaveJson("{nope")).toBeNull()
 		expect(parseSaveJson('{"foo":1}')).toBeNull()
-		expect(parseSaveJson('{"state":{"iskierki":5},"version":19}')).toEqual({
+		expect(parseSaveJson('{"state":{"iskierki":5},"version":20}')).toEqual({
 			iskierki: 5,
 		})
 		expect(parseSaveJson('{"iskierki":7}')).toEqual({ iskierki: 7 })

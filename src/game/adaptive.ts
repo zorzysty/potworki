@@ -1,5 +1,5 @@
 import type { Fact, FactKey } from "./facts"
-import { budgetMs, STAGES, unlockedFacts } from "./facts"
+import { budgetMs, STAGES, shuffle, unlockedFacts } from "./facts"
 
 export interface FactStats {
 	attempts: number // tylko pierwsze próby
@@ -138,17 +138,6 @@ function sampleDistinct(
 		remaining.splice(idx, 1)
 	}
 	return out
-}
-
-function shuffle<T>(arr: T[], rand: () => number): T[] {
-	const a = [...arr]
-	for (let i = a.length - 1; i > 0; i--) {
-		const j = Math.floor(rand() * (i + 1))
-		const tmp = a[i] as T
-		a[i] = a[j] as T
-		a[j] = tmp
-	}
-	return a
 }
 
 // Plan działań pierwszej rundy po odblokowaniu: połowa (zaokrąglona w górę) z nowym

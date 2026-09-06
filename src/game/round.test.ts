@@ -8,13 +8,19 @@ import {
 	divisorPairs,
 	expectedAnswer,
 	FACTS_BY_KEY,
+	isMemoryMatch,
 	MAX_QUESTIONS_PER_ROUND,
+	MEMORY_PAIRS,
 	pairBudgetMs,
+	QUESTIONS_PER_ROUND,
+	STAGES,
 } from "./facts"
 import { ISKIERKI_CAP } from "./rewards"
 import {
 	advance,
 	feedAnswer,
+	flipMemory,
+	hideMemory,
 	newRound,
 	type RoundState,
 	type RoundStep,
@@ -417,5 +423,128 @@ describe("runda: tryb karmienia (feed)", () => {
 	test("submitFeed poza trybem karmienia = null", () => {
 		const mult = newRound(SAVE, "mult", rand, NOW)
 		expect(submitFeed(SAVE, mult, 0, rand, NOW)).toBeNull()
+	})
+})
+
+describe("runda: tryb memory", () => {
+	const SAVE: SaveState = { ...INITIAL_SAVE, unlockedStage: STAGES.length - 1 }
+	const flip = (
+		save: SaveState,
+		round: RoundState,
+		i: number,
+		now = NOW,
+	): { save: SaveState; round: RoundState } => {
+		const r = flipMemory(save, round, i, rand, now)
+		if (!r) throw new Error(`flipMemory(${i}) zwrócił null`)
+		return { save: { ...save, ...r.patch }, round: r.round }
+	}
+	// indeks partnera karty `i` (pierwszy pasujący, poza już dopasowanymi)
+	const partnerOf = (round: RoundState, i: number): number =>
+		round.board.findIndex(
+			(c, j) =>
+				j !== i &&
+				!round.matched.includes(j) &&
+				isMemoryMatch(round.board[i] as never, c),
+		)
+	const strangerOf = (round: RoundState, i: number): number =>
+		round.board.findIndex(
+			(c, j) =>
+				j !== i &&
+				!round.matched.includes(j) &&
+				!isMemoryMatch(round.board[i] as never, c),
+		)
+
+	test("newRound: plansza 20 kart z 10 różnych faktów, total = liczba par = pytania rundy", () => {
+		const round = newRound(SAVE, "memory", rand, NOW)
+		expect(round.board).toHaveLength(2 * MEMORY_PAIRS)
+		expect(MEMORY_PAIRS).toBe(QUESTIONS_PER_ROUND)
+		expect(round.total).toBe(MEMORY_PAIRS)
+		expect(round.plan).toBeNull()
+		const keys = new Set(
+			round.board.filter((c) => c.expr !== null).map((c) => c.key),
+		)
+		expect(keys.size).toBe(MEMORY_PAIRS)
+		expect(newRound(SAVE, "mult", rand, NOW).board).toEqual([])
+	})
+
+	test("para: fragment, 3★, uczy fakt działania, licznik; pomyłka bez wiedzy = 0 kary, z wiedzą = −1 przez debt", () => {
+		let { save, round } = {
+			save: SAVE,
+			round: newRound(SAVE, "memory", rand, NOW),
+		}
+		const a = 0
+		const p = partnerOf(round, a)
+		const x = strangerOf(round, a)
+		// pomyłka bez wiedzy: partner a nieznany → bez kary, obie odkryte;
+		// pierwsze odkrycie i pomyłka zerują pairAt (poznawanie nie obciąża pary)
+		;({ save, round } = flip(save, round, a, NOW + 500))
+		expect(round.pairAt).toBe(NOW + 500)
+		;({ save, round } = flip(save, round, x, NOW + 900))
+		expect(round.pairAt).toBe(NOW + 900)
+		expect(round.open).toEqual([a, x])
+		expect(round.debt).toBe(0)
+		// stuknięcie w jedną z odkrytych kart pomyłki: para się chowa, ona zostaje
+		// jako pierwsza (nie no-op)
+		expect(flipMemory(save, round, x, rand, NOW)?.round.open).toEqual([x])
+		// trzecie stuknięcie chowa pomyłkę i zaczyna od nowej karty
+		;({ save, round } = flip(save, round, p))
+		expect(round.open).toEqual([p])
+		// pomyłka Z wiedzą: partner p (= a) był już odsłonięty → debt+1
+		;({ save, round } = flip(save, round, x))
+		expect(round.debt).toBe(1)
+		// pomyłki nie chowa timer (hideMemory = null), tylko następne stuknięcie
+		expect(hideMemory(round)).toBeNull()
+		// para a+p: 3 − 1 = 2★, debt spłacony; para zostaje odkryta (lastMatched)
+		;({ save, round } = flip(save, round, a))
+		expect(round.open).toEqual([a])
+		;({ save, round } = flip(save, round, p, NOW + 1000))
+		expect(round.matched).toEqual([a, p])
+		expect(round.open).toEqual([])
+		expect(round.lastMatched).toEqual([a, p])
+		expect(hideMemory(round)?.lastMatched).toBeNull()
+		expect(round.stars).toBe(2)
+		expect(round.lastStars).toBe(2)
+		expect(round.debt).toBe(0)
+		expect(round.index).toBe(1)
+		expect(round.phase).toBe("answering")
+		expect(save.eggFragments).toBe(1)
+		expect(save.achievementStats.memoryCorrect).toBe(1)
+		const exprCard = round.board[round.board[a]?.expr !== null ? a : p]
+		expect(save.facts[exprCard?.key as "1x1"]?.correct).toBe(1)
+		expect(save.facts[exprCard?.key as "1x1"]?.attempts).toBe(1)
+		// karta dopasowana / już odkryta / poza planszą → null
+		expect(flipMemory(save, round, a, rand, NOW)).toBeNull()
+		expect(flipMemory(save, round, 99, rand, NOW)).toBeNull()
+		;({ save, round } = flip(save, round, x))
+		expect(round.lastMatched).toBeNull()
+		expect(flipMemory(save, round, x, rand, NOW)).toBeNull()
+	})
+
+	test("ostatnia para → faza correct → advance finalizuje (summary, żołd, totalRounds+1); bez pomyłek 30★", () => {
+		let { save, round } = {
+			save: SAVE,
+			round: newRound(SAVE, "memory", rand, NOW),
+		}
+		while (round.phase === "answering") {
+			const a = round.board.findIndex((_, i) => !round.matched.includes(i))
+			;({ save, round } = flip(save, round, a))
+			;({ save, round } = flip(save, round, partnerOf(round, a)))
+		}
+		expect(round.phase).toBe("correct")
+		expect(round.matched).toHaveLength(20)
+		expect(round.stars).toBe(30)
+		expect(round.index).toBe(MEMORY_PAIRS - 1)
+		const n = advance(save, round, rand, NOW)
+		if (!n) throw new Error("advance zwrócił null")
+		expect(n.round.phase).toBe("summary")
+		expect(n.patch.totalRounds).toBe(1)
+		expect(n.round.wageEarned).toBeGreaterThan(0)
+		expect(save.pendingEggs[0]?.mode).toBe("memory")
+	})
+
+	test("flipMemory poza trybem memory = null", () => {
+		const round = newRound(SAVE, "mult", rand, NOW)
+		expect(flipMemory(SAVE, round, 0, rand, NOW)).toBeNull()
+		expect(hideMemory(round)).toBeNull()
 	})
 })

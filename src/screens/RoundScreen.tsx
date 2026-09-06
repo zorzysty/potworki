@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import { BigButton } from "../components/BigButton"
 import { CheerCompanion } from "../components/Companion"
 import { Keypad } from "../components/Keypad"
+import { MATCHED_MS } from "../components/MemoryBoard"
 import { PairPicker } from "../components/PairPicker"
 import { QuestionCard } from "../components/QuestionCard"
 import { StarMeter } from "../components/StarMeter"
@@ -28,11 +29,13 @@ export function RoundScreen({
 	useScrollLock(paused)
 
 	const phase = round?.phase
+	const mode = round?.mode
 	useEffect(() => {
 		if (phase !== "correct" || paused) return
-		const timer = setTimeout(nextQuestion, 900)
+		// memory: ostatnia para ma zostać odkryta tyle samo co każda inna
+		const timer = setTimeout(nextQuestion, mode === "memory" ? MATCHED_MS : 900)
 		return () => clearTimeout(timer)
-	}, [phase, paused, nextQuestion])
+	}, [phase, paused, mode, nextQuestion])
 
 	if (!round) return null
 	if (round.phase === "summary") return <RoundSummary />
@@ -48,7 +51,9 @@ export function RoundScreen({
 			<div className="flex flex-1 flex-col gap-3 land:justify-center">
 				<div className="flex items-center justify-between gap-2">
 					<div className="whitespace-nowrap rounded-full bg-white/70 px-4 py-1 text-lg font-extrabold text-grape-dark">
-						Pytanie {round.index + 1} / {round.total}
+						{round.mode === "memory"
+							? `Pary ${round.matched.length / 2} / ${round.total}`
+							: `Pytanie ${round.index + 1} / ${round.total}`}
 					</div>
 					{visitRegion && (
 						// pigułka regionu rundy-wizyty
@@ -84,16 +89,17 @@ export function RoundScreen({
 					/>
 				)}
 			</div>
-			{/* porównywanie: odpowiedzią jest tap w potworka NA karcie — bez kolumny wejścia */}
-			{round.mode !== "feed" && (
+			{/* porównywanie i memory: odpowiedzią jest tap NA karcie — bez kolumny wejścia */}
+			{round.mode !== "feed" && round.mode !== "memory" && (
 				<div className="land:w-80">
 					{round.mode === "pairs" ? <PairPicker /> : <Keypad />}
 				</div>
 			)}
 
 			{/* przyjaciel kibicuje z rogu (gdy wybrany) — nigdy nie zasłania karty;
-			    w rundzie-wizycie zamiast niego kibicuje Strażnik regionu */}
-			{round.mode !== "pairs" && (
+			    w rundzie-wizycie zamiast niego kibicuje Strażnik regionu; w memory
+			    przyjaciel JEST obrazkiem na planszy, więc z rogu nie kibicuje */}
+			{round.mode !== "pairs" && round.mode !== "memory" && (
 				<CheerCompanion
 					phase={round.phase}
 					lastStars={round.lastStars}
@@ -109,6 +115,7 @@ export function RoundScreen({
 				round.phase === "answering" &&
 				round.index === 0 &&
 				round.found.length === 0 &&
+				round.seen.length === 0 &&
 				!round.missed && (
 					<div className="fixed right-2 bottom-2 z-40 flex flex-col items-end gap-1">
 						<span className="text-[10px] font-bold text-grape-dark/60">

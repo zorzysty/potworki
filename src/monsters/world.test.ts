@@ -8,7 +8,9 @@ import {
 	isDivisionOnly,
 	isFeedOnly,
 	isGapOnly,
+	isMemoryOnly,
 	isPairsOnly,
+	MEMORY_ONLY_IDS,
 	MONSTER_COUNT,
 	rarityOf,
 } from "./catalog"
@@ -16,6 +18,7 @@ import {
 	BRIDGE_DIVIDER_IDS,
 	BRIDGE_ORIGIN,
 	ISLAND_ORIGIN,
+	NOOK_ORIGIN,
 	ORCHARD_ORIGIN,
 	originOf,
 	REGIONS,
@@ -111,12 +114,16 @@ describe("regionOf / originOf", () => {
 		for (const id of FEED_ONLY_IDS) {
 			expect(originOf(id)).toBe(ORCHARD_ORIGIN)
 		}
+		for (const id of MEMORY_ONLY_IDS) {
+			expect(originOf(id)).toBe(NOOK_ORIGIN)
+		}
 		for (let id = 0; id < MONSTER_COUNT; id++) {
 			if (
 				isDivisionOnly(id) ||
 				isGapOnly(id) ||
 				isPairsOnly(id) ||
-				isFeedOnly(id)
+				isFeedOnly(id) ||
+				isMemoryOnly(id)
 			)
 				continue
 			const origin = originOf(id)
@@ -132,6 +139,8 @@ describe("regionOf / originOf", () => {
 		expect("stage" in VALLEY_ORIGIN).toBe(false)
 		expect(ISLAND_ORIGIN.kind).toBe("island")
 		expect(ORCHARD_ORIGIN.kind).toBe("orchard")
+		expect(NOOK_ORIGIN.kind).toBe("nook")
+		expect("stage" in NOOK_ORIGIN).toBe(false)
 		expect("stage" in ORCHARD_ORIGIN).toBe(false)
 		expect("stage" in ISLAND_ORIGIN).toBe(false)
 		for (const r of REGIONS) expect(r.kind).toBe("region")

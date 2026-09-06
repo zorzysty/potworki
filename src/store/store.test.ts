@@ -12,7 +12,7 @@ import {
 	FINDABLE_IDS,
 	findChanceLabel,
 } from "../game/expeditions"
-import { divisorPairs, type FactKey } from "../game/facts"
+import { divisorPairs, type FactKey, isMemoryMatch } from "../game/facts"
 import {
 	dupIskierki,
 	ISKIERKI_CAP,
@@ -519,7 +519,7 @@ describe("pity legendarnych per tryb", () => {
 		suppressAchievements()
 		useGame.setState({
 			ownedMonsters: { [FIRST_MONSTER_ID]: { hatchedAt: 1 } },
-			legendaryPity: { mult: 4, div: 0, gap: 0, pairs: 0, feed: 0 },
+			legendaryPity: { mult: 4, div: 0, gap: 0, pairs: 0, feed: 0, memory: 0 },
 			village: { buildings: { fontanna: 1 }, decorations: [], goalId: null },
 		})
 		game().debugAddIskierki(50)
@@ -2086,5 +2086,70 @@ describe("tryb karmienia (feed) — store", () => {
 		expect(requireRound().stars).toBe(30)
 		expect(game().achievementStats.feedCorrect).toBe(10)
 		expect(game().pendingEggs[0]?.mode).toBe("feed")
+	})
+})
+
+describe("tryb memory — store", () => {
+	test("setMode odmawia memory przed etapem 6", () => {
+		useGame.setState({ unlockedStage: 5 })
+		game().setMode("memory")
+		expect(game().mode).toBe("mult")
+		useGame.setState({ unlockedStage: 6 })
+		game().setMode("memory")
+		expect(game().mode).toBe("memory")
+	})
+
+	test("flipCard: pauza wycisza, cyfry nic nie robią, pełna plansza kończy rundę jak zwykłą", () => {
+		suppressAchievements()
+		useGame.setState({ unlockedStage: 6 })
+		game().setMode("memory")
+		game().startRound()
+		const board = requireRound().board
+		expect(board).toHaveLength(20)
+		game().setPaused(true)
+		game().flipCard(0)
+		expect(requireRound().open).toEqual([])
+		game().setPaused(false)
+		game().pressDigit(3)
+		game().pressConfirm()
+		expect(requireRound().open).toEqual([])
+		// pomyłka bez wiedzy (obie nowe): nic nie kosztuje; hideCards jej nie
+		// chowa (to timer pary), chowa ją dopiero następne stuknięcie
+		const first = board[0]
+		const wrong = board.findIndex(
+			(c, i) => i > 0 && !isMemoryMatch(first as never, c),
+		)
+		game().flipCard(0)
+		game().flipCard(wrong)
+		expect(requireRound().open).toEqual([0, wrong])
+		game().hideCards()
+		expect(requireRound().open).toEqual([0, wrong])
+		expect(requireRound().debt).toBe(0)
+		// dopasuj wszystko po kolei
+		while (requireRound().phase === "answering") {
+			const r = requireRound()
+			// pierwsza karta spoza zaległej pomyłki (odkrytej nie da się odkryć)
+			const a = r.board.findIndex(
+				(_, i) => !r.matched.includes(i) && !r.open.includes(i),
+			)
+			const b = r.board.findIndex(
+				(c, i) =>
+					i !== a &&
+					!r.matched.includes(i) &&
+					isMemoryMatch(r.board[a] as never, c),
+			)
+			game().flipCard(a)
+			game().flipCard(b)
+			expect(requireRound().lastMatched).toEqual([a, b])
+			game().hideCards()
+			expect(requireRound().lastMatched).toBeNull()
+		}
+		expect(requireRound().phase).toBe("correct")
+		game().nextQuestion()
+		expect(requireRound().phase).toBe("summary")
+		expect(game().totalRounds).toBe(1)
+		expect(requireRound().stars).toBe(30)
+		expect(game().achievementStats.memoryCorrect).toBe(10)
+		expect(game().pendingEggs[0]?.mode).toBe("memory")
 	})
 })

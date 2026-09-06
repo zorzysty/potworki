@@ -53,6 +53,7 @@ describe("migrateSave", () => {
 			visitRoundsCompleted: 0,
 			pairsCorrect: 0,
 			feedCorrect: 0,
+			memoryCorrect: 0,
 		})
 		// v7→v8: companionId startuje null (brak przyjaciela)
 		expect(result.companionId).toBeNull()
@@ -105,6 +106,7 @@ describe("migrateSave", () => {
 			visitRoundsCompleted: 0,
 			pairsCorrect: 0,
 			feedCorrect: 0,
+			memoryCorrect: 0,
 		})
 		expect(result.companionId).toBeNull()
 		expect(result.iskierki).toBe(4)
@@ -136,6 +138,7 @@ describe("migrateSave", () => {
 			visitRoundsCompleted: 0,
 			pairsCorrect: 0,
 			feedCorrect: 0,
+			memoryCorrect: 0,
 		})
 		expect(result.iskierki).toBe(3)
 	})
@@ -150,6 +153,7 @@ describe("migrateSave", () => {
 			visitRoundsCompleted: 0,
 			pairsCorrect: 0,
 			feedCorrect: 0,
+			memoryCorrect: 0,
 		})
 		expect(result.iskierki).toBe(9)
 	})
@@ -181,6 +185,7 @@ describe("migrateSave", () => {
 			visitRoundsCompleted: 0,
 			pairsCorrect: 0,
 			feedCorrect: 0,
+			memoryCorrect: 0,
 		})
 		expect(result.iskierki).toBe(11)
 	})
@@ -193,6 +198,7 @@ describe("migrateSave", () => {
 			visitRoundsCompleted: 0,
 			pairsCorrect: 0,
 			feedCorrect: 0,
+			memoryCorrect: 0,
 		})
 		expect(result.iskierki).toBe(9)
 	})
@@ -236,6 +242,7 @@ describe("migrateSave", () => {
 			visitRoundsCompleted: 0,
 			pairsCorrect: 0,
 			feedCorrect: 0,
+			memoryCorrect: 0,
 		})
 		expect(result.iskierki).toBe(55)
 		expect(result.companionId).toBe(2)
@@ -249,6 +256,7 @@ describe("migrateSave", () => {
 			visitRoundsCompleted: 0,
 			pairsCorrect: 0,
 			feedCorrect: 0,
+			memoryCorrect: 0,
 		})
 		expect(result.iskierki).toBe(9)
 	})
@@ -374,6 +382,7 @@ describe("migrateSave", () => {
 			gap: 0,
 			pairs: 0,
 			feed: 0,
+			memory: 0,
 		})
 		expect(r.iskierki).toBe(3)
 	})
@@ -410,8 +419,8 @@ describe("migrateSave", () => {
 			iskierki: 3,
 			achievements: {},
 			facts: {},
-			legendaryPity: { pairs: 0, feed: 0 },
-			achievementStats: { pairsCorrect: 0, feedCorrect: 0 },
+			legendaryPity: { pairs: 0, feed: 0, memory: 0 },
+			achievementStats: { pairsCorrect: 0, feedCorrect: 0, memoryCorrect: 0 },
 		})
 	})
 
@@ -449,8 +458,8 @@ describe("migrateSave", () => {
 		expect(migrateSave({ iskierki: 3 }, 17)).toEqual({
 			iskierki: 3,
 			facts: {},
-			legendaryPity: { pairs: 0, feed: 0 },
-			achievementStats: { pairsCorrect: 0, feedCorrect: 0 },
+			legendaryPity: { pairs: 0, feed: 0, memory: 0 },
+			achievementStats: { pairsCorrect: 0, feedCorrect: 0, memoryCorrect: 0 },
 		})
 	})
 
@@ -468,17 +477,31 @@ describe("migrateSave", () => {
 			gap: 0,
 			pairs: 0,
 			feed: 0,
+			memory: 0,
 		})
 		expect(r.achievementStats).toEqual({
 			divCorrect: 7,
 			pairsCorrect: 0,
 			feedCorrect: 0,
+			memoryCorrect: 0,
 		})
 		expect(migrateSave({ iskierki: 3 }, 18)).toEqual({
 			iskierki: 3,
-			legendaryPity: { pairs: 0, feed: 0 },
-			achievementStats: { pairsCorrect: 0, feedCorrect: 0 },
+			legendaryPity: { pairs: 0, feed: 0, memory: 0 },
+			achievementStats: { pairsCorrect: 0, feedCorrect: 0, memoryCorrect: 0 },
 		})
+	})
+
+	test("v19→v20: pity i licznik memory od zera, reszta nietknięta", () => {
+		const r = migrateSave(
+			{
+				legendaryPity: { mult: 4, pairs: 1 },
+				achievementStats: { feedCorrect: 7 },
+			},
+			19,
+		) as Record<string, Record<string, unknown>>
+		expect(r.legendaryPity).toEqual({ mult: 4, pairs: 1, memory: 0 })
+		expect(r.achievementStats).toEqual({ feedCorrect: 7, memoryCorrect: 0 })
 	})
 
 	test("fallback: brak unlockedStage → celebratedStage === 0", () => {

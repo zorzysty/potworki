@@ -265,6 +265,7 @@ export const INITIAL_LEGENDARY_PITY: LegendaryPity = {
 	gap: 0,
 	pairs: 0,
 	feed: 0,
+	memory: 0,
 }
 
 export function rollMonsterWithPity(
