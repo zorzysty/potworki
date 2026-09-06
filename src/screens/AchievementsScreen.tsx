@@ -270,7 +270,7 @@ function AchievementModal({
 	return (
 		<CardModal onClose={onClose} closeLabel="Zamknij">
 			<div
-				className={`flex w-full flex-col gap-4 rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${unlocked ? tier.border : "border-slate-300"}`}
+				className={`flex w-full flex-col gap-4 overflow-y-auto rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${unlocked ? tier.border : "border-slate-300"}`}
 			>
 				{/* ===== PANEL-BOHATER: ikona + odznaka nagrody w rogu ===== */}
 				<div
