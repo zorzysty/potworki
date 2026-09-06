@@ -795,21 +795,6 @@ body {
 	letter-spacing: -2px;
 	color: #51408a;
 }
-.home-wallet {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	border: 1px solid #e6dcc5;
-	border-radius: 18px;
-	padding: 7px 18px;
-	background: #fffaf0;
-	font-size: 22px;
-	font-weight: 800;
-	box-shadow: 0 3px 0 #e9e1d0;
-}
-.home-wallet > span:first-child {
-	color: #b5791d;
-}
 .home-hero {
 	position: relative;
 	isolation: isolate;
@@ -1020,10 +1005,6 @@ button:focus-visible {
 	}
 	.home-nav {
 		gap: 12px;
-	}
-	.home-wallet {
-		padding: 4px 14px;
-		font-size: 20px;
 	}
 }
 @media (max-width: 370px) {

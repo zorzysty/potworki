@@ -92,9 +92,8 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 		<div className="home-screen">
 			<header className="home-header">
 				<h1 className="home-logo">Potworki</h1>
-				<div className="home-wallet">
-					<span aria-hidden="true">✦</span> {iskierki}
-					<span className="sr-only"> iskierek</span>
+				<div className="whitespace-nowrap rounded-full bg-white/80 px-3 py-2 text-lg font-extrabold text-amber-500 shadow">
+					✨ {iskierki}
 				</div>
 			</header>
 			<section className="home-hero" aria-label="Twój potworek">

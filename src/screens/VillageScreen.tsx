@@ -41,7 +41,7 @@ import {
 	TreeArt,
 } from "../components/village/Scenery"
 import { WanderingMonster, wanderParams } from "../components/WanderingMonster"
-import { firstHatched, isCollectionComplete } from "../game/collection"
+import { firstHatched } from "../game/collection"
 import type { CosmeticId } from "../game/cosmetics"
 import { expeditionProgress } from "../game/expeditions"
 import type { BuildingId, DecorationId } from "../game/village"
@@ -738,12 +738,6 @@ export function VillageScreen() {
 							{/* winieta: miękki cień przy krawędziach — scena jest dioramą,
 					    nie płaskim wypełnieniem; nad wszystkim prócz nakładki wieczoru */}
 							<div className="pointer-events-none absolute inset-0 z-[110] rounded-3xl shadow-[inset_0_0_48px_rgba(30,58,42,0.16)]" />
-
-							{isCollectionComplete(ownedMonsters) && (
-								<div className="anim-pop absolute left-1/2 top-2 z-[130] -translate-x-1/2 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-5 py-2 text-lg font-extrabold text-white shadow-lg">
-									🎉 Cała wioska w komplecie!
-								</div>
-							)}
 						</>
 					)}
 				</div>

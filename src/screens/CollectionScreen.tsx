@@ -780,25 +780,28 @@ export function CollectionScreen() {
 
 	return (
 		<div className="flex min-h-[var(--app-vh)] flex-col gap-4 p-4">
-			<div className="flex items-center justify-between">
+			<div className="flex flex-wrap items-center justify-between gap-2">
 				<button
 					type="button"
 					onClick={() => goTo("home")}
-					className="touch-manipulation rounded-full bg-white/80 px-5 py-2 text-2xl font-extrabold text-grape-dark shadow active:scale-90"
+					className="shrink-0 touch-manipulation rounded-full bg-white/80 px-5 py-2 text-2xl font-extrabold text-grape-dark shadow active:scale-90"
 					aria-label="Wróć do domku"
 				>
 					←
 				</button>
-				<div className="text-2xl font-extrabold text-grape-dark">
-					Moje Potworki {ownedCount}/{MONSTER_COUNT}
+				<div className="min-w-0 text-center text-xl font-extrabold leading-tight text-grape-dark max-[400px]:order-last max-[400px]:basis-full sm:text-2xl">
+					Moje Potworki{" "}
+					<span className="whitespace-nowrap">
+						{ownedCount}/{MONSTER_COUNT}
+					</span>
 				</div>
-				<div className="flex items-center gap-1.5">
+				<div className="flex shrink-0 items-center gap-1.5">
 					<HelpTip
 						placement="bottom"
 						align="right"
 						text="To twoje iskierki ✨. Dostajesz je, gdy z jajka wykluje się potworek, którego już masz. Uzbieraj ich dość, a przy Fontannie kupisz Jajko Życzeń!"
 					/>
-					<div className="rounded-full bg-white/80 px-4 py-2 text-lg font-extrabold text-amber-500 shadow">
+					<div className="whitespace-nowrap rounded-full bg-white/80 px-3 py-2 text-lg font-extrabold text-amber-500 shadow">
 						✨ {iskierki}
 					</div>
 				</div>

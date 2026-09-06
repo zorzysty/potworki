@@ -70,19 +70,22 @@ export function AchievementsScreen() {
 
 	return (
 		<div className="flex min-h-[var(--app-vh)] flex-col gap-4 p-4">
-			<div className="flex items-center justify-between">
+			<div className="flex flex-wrap items-center justify-between gap-2">
 				<button
 					type="button"
 					onClick={() => goTo("home")}
-					className="touch-manipulation rounded-full bg-white/80 px-5 py-2 text-2xl font-extrabold text-grape-dark shadow active:scale-90"
+					className="shrink-0 touch-manipulation rounded-full bg-white/80 px-5 py-2 text-2xl font-extrabold text-grape-dark shadow active:scale-90"
 					aria-label="Wróć do domku"
 				>
 					←
 				</button>
-				<div className="text-2xl font-extrabold text-grape-dark">
-					Osiągnięcia {unlockedCount}/{rows.length}
+				<div className="min-w-0 text-center text-xl font-extrabold leading-tight text-grape-dark max-[400px]:order-last max-[400px]:basis-full sm:text-2xl">
+					Osiągnięcia{" "}
+					<span className="whitespace-nowrap">
+						{unlockedCount}/{rows.length}
+					</span>
 				</div>
-				<div className="flex items-center gap-1.5">
+				<div className="flex shrink-0 items-center gap-1.5">
 					<HelpTip
 						placement="bottom"
 						align="right"
@@ -91,7 +94,7 @@ export function AchievementsScreen() {
 					<div
 						ref={counterRef}
 						key={shownIskierki}
-						className={`rounded-full bg-white/80 px-4 py-2 text-lg font-extrabold text-amber-500 shadow ${flight?.landed ? "anim-pop" : ""}`}
+						className={`whitespace-nowrap rounded-full bg-white/80 px-3 py-2 text-lg font-extrabold text-amber-500 shadow ${flight?.landed ? "anim-pop" : ""}`}
 					>
 						✨ {shownIskierki}
 					</div>
@@ -120,7 +123,7 @@ export function AchievementsScreen() {
 								)}
 							</div>
 							<div className="flex min-w-0 flex-1 flex-col gap-1">
-								<div className="flex items-center justify-between gap-2">
+								<div className="flex flex-wrap items-center justify-between gap-2">
 									<div className="truncate text-lg font-extrabold text-slate-700">
 										{def.title}
 									</div>
