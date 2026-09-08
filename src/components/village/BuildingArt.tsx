@@ -107,10 +107,11 @@ function MatDefs({ uid, names }: { uid: string; names: MatName[] }) {
 					id={`m-${n}-${uid}`}
 					x1="0"
 					y1="0"
-					x2="0"
+					x2="0.65"
 					y2="1"
 				>
 					<stop offset="0%" stopColor={MAT[n].light} />
+					<stop offset="55%" stopColor={MAT[n].light} />
 					<stop offset="100%" stopColor={MAT[n].dark} />
 				</linearGradient>
 			))}
@@ -402,35 +403,34 @@ function Tower({
 	const eave = w + 10
 	return (
 		<g>
-			<rect
-				x={x}
-				y={top}
-				width={w}
-				height={bottom - top}
-				rx={2}
-				fill={fillOf(uid, mat)}
+			<defs>
+				<linearGradient id={`tower-${uid}-${cx}`}>
+					<stop stopColor={m.dark} />
+					<stop offset="0.28" stopColor={m.light} />
+					<stop offset="0.58" stopColor={m.light} />
+					<stop offset="1" stopColor={m.shade} />
+				</linearGradient>
+			</defs>
+			<path
+				d={`M${x} ${top} H${x + w} V${bottom - 3} Q${cx} ${bottom + 3} ${x} ${bottom - 3} Z`}
+				fill={`url(#tower-${uid}-${cx})`}
 				stroke={m.line}
-				strokeWidth={1.8}
-			/>
-			<rect
-				x={x + w * 0.68}
-				y={top + 1}
-				width={w * 0.3}
-				height={bottom - top - 2}
-				rx={1.5}
-				fill={m.shade}
-				opacity={0.35}
-			/>
-			<rect
-				x={x + 1.5}
-				y={top + 1}
-				width={w * 0.14}
-				height={bottom - top - 2}
-				rx={1}
-				fill="#ffffff"
-				opacity={0.28}
+				strokeWidth={1.5}
 			/>
 			<Masonry x={x} y={top} w={w} h={bottom - top} color={m.line} />
+			<path
+				d={`M${x - 1} ${bottom - 7} Q${cx} ${bottom - 3} ${x + w + 1} ${bottom - 7} V${bottom - 2} Q${cx} ${bottom + 3} ${x - 1} ${bottom - 2} Z`}
+				fill={fillOf(uid, mat)}
+				stroke={m.line}
+				strokeWidth={1}
+			/>
+			<path
+				d={`M${x} ${top + 5} Q${cx} ${top + 9} ${x + w} ${top + 5} M${x} ${top + 10} Q${cx} ${top + 14} ${x + w} ${top + 10}`}
+				fill="none"
+				stroke={m.line}
+				strokeWidth={0.8}
+				opacity={0.4}
+			/>
 			{crenel ? (
 				<Crenels
 					x={x - 3}
@@ -453,7 +453,7 @@ function Tower({
 						strokeWidth={1.4}
 					/>
 					<path
-						d={`M${cx - eave / 2 + 1} ${top - 3} L${cx} ${top - roofH} L${cx + eave / 2 - 1} ${top - 3} Z`}
+						d={`M${cx - eave / 2 + 1} ${top - 3} L${cx} ${top - roofH} L${cx + eave / 2 - 1} ${top - 3} Q${cx} ${top + 3} ${cx - eave / 2 + 1} ${top - 3} Z`}
 						fill={fillOf(uid, roof)}
 						stroke={r.line}
 						strokeWidth={1.8}
@@ -484,6 +484,12 @@ function Tower({
 					{flag && <Pennant x={cx} y={top - roofH - 1} />}
 				</g>
 			)}
+			<path
+				d={`M${cx - w * 0.2} ${top + (bottom - top) * 0.55 + 2} v-${Math.min(12, w * 0.32) * 1.45} q${w * 0.2} -${w * 0.2} ${w * 0.4} 0 v${Math.min(12, w * 0.32) * 1.45} Z`}
+				fill={m.shade}
+				opacity={0.25}
+			/>
+
 			<ArchWin
 				cx={cx}
 				y={top + (bottom - top) * 0.55}
@@ -491,6 +497,29 @@ function Tower({
 				lit={lit}
 				line={m.line}
 			/>
+			{w >= 46 && (
+				<g transform={`translate(${cx} ${top + 18})`}>
+					<path
+						d="M-5 0 H5 V6 Q4 10 0 12 Q-4 10 -5 6 Z"
+						fill={fillOf(uid, "plum")}
+						stroke={MAT.gold.line}
+						strokeWidth={0.8}
+					/>
+					<path d="M0 3 L2 6 L0 9 L-2 6 Z" fill={MAT.gold.light} />
+				</g>
+			)}
+			{w <= 34 && (
+				<g transform={`translate(${cx} ${top + (bottom - top) * 0.55 + 9})`}>
+					<path
+						d="M-4 0 H4 V14 L0 18 L-4 14 Z"
+						fill={fillOf(uid, "plum")}
+						stroke={MAT.plum.line}
+						strokeWidth={0.8}
+					/>
+					<path d="M-5 0 H5" stroke={MAT.gold.dark} strokeWidth={1.5} />
+					<path d="M0 5 L2 8 L0 11 L-2 8 Z" fill={MAT.gold.light} />
+				</g>
+			)}
 		</g>
 	)
 }
@@ -503,7 +532,7 @@ function ZamekArt({ level, size }: { level: number; size: number | string }) {
 	const gold = level >= 3
 	const mat: MatName = gold ? "gold" : "stone"
 	const m = MAT[mat]
-	const lit = gold
+	const lit = true
 	const foot = 168
 	return (
 		// viewBox zaczyna się na y=-16: iglica i proporczyk złotego donżonu
@@ -658,12 +687,35 @@ function ZamekArt({ level, size }: { level: number; size: number | string }) {
 					fill={fillOf(uid, mat)}
 					line={m.line}
 				/>
+				{/* A shallow stone threshold grounds the gate. */}
+				<path
+					d="M80 166 H110 L115 172 H75 Z"
+					fill={MAT.grey.light}
+					stroke={m.line}
+					strokeWidth={1}
+				/>
 				{/* brama: kamienne obramienie + ciemny łuk + kratownica */}
 				<path
 					d="M77 168 v-20 a18 18 0 0 1 36 0 v20 Z"
 					fill={m.shade}
 					opacity={0.5}
 				/>
+				<path
+					d="M77 166 V150 A18 18 0 0 1 113 150 V166"
+					fill="none"
+					stroke={m.light}
+					strokeWidth={5}
+				/>
+				{[-75, -45, -15, 15, 45, 75].map((angle) => (
+					<path
+						key={angle}
+						d="M95 129 V135"
+						transform={`rotate(${angle} 95 150)`}
+						stroke={m.line}
+						strokeWidth={0.8}
+						opacity={0.6}
+					/>
+				))}
 				<path
 					d="M80 168 v-18 a15 15 0 0 1 30 0 v18 Z"
 					fill="#3b2a6b"
@@ -775,149 +827,143 @@ function Cottage({
 }) {
 	const m = MAT.cream
 	const r = MAT[roof]
-	const foot = 92
-	const top = 56
 	return (
-		<g>
-			{/* bok (prawy, w cieniu) */}
+		<g
+			transform={`translate(${x} 0)`}
+			strokeLinejoin="round"
+			strokeLinecap="round"
+		>
+			{/* A plaster gable and a single receding roof plane share the same ridge. */}
 			<path
-				d={`M${x + 38} ${top} L${x + 50} ${top - 6} L${x + 50} ${foot - 6} L${x + 38} ${foot} Z`}
-				fill={m.dark}
-				stroke={m.line}
-				strokeWidth={1.6}
-				strokeLinejoin="round"
-			/>
-			<path
-				d={`M${x + 38} ${top} L${x + 50} ${top - 6} L${x + 50} ${foot - 6} L${x + 38} ${foot} Z`}
+				d="M36 57 L49 49 V85 L36 92 Z"
 				fill={m.shade}
-				opacity={0.45}
+				stroke={m.line}
+				strokeWidth={1.4}
 			/>
-			{/* front */}
-			<rect
-				x={x}
-				y={top}
-				width={38}
-				height={foot - top}
+			<path
+				d="M0 57 L18 33 L36 57 V92 H0 Z"
 				fill={fillOf(uid, "cream")}
 				stroke={m.line}
-				strokeWidth={1.6}
+				strokeWidth={1.5}
 			/>
-			{/* podmurówka */}
-			<rect
-				x={x}
-				y={foot - 6}
-				width={38}
-				height={6}
+			<path
+				d="M0 86 H36 V92 H0 Z M36 86 L49 79 V85 L36 92 Z"
 				fill={MAT.grey.dark}
+				stroke={MAT.grey.line}
+				strokeWidth={1}
+			/>
+			<path
+				d="M37 62 L45 58 V69 L37 73 Z"
+				fill={lit ? GLASS : GLASS_OFF}
 				stroke={m.line}
-				strokeWidth={1.2}
+				strokeWidth={1}
+			/>
+			<path
+				d="M41 60 V71 M38 66 L44 63"
+				fill="none"
+				stroke={m.line}
+				strokeWidth={0.8}
 			/>
 			{timber && (
-				<g
-					stroke={MAT.wood.shade}
-					strokeWidth={2}
-					strokeLinecap="round"
-					opacity={0.85}
-				>
-					<line x1={x + 3} y1={top + 2} x2={x + 3} y2={foot - 7} />
-					<line x1={x + 35} y1={top + 2} x2={x + 35} y2={foot - 7} />
-					<line x1={x + 3} y1={top + 18} x2={x + 35} y2={top + 18} />
-					<line x1={x + 3} y1={top + 18} x2={x + 12} y2={top + 3} />
-					<line x1={x + 35} y1={top + 18} x2={x + 26} y2={top + 3} />
+				<g stroke={MAT.wood.shade} strokeWidth={1.8}>
+					<path
+						d="M3 59 V85 M33 59 V85 M2 58 H34 M8 54 L18 41 L28 54 M18 42 V55"
+						fill="none"
+					/>
 				</g>
 			)}
-			{/* dach: bok (ciemniejszy, z gontem) + szczyt frontowy */}
 			<path
-				d={`M${x + 19} ${top - 26} L${x + 31} ${top - 32} L${x + 54} ${top - 6} L${x + 42} ${top} Z`}
-				fill={r.shade}
-				stroke={r.line}
-				strokeWidth={1.6}
-				strokeLinejoin="round"
-			/>
-			<g stroke={r.light} strokeWidth={0.9} opacity={0.35} fill="none">
-				<path d={`M${x + 24} ${top - 20} L${x + 36} ${top - 26}`} />
-				<path d={`M${x + 31} ${top - 12} L${x + 43} ${top - 18}`} />
-				<path d={`M${x + 38} ${top - 4} L${x + 50} ${top - 10}`} />
-			</g>
-			<path
-				d={`M${x - 4} ${top + 1} L${x + 19} ${top - 26} L${x + 42} ${top + 1} Z`}
+				d="M18 33 L31 26 L53 53 L39 60 Z"
 				fill={fillOf(uid, roof)}
 				stroke={r.line}
-				strokeWidth={1.8}
-				strokeLinejoin="round"
+				strokeWidth={1.6}
+			/>
+			<path d="M31 27 L53 53 L45 57 Z" fill={r.shade} opacity={0.35} />
+			<g stroke={r.line} strokeWidth={0.8} opacity={0.35} fill="none">
+				<path d="M24 40 L37 34 M30 47 L43 41 M36 54 L49 48 M31 37 L34 41 M38 43 L41 47" />
+			</g>
+			<path
+				d="M-3 59 L18 33 L39 59 L53 53"
+				fill="none"
+				stroke={r.line}
+				strokeWidth={4}
 			/>
 			<path
-				d={`M${x + 19} ${top - 26} L${x + 42} ${top + 1} L${x + 19} ${top + 1} Z`}
-				fill={r.shade}
-				opacity={0.25}
+				d="M-3 58 L18 32 L39 58 L52 52"
+				fill="none"
+				stroke={r.light}
+				strokeWidth={1.8}
 			/>
-			<rect
-				x={x - 5}
-				y={top - 1}
-				width={48}
-				height={3.5}
-				rx={1.5}
-				fill={r.dark}
-				stroke={r.line}
-				strokeWidth={1.2}
-			/>
-			{/* komin + dym */}
-			<rect
-				x={x + 26}
-				y={top - 22}
-				width={7}
-				height={12}
+			{/* Chimney emerges from the roof, with its base on the roof slope. */}
+			<path
+				d="M34 39 V25 H40 V42 Z"
 				fill={MAT.grey.dark}
 				stroke={MAT.grey.line}
-				strokeWidth={1.2}
+				strokeWidth={1}
 			/>
 			<rect
-				x={x + 25}
-				y={top - 24}
-				width={9}
+				x={33}
+				y={23}
+				width={8}
 				height={3}
-				rx={1}
+				rx={0.8}
 				fill={MAT.grey.light}
 				stroke={MAT.grey.line}
-				strokeWidth={1.2}
+				strokeWidth={1}
 			/>
 			{smoke && (
-				<g data-decor fill="#ffffff" opacity={0.8}>
-					<circle cx={x + 30} cy={top - 30} r={3} className="anim-float" />
+				<g data-decor fill="#ffffff" opacity={0.7}>
+					<circle cx={37} cy={18} r={2.5} className="anim-float" />
 					<circle
-						cx={x + 33}
-						cy={top - 38}
-						r={2.2}
+						cx={40}
+						cy={11}
+						r={1.8}
 						className="anim-float"
 						style={{ animationDelay: "0.9s" }}
 					/>
 				</g>
 			)}
-			{/* drzwi + okno + skrzynka z kwiatami */}
-			<Door cx={x + 12} y={foot - 6} w={12} line={m.line} />
-			<RoundWin cx={x + 28} cy={top + 12} lit={lit} line={m.line} />
+			<RoundWin cx={18} cy={49} r={3.4} lit={lit} line={m.line} />
+			<Door cx={11} y={87} w={11} line={m.line} mat="wood" />
 			<rect
-				x={x + 22}
-				y={top + 26}
-				width={13}
-				height={4}
+				x={4}
+				y={88}
+				width={15}
+				height={3}
 				rx={1}
+				fill={MAT.grey.light}
+				stroke={MAT.grey.line}
+				strokeWidth={0.8}
+			/>
+			<ArchWin cx={26} y={74} w={8} lit={lit} line={m.line} />
+			<path d="M20 65 V73 M32 65 V73" stroke={r.shade} strokeWidth={2} />
+			<path
+				d="M21 78 Q24 74 26 78 Q29 74 32 78"
+				fill="none"
+				stroke="#579764"
+				strokeWidth={2}
+			/>
+			<g fill="#f681a1">
+				<circle cx={23} cy={76} r={1.5} />
+				<circle cx={30} cy={76} r={1.5} />
+			</g>
+			<rect
+				x={20}
+				y={78}
+				width={13}
+				height={3.5}
+				rx={0.8}
 				fill={MAT.wood.dark}
 				stroke={MAT.wood.line}
-				strokeWidth={1}
+				strokeWidth={0.8}
 			/>
-			<g>
-				<circle cx={x + 25} cy={top + 25} r={2} fill="#ff6b9a" />
-				<circle cx={x + 29} cy={top + 24} r={2} fill="#ffd95e" />
-				<circle cx={x + 33} cy={top + 25} r={2} fill="#ff6b9a" />
-			</g>
 		</g>
 	)
 }
 
 function DomkiArt({ level, size }: { level: number; size: number | string }) {
 	const uid = useId()
-	const xs = level === 1 ? [56] : level === 2 ? [22, 90] : [4, 58, 112]
+	const xs = level === 1 ? [58] : level === 2 ? [24, 92] : [5, 59, 113]
 	const roofs: MatName[] = ["plum", "rose", "teal"]
 	return (
 		<svg viewBox="0 0 170 100" style={svgStyle(size)} aria-hidden="true">
@@ -931,7 +977,12 @@ function DomkiArt({ level, size }: { level: number; size: number | string }) {
 			{level >= 3 && (
 				<g>
 					<path
-						d="M8 22 Q85 6 162 22"
+						d="M12 18 V47 M158 18 V39"
+						stroke={MAT.wood.shade}
+						strokeWidth={1.3}
+					/>
+					<path
+						d="M12 18 Q85 34 158 18"
 						stroke="#6b4318"
 						strokeWidth={1.3}
 						fill="none"
@@ -939,7 +990,7 @@ function DomkiArt({ level, size }: { level: number; size: number | string }) {
 					{[24, 48, 72, 96, 120, 144].map((x, i) => (
 						<path
 							key={x}
-							d={`M${x} ${18 - Math.sin((i / 5) * Math.PI) * 5} l4 8 l-9 -1 Z`}
+							d={`M${x} ${20 + Math.sin((i / 5) * Math.PI) * 6} l4 8 l-9 -1 Z`}
 							fill={i % 2 ? "#ff6b9a" : "#ffd95e"}
 							stroke="#a02b55"
 							strokeWidth={0.8}
@@ -954,7 +1005,7 @@ function DomkiArt({ level, size }: { level: number; size: number | string }) {
 					x={x}
 					lit={i === 0 || level >= 2}
 					timber={level >= 2}
-					roof={roofs[(i + level) % 3] ?? "plum"}
+					roof={roofs[i % 3] ?? "plum"}
 					smoke={level >= 2}
 				/>
 			))}
@@ -973,141 +1024,184 @@ function FontannaArt({
 	size: number | string
 }) {
 	const uid = useId()
-	const rainbow = level >= 3
 	const g = MAT.grey
+	const bowlY = level === 1 ? 54 : 43
 	return (
 		<svg viewBox="0 0 120 100" style={svgStyle(size)} aria-hidden="true">
-			<MatDefs uid={uid} names={["grey"]} />
+			<MatDefs uid={uid} names={["grey", "gold", "teal"]} />
 			<defs>
-				<linearGradient id={`fw-${uid}`} x1="0" y1="0" x2="1" y2="0">
-					{rainbow ? (
-						<>
-							<stop offset="0%" stopColor="#8fdcff" />
-							<stop offset="50%" stopColor="#d4c6ff" />
-							<stop offset="100%" stopColor="#ffb3d1" />
-						</>
-					) : (
-						<>
-							<stop offset="0%" stopColor="#9fe1ff" />
-							<stop offset="100%" stopColor="#4cb8ee" />
-						</>
-					)}
+				<linearGradient id={`water-${uid}`} x2="0.8" y2="1">
+					<stop stopColor="#d3f5ff" />
+					<stop offset="0.55" stopColor={level === 3 ? "#b3c8fa" : "#72cfe4"} />
+					<stop offset="1" stopColor={level === 3 ? "#dfa5dd" : "#389ebc"} />
 				</linearGradient>
 			</defs>
-			<GroundShadow cx={60} cy={95} rx={50} />
-			{/* strugi wody: ciemniejszy obrys + jasny rdzeń */}
-			{[
-				"M60 22 C46 30 42 48 40 66",
-				"M60 22 C74 30 78 48 80 66",
-				...(level >= 2
-					? [
-							"M60 20 C60 36 60 50 60 58",
-							"M60 24 C52 34 49 50 48 64",
-							"M60 24 C68 34 71 50 72 64",
-						]
-					: []),
-			].map((d, i) => (
-				<g key={d} fill="none" strokeLinecap="round">
-					<path d={d} stroke="#3d93c9" strokeWidth={i < 2 ? 4.2 : 3} />
-					<path d={d} stroke="#c9f0ff" strokeWidth={i < 2 ? 1.6 : 1.1} />
+			<GroundShadow cx={60} cy={94} rx={49} />
+			{/* The pool is drawn first so the pedestal stands in the water. */}
+			<path
+				d="M12 79 V87 C18 102 102 102 108 87 V79 Z"
+				fill={g.shade}
+				stroke={g.line}
+				strokeWidth={1.3}
+			/>
+			<ellipse
+				cx={60}
+				cy={79}
+				rx={48}
+				ry={15}
+				fill={fillOf(uid, "grey")}
+				stroke={g.line}
+				strokeWidth={1.4}
+			/>
+			<ellipse
+				cx={60}
+				cy={78}
+				rx={40}
+				ry={10.5}
+				fill={`url(#water-${uid})`}
+				stroke="#508ba5"
+				strokeWidth={1.2}
+			/>
+			<path
+				d="M15 84 C29 97 91 97 105 84"
+				fill="none"
+				stroke={g.light}
+				strokeWidth={2}
+			/>
+			{[25, 42, 60, 78, 95].map((x) => (
+				<path
+					key={x}
+					d={`M${x} ${92 - Math.abs(60 - x) * 0.1} v5`}
+					stroke={g.line}
+					strokeWidth={0.9}
+					opacity={0.6}
+				/>
+			))}
+			<ellipse cx={60} cy={79} rx={17} ry={4} fill="#3d8eaa" opacity={0.25} />
+			<path
+				d={`M49 79 Q55 73 55 ${bowlY + 8} H65 Q65 73 71 79 Q60 84 49 79 Z`}
+				fill={fillOf(uid, "grey")}
+				stroke={g.line}
+				strokeWidth={1.2}
+			/>
+			<path
+				d={`M62 ${bowlY + 9} Q61 69 66 78`}
+				fill="none"
+				stroke={g.shade}
+				strokeWidth={2.5}
+			/>
+			<g transform={`translate(0 ${bowlY})`} stroke={g.line} strokeWidth={1.2}>
+				<path d="M37 0 Q40 14 60 15 Q80 14 83 0 Z" fill={fillOf(uid, "grey")} />
+				<path
+					d="M60 13 Q77 11 81 2"
+					fill="none"
+					stroke={g.shade}
+					strokeWidth={2}
+				/>
+				<ellipse cx={60} cy={0} rx={23} ry={6} fill={g.light} />
+				<ellipse
+					cx={60}
+					cy={-0.5}
+					rx={18}
+					ry={3.5}
+					fill={`url(#water-${uid})`}
+					stroke="#508ba5"
+					strokeWidth={0.8}
+				/>
+			</g>
+			{level >= 2 && (
+				<g stroke={g.line} strokeWidth={1.2}>
+					<path
+						d="M55 42 L57 27 H63 L65 42 Q60 45 55 42 Z"
+						fill={fillOf(uid, "grey")}
+					/>
+					<path
+						d="M46 24 Q48 34 60 34 Q72 34 74 24"
+						fill={fillOf(uid, "grey")}
+					/>
+					<ellipse cx={60} cy={24} rx={14} ry={4} fill={g.light} />
+					<ellipse
+						cx={60}
+						cy={23.5}
+						rx={10}
+						ry={2}
+						fill="#8fdef0"
+						stroke="none"
+					/>
+				</g>
+			)}
+			{/* Overflow has a bright core, landing ripples, and an unbroken path. */}
+			{[38, 82].map((x) => (
+				<g key={x} fill="none" strokeLinecap="round">
+					<path
+						d={`M${x} ${bowlY} Q${x < 60 ? 29 : 91} ${bowlY + 8} ${x < 60 ? 31 : 89} 78`}
+						stroke="#55b5cf"
+						strokeWidth={3.5}
+					/>
+					<path
+						d={`M${x} ${bowlY} Q${x < 60 ? 29 : 91} ${bowlY + 8} ${x < 60 ? 31 : 89} 78`}
+						stroke="#e0faff"
+						strokeWidth={1.3}
+					/>
+					<ellipse
+						cx={x < 60 ? 31 : 89}
+						cy={79}
+						rx={5}
+						ry={1.5}
+						stroke="#e0faff"
+						strokeWidth={0.9}
+					/>
 				</g>
 			))}
-			{/* kolumna z dwiema czaszami */}
-			<g stroke={g.line} strokeWidth={1.6}>
-				<rect x={54} y={40} width={12} height={34} fill={fillOf(uid, "grey")} />
-				<rect
-					x={62}
-					y={41}
-					width={4}
-					height={32}
-					fill={g.shade}
-					opacity={0.4}
-					stroke="none"
-				/>
-				<ellipse cx={60} cy={41} rx={17} ry={5.5} fill={g.light} />
+			{level >= 2 && (
 				<path
-					d="M43 41 a17 5.5 0 0 0 34 0 v3 a17 6 0 0 1 -34 0 Z"
-					fill={g.dark}
+					d="M47 24 Q43 29 44 43 M73 24 Q77 29 76 43"
+					fill="none"
+					stroke="#c4f5ff"
+					strokeWidth={2}
+					strokeLinecap="round"
 				/>
-				<ellipse
-					cx={60}
-					cy={40}
-					rx={12}
-					ry={3}
-					fill="#9fe1ff"
-					stroke="none"
-					opacity={0.9}
-				/>
-				<rect x={56} y={26} width={8} height={14} fill={fillOf(uid, "grey")} />
-				<ellipse cx={60} cy={26} rx={9} ry={3} fill={g.light} />
-				<circle cx={60} cy={19} r={4.5} fill="#bfe9ff" />
-			</g>
-			{/* basen: cembrowina z bloków + woda */}
-			<g stroke={g.line} strokeWidth={1.6}>
-				<ellipse cx={60} cy={80} rx={50} ry={13} fill={g.dark} />
-				<path
-					d="M10 80 a50 13 0 0 0 100 0 v6 a50 13 0 0 1 -100 0 Z"
-					fill={g.shade}
-					opacity={0.5}
-					stroke="none"
-				/>
-				<ellipse cx={60} cy={78} rx={46} ry={11} fill={fillOf(uid, "grey")} />
-				<ellipse
-					cx={60}
-					cy={77}
-					rx={38}
-					ry={8}
-					fill={`url(#fw-${uid})`}
-					stroke="#3d93c9"
-				/>
-			</g>
-			{/* bloki cembrowiny */}
-			<g stroke={g.line} strokeWidth={0.9} opacity={0.35}>
-				{[18, 30, 42, 54, 66, 78, 90, 102].map((x) => (
-					<line key={x} x1={x} y1={87} x2={x + 2} y2={92} />
-				))}
-			</g>
-			{/* falki i bliki na wodzie */}
-			<g
-				fill="none"
-				stroke="#ffffff"
-				strokeWidth={1.2}
-				strokeLinecap="round"
-				opacity={0.75}
-			>
-				<path d="M30 76 q5 -1.5 10 0" />
-				<path d="M78 79 q6 -1.5 12 0" />
-			</g>
-			<g data-decor fill="#ffffff">
-				<circle cx={40} cy={74} r={2} className="anim-sparkle" />
-				{level >= 2 && (
-					<circle
-						cx={80}
-						cy={76}
-						r={2.2}
-						className="anim-sparkle"
-						style={{ animationDelay: "0.7s" }}
+			)}
+			{level === 3 ? (
+				<g stroke={MAT.gold.line} strokeWidth={1}>
+					<path d="M56 23 L57 15 H63 L64 23 Z" fill={fillOf(uid, "gold")} />
+					<path
+						d="M60 4 C49 13 55 18 60 18 C65 18 71 13 60 4 Z"
+						fill={fillOf(uid, "teal")}
 					/>
-				)}
-				{rainbow && (
-					<>
-						<circle
-							cx={60}
-							cy={72}
-							r={2.4}
-							className="anim-sparkle"
-							style={{ animationDelay: "1.3s" }}
-						/>
-						<circle
-							cx={60}
-							cy={10}
-							r={2}
-							className="anim-sparkle"
-							style={{ animationDelay: "0.4s" }}
-						/>
-					</>
-				)}
-			</g>
+					<path
+						d="M58 9 Q55 13 58 14"
+						fill="none"
+						stroke="#e4fff3"
+						strokeWidth={1.5}
+					/>
+					<path
+						d="M41 49 Q60 60 79 49"
+						fill="none"
+						stroke={MAT.gold.dark}
+						strokeWidth={2}
+					/>
+				</g>
+			) : (
+				<path
+					d={
+						level === 1
+							? "M60 32 Q50 42 53 50 M60 32 Q70 42 67 50 M60 32 V51"
+							: "M60 10 Q51 16 54 22 M60 10 Q69 16 66 22 M60 10 V22"
+					}
+					fill="none"
+					stroke="#96def0"
+					strokeWidth={2.2}
+					strokeLinecap="round"
+				/>
+			)}
+			<path
+				d="M43 84 q6 2 12 0 M68 74 q5 -2 9 0"
+				fill="none"
+				stroke="#e5faff"
+				strokeWidth={1}
+				strokeLinecap="round"
+			/>
 		</svg>
 	)
 }
@@ -1127,223 +1221,158 @@ function PlacZabawArt({
 	return (
 		<svg viewBox="0 0 170 104" style={svgStyle(size)} aria-hidden="true">
 			<MatDefs uid={uid} names={["plum", "rose", "teal", "wood"]} />
-			<GroundShadow cx={85} cy={99} rx={76} />
-			{/* piaskownica pod zjeżdżalnią */}
-			<ellipse
-				cx={110}
-				cy={92}
-				rx={44}
-				ry={7}
-				fill="#f3e2b3"
-				stroke="#d9c08a"
-				strokeWidth={1.2}
-			/>
-			{/* wieżyczka zjeżdżalni */}
-			<g stroke={MAT.wood.line} strokeWidth={2} strokeLinecap="round">
-				<line
-					x1={140}
-					y1={94}
-					x2={140}
-					y2={40}
-					stroke={MAT.wood.dark}
-					strokeWidth={4}
-				/>
-				<line
-					x1={158}
-					y1={94}
-					x2={158}
-					y2={40}
-					stroke={MAT.wood.dark}
-					strokeWidth={4}
-				/>
-				{[52, 64, 76, 88].map((y) => (
-					<line
-						key={y}
-						x1={140}
-						y1={y}
-						x2={158}
-						y2={y}
-						stroke={MAT.wood.dark}
-						strokeWidth={2.4}
-					/>
-				))}
-			</g>
-			<rect
-				x={128}
-				y={36}
-				width={38}
-				height={8}
-				rx={2}
-				fill={fillOf(uid, "wood")}
-				stroke={MAT.wood.line}
-				strokeWidth={1.6}
-			/>
-			{/* daszek namiotowy */}
-			<path
-				d="M124 36 L147 14 L170 36 Z"
-				fill={fillOf(uid, "rose")}
-				stroke={MAT.rose.line}
-				strokeWidth={1.8}
-				strokeLinejoin="round"
-			/>
-			<path d="M147 14 L170 36 L147 36 Z" fill={MAT.rose.shade} opacity={0.3} />
-			<Pennant x={147} y={14} color="#ffd95e" />
-			{/* ślizg: burty + rynna z blikiem */}
-			<path
-				d="M130 42 Q104 84 66 92"
-				stroke={MAT.plum.line}
-				strokeWidth={15}
-				strokeLinecap="round"
-				fill="none"
-			/>
-			<path
-				d="M130 42 Q104 84 66 92"
-				stroke={MAT.plum.dark}
-				strokeWidth={11}
-				strokeLinecap="round"
-				fill="none"
-			/>
-			<path
-				d="M130 42 Q104 84 66 92"
-				stroke="#ffd95e"
-				strokeWidth={6}
-				strokeLinecap="round"
-				fill="none"
-			/>
-			<path
-				d="M128 44 Q104 82 70 90"
-				stroke="#fff3b8"
-				strokeWidth={1.6}
-				strokeLinecap="round"
-				fill="none"
-				opacity={0.8}
-			/>
-			{/* podpora ślizgu */}
-			<line
-				x1={96}
-				y1={76}
-				x2={96}
-				y2={94}
-				stroke={MAT.wood.dark}
-				strokeWidth={3}
-				strokeLinecap="round"
-			/>
-			{/* huśtawka (L2+) — A-rama */}
+			<GroundShadow cx={85} cy={97} rx={level === 1 ? 49 : 77} />
+			{/* Each activity has a clear footprint; the slide lands beside the tower. */}
 			{level >= 2 && (
-				<g strokeLinecap="round">
+				<g strokeLinecap="round" strokeLinejoin="round">
+					<g fill="none" stroke={MAT.wood.shade} strokeWidth={3.5}>
+						<path d="M9 88 L20 36 L32 88 M48 88 L59 36 L70 88" />
+						<path d="M14 68 H28 M53 68 H66" strokeWidth={2} />
+					</g>
+					<path d="M16 36 H63" stroke={MAT.teal.line} strokeWidth={5} />
+					<path d="M16 35 H63" stroke={MAT.teal.light} strokeWidth={2} />
 					<path
-						d="M6 94 L22 30 M40 94 L24 30"
-						stroke={MAT.rose.dark}
-						strokeWidth={4}
+						d="M31 38 V69 M47 38 V69"
 						fill="none"
-					/>
-					<path
-						d="M6 94 L22 30 M40 94 L24 30"
-						stroke={MAT.rose.line}
+						stroke={MAT.wood.line}
 						strokeWidth={1.2}
-						fill="none"
-						opacity={0.5}
-					/>
-					<line
-						x1={14}
-						y1={30}
-						x2={60}
-						y2={30}
-						stroke={MAT.plum.dark}
-						strokeWidth={4}
-					/>
-					<line
-						x1={14}
-						y1={30}
-						x2={60}
-						y2={30}
-						stroke={MAT.plum.line}
-						strokeWidth={1.2}
-						opacity={0.5}
-					/>
-					<path
-						d="M52 94 L58 30 M64 94 L60 30"
-						stroke={MAT.rose.dark}
-						strokeWidth={4}
-						fill="none"
-					/>
-					<line
-						x1={30}
-						y1={30}
-						x2={30}
-						y2={66}
-						stroke="#6b4318"
-						strokeWidth={1.6}
-					/>
-					<line
-						x1={44}
-						y1={30}
-						x2={44}
-						y2={66}
-						stroke="#6b4318"
-						strokeWidth={1.6}
 					/>
 					<rect
-						x={25}
-						y={65}
+						x={27}
+						y={68}
 						width={24}
-						height={6}
-						rx={3}
-						fill={fillOf(uid, "teal")}
-						stroke={MAT.teal.line}
-						strokeWidth={1.4}
+						height={5}
+						rx={2}
+						fill={fillOf(uid, "rose")}
+						stroke={MAT.rose.line}
+						strokeWidth={1.3}
 					/>
+					<g fill={MAT.gold.light}>
+						<circle cx={20} cy={36} r={1.5} />
+						<circle cx={59} cy={36} r={1.5} />
+					</g>
 				</g>
 			)}
-			{/* trampolina (L3) */}
+			<g
+				transform={level === 1 ? "translate(-29 0)" : undefined}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			>
+				<path
+					d="M98 86 L137 86 L148 94 H91 Z"
+					fill="#f3e2b3"
+					stroke="#c7a879"
+					strokeWidth={1.2}
+				/>
+				<path
+					d="M91 94 H148 V97 H91 Z"
+					fill={MAT.wood.light}
+					stroke={MAT.wood.line}
+					strokeWidth={0.8}
+				/>
+				{/* Posts carry the roof above an open, railed platform. */}
+				<path
+					d="M106 88 V31 M132 88 V31"
+					fill="none"
+					stroke={MAT.wood.shade}
+					strokeWidth={3.5}
+				/>
+				<path
+					d="M107 55 L96 88 M117 55 L108 88 M104 64 H114 M101 73 H111 M98 82 H109"
+					fill="none"
+					stroke={MAT.wood.dark}
+					strokeWidth={2}
+				/>
+				<rect
+					x={102}
+					y={52}
+					width={34}
+					height={5}
+					rx={1}
+					fill={fillOf(uid, "wood")}
+					stroke={MAT.wood.line}
+					strokeWidth={1.2}
+				/>
+				<path
+					d="M105 42 H120 M110 43 V51 M117 43 V51"
+					fill="none"
+					stroke={MAT.teal.line}
+					strokeWidth={2}
+				/>
+				<path
+					d="M100 32 L119 15 L138 32 Z"
+					fill={fillOf(uid, "rose")}
+					stroke={MAT.rose.line}
+					strokeWidth={1.5}
+				/>
+				<path d="M119 15 L138 32 H124 Z" fill={MAT.rose.shade} opacity={0.35} />
+				<path d="M100 32 H138" stroke={MAT.rose.line} strokeWidth={2.5} />
+				<Pennant x={119} y={15} />
+				{/* A broad slide bed with raised edges and a flat run-out. */}
+				<path
+					d="M123 54 C135 55 137 82 151 85 H159 L163 91 H149 C133 89 130 64 120 60 Z"
+					fill={fillOf(uid, "teal")}
+					stroke={MAT.teal.line}
+					strokeWidth={1.5}
+				/>
+				<path
+					d="M123 55 C135 57 138 84 151 86 H159"
+					fill="none"
+					stroke={MAT.teal.light}
+					strokeWidth={2.5}
+				/>
+				<path
+					d="M120 60 C131 64 133 89 149 91 H163"
+					fill="none"
+					stroke={MAT.teal.line}
+					strokeWidth={2}
+				/>
+				<path
+					d="M123 53 V47 Q123 44 126 46 L130 51"
+					fill="none"
+					stroke={MAT.teal.line}
+					strokeWidth={1.8}
+				/>
+			</g>
 			{level >= 3 && (
-				<g>
-					<line
-						x1={74}
-						y1={94}
-						x2={80}
-						y2={80}
+				<g strokeLinecap="round">
+					<GroundShadow cx={78} cy={98} rx={20} />
+					<path
+						d="M62 88 V96 M93 88 V96 M72 91 V99 M86 91 V99"
+						fill="none"
 						stroke={MAT.grey.line}
-						strokeWidth={2.4}
-						strokeLinecap="round"
+						strokeWidth={2}
 					/>
-					<line
-						x1={124}
-						y1={94}
-						x2={118}
-						y2={80}
-						stroke={MAT.grey.line}
-						strokeWidth={2.4}
-						strokeLinecap="round"
-					/>
-					<ellipse
-						cx={99}
-						cy={78}
-						rx={27}
-						ry={8}
-						fill={MAT.plum.dark}
-						stroke={MAT.plum.line}
-						strokeWidth={1.8}
-					/>
-					<ellipse
-						cx={99}
-						cy={76.5}
-						rx={21}
-						ry={5}
-						fill={fillOf(uid, "plum")}
+					<path
+						d="M57 85 V88 A21 6 0 0 0 99 88 V85"
+						fill={MAT.plum.shade}
 						stroke={MAT.plum.line}
 						strokeWidth={1.2}
 					/>
-					<g data-decor fill="#ffffff">
-						<circle cx={84} cy={62} r={2} className="anim-sparkle" />
-						<circle
-							cx={114}
-							cy={58}
-							r={1.8}
-							className="anim-sparkle"
-							style={{ animationDelay: "0.8s" }}
-						/>
-					</g>
+					<ellipse
+						cx={78}
+						cy={85}
+						rx={21}
+						ry={6}
+						fill={fillOf(uid, "plum")}
+						stroke={MAT.plum.line}
+						strokeWidth={1.4}
+					/>
+					<ellipse
+						cx={78}
+						cy={84.5}
+						rx={16}
+						ry={3.5}
+						fill="#514976"
+						stroke={MAT.plum.light}
+						strokeWidth={1}
+					/>
+					<path
+						d="M67 84 Q77 81 87 84"
+						fill="none"
+						stroke="#8276ad"
+						strokeWidth={0.8}
+					/>
 				</g>
 			)}
 		</svg>
@@ -1361,118 +1390,116 @@ function LatarnieArt({
 	level: number
 	size: number | string
 }) {
-	// stały viewBox (szerokość alei L3): L1/L2 to mniej latarni wyśrodkowanych
-	// w tym samym pudle — wysokość artu nie zależy od poziomu (układ działek
-	// liczy proporcje z jednego viewBoxu)
-	const vbWidth = 116
+	const uid = useId()
 	const lamps = Array.from(
 		{ length: level },
-		(_, i) => vbWidth / 2 + (i - (level - 1) / 2) * 34,
+		(_, i) => 58 + (i - (level - 1) / 2) * 34,
 	)
-	const line = MAT.plum.line
 	return (
-		<svg
-			viewBox={`0 0 ${vbWidth} 100`}
-			style={svgStyle(size)}
-			aria-hidden="true"
-		>
-			<GroundShadow cx={vbWidth / 2} cy={97} rx={10 + level * 17} />
+		<svg viewBox="0 0 116 100" style={svgStyle(size)} aria-hidden="true">
+			<MatDefs uid={uid} names={["plum", "gold", "grey"]} />
+			<defs>
+				<radialGradient id={`glow-${uid}`}>
+					<stop stopColor="#ffe9a3" stopOpacity={0.65} />
+					<stop offset="1" stopColor="#ffe9a3" stopOpacity={0} />
+				</radialGradient>
+			</defs>
 			{lamps.map((x, i) => (
-				<g key={x}>
-					{/* poświata (dwuwarstwowa — naprawdę świeci) */}
-					<g data-decor>
-						<circle cx={x} cy={24} r={19} fill="#ffd95e" opacity={0.2} />
-						<circle cx={x} cy={24} r={11} fill="#ffe9a3" opacity={0.45} />
-					</g>
-					{/* cokół */}
+				<g
+					key={x}
+					transform={`translate(${x} 0)`}
+					strokeLinejoin="round"
+					strokeLinecap="round"
+				>
+					<GroundShadow cx={0} cy={96} rx={12} />
+					<circle data-decor cx={0} cy={28} r={22} fill={`url(#glow-${uid})`} />
 					<path
-						d={`M${x - 8} 96 h16 l-3 -6 h-10 Z`}
-						fill={MAT.grey.dark}
+						d="M-9 93 L-5 88 H5 L9 93 V96 H-9 Z"
+						fill={fillOf(uid, "grey")}
 						stroke={MAT.grey.line}
-						strokeWidth={1.4}
-						strokeLinejoin="round"
-					/>
-					{/* słup z pierścieniami */}
-					<line
-						x1={x}
-						y1={90}
-						x2={x}
-						y2={34}
-						stroke={MAT.plum.shade}
-						strokeWidth={4.4}
-						strokeLinecap="round"
-					/>
-					<line
-						x1={x - 1}
-						y1={88}
-						x2={x - 1}
-						y2={36}
-						stroke="#ffffff"
 						strokeWidth={1}
-						opacity={0.35}
-						strokeLinecap="round"
 					/>
-					<g fill={MAT.plum.dark} stroke={line} strokeWidth={1}>
-						<rect x={x - 3.5} y={80} width={7} height={3} rx={1} />
-						<rect x={x - 3.5} y={44} width={7} height={3} rx={1} />
-					</g>
-					{/* zawijas */}
 					<path
-						d={`M${x} 46 q9 -1 9 -9`}
+						d="M-8 93 H8 M4 89 L7 93 V95"
 						fill="none"
-						stroke={line}
+						stroke={MAT.grey.shade}
+						strokeWidth={1}
+					/>
+					<path
+						d="M-3 88 L-1.5 41 H1.5 L3 88 Z"
+						fill={fillOf(uid, "plum")}
+						stroke={MAT.plum.line}
+						strokeWidth={1.2}
+					/>
+					<path d="M-1 48 V84" stroke={MAT.plum.light} strokeWidth={1} />
+					<path
+						d="M0 56 Q12 56 10 47 Q9 43 6 46 M0 50 Q-9 50 -8 44"
+						fill="none"
+						stroke={MAT.plum.line}
+						strokeWidth={1.5}
+					/>
+					<path
+						d="M-4 85 H4 M-3 62 H3 M-3 42 H3"
+						stroke={MAT.gold.dark}
+						strokeWidth={2}
+					/>
+					{/* A tapered glass chamber, shaded side, and overhanging metal cap. */}
+					<path
+						d="M-9 22 H9 L6 38 H-6 Z"
+						fill="#fff2b9"
+						stroke={MAT.plum.line}
+						strokeWidth={1.4}
+					/>
+					<path d="M4 23 H8 L5 37 H2 Z" fill="#f6c45b" />
+					<path
+						d="M-6 25 L-4 32 M-3 25 L-2 28"
+						stroke="#ffffff"
 						strokeWidth={1.8}
-						strokeLinecap="round"
 					/>
-					{/* latarenka: korpus szklany + ramki + daszek */}
-					<g stroke={line} strokeWidth={1.6} strokeLinejoin="round">
-						<path d={`M${x - 7} 32 h14 l-2 -14 h-10 Z`} fill="#fff6d0" />
-						<path
-							d={`M${x - 7} 32 h14 l1 2 h-16 Z`}
-							fill={MAT.plum.dark}
-							strokeWidth={1.2}
-						/>
-						<path
-							d={`M${x - 8} 18 L${x} 9 L${x + 8} 18 Z`}
-							fill={MAT.plum.dark}
-						/>
-						<path
-							d={`M${x} 9 L${x + 8} 18 L${x} 18 Z`}
-							fill={MAT.plum.shade}
-							opacity={0.5}
-							stroke="none"
-						/>
-					</g>
-					<line
-						x1={x}
-						y1={18}
-						x2={x}
-						y2={32}
-						stroke={line}
-						strokeWidth={0.8}
-						opacity={0.5}
+					<path
+						d="M0 23 V37 M-6 38 H6 L3 42 H-3 Z"
+						fill={MAT.plum.dark}
+						stroke={MAT.plum.line}
+						strokeWidth={1}
 					/>
+					<path
+						d="M-11 22 L-5 15 H5 L11 22 Z"
+						fill={fillOf(uid, "plum")}
+						stroke={MAT.plum.line}
+						strokeWidth={1.3}
+					/>
+					<path d="M1 15 H5 L11 22 H4 Z" fill={MAT.plum.shade} />
+					<path d="M-10 22 H10" stroke={MAT.gold.dark} strokeWidth={1.5} />
+					<path d="M0 15 V11" stroke={MAT.plum.line} strokeWidth={1.5} />
 					<circle
-						cx={x}
-						cy={9}
-						r={1.6}
-						fill="#ffd95e"
-						stroke="#b07a12"
+						cx={0}
+						cy={10}
+						r={2}
+						fill={fillOf(uid, "gold")}
+						stroke={MAT.gold.line}
 						strokeWidth={0.8}
 					/>
-					<ellipse cx={x} cy={25} rx={2.8} ry={3.4} fill="#ffb020" />
-					<ellipse cx={x} cy={24} rx={1.3} ry={1.8} fill="#fff6d0" />
-					{/* świetliki (L2+) */}
 					{level >= 2 && (
-						<circle
-							data-decor
-							cx={x + 13}
-							cy={46 + i * 7}
-							r={1.9}
-							fill="#fff3b0"
-							className="anim-firefly"
-							style={{ animationDelay: `${i * 0.9}s` }}
-						/>
+						<g>
+							<path
+								d="M7 53 V61 M3 61 H12 L10 68 Q7 70 5 68 Z"
+								fill={MAT.wood.dark}
+								stroke={MAT.wood.line}
+								strokeWidth={0.8}
+							/>
+							<path
+								d="M3 61 Q2 56 6 57 Q9 53 11 59 Q14 58 12 63"
+								fill="#70b87a"
+								stroke="#478d5a"
+								strokeWidth={0.7}
+							/>
+							<circle
+								cx={7}
+								cy={59}
+								r={1.6}
+								fill={i % 2 ? "#ffd968" : "#f798ba"}
+							/>
+						</g>
 					)}
 				</g>
 			))}
@@ -1486,163 +1513,146 @@ function LatarnieArt({
 // ---------------------------------------------------------------------------
 function OgrodekArt({ level, size }: { level: number; size: number | string }) {
 	const uid = useId()
-	const flowers: {
-		x: number
-		kind: "tulip" | "daisy" | "sunflower" | "bell"
-		s: number
-	}[] = [
-		{ x: 24, kind: "tulip", s: 1 },
-		{ x: 50, kind: "sunflower", s: 1.15 },
-		{ x: 76, kind: "tulip", s: 1 },
+	const flowers = [
+		{ x: 24, y: 57, kind: "tulip" as const, scale: 0.75 },
+		{ x: 48, y: 55, kind: "sunflower" as const, scale: 0.95 },
+		{ x: 73, y: 56, kind: "bell" as const, scale: 0.8 },
 		...(level >= 2
 			? [
-					{ x: 37, kind: "bell" as const, s: 0.95 },
-					{ x: 63, kind: "daisy" as const, s: 0.95 },
+					{ x: 36, y: 62, kind: "daisy" as const, scale: 0.65 },
+					{ x: 61, y: 63, kind: "tulip" as const, scale: 0.65 },
 				]
 			: []),
-		...(level >= 3
+		...(level === 3
 			? [
-					{ x: 12, kind: "daisy" as const, s: 0.9 },
-					{ x: 88, kind: "bell" as const, s: 0.9 },
+					{ x: 16, y: 62, kind: "bell" as const, scale: 0.65 },
+					{ x: 82, y: 61, kind: "daisy" as const, scale: 0.7 },
 				]
 			: []),
 	]
 	return (
 		<svg viewBox="0 0 110 80" style={svgStyle(size)} aria-hidden="true">
-			<MatDefs uid={uid} names={["wood", "cream"]} />
-			<GroundShadow cx={55} cy={76} rx={50} />
-			{/* pergola (L3) */}
-			{level >= 3 && (
-				<g>
+			<MatDefs uid={uid} names={["wood", "cream", "teal"]} />
+			<GroundShadow cx={55} cy={75} rx={49} />
+			{level === 3 && (
+				<g strokeLinecap="round" strokeLinejoin="round">
 					<path
-						d="M14 62 V22 Q14 10 30 10 H80 Q96 10 96 22 V62"
-						fill="none"
-						stroke={MAT.wood.dark}
-						strokeWidth={3.5}
-						strokeLinecap="round"
-					/>
-					<path
-						d="M14 62 V22 Q14 10 30 10 H80 Q96 10 96 22 V62"
+						d="M13 57 V19 Q13 6 27 6 H77 Q91 6 91 19 V56"
 						fill="none"
 						stroke={MAT.wood.line}
-						strokeWidth={1}
-						opacity={0.5}
+						strokeWidth={4}
 					/>
-					{/* pnącze z kwiatkami */}
 					<path
-						d="M18 40 Q14 28 24 16 Q40 8 60 12 Q80 8 92 22 Q96 32 92 42"
+						d="M12 56 V19 Q12 5 27 5 H77 Q90 5 90 19 V55"
 						fill="none"
-						stroke="#5bb96f"
+						stroke={MAT.wood.light}
 						strokeWidth={2}
+					/>
+					<path
+						d="M17 43 L27 33 L17 23 M87 43 L77 33 L87 23"
+						fill="none"
+						stroke={MAT.wood.dark}
+						strokeWidth={1.2}
+					/>
+					<path
+						d="M15 49 Q9 30 21 16 Q34 2 54 8 Q79 2 89 24 Q94 36 87 49"
+						fill="none"
+						stroke="#4e985e"
+						strokeWidth={1.7}
 					/>
 					{[
-						[22, 24],
-						[34, 12],
-						[58, 11],
-						[82, 14],
-						[93, 30],
-					].map(([x, y]) => (
-						<circle
-							key={`${x}-${y}`}
-							cx={x}
-							cy={y}
-							r={2.4}
-							fill="#ff8fb0"
-							stroke="#c9508a"
-							strokeWidth={0.8}
-						/>
+						[17, 29, -30],
+						[23, 14, 20],
+						[40, 7, -15],
+						[64, 7, 20],
+						[82, 16, 40],
+						[90, 34, -20],
+					].map(([x, y, r]) => (
+						<g key={x} transform={`translate(${x} ${y}) rotate(${r})`}>
+							<path
+								d="M0 0 Q-8 1 -7 -5 Q-2 -6 0 0 Q2 -7 7 -5 Q7 1 0 0"
+								fill="#70b87a"
+								stroke="#478d5a"
+								strokeWidth={0.6}
+							/>
+							<circle
+								cy={1}
+								r={2.8}
+								fill="#f698b6"
+								stroke="#c76186"
+								strokeWidth={0.7}
+							/>
+							<circle cy={1} r={1} fill="#ffe4a0" />
+						</g>
 					))}
-					<g data-decor fill="#ffffff">
-						<circle cx={26} cy={30} r={1.8} className="anim-sparkle" />
-						<circle
-							cx={86}
-							cy={24}
-							r={1.8}
-							className="anim-sparkle"
-							style={{ animationDelay: "0.8s" }}
-						/>
-					</g>
 				</g>
 			)}
-			{/* płotek sztachetowy z tyłu */}
-			<g stroke={MAT.cream.line} strokeWidth={1.3} strokeLinejoin="round">
-				{[6, 20, 34, 48, 62, 76, 90, 104].map((x) => (
-					<path
-						key={x}
-						d={`M${x - 2.5} 60 v-16 l2.5 -4 l2.5 4 v16 Z`}
-						fill={fillOf(uid, "cream")}
-					/>
-				))}
-				<line
-					x1={2}
-					y1={49}
-					x2={108}
-					y2={49}
-					stroke={MAT.cream.dark}
-					strokeWidth={3.5}
+			{/* Fence recedes behind the planting bed. */}
+			<path d="M9 43 H91 M9 52 H91" stroke={MAT.cream.dark} strokeWidth={2.5} />
+			{[12, 25, 38, 51, 64, 77, 90].map((x) => (
+				<path
+					key={x}
+					d={`M${x - 2} 57 V39 l2 -3 l2 3 V57 Z`}
+					fill={fillOf(uid, "cream")}
+					stroke={MAT.cream.line}
+					strokeWidth={0.8}
 				/>
-				<line x1={2} y1={49} x2={108} y2={49} strokeWidth={1} />
-			</g>
-			{/* skrzynia grządki: bok + front + ziemia */}
+			))}
+			{/* Visible soil plane and joined wooden sides give the bed real depth. */}
 			<path
-				d="M8 74 L4 68 H98 L102 74 Z"
-				fill={MAT.wood.light}
+				d="M6 62 L17 54 H95 L85 62 Z"
+				fill="#70462e"
 				stroke={MAT.wood.line}
-				strokeWidth={1.3}
-				strokeLinejoin="round"
+				strokeWidth={1}
 			/>
-			<path d="M4 58 H98 V68 H4 Z" fill="#8a5a3a" />
-			<rect
-				x={4}
-				y={62}
-				width={94}
-				height={8}
-				rx={1.5}
+			<path
+				d="M6 62 H85 V73 H6 Z"
 				fill={fillOf(uid, "wood")}
 				stroke={MAT.wood.line}
-				strokeWidth={1.4}
+				strokeWidth={1.1}
 			/>
-			<rect
-				x={80}
-				y={63}
-				width={17}
-				height={6}
+			<path
+				d="M85 62 L95 54 V65 L85 73 Z"
 				fill={MAT.wood.shade}
-				opacity={0.35}
+				stroke={MAT.wood.line}
+				strokeWidth={1.1}
 			/>
-			<line
-				x1={6}
-				y1={64}
-				x2={96}
-				y2={64}
-				stroke="#ffffff"
-				strokeWidth={0.8}
-				opacity={0.35}
+			<path
+				d="M7 63 H84 M8 68 H83 M87 64 L93 59"
+				fill="none"
+				stroke={MAT.wood.light}
+				strokeWidth={0.9}
 			/>
-			<ellipse cx={51} cy={60} rx={45} ry={4} fill="#7a4a24" />
-			{/* kwiaty */}
-			{flowers.map(({ x, kind, s }) => (
-				<FlowerGlyph key={x} kind={kind} x={x} y={60} scale={s} />
-			))}
-			{/* konewka (L2) */}
-			{level >= 2 && (
-				<g stroke={MAT.teal.line} strokeWidth={1.3} strokeLinejoin="round">
-					<rect
-						x={92}
-						y={66}
-						width={12}
-						height={9}
-						rx={2}
-						fill={MAT.teal.dark}
-					/>
+			<path d="M10 63 V72 M81 63 V72" stroke={MAT.wood.line} strokeWidth={2} />
+			<g fill={MAT.grey.light}>
+				<circle cx={10} cy={65} r={0.7} />
+				<circle cx={81} cy={65} r={0.7} />
+			</g>
+			{flowers.map(({ x, y, kind, scale }) => (
+				<g key={x}>
 					<path
-						d="M92 68 L84 63"
-						fill="none"
-						strokeWidth={2}
-						strokeLinecap="round"
+						d={`M${x} ${y - 1} Q${x - 8} ${y - 3} ${x - 6} ${y - 9} Q${x - 1} ${y - 8} ${x} ${y - 1} Q${x + 7} ${y - 3} ${x + 6} ${y - 10} Q${x + 1} ${y - 8} ${x} ${y - 1}`}
+						fill="#65ac6d"
+						stroke="#468653"
+						strokeWidth={0.6}
 					/>
-					<path d="M104 68 q6 1 3 7" fill="none" />
-					<circle cx={83} cy={62.5} r={2} fill={MAT.teal.light} />
+					<FlowerGlyph kind={kind} x={x} y={y} scale={scale} />
+				</g>
+			))}
+			{level >= 2 && (
+				<g stroke={MAT.teal.line} strokeWidth={1.1} strokeLinejoin="round">
+					<path
+						d="M98 64 Q98 57 103 59 Q108 61 105 69"
+						fill="none"
+						strokeWidth={1.8}
+					/>
+					<path d="M94 65 L87 59 L84 61 L93 70" fill={MAT.teal.light} />
+					<path
+						d="M92 64 H103 L104 74 Q98 77 91 74 Z"
+						fill={fillOf(uid, "teal")}
+					/>
+					<ellipse cx={97.5} cy={64} rx={5.5} ry={1.8} fill={MAT.teal.shade} />
+					<path d="M94 68 V72" stroke={MAT.teal.light} />
 				</g>
 			)}
 		</svg>
@@ -1664,39 +1674,37 @@ function Awning({
 	w: number
 	h?: number
 }) {
-	const n = 5
-	const step = w / n
+	const step = w / 5
 	return (
-		<g stroke={MAT.rose.line} strokeWidth={1.5}>
-			<rect x={x} y={y} width={w} height={h} rx={3} fill="#ff8fb0" />
-			{Array.from({ length: Math.floor(n / 2) }, (_, i) => (
-				<rect
+		<g stroke={MAT.rose.line} strokeWidth={1.1} strokeLinejoin="round">
+			<path
+				d={`M${x + 5} ${y} H${x + w - 5} L${x + w} ${y + h} H${x} Z`}
+				fill="#f58bac"
+			/>
+			{[1, 3].map((i) => (
+				<path
 					key={i}
-					x={x + (i * 2 + 1) * step}
-					y={y}
-					width={step}
-					height={h}
-					fill="#fff1f2"
+					d={`M${x + 5 + (i * (w - 10)) / 5} ${y} h${(w - 10) / 5} L${x + (i + 1) * step} ${y + h} H${x + i * step} Z`}
+					fill="#fff4e9"
 					stroke="none"
 				/>
 			))}
-			<rect
-				x={x}
-				y={y}
-				width={w}
-				height={h * 0.35}
-				fill="#ffffff"
-				opacity={0.3}
-				stroke="none"
-			/>
-			{Array.from({ length: n }, (_, i) => (
+			{[0, 1, 2, 3, 4].map((i) => (
 				<path
-					key={`f${i}`}
-					d={`M${x + i * step} ${y + h} a${step / 2} ${step / 2} 0 0 0 ${step} 0`}
-					fill={i % 2 ? "#fff1f2" : "#ff8fb0"}
+					key={i}
+					d={`M${x + i * step} ${y + h} h${step} v2 q${-step / 2} ${step * 0.55} ${-step} 0 Z`}
+					fill={i % 2 ? "#fff4e9" : "#e26a94"}
 				/>
 			))}
-			<rect x={x} y={y} width={w} height={h} rx={3} fill="none" />
+			<path
+				d={`M${x + 5} ${y} H${x + w - 5} M${x} ${y + h} H${x + w}`}
+				fill="none"
+			/>
+			<path
+				d={`M${x + 6} ${y + 1.5} H${x + w - 6}`}
+				stroke="#ffffff"
+				opacity={0.5}
+			/>
 		</g>
 	)
 }
@@ -1738,312 +1746,233 @@ function Crate({ x, y }: { x: number; y: number }) {
 
 function SklepikArt({ level, size }: { level: number; size: number | string }) {
 	const uid = useId()
-	const boutique = level >= 3
-	const m = MAT.cream
+	const tall = level === 3
+	const eave = tall ? 32 : 52
 	return (
 		<svg viewBox="0 0 150 116" style={svgStyle(size)} aria-hidden="true">
-			<MatDefs uid={uid} names={["cream", "wood", "rose", "plum"]} />
-			<GroundShadow cx={75} cy={112} rx={level === 1 ? 52 : 62} />
-
+			<MatDefs uid={uid} names={["cream", "wood", "rose", "plum", "teal"]} />
+			<GroundShadow cx={75} cy={111} rx={58} />
 			{level === 1 ? (
-				// L1 stragan: lada z desek (front + bok), słupki, markiza, towar
-				<g>
-					<line
-						x1={36}
-						y1={80}
-						x2={36}
-						y2={34}
-						stroke={MAT.wood.dark}
-						strokeWidth={3.5}
-						strokeLinecap="round"
-					/>
-					<line
-						x1={112}
-						y1={80}
-						x2={112}
-						y2={34}
-						stroke={MAT.wood.dark}
-						strokeWidth={3.5}
-						strokeLinecap="round"
+				<g strokeLinejoin="round">
+					<path
+						d="M38 102 V37 M111 102 V37 M38 46 H111 M39 61 L52 48 M110 61 L97 48"
+						fill="none"
+						stroke={MAT.wood.shade}
+						strokeWidth={3}
 					/>
 					<path
-						d="M114 78 L124 72 L124 102 L114 108 Z"
+						d="M31 79 L41 72 H119 L109 79 Z"
+						fill={MAT.wood.light}
+						stroke={MAT.wood.line}
+						strokeWidth={1.2}
+					/>
+					<path
+						d="M109 79 L119 72 V102 L109 108 Z"
 						fill={MAT.wood.shade}
 						stroke={MAT.wood.line}
-						strokeWidth={1.4}
-						strokeLinejoin="round"
+						strokeWidth={1.2}
 					/>
 					<rect
-						x={30}
-						y={78}
-						width={84}
-						height={30}
-						rx={2}
+						x={31}
+						y={79}
+						width={78}
+						height={29}
+						rx={1}
 						fill={fillOf(uid, "wood")}
 						stroke={MAT.wood.line}
-						strokeWidth={1.6}
+						strokeWidth={1.3}
 					/>
-					<g stroke={MAT.wood.line} strokeWidth={0.9} opacity={0.35}>
-						<line x1={32} y1={88} x2={112} y2={88} />
-						<line x1={32} y1={98} x2={112} y2={98} />
-					</g>
+					<path
+						d="M34 82 H107 M34 99 H107 M39 84 V105 M101 84 V105"
+						fill="none"
+						stroke={MAT.wood.shade}
+						strokeWidth={1.3}
+					/>
+					<path d="M32 80 H108" stroke={MAT.wood.light} strokeWidth={2} />
+					<MiniHat x={51} y={76} />
+					<MiniHat x={89} y={76} color="#ed769c" />
+					<Awning x={25} y={29} w={99} h={17} />
+					<path
+						d="M65 51 V56 M85 51 V56"
+						stroke={MAT.wood.line}
+						strokeWidth={1}
+					/>
 					<rect
-						x={30}
-						y={78}
-						width={84}
-						height={4}
-						fill="#ffffff"
-						opacity={0.3}
+						x={61}
+						y={55}
+						width={28}
+						height={10}
+						rx={2}
+						fill={MAT.cream.light}
+						stroke={MAT.wood.line}
+						strokeWidth={1}
 					/>
-					{/* towar */}
-					<MiniHat x={54} y={76} />
-					<MiniHat x={90} y={76} color="#ff5e8a" />
-					<Crate x={8} y={97} />
-					<Crate x={128} y={97} />
-					<circle
-						cx={15}
-						cy={95}
-						r={3.5}
-						fill="#ff6b6b"
-						stroke="#a02b55"
-						strokeWidth={0.9}
+					<path
+						d="M69 61 H81 M71 59 H79"
+						stroke={MAT.rose.dark}
+						strokeWidth={1.5}
+						strokeLinecap="round"
 					/>
-					<circle
-						cx={135}
-						cy={95}
-						r={3.5}
-						fill="#ffd23f"
-						stroke="#b07a12"
-						strokeWidth={0.9}
+					<Crate x={12} y={98} />
+					<Crate x={124} y={98} />
+					<path
+						d="M16 98 Q11 91 17 91 Q22 85 23 93 L23 98"
+						fill="#6eae73"
+						stroke="#4b8855"
+						strokeWidth={0.8}
 					/>
-					<Awning x={24} y={26} w={100} />
 				</g>
 			) : (
-				// L2 sklepik / L3 butik: budynek z witryną, markizą i szyldem
-				<g>
-					{/* bok (prawy, w cieniu) */}
+				<g strokeLinejoin="round" strokeLinecap="round">
+					{/* A pitched roof with a long ridge and coherent side wall. */}
 					<path
-						d={`M124 ${boutique ? 20 : 46} L136 ${boutique ? 14 : 40} L136 102 L124 108 Z`}
-						fill={m.shade}
-						opacity={0.9}
-						stroke={m.line}
-						strokeWidth={1.6}
-						strokeLinejoin="round"
-					/>
-					{/* piętro butiku (L3) */}
-					{boutique && (
-						<g>
-							<rect
-								x={26}
-								y={20}
-								width={98}
-								height={32}
-								fill={fillOf(uid, "cream")}
-								stroke={m.line}
-								strokeWidth={1.6}
-							/>
-							<ArchWin cx={50} y={44} w={12} lit line={m.line} />
-							<ArchWin cx={100} y={44} w={12} lit line={m.line} />
-							{/* balkonik */}
-							<rect
-								x={64}
-								y={40}
-								width={22}
-								height={3}
-								rx={1}
-								fill={MAT.wood.dark}
-								stroke={MAT.wood.line}
-								strokeWidth={1}
-							/>
-							<g stroke={MAT.plum.line} strokeWidth={1.1}>
-								{[67, 71, 75, 79, 83].map((x) => (
-									<line key={x} x1={x} y1={30} x2={x} y2={40} />
-								))}
-								<line x1={65} y1={30} x2={85} y2={30} strokeWidth={1.6} />
-							</g>
-							<ArchWin cx={75} y={40} w={12} lit line={m.line} />
-						</g>
-					)}
-					{/* dach: bok + front */}
-					<path
-						d={
-							boutique
-								? "M75 4 L88 -2 L140 14 L124 20 Z"
-								: "M75 28 L88 22 L140 40 L124 46 Z"
-						}
-						fill={MAT.rose.shade}
-						stroke={MAT.rose.line}
-						strokeWidth={1.6}
-						strokeLinejoin="round"
+						d={`M116 ${eave} L131 ${eave - 8} V101 L116 108 Z`}
+						fill={MAT.cream.shade}
+						stroke={MAT.cream.line}
+						strokeWidth={1.3}
 					/>
 					<path
-						d={boutique ? "M22 20 L75 4 L128 20 Z" : "M20 46 L75 28 L130 46 Z"}
+						d={`M27 ${eave} V108 H116 V${eave} Z`}
+						fill={fillOf(uid, "cream")}
+						stroke={MAT.cream.line}
+						strokeWidth={1.3}
+					/>
+					<path
+						d={`M20 ${eave} L37 ${eave - 22} H115 L123 ${eave} Z`}
 						fill={fillOf(uid, "rose")}
 						stroke={MAT.rose.line}
-						strokeWidth={1.8}
-						strokeLinejoin="round"
-					/>
-					<path
-						d={boutique ? "M75 4 L128 20 L75 20 Z" : "M75 28 L130 46 L75 46 Z"}
-						fill={MAT.rose.shade}
-						opacity={0.25}
-					/>
-					<rect
-						x={20}
-						y={boutique ? 18 : 44}
-						width={110}
-						height={4}
-						rx={1.5}
-						fill={MAT.rose.dark}
-						stroke={MAT.rose.line}
-						strokeWidth={1.2}
-					/>
-					{boutique && <Pennant x={75} y={4} color="#ff6b9a" />}
-					{/* parter */}
-					<rect
-						x={26}
-						y={boutique ? 52 : 48}
-						width={98}
-						height={boutique ? 56 : 60}
-						fill={fillOf(uid, "cream")}
-						stroke={m.line}
-						strokeWidth={1.6}
-					/>
-					<rect
-						x={26}
-						y={102}
-						width={98}
-						height={6}
-						fill={MAT.grey.dark}
-						stroke={m.line}
-						strokeWidth={1.2}
-					/>
-					{/* witryna z towarem */}
-					<rect
-						x={34}
-						y={boutique ? 66 : 62}
-						width={40}
-						height={28}
-						rx={2.5}
-						fill="#e9e3ff"
-						stroke={m.line}
 						strokeWidth={1.5}
 					/>
-					<rect
-						x={36}
-						y={boutique ? 68 : 64}
-						width={14}
-						height={12}
-						fill="#ffffff"
-						opacity={0.45}
+					<path
+						d={`M115 ${eave - 22} L137 ${eave - 8} L123 ${eave} Z`}
+						fill={MAT.rose.shade}
+						stroke={MAT.rose.line}
+						strokeWidth={1.3}
 					/>
-					<line
-						x1={36}
-						y1={boutique ? 88 : 84}
-						x2={72}
-						y2={boutique ? 88 : 84}
+					<path
+						d={`M25 ${eave - 7} H120 M31 ${eave - 14} H117 M48 ${eave - 20} L45 ${eave - 15} M76 ${eave - 13} L75 ${eave - 8} M99 ${eave - 7} V${eave - 2}`}
+						fill="none"
+						stroke={MAT.rose.line}
+						strokeWidth={0.8}
+						opacity={0.35}
+					/>
+					<path
+						d={`M20 ${eave} H123 L137 ${eave - 8}`}
+						fill="none"
+						stroke={MAT.rose.line}
+						strokeWidth={2.5}
+					/>
+					<path
+						d={`M22 ${eave - 1} H122`}
+						stroke={MAT.rose.light}
+						strokeWidth={1}
+					/>
+					<path
+						d="M27 102 H116 V108 H27 Z M116 102 L131 95 V101 L116 108 Z"
+						fill={MAT.grey.dark}
+						stroke={MAT.grey.line}
+						strokeWidth={0.9}
+					/>
+					<path
+						d={`M31 ${eave + 3} V101 M112 ${eave + 3} V101`}
 						stroke={MAT.wood.dark}
 						strokeWidth={2}
 					/>
-					<MiniHat x={46} y={boutique ? 88 : 84} />
-					<MiniHat x={62} y={boutique ? 88 : 84} color="#ff5e8a" />
-					{boutique && (
-						<circle
-							data-decor
-							cx={54}
-							cy={72}
-							r={2.6}
-							fill="#ffd95e"
-							stroke="#b07a12"
-							strokeWidth={1}
-							className="anim-sparkle"
-						/>
-					)}
-					<Awning x={30} y={boutique ? 54 : 50} w={48} h={11} />
-					{/* drzwi + szyld z kapeluszem */}
-					<Door cx={104} y={102} w={16} line={m.line} />
-					{boutique && (
-						<circle
-							data-decor
-							cx={104}
-							cy={72}
-							r={13}
-							fill="#ffd95e"
-							opacity={0.28}
-						/>
-					)}
-					<line
-						x1={104}
-						y1={60}
-						x2={104}
-						y2={64}
-						stroke={MAT.wood.line}
-						strokeWidth={1.4}
-					/>
-					<circle
-						cx={104}
-						cy={72}
-						r={8.5}
-						fill={boutique ? "#ffd95e" : "#fff7ed"}
-						stroke={m.line}
-						strokeWidth={1.5}
-					/>
-					<MiniHat x={104} y={76} color="#5f45c4" />
-					{/* lampiony butiku */}
-					{boutique && (
+					{tall && (
 						<g>
-							{[30, 120].map((x) => (
-								<g key={x}>
-									<line
-										x1={x}
-										y1={52}
-										x2={x}
-										y2={58}
-										stroke={MAT.wood.line}
-										strokeWidth={1.2}
-									/>
-									<circle
-										data-decor
-										cx={x}
-										cy={62}
-										r={7}
-										fill="#ffb03d"
-										opacity={0.3}
-									/>
-									<ellipse
-										cx={x}
-										cy={62}
-										rx={3.2}
-										ry={4.2}
-										fill="#ffb03d"
-										stroke="#b07a12"
-										strokeWidth={1}
-									/>
-								</g>
-							))}
+							<path d="M28 58 H115" stroke={MAT.wood.shade} strokeWidth={2} />
+							<ArchWin cx={48} y={53} w={10} lit line={MAT.cream.line} />
+							<ArchWin cx={76} y={53} w={10} lit line={MAT.cream.line} />
+							<path
+								d="M40 40 V51 M56 40 V51 M68 40 V51 M84 40 V51"
+								stroke={MAT.teal.shade}
+								strokeWidth={2.4}
+							/>
+							<path
+								d="M41 56 Q48 50 55 56 M69 56 Q76 50 83 56"
+								fill="none"
+								stroke="#609d68"
+								strokeWidth={2.5}
+							/>
+							<path
+								d="M41 56 H55 M69 56 H83"
+								stroke={MAT.wood.dark}
+								strokeWidth={2.5}
+							/>
+							<circle cx={47} cy={54} r={1.5} fill="#f293ae" />
+							<circle cx={77} cy={54} r={1.5} fill="#ffd96e" />
 						</g>
 					)}
-				</g>
-			)}
-
-			{/* iskierki mody (L3) */}
-			{boutique && (
-				<g data-decor fill="#ffffff">
-					<circle cx={30} cy={30} r={2} className="anim-sparkle" />
-					<circle
-						cx={118}
-						cy={36}
-						r={1.8}
-						className="anim-sparkle"
-						style={{ animationDelay: "0.7s" }}
+					<rect
+						x={37}
+						y={tall ? 70 : 65}
+						width={42}
+						height={27}
+						rx={2}
+						fill="#c5e7e4"
+						stroke={MAT.teal.line}
+						strokeWidth={1.3}
 					/>
-					<circle
-						cx={75}
-						cy={-6}
-						r={2.2}
-						className="anim-sparkle"
-						style={{ animationDelay: "1.3s" }}
+					<path
+						d={
+							tall
+								? "M40 81 L49 72 M44 84 L56 72"
+								: "M40 76 L49 67 M44 79 L56 67"
+						}
+						stroke="#f4ffff"
+						strokeWidth={2}
+						opacity={0.8}
 					/>
+					<path
+						d="M58 73 V94 M38 94 H78"
+						stroke={MAT.teal.line}
+						strokeWidth={1}
+					/>
+					<MiniHat x={48} y={92} />
+					<MiniHat x={68} y={92} color="#ed769c" />
+					<rect
+						x={34}
+						y={96}
+						width={48}
+						height={3}
+						rx={1}
+						fill={MAT.cream.light}
+						stroke={MAT.cream.line}
+						strokeWidth={0.9}
+					/>
+					<Awning x={33} y={tall ? 61 : 55} w={50} h={10} />
+					<Door cx={99} y={103} w={17} mat="teal" line={MAT.teal.line} />
+					<path
+						d="M89 104 H109 L111 108 H87 Z"
+						fill={MAT.grey.light}
+						stroke={MAT.grey.line}
+						strokeWidth={0.8}
+					/>
+					{/* Bracket makes the hat sign read as a hanging shop sign. */}
+					<path
+						d={`M113 ${tall ? 41 : 55} H101 V${tall ? 46 : 60}`}
+						fill="none"
+						stroke={MAT.wood.line}
+						strokeWidth={1.5}
+					/>
+					<g transform={`translate(101 ${tall ? 54 : 68})`}>
+						<circle
+							r={8}
+							fill={MAT.cream.light}
+							stroke={MAT.wood.line}
+							strokeWidth={1.1}
+						/>
+						<g transform="translate(0 3) scale(0.7)">
+							<MiniHat x={0} y={0} />
+						</g>
+					</g>
+					<path
+						d="M121 68 L127 65 V79 L121 82 Z"
+						fill={GLASS}
+						stroke={MAT.cream.line}
+						strokeWidth={0.9}
+					/>
+					<path d="M124 67 V80" stroke={MAT.cream.line} strokeWidth={0.8} />
 				</g>
 			)}
 		</svg>

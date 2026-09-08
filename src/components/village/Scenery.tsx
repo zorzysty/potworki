@@ -164,19 +164,19 @@ export const Terrain = memo(function Terrain() {
 					<stop offset="100%" stopColor="#8dd4a4" />
 				</linearGradient>
 				<linearGradient id={`ter-meadow-${uid}`} x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0%" stopColor="#95dcae" />
-					<stop offset="45%" stopColor="#74cd96" />
-					<stop offset="100%" stopColor="#56b87e" />
+					<stop offset="0%" stopColor="#a6d398" />
+					<stop offset="45%" stopColor="#8bc382" />
+					<stop offset="100%" stopColor="#6aaf75" />
 				</linearGradient>
 				{/* miękkie fale łąki: szerokie, poziome (rozciągnięte) plamy —
 				    czytają się jako falowanie gruntu, nie jako łaty */}
 				<radialGradient id={`ter-shade-${uid}`} cx="50%" cy="50%" r="50%">
-					<stop offset="0%" stopColor="#4fb27a" stopOpacity={0.45} />
-					<stop offset="100%" stopColor="#4fb27a" stopOpacity={0} />
+					<stop offset="0%" stopColor="#579961" stopOpacity={0.45} />
+					<stop offset="100%" stopColor="#579961" stopOpacity={0} />
 				</radialGradient>
 				<radialGradient id={`ter-light-${uid}`} cx="50%" cy="50%" r="50%">
-					<stop offset="0%" stopColor="#c8f2d8" stopOpacity={0.55} />
-					<stop offset="100%" stopColor="#c8f2d8" stopOpacity={0} />
+					<stop offset="0%" stopColor="#d2e9ac" stopOpacity={0.55} />
+					<stop offset="100%" stopColor="#d2e9ac" stopOpacity={0} />
 				</radialGradient>
 			</defs>
 
@@ -199,15 +199,15 @@ export const Terrain = memo(function Terrain() {
 			/>
 
 			{/* najdalsze wzgórza — mgiełka */}
-			<Ridge d={FAR_RIDGE} fill={`url(#ter-far-${uid})`} crest={0.35} />
+			<Ridge d={FAR_RIDGE} fill={`url(#ter-far-${uid})`} crest={0.18} />
 			{/* środkowe wzgórza + daleki las na grzbiecie (w kolorze mgły) */}
 			<path d={FAR_FOREST} fill="#a3d6b8" opacity={0.85} />
-			<Ridge d={MID_RIDGE} fill={`url(#ter-mid-${uid})`} crest={0.4} />
+			<Ridge d={MID_RIDGE} fill={`url(#ter-mid-${uid})`} crest={0.2} />
 			{/* zbocze tylnego rzędu budynków + bliższy las */}
 			<path d={NEAR_FOREST} fill="#7fc99a" opacity={0.9} />
-			<Ridge d={SLOPE_RIDGE} fill={`url(#ter-slope-${uid})`} crest={0.35} />
+			<Ridge d={SLOPE_RIDGE} fill={`url(#ter-slope-${uid})`} crest={0.18} />
 			{/* łąka — przedni rząd stoi na jej skraju (linia gruntu = GROUND_Y) */}
-			<Ridge d={MEADOW_RIDGE} fill={`url(#ter-meadow-${uid})`} crest={0.35} />
+			<Ridge d={MEADOW_RIDGE} fill={`url(#ter-meadow-${uid})`} crest={0.18} />
 
 			{/* falowanie łąki: szerokie miękkie plamy (zero krawędzi) */}
 			<g fill={`url(#ter-shade-${uid})`}>
@@ -251,11 +251,32 @@ export const RoadArt = memo(function RoadArt({
 					<stop offset="0%" stopColor="#f1dcae" />
 					<stop offset="100%" stopColor="#e9cf9a" />
 				</linearGradient>
+				<pattern
+					id={`road-grain-${uid}`}
+					width={9}
+					height={7}
+					patternUnits="userSpaceOnUse"
+				>
+					<path
+						d="M1 2 h0.5 M5 5 h0.7 M7 1 h0.3"
+						stroke="#b99b65"
+						strokeWidth={0.14}
+						opacity={0.35}
+					/>
+					<path
+						d="M3 4 h0.7 M7 6 h0.5"
+						stroke="#fff3d5"
+						strokeWidth={0.18}
+						opacity={0.6}
+					/>
+				</pattern>
 			</defs>
-			<path d={roadBand(gateX, gateY, 1.35)} fill="#b9a26a" opacity={0.18} />
+			<path d={roadBand(gateX, gateY, 1.16)} fill="#8d9561" opacity={0.22} />
 			<path d={roadBand(gateX, gateY, 1)} fill={`url(#road-${uid})`} />
 			{/* jaśniejszy udeptany środek */}
-			<path d={roadBand(gateX, gateY, 0.5)} fill="#f8ebcb" opacity={0.8} />
+			<path d={roadBand(gateX, gateY, 0.88)} fill="#f4e1b9" opacity={0.65} />
+			<path d={roadBand(gateX, gateY, 0.62)} fill="#f7e8c7" opacity={0.4} />
+			<path d={roadBand(gateX, gateY, 0.96)} fill={`url(#road-grain-${uid})`} />
 		</svg>
 	)
 })
@@ -279,21 +300,11 @@ export const MeadowTexture = memo(function MeadowTexture() {
 					height={150}
 					patternUnits="userSpaceOnUse"
 				>
-					<g
-						fill="none"
-						stroke="#3f9e5f"
-						strokeWidth={1.6}
-						strokeLinecap="round"
-						opacity={0.45}
-					>
-						<path d="M12 26 q1 -5 -1 -8 M15 26 q0 -6 3 -8" />
-						<path d="M74 58 q1 -5 -1 -8 M77 58 q0 -6 3 -8" />
-						<path d="M150 20 q1 -5 -1 -8 M153 20 q0 -6 3 -8" />
-						<path d="M196 96 q1 -5 -1 -8 M199 96 q0 -6 3 -8" />
-						<path d="M40 118 q1 -5 -1 -8 M43 118 q0 -6 3 -8" />
-						<path d="M118 132 q1 -4 -1 -6" />
-						<path d="M172 60 q1 -4 -1 -6" />
-						<path d="M96 12 q1 -4 -1 -6" />
+					<g fill="#4e925b" opacity={0.32}>
+						<path d="M12 26 l-3 -5 q4 1 5 4 q-1 -7 3 -9 l-1 10 Z M74 58 l-3 -4 l4 2 q1 -6 4 -7 l-2 9 Z M150 20 q0 -7 -3 -9 q5 2 5 7 l4 -5 l-2 7 Z M196 96 l-2 -6 l4 4 l4 -8 l-2 10 Z M40 118 l-3 -5 l4 2 l3 -7 l-1 10 Z M118 132 l-2 -5 l3 3 l3 -6 l-2 8 Z" />
+					</g>
+					<g fill="#d2e6aa" opacity={0.4}>
+						<path d="M18 29 l1 -5 l2 5 Z M80 62 l3 -5 l-1 5 Z M156 23 l1 -4 l2 4 Z M45 121 l2 -6 l1 6 Z" />
 					</g>
 					<g fill="#ffffff" opacity={0.5}>
 						<circle cx={54} cy={16} r={1.3} />
@@ -442,16 +453,26 @@ export const CloudArt = memo(function CloudArt() {
 					<stop offset="100%" stopColor="#dbe9fb" />
 				</linearGradient>
 			</defs>
-			<g fill={`url(#cloud-${uid})`}>
-				<ellipse cx={28} cy={30} rx={22} ry={13} />
-				<ellipse cx={52} cy={21} rx={21} ry={16} />
-				<ellipse cx={75} cy={30} rx={20} ry={12} />
-				<rect x={10} y={29} width={80} height={13} rx={6.5} />
-			</g>
-			<g fill="#ffffff">
-				<ellipse cx={48} cy={14} rx={12} ry={7} opacity={0.9} />
-				<ellipse cx={26} cy={24} rx={8} ry={4.5} opacity={0.7} />
-			</g>
+			<path
+				d="M14 40 C1 40 2 24 14 23 C15 12 27 9 35 15 C43 -1 65 3 68 17 C81 11 94 20 91 28 C103 37 88 44 78 41 Z"
+				fill={`url(#cloud-${uid})`}
+			/>
+			<path
+				d="M12 35 Q22 40 35 36 Q48 41 61 37 Q75 42 90 35"
+				fill="none"
+				stroke="#c6dced"
+				strokeWidth={2}
+				opacity={0.3}
+				strokeLinecap="round"
+			/>
+			<path
+				d="M40 15 Q49 7 58 13 M18 24 Q23 17 31 20"
+				fill="none"
+				stroke="#ffffff"
+				strokeWidth={3}
+				opacity={0.75}
+				strokeLinecap="round"
+			/>
 		</svg>
 	)
 })
@@ -526,131 +547,202 @@ export const TreeArt = memo(function TreeArt({
 }) {
 	const uid = useId()
 	const [light, dark, shade, line] = TREE_CROWNS[variant]
+	const crown =
+		variant === "spring"
+			? "M14 51 C4 48 5 38 12 34 C8 26 15 18 21 19 C20 6 34 3 40 13 C50 11 57 20 53 28 C64 34 61 47 52 49 C46 58 34 54 30 52 C24 58 17 56 14 51 Z"
+			: "M10 49 C1 43 4 32 13 30 C10 20 18 14 26 17 C30 5 44 9 46 19 C58 17 63 28 57 35 C65 44 55 54 46 51 C37 60 27 53 25 52 C19 56 12 55 10 49 Z"
 	return (
 		<svg viewBox="0 0 64 80" className="block w-full" aria-hidden="true">
 			<defs>
-				<linearGradient id={`tree-${uid}`} x1="0.2" y1="0" x2="0.8" y2="1">
-					<stop offset="0%" stopColor={light} />
-					<stop offset="100%" stopColor={dark} />
+				<linearGradient id={`tree-${uid}`} x1="0.15" y1="0" x2="0.85" y2="1">
+					<stop stopColor={light} />
+					<stop offset="0.55" stopColor={dark} />
+					<stop offset="1" stopColor={shade} />
+				</linearGradient>
+				<linearGradient id={`bark-${uid}`}>
+					<stop stopColor="#cc9b61" />
+					<stop offset="1" stopColor="#946137" />
 				</linearGradient>
 				<clipPath id={`tree-clip-${uid}`}>
-					<circle cx={17} cy={40} r={13} />
-					<circle cx={47} cy={40} r={13} />
-					<circle cx={32} cy={25} r={17} />
-					<circle cx={32} cy={40} r={15} />
+					<path d={crown} />
 				</clipPath>
 			</defs>
-			<ellipse cx={33} cy={76} rx={19} ry={3} fill="#1e3a2a" opacity={0.14} />
-			{/* pień: lekko zwężony, z cieniem z prawej */}
+			<ellipse cx={33} cy={76} rx={21} ry={3} fill="#284c34" opacity={0.14} />
+			{/* Forked branches and spreading roots support the canopy and swing. */}
 			<path
-				d="M27 77 L28 52 Q24 47 20 45 L23 44 Q28 47 30 50 L32 62 L34 50 Q37 47 42 44 L45 45 Q39 48 36 52 L37 77 Z"
-				fill="#a9743a"
-				stroke="#7d5223"
-				strokeWidth={1.4}
+				d="M23 76 Q29 70 28 58 L22 43 L26 42 L33 56 L40 39 L44 41 L36 61 Q35 71 41 76 L34 74 L30 77 L29 73 Z"
+				fill={`url(#bark-${uid})`}
+				stroke="#805630"
+				strokeWidth={1.2}
 				strokeLinejoin="round"
 			/>
-			<path
-				d="M33 54 L34 62 L36 54 L37 77 L33 77 Z"
-				fill="#7d5223"
-				opacity={0.35}
-			/>
-			{/* korona */}
-			<g stroke={line} strokeWidth={1.8}>
-				<circle cx={17} cy={40} r={13} fill={`url(#tree-${uid})`} />
-				<circle cx={47} cy={40} r={13} fill={`url(#tree-${uid})`} />
-				<circle cx={32} cy={25} r={17} fill={`url(#tree-${uid})`} />
-				<circle
-					cx={32}
-					cy={40}
-					r={15}
-					fill={`url(#tree-${uid})`}
-					stroke="none"
+			{swing && (
+				<path
+					d="M35 58 Q45 59 52 47 L54 48 Q48 63 35 62 Z"
+					fill={`url(#bark-${uid})`}
+					stroke="#805630"
+					strokeWidth={1}
 				/>
-			</g>
-			{/* cień korony (prawy dół) przycięty do sylwetki */}
+			)}
+			<path
+				d="M31 62 Q33 67 31 72 M33 59 L30 52 M35 68 V72"
+				fill="none"
+				stroke="#805630"
+				strokeWidth={0.8}
+				strokeLinecap="round"
+			/>
+			<path
+				d={crown}
+				fill={`url(#tree-${uid})`}
+				stroke={line}
+				strokeWidth={1.3}
+				strokeLinejoin="round"
+			/>
 			<g clipPath={`url(#tree-clip-${uid})`}>
 				<path
-					d="M22 58 Q48 60 62 40 Q60 58 40 60 Z"
+					d="M9 44 Q18 51 26 43 Q36 51 43 42 Q54 45 61 33 V62 H4 Z"
 					fill={shade}
-					opacity={0.55}
+					opacity={0.35}
 				/>
-				<circle cx={48} cy={44} r={6} fill={shade} opacity={0.35} />
+				<path
+					d="M9 33 Q13 23 24 27 Q22 16 34 14 Q40 14 44 20 Q35 16 31 25 Q19 24 18 34 Z"
+					fill={light}
+					opacity={0.65}
+				/>
 			</g>
-			<g fill="#ffffff" opacity={0.55}>
-				<circle cx={24} cy={17} r={4.2} />
-				<circle cx={31} cy={12} r={2} />
-				<circle cx={13} cy={35} r={2.4} />
+			<g
+				fill="none"
+				stroke={line}
+				strokeWidth={0.9}
+				opacity={0.45}
+				strokeLinecap="round"
+			>
+				<path d="M13 38 Q17 34 22 37 M31 31 Q35 27 40 30 M39 46 Q43 43 47 45" />
 			</g>
+			{variant === "blossom" ? (
+				<g fill="#ffe8f1" stroke="#dd7da3" strokeWidth={0.5}>
+					{[
+						[16, 31],
+						[31, 20],
+						[44, 27],
+						[24, 43],
+						[48, 42],
+					].map(([x, y]) => (
+						<g key={x} transform={`translate(${x} ${y})`}>
+							<path d="M0 -3 Q3 -4 3 -1 Q6 0 3 2 Q3 5 0 3 Q-3 5 -3 2 Q-6 0 -3 -1 Q-3 -4 0 -3 Z" />
+							<circle r={0.8} fill="#efbc66" stroke="none" />
+						</g>
+					))}
+				</g>
+			) : (
+				<g fill={light} opacity={0.7}>
+					<path d="M15 29 Q14 23 20 24 Q20 28 15 29 M29 20 Q28 15 33 15 Q34 19 29 20 M42 36 Q43 31 48 32 Q48 36 42 36" />
+				</g>
+			)}
 			{swing && (
-				<g>
-					<line
-						x1={49}
-						y1={48}
-						x2={49}
-						y2={64}
-						stroke="#8a5a28"
-						strokeWidth={1.8}
+				<g strokeLinecap="round">
+					<path d="M50 53 V65" stroke="#b78a50" strokeWidth={1.4} />
+					<ellipse
+						cx={50}
+						cy={69}
+						rx={4}
+						ry={5}
+						fill="#596571"
+						stroke="#354652"
+						strokeWidth={1}
 					/>
-					<circle
-						cx={49}
-						cy={67}
-						r={4.5}
-						fill="none"
-						stroke="#475569"
-						strokeWidth={3}
+					<ellipse
+						cx={50}
+						cy={69}
+						rx={1.8}
+						ry={2.8}
+						fill="#83bc7c"
+						stroke="#354652"
+						strokeWidth={0.7}
+					/>
+					<path
+						d="M48 66 L47 68 M52 70 L51 72"
+						stroke="#859099"
+						strokeWidth={0.7}
 					/>
 				</g>
 			)}
+			<path
+				d="M20 76 Q19 72 16 71 L20 73 L21 69 L23 75 M39 76 L42 71 L42 75 L46 73 L44 77"
+				fill="#58985d"
+			/>
 		</svg>
 	)
 })
 
-// krzaczek: trzy płaty, cień z prawej, jagódki
 export const BushArt = memo(function BushArt() {
 	const uid = useId()
 	return (
 		<svg viewBox="0 0 60 32" className="block w-full" aria-hidden="true">
 			<defs>
-				<linearGradient id={`bush-${uid}`} x1="0.2" y1="0" x2="0.8" y2="1">
-					<stop offset="0%" stopColor="#a6e59a" />
-					<stop offset="100%" stopColor="#4fa868" />
+				<linearGradient id={`bush-${uid}`} x2="0.7" y2="1">
+					<stop stopColor="#b1d990" />
+					<stop offset="1" stopColor="#559b62" />
 				</linearGradient>
 			</defs>
-			<ellipse cx={30} cy={29} rx={24} ry={2.6} fill="#1e3a2a" opacity={0.14} />
-			<g stroke="#2f7d47" strokeWidth={1.6}>
-				<ellipse cx={16} cy={21} rx={13} ry={9} fill={`url(#bush-${uid})`} />
-				<ellipse cx={44} cy={21} rx={13} ry={9} fill={`url(#bush-${uid})`} />
-				<ellipse cx={30} cy={15} rx={14} ry={11} fill={`url(#bush-${uid})`} />
-			</g>
+			<ellipse cx={30} cy={28} rx={25} ry={3} fill="#284c34" opacity={0.14} />
 			<path
-				d="M36 25 Q50 24 55 16 Q52 27 38 28 Z"
-				fill="#3f9a58"
-				opacity={0.45}
+				d="M5 25 Q0 18 9 15 Q8 7 18 9 Q24 -1 32 7 Q43 2 47 12 Q58 10 57 20 Q61 29 48 28 H14 Q6 29 5 25 Z"
+				fill={`url(#bush-${uid})`}
+				stroke="#43844f"
+				strokeWidth={1.2}
 			/>
-			<circle cx={22} cy={13} r={2.2} fill="#ff6b9a" />
-			<circle cx={36} cy={9} r={2.2} fill="#ffd95e" />
-			<circle cx={45} cy={17} r={2.2} fill="#ff6b9a" />
-			<circle cx={25} cy={9} r={1.6} fill="#ffffff" opacity={0.6} />
+			<path
+				d="M7 23 Q16 27 23 21 Q29 27 36 21 Q46 27 55 19 Q58 28 46 27 H15 Z"
+				fill="#43844f"
+				opacity={0.3}
+			/>
+			<path
+				d="M12 16 Q15 11 20 14 M24 10 Q28 7 32 11 M38 17 Q42 13 47 16"
+				fill="none"
+				stroke="#daecc0"
+				strokeWidth={1.5}
+				strokeLinecap="round"
+				opacity={0.65}
+			/>
+			{[
+				[20, 19],
+				[39, 12],
+				[46, 22],
+			].map(([x, y]) => (
+				<g key={x}>
+					<circle
+						cx={x}
+						cy={y}
+						r={2}
+						fill="#e995a6"
+						stroke="#b46b7d"
+						strokeWidth={0.6}
+					/>
+					<circle
+						cx={(x ?? 0) - 0.5}
+						cy={(y ?? 0) - 0.5}
+						r={0.6}
+						fill="#ffe3da"
+					/>
+				</g>
+			))}
 		</svg>
 	)
 })
 
-// kępka trawy — drobny wypełniacz łąki
 export function GrassTuft() {
 	return (
 		<svg viewBox="0 0 24 14" className="block w-full" aria-hidden="true">
-			<g
-				stroke="#3f9e5f"
-				strokeWidth={2.2}
-				strokeLinecap="round"
-				fill="none"
-				opacity={0.7}
-			>
-				<path d="M4 13 Q5 6 2 3" />
-				<path d="M9 13 Q9 4 12 1" />
-				<path d="M14 13 Q16 6 20 4" />
-				<path d="M19 13 Q21 9 23 8" />
-			</g>
+			<ellipse cx={12} cy={12.5} rx={10} ry={1} fill="#43864f" opacity={0.12} />
+			<path
+				d="M4 13 Q4 8 1 5 Q6 7 7 12 Q6 4 10 1 Q9 7 11 12 Q12 5 16 3 Q14 8 15 12 Q18 7 23 7 Q19 10 18 13 Z"
+				fill="#579d61"
+			/>
+			<path
+				d="M8 13 Q8 7 10 4 L11 13 M13 13 Q15 8 18 7 L16 13"
+				fill="#94c879"
+			/>
 		</svg>
 	)
 }
@@ -840,55 +932,110 @@ export function SparkleArt({ color = "#ffd95e" }: { color?: string }) {
 // (wrapper anim-float) — tu tylko rysunek
 export function PondArt() {
 	const uid = useId()
+	const water =
+		"M14 28 C12 18 25 17 35 17 C44 17 45 11 61 12 C72 12 74 18 88 18 C101 17 108 24 104 31 C101 39 86 43 68 42 C55 41 50 47 34 42 C22 40 14 35 14 28 Z"
 	return (
 		<svg viewBox="0 0 120 52" className="block w-full" aria-hidden="true">
 			<defs>
-				<linearGradient id={`pond-${uid}`} x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0%" stopColor="#a8e3fb" />
-					<stop offset="100%" stopColor="#4fb0ea" />
+				<linearGradient id={`pond-${uid}`} x1="0.2" y1="0" x2="0.7" y2="1">
+					<stop stopColor="#9bdad8" />
+					<stop offset="0.5" stopColor="#65bac7" />
+					<stop offset="1" stopColor="#408fae" />
 				</linearGradient>
+				<clipPath id={`pond-clip-${uid}`}>
+					<path d={water} />
+				</clipPath>
 			</defs>
 			<path
-				d="M8 30 Q6 14 30 12 Q52 4 82 10 Q112 12 112 30 Q110 46 70 48 Q30 50 8 30 Z"
-				fill="#e8d9a8"
+				d="M6 30 C4 16 24 10 37 12 C50 3 70 7 79 11 C96 10 115 16 113 30 C111 43 88 49 69 47 C48 53 21 48 6 36 Z"
+				fill="#527f4b"
+				opacity={0.2}
 			/>
 			<path
-				d="M13 30 Q12 17 32 15 Q52 8 80 13 Q106 15 106 30 Q104 43 70 44 Q32 46 13 30 Z"
-				fill={`url(#pond-${uid})`}
-				stroke="#3d93c9"
-				strokeWidth={1.4}
-			/>
-			<g
-				fill="none"
-				stroke="#e3f6ff"
-				strokeWidth={1.4}
-				strokeLinecap="round"
-				opacity={0.8}
-			>
-				<path d="M28 24 q6 -2 12 0" />
-				<path d="M62 33 q7 -2 14 0" />
-				<path d="M40 38 q5 -1.5 10 0" />
-			</g>
-			<ellipse cx={44} cy={20} rx={13} ry={3.5} fill="#ffffff" opacity={0.45} />
-			{/* lilia */}
-			<path
-				d="M84 34 a6 3.5 0 1 0 6 -3.2 L84 32 Z"
-				fill="#5bb96f"
-				stroke="#3f9a58"
+				d="M8 28 C7 15 26 12 36 13 C48 4 69 7 78 14 C97 10 113 19 110 31 C105 44 86 47 68 46 C52 47 49 50 32 46 C18 42 8 37 8 28 Z"
+				fill="#d6cd9d"
+				stroke="#a6ab78"
 				strokeWidth={0.9}
 			/>
-			<circle cx={86} cy={30} r={2} fill="#ff8fb0" />
-			{/* trzciny */}
-			<g stroke="#3f9e5f" strokeWidth={2.2} strokeLinecap="round" fill="none">
-				<path d="M104 36 Q106 24 103 16" />
-				<path d="M110 38 Q113 28 112 20" />
+			<path
+				d={water}
+				fill={`url(#pond-${uid})`}
+				stroke="#548d94"
+				strokeWidth={1.2}
+			/>
+			<g clipPath={`url(#pond-clip-${uid})`}>
+				<path
+					d="M12 24 Q30 14 44 21 Q62 11 84 22 Q99 19 109 27"
+					fill="none"
+					stroke="#367e91"
+					strokeWidth={4}
+					opacity={0.25}
+				/>
+				<path
+					d="M15 33 Q28 44 46 40 Q61 45 72 40 Q93 44 105 31"
+					fill="none"
+					stroke="#bcece2"
+					strokeWidth={1.4}
+					opacity={0.75}
+				/>
+				<path
+					d="M26 24 H40 M30 27 H47 M55 20 H66 M56 35 H74 M60 38 H69"
+					fill="none"
+					stroke="#e3f8ed"
+					strokeWidth={1.2}
+					strokeLinecap="round"
+					opacity={0.65}
+				/>
 			</g>
-			<ellipse cx={103} cy={15} rx={2.2} ry={4} fill="#8a5a28" />
-			<ellipse cx={112} cy={19} rx={2} ry={3.6} fill="#8a5a28" />
-			<g fill="#d9d2c2" stroke="#a8a08e" strokeWidth={0.8}>
-				<ellipse cx={14} cy={44} rx={4.5} ry={2.4} />
-				<ellipse cx={23} cy={47} rx={3.4} ry={1.9} />
+			{/* Lily pads sit flat on the water; petals rise above them. */}
+			<ellipse cx={87} cy={33} rx={9} ry={3} fill="#347f8c" opacity={0.3} />
+			<path
+				d="M87 32 L93 29 C85 24 75 30 81 33 C85 36 95 34 94 30 Z"
+				fill="#7bb67a"
+				stroke="#44875e"
+				strokeWidth={0.8}
+			/>
+			<path
+				d="M87 31 Q80 29 83 25 L87 28 Q86 22 89 23 Q93 25 90 28 L94 26 Q96 31 87 31 Z"
+				fill="#f2a9bf"
+				stroke="#bd728d"
+				strokeWidth={0.6}
+			/>
+			<path d="M85 30 Q89 27 91 30" fill="#ffde93" />
+			{/* Cattails and flat stones break up the bank. */}
+			<g fill="none" stroke="#568751" strokeWidth={1.1} strokeLinecap="round">
+				<path d="M104 36 Q102 26 103 12 M108 35 Q112 25 111 16 M103 37 Q99 27 97 27 M109 36 Q115 29 117 28" />
 			</g>
+			<path
+				d="M101 36 Q95 31 96 24 Q102 29 103 36 M109 36 Q112 24 117 22 Q114 32 109 36"
+				fill="#79aa60"
+			/>
+			<path
+				d="M103 12 V18 M111 16 V22"
+				stroke="#8b6744"
+				strokeWidth={2.8}
+				strokeLinecap="round"
+			/>
+			{[
+				[15, 40, 1],
+				[26, 45, 0.75],
+				[96, 42, 0.8],
+				[13, 18, 0.65],
+			].map(([x, y, scale]) => (
+				<g key={x} transform={`translate(${x} ${y}) scale(${scale})`}>
+					<path
+						d="M-5 1 L-4 -2 L1 -3 L5 0 L4 3 H-3 Z"
+						fill="#b6b8a6"
+						stroke="#868e7e"
+						strokeWidth={0.7}
+					/>
+					<path d="M-4 -1 L1 -2 L4 0 H-2 Z" fill="#e0dfc7" />
+				</g>
+			))}
+			<path
+				d="M31 46 L28 41 L32 43 L34 39 L34 46 M6 31 L2 27 L6 28 L7 23 L9 32"
+				fill="#6d9c5c"
+			/>
 		</svg>
 	)
 }
@@ -923,7 +1070,7 @@ export function DuckArt() {
 			/>
 			<circle cx={22.5} cy={8} r={1.1} fill="#3b2a1a" />
 			<path
-				d="M4 15 Q8 12 11 15"
+				d="M7 15 Q13 12 17 16 Q13 21 8 18 Z"
 				fill="none"
 				stroke="#d39a1a"
 				strokeWidth={1}
@@ -936,53 +1083,107 @@ export function DuckArt() {
 export function PedestalArt() {
 	return (
 		<svg viewBox="0 0 64 24" className="block w-full" aria-hidden="true">
-			<ellipse cx={32} cy={22} rx={28} ry={2.5} fill="#1e293b" opacity={0.14} />
-			<g stroke="#8d95ad" strokeWidth={1.3} strokeLinejoin="round">
-				<rect x={13} y={2} width={38} height={8} rx={2} fill="#eef0f7" />
-				<rect x={6} y={9} width={52} height={10} rx={2.5} fill="#d7dbe8" />
+			<ellipse cx={32} cy={22} rx={28} ry={2} fill="#284c34" opacity={0.14} />
+			<g stroke="#8d95ad" strokeWidth={0.9} strokeLinejoin="round">
+				<path d="M7 17 L12 13 H51 L57 17 V21 H7 Z" fill="#c7cedd" />
+				<path d="M15 7 H49 V17 H15 Z" fill="#e1e5ed" />
+				<path d="M43 7 H49 V17 H43 Z" fill="#b8c1d3" stroke="none" />
+				<path d="M12 4 L17 1 H47 L52 4 V8 H12 Z" fill="#eef0f6" />
+				<path d="M12 4 H52 M8 17 H56" fill="none" />
+				<rect
+					x={24}
+					y={10}
+					width={16}
+					height={5}
+					rx={0.8}
+					fill="#efd482"
+					stroke="#b99a45"
+					strokeWidth={0.7}
+				/>
 			</g>
-			<rect x={40} y={4} width={9} height={4} fill="#b8bfd2" opacity={0.6} />
-			<rect
-				x={24}
-				y={11.5}
-				width={16}
-				height={5}
-				rx={1}
-				fill="#ffd95e"
-				stroke="#c99a1a"
-				strokeWidth={0.8}
-			/>
-			<circle cx={14} cy={14} r={1.2} fill="#a0a8bf" />
-			<circle cx={50} cy={14} r={1.2} fill="#a0a8bf" />
+			<path d="M28 12 H36 M30 14 H34" stroke="#b99a45" strokeWidth={0.6} />
+			<path d="M11 20 H22 M46 20 H52" stroke="#e9edf4" strokeWidth={0.8} />
 		</svg>
 	)
 }
 
-// namiot obozu wyprawy (zamiast emoji)
 export function TentArt() {
 	return (
 		<svg viewBox="0 0 64 48" className="block w-full" aria-hidden="true">
-			<ellipse cx={32} cy={45} rx={28} ry={3} fill="#1e3a2a" opacity={0.14} />
+			<ellipse cx={32} cy={45} rx={28} ry={2.5} fill="#284c34" opacity={0.14} />
+			<g strokeLinejoin="round" strokeLinecap="round">
+				<path
+					d="M7 43 L26 10 L45 43 Z"
+					fill="#ffb1c7"
+					stroke="#b95b80"
+					strokeWidth={1.3}
+				/>
+				<path
+					d="M26 10 L39 6 L59 38 L45 43 Z"
+					fill="#e981a5"
+					stroke="#b95b80"
+					strokeWidth={1.3}
+				/>
+				<path d="M39 7 L59 38 L51 40 Z" fill="#c9618b" opacity={0.4} />
+				<path
+					d="M17 43 L26 23 L36 43 Z"
+					fill="#70516b"
+					stroke="#a15579"
+					strokeWidth={0.8}
+				/>
+				<path
+					d="M26 23 Q25 35 19 38 L16 43 M26 23 Q28 35 33 37 L36 43"
+					fill="#f9cfce"
+					stroke="#b95b80"
+					strokeWidth={0.8}
+				/>
+				<path
+					d="M29 15 L45 39 M36 12 L51 36"
+					stroke="#f7b8cd"
+					strokeWidth={0.8}
+				/>
+				<path
+					d="M26 10 L3 43 M39 6 L61 40"
+					stroke="#c8ad7c"
+					strokeWidth={0.9}
+				/>
+				<path
+					d="M3 41 V45 M61 38 V42 M26 11 V5"
+					stroke="#8b6841"
+					strokeWidth={1.5}
+				/>
+				<path
+					d="M26 5 L33 7 L26 9 Z"
+					fill="#f5d882"
+					stroke="#b89544"
+					strokeWidth={0.6}
+				/>
+			</g>
+		</svg>
+	)
+}
+
+// Flat, faceted stones stay undistorted in the screen's perspective-sized wrappers.
+export function SteppingStoneArt() {
+	return (
+		<svg viewBox="0 0 28 12" className="block h-full w-full" aria-hidden="true">
 			<path
-				d="M4 44 L32 6 L60 44 Z"
-				fill="#ff8fb0"
-				stroke="#c9508a"
-				strokeWidth={1.8}
-				strokeLinejoin="round"
+				d="M2 7 L5 3 L19 2 L26 5 L25 10 L9 11 L3 9 Z"
+				fill="#bba77e"
+				opacity={0.5}
 			/>
-			<path d="M32 6 L60 44 L46 44 Z" fill="#e84a7a" opacity={0.6} />
-			<path d="M24 44 L32 22 L40 44 Z" fill="#5f2a4a" opacity={0.75} />
 			<path
-				d="M32 6 L32 0"
-				stroke="#7d5223"
-				strokeWidth={2}
+				d="M2 5 L6 1 L20 1 L26 4 L24 8 L9 9 L3 7 Z"
+				fill="#e1d4af"
+				stroke="#b9a47b"
+				strokeWidth={0.7}
+			/>
+			<path
+				d="M5 4 L8 2 H19 L23 4"
+				fill="none"
+				stroke="#faf0d5"
+				strokeWidth={1}
 				strokeLinecap="round"
-			/>
-			<path
-				d="M32 0 l9 2.5 l-9 2.5 Z"
-				fill="#ffd95e"
-				stroke="#c99a1a"
-				strokeWidth={0.9}
 			/>
 		</svg>
 	)

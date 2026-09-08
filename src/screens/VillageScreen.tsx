@@ -36,6 +36,7 @@ import {
 	RoadArt,
 	roadXAt,
 	SparkleArt,
+	SteppingStoneArt,
 	SunArt,
 	TentArt,
 	Terrain,
@@ -433,14 +434,17 @@ export function VillageScreen() {
 									STEPPING_STONES.map((p) => (
 										<span
 											key={p.b}
-											className="absolute -translate-x-1/2 rounded-full bg-[#f4e4b4] shadow-sm"
+											className="absolute -translate-x-1/2"
 											style={{
 												left: `${roadXAt(100 - p.b, gate.x, gate.y)}%`,
 												bottom: `${p.b}%`,
 												width: p.w,
 												height: p.w * 0.42,
+												transform: `rotate(${p.b % 3 === 0 ? -8 : 7}deg)`,
 											}}
-										/>
+										>
+											<SteppingStoneArt />
+										</span>
 									))}
 								{/* kwiaty ogródka na łące */}
 								{FLOWER_SPOTS.slice(0, ogrodek * 3).map((f) => (
