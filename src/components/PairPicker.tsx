@@ -24,7 +24,7 @@ export function PairPicker() {
 	const factors = [...unlockedFactors(unlockedStage)].sort((a, b) => a - b)
 	const active = round.phase === "answering"
 	return (
-		<div className="grid w-full grid-cols-5 gap-2">
+		<div className="play-pair-picker">
 			{factors.map((n) => {
 				const picked = round.picked === n || flash === n
 				return (
@@ -36,11 +36,8 @@ export function PairPicker() {
 							pickFactor(n)
 						}}
 						disabled={!active}
-						className={`min-h-16 touch-manipulation select-none rounded-2xl border-b-4 text-3xl font-extrabold shadow-md transition-transform active:scale-90 active:border-b-2 ${
-							picked
-								? "border-fuchsia-700 bg-gradient-to-b from-fuchsia-400 to-fuchsia-600 text-white"
-								: "border-violet-100 bg-white text-slate-700"
-						}`}
+						className="play-key play-factor"
+						aria-pressed={picked}
 					>
 						{n}
 					</button>

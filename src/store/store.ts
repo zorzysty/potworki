@@ -33,6 +33,7 @@ import {
 import type { RoundState } from "../game/round"
 import {
 	advance,
+	expectsTen,
 	flipMemory,
 	hideMemory,
 	newRound,
@@ -270,8 +271,26 @@ export const useGame = create<GameState>()(
 			pressDigit: (digit) => {
 				const { round } = get()
 				if (!round || round.paused) return
-				// klawiatura fizyczna w trybie par: cyfra = żeton (0 = 10)
+				// Klawiatura fizyczna w trybie par: cyfra = żeton, 0 = 10. „10" wolno
+				// też wpisać jako „1"+„0" — dopóki 10 jest oczekiwane, sama „1" czeka
+				// na następną cyfrę, BEZ limitu czasu (jak wpisywanie wyniku w
+				// mnożeniu). Bufor to `answer`, w parach poza tym nieużywany.
 				if (round.mode === "pairs") {
+					if (round.answer === "1") {
+						// „0" domyka 10; każda inna cyfra zatwierdza żeton 1 i leci dalej
+						// jako kolejny żeton (zwykle pomyłka — tak samo jak w keypadzie)
+						if (digit === 0) {
+							get().pickFactor(10)
+							return
+						}
+						get().pickFactor(1)
+						get().pressDigit(digit)
+						return
+					}
+					if (digit === 1 && expectsTen(get().unlockedStage, round)) {
+						set({ round: { ...round, answer: "1" } })
+						return
+					}
 					get().pickFactor(digit === 0 ? 10 : digit)
 					return
 				}
@@ -295,7 +314,7 @@ export const useGame = create<GameState>()(
 				const { round } = get()
 				if (!round || round.paused) return
 				if (round.mode === "pairs") {
-					set({ round: { ...round, picked: null } })
+					set({ round: { ...round, picked: null, answer: "" } })
 					return
 				}
 				if (round.mode === "memory") return
@@ -307,7 +326,8 @@ export const useGame = create<GameState>()(
 			// także ten sam żeton dwa razy (6×6). Commit jak pressConfirm.
 			pickFactor: (n) => {
 				const state = get()
-				const { round } = state
+				// żeton kasuje niedomknięte „1" z klawiatury (patrz pressDigit)
+				const round = state.round && { ...state.round, answer: "" }
 				if (!round || round.paused || round.mode !== "pairs") return
 				if (round.phase !== "answering") return
 				if (!unlockedFactors(state.unlockedStage).has(n)) return

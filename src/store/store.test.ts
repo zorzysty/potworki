@@ -2031,6 +2031,73 @@ describe("tryb par (pairs) — store", () => {
 		expect(requireRound()).toEqual(r)
 	})
 
+	test('klawiatura: „1"+„0" = żeton 10 w każdym pytaniu z dziesiątką; bez limitu czasu', () => {
+		useGame.setState({ unlockedStage: 6 })
+		game().setMode("pairs")
+		game().startRound()
+		const withTarget = (a: number) => {
+			const r = requireRound()
+			useGame.setState({
+				round: {
+					...r,
+					question: { ...r.question, a },
+					phase: "answering" as const,
+					found: [],
+					missed: false,
+					picked: null,
+					answer: "",
+				},
+			})
+		}
+		// 40 = 4×10 i 5×8: „1" czeka (widać ją w okienku), „0" daje żeton 10
+		withTarget(40)
+		game().pressDigit(1)
+		expect(requireRound().picked).toBeNull()
+		expect(requireRound().answer).toBe("1")
+		game().pressDigit(0)
+		expect(requireRound().picked).toBe(10)
+		expect(requireRound().answer).toBe("")
+		game().pressDigit(4)
+		expect(requireRound().found).toEqual(["4x10"])
+		// druga kolejność: 4, potem „1"+„0"
+		withTarget(40)
+		game().pressDigit(4)
+		game().pressDigit(1)
+		expect(requireRound().picked).toBe(4) // „1" niczego nie zatwierdza
+		game().pressDigit(0)
+		expect(requireRound().found).toEqual(["4x10"])
+		// żeton wybrany błędnie (4 przy 80) też nie psuje wpisywania 10
+		withTarget(80)
+		game().pressDigit(4)
+		game().pressDigit(1)
+		expect(requireRound().picked).toBe(4)
+		game().pressDigit(0)
+		expect(requireRound().found).toEqual([]) // 4×10 ≠ 80: pomyłka, ale ta wpisana
+		expect(requireRound().missed).toBe(true)
+		// druga cyfra inna niż 0: „1" leci jako żeton 1, następna jako kolejny żeton
+		withTarget(40)
+		game().pressDigit(4)
+		game().pressDigit(1)
+		game().pressDigit(5)
+		expect(requireRound().missed).toBe(true) // zatwierdzone 4×1
+		expect(requireRound().picked).toBe(5)
+		// pytanie bez dziesiątki (16 = 2×8, 4×4): „1" zatwierdza od razu
+		withTarget(16)
+		game().pressDigit(4)
+		game().pressDigit(1)
+		expect(requireRound().picked).toBeNull()
+		expect(requireRound().answer).toBe("")
+		// żeton dotykowy i backspace kasują niedomkniętą „1"
+		withTarget(40)
+		game().pressDigit(1)
+		game().pressBackspace()
+		expect(requireRound().answer).toBe("")
+		game().pressDigit(1)
+		game().pickFactor(5)
+		game().pickFactor(8)
+		expect(requireRound().found).toEqual(["5x8"])
+	})
+
 	test("pauza wycisza żetony; pełna runda par kończy się jak zwykła (żołd, totalRounds)", () => {
 		suppressAchievements()
 		useGame.setState({ unlockedStage: 3 })

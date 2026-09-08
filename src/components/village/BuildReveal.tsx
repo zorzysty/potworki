@@ -36,7 +36,7 @@ export function BuildReveal({
 		<button
 			type="button"
 			onClick={onDone}
-			className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 bg-slate-900/70 p-6 backdrop-blur-sm"
+			className="village-build-reveal fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 bg-slate-900/70 p-6 backdrop-blur-sm"
 		>
 			<div className="text-2xl font-extrabold text-white/90">
 				{revealed ? "Zbudowane! 🎉" : "Budujemy… 🔨"}

@@ -3,6 +3,7 @@ import { BigButton } from "../components/BigButton"
 import { CheerCompanion } from "../components/Companion"
 import { Keypad } from "../components/Keypad"
 import { MATCHED_MS } from "../components/MemoryBoard"
+import { MODE_LABELS, MODE_NAMES } from "../components/modeLabels"
 import { PairPicker } from "../components/PairPicker"
 import { QuestionCard } from "../components/QuestionCard"
 import { StarMeter } from "../components/StarMeter"
@@ -11,6 +12,21 @@ import { guardianOwned } from "../game/collection"
 import { REGIONS } from "../monsters/world"
 import { useGame } from "../store/store"
 import { RoundSummary } from "./RoundSummary"
+
+function PauseIcon() {
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			width="24"
+			height="24"
+			fill="currentColor"
+			aria-hidden="true"
+		>
+			<rect x="5" y="3" width="5" height="18" rx="2" />
+			<rect x="14" y="3" width="5" height="18" rx="2" />
+		</svg>
+	)
+}
 
 export function RoundScreen({
 	debugEnabled = false,
@@ -46,61 +62,12 @@ export function RoundScreen({
 		round.visitStage !== null ? REGIONS[round.visitStage] : undefined
 	const guardianId = visitRegion?.guardianId
 
-	return (
-		<div className="flex min-h-[var(--app-vh)] flex-col gap-3 p-4 land:mx-auto land:max-w-4xl land:flex-row land:items-center land:gap-8">
-			<div className="flex flex-1 flex-col gap-3 land:justify-center">
-				<div className="flex items-center justify-between gap-2">
-					<div className="whitespace-nowrap rounded-full bg-white/70 px-4 py-1 text-lg font-extrabold text-grape-dark">
-						{round.mode === "memory"
-							? `Pary ${round.matched.length / 2} / ${round.total}`
-							: `Pytanie ${round.index + 1} / ${round.total}`}
-					</div>
-					{visitRegion && (
-						// pigułka regionu rundy-wizyty
-						<div className="min-w-0 flex-1 truncate rounded-full bg-white/70 px-3 py-1 text-center text-sm font-extrabold text-grape-dark">
-							{visitRegion.emoji} Odwiedziny: {visitRegion.name}
-						</div>
-					)}
-					<button
-						type="button"
-						onClick={() => setPaused(true)}
-						className="touch-manipulation rounded-full bg-white/70 px-4 py-1 text-lg font-extrabold text-grape-dark active:scale-90"
-						aria-label="Pauza"
-					>
-						⏸
-					</button>
-				</div>
-				<StarMeter stars={round.stars} />
-				<div className="flex flex-1 items-center land:flex-none">
-					<QuestionCard />
-				</div>
-				{/* tryb par: kibic w przepływie pod kartą (w pionie), by nie zasłaniać
-				    żetonów; w poziomie i w innych trybach — w rogu (fixed) */}
-				{round.mode === "pairs" && (
-					<CheerCompanion
-						inline
-						phase={round.phase}
-						lastStars={round.lastStars}
-						overrideId={guardianId}
-						overrideSilhouette={
-							guardianId !== undefined &&
-							!guardianOwned(visitRegion, ownedMonsters)
-						}
-					/>
-				)}
-			</div>
-			{/* porównywanie i memory: odpowiedzią jest tap NA karcie — bez kolumny wejścia */}
-			{round.mode !== "feed" && round.mode !== "memory" && (
-				<div className="land:w-80">
-					{round.mode === "pairs" ? <PairPicker /> : <Keypad />}
-				</div>
-			)}
-
-			{/* przyjaciel kibicuje z rogu (gdy wybrany) — nigdy nie zasłania karty;
-			    w rundzie-wizycie zamiast niego kibicuje Strażnik regionu; w memory
-			    przyjaciel JEST obrazkiem na planszy, więc z rogu nie kibicuje */}
-			{round.mode !== "pairs" && round.mode !== "memory" && (
+	const cheer =
+		round.mode !== "memory" ? (
+			<div className="play-companion">
 				<CheerCompanion
+					inline
+					size={56}
 					phase={round.phase}
 					lastStars={round.lastStars}
 					overrideId={guardianId}
@@ -109,7 +76,54 @@ export function RoundScreen({
 						!guardianOwned(visitRegion, ownedMonsters)
 					}
 				/>
-			)}
+			</div>
+		) : null
+	return (
+		<main className="play-screen" data-mode={round.mode}>
+			<header className="play-header">
+				<div className="play-mode-icon" aria-hidden="true">
+					{MODE_LABELS[round.mode].split(" ")[0]}
+				</div>
+				<div className="play-heading">
+					<h1>{MODE_NAMES[round.mode]}</h1>
+					<span>
+						{round.mode === "memory"
+							? `Pary ${round.matched.length / 2} / ${round.total}`
+							: `Pytanie ${round.index + 1} / ${round.total}`}
+					</span>
+				</div>
+				{round.mode !== "pairs" && cheer}
+				<button
+					type="button"
+					onClick={() => setPaused(true)}
+					className="play-pause"
+					aria-label="Pauza"
+				>
+					<PauseIcon />
+				</button>
+			</header>
+			<div className="play-rewards">
+				<StarMeter stars={round.stars} />
+				{visitRegion && (
+					<span className="play-visit">
+						{visitRegion.emoji} Odwiedziny: {visitRegion.name}
+					</span>
+				)}
+			</div>
+			<div className="play-workspace">
+				<section
+					className="play-question-area"
+					aria-label={MODE_NAMES[round.mode]}
+				>
+					<QuestionCard />
+					{round.mode === "pairs" && cheer}
+				</section>
+				{round.mode !== "feed" && round.mode !== "memory" && (
+					<div className="play-input">
+						{round.mode === "pairs" ? <PairPicker /> : <Keypad />}
+					</div>
+				)}
+			</div>
 
 			{debugEnabled &&
 				round.phase === "answering" &&
@@ -137,23 +151,27 @@ export function RoundScreen({
 				)}
 
 			{paused && (
-				<div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-slate-900/70 p-6 backdrop-blur-sm">
-					<div className="text-4xl font-extrabold text-white">Przerwa ⏸</div>
-					<BigButton
-						onClick={() => setPaused(false)}
-						className="w-full max-w-xs py-6 text-3xl"
+				<div className="play-pause-overlay">
+					<div
+						className="play-pause-card"
+						role="dialog"
+						aria-modal="true"
+						aria-label="Przerwa"
 					>
-						Gram dalej! 🚀
-					</BigButton>
-					<button
-						type="button"
-						onClick={exitRoundEarly}
-						className="touch-manipulation rounded-2xl px-5 py-2 text-lg font-bold text-white/70 active:scale-95"
-					>
-						Koniec na dziś
-					</button>
+						<h2>Przerwa</h2>
+						<BigButton onClick={() => setPaused(false)} className="play-resume">
+							Gram dalej!
+						</BigButton>
+						<button
+							type="button"
+							onClick={exitRoundEarly}
+							className="play-exit"
+						>
+							Wróć do menu głównego
+						</button>
+					</div>
 				</div>
 			)}
-		</div>
+		</main>
 	)
 }

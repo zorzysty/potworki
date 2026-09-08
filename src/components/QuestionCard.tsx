@@ -5,6 +5,7 @@ import { feedAnswer } from "../game/round"
 import { FIRST_MONSTER_ID } from "../monsters/catalog"
 import { MonsterSvg } from "../monsters/MonsterSvg"
 import { useGame } from "../store/store"
+import { AnswerReward } from "./AnswerReward"
 import { MemoryBoard } from "./MemoryBoard"
 import { MonsterStage } from "./MonsterStage"
 
@@ -32,13 +33,14 @@ export function QuestionCard() {
 	return (
 		<div
 			key={`q-${round.index}-${shakeNonce}`}
-			className={`relative flex w-full flex-col items-center gap-4 rounded-3xl bg-white/90 p-6 shadow-xl
+			data-phase={phase}
+			className={`play-question
 				${phase === "wrong" && shakeNonce > 0 ? "anim-shake" : ""}
 				${phase === "correct" ? "ring-4 ring-emerald-300" : ""}`}
 		>
 			{phase === "wrong" ? (
 				<>
-					<div className="text-4xl font-extrabold text-slate-700">
+					<div className="play-equation play-solution">
 						{mode === "gap" ? (
 							// rozwiązane równanie z podświetlonym brakującym czynnikiem
 							<>
@@ -64,11 +66,11 @@ export function QuestionCard() {
 			) : mode === "gap" ? (
 				// luka w samym równaniu — okienko JEST polem odpowiedzi (wpisywane
 				// cyfry pojawiają się w nim na żywo; osobnego pola poniżej nie ma)
-				<div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-5xl font-extrabold tracking-wide text-slate-700">
+				<div className="play-equation play-gap-equation">
 					<span>{question.a}</span>
 					<span>×</span>
 					<span
-						className={`inline-flex h-20 min-w-24 items-center justify-center rounded-2xl border-4 border-dashed px-3 ${boxTone}`}
+						className={`play-answer inline-flex h-20 min-w-24 items-center justify-center rounded-2xl border-4 border-dashed px-3 ${boxTone}`}
 					>
 						{answer || <span className="text-violet-200">_</span>}
 					</span>
@@ -76,7 +78,7 @@ export function QuestionCard() {
 					<span>{question.b}</span>
 				</div>
 			) : (
-				<div className="text-5xl font-extrabold tracking-wide text-slate-700">
+				<div className="play-equation">
 					{question.a} {op} {question.b} = ?
 				</div>
 			)}
@@ -85,17 +87,13 @@ export function QuestionCard() {
 			    ukryte: jedynym polem jest okienko w równaniu (nigdy dwa naraz) */}
 			{(mode !== "gap" || phase === "wrong") && (
 				<div
-					className={`flex h-20 w-44 items-center justify-center rounded-2xl border-4 border-dashed text-5xl font-extrabold ${boxTone}`}
+					className={`play-answer flex h-20 w-44 items-center justify-center rounded-2xl border-4 border-dashed text-5xl font-extrabold ${boxTone}`}
 				>
 					{answer || <span className="text-violet-200">_</span>}
 				</div>
 			)}
 
-			{phase === "correct" && (
-				<div className="anim-pop pointer-events-none absolute -top-6 right-6 rounded-full bg-emerald-500 px-4 py-1 text-2xl font-extrabold text-white shadow-lg">
-					{lastStars > 0 ? `+${lastStars} ⭐` : "Dobrze! 💪"}
-				</div>
-			)}
+			{phase === "correct" && <AnswerReward stars={lastStars} />}
 		</div>
 	)
 }
@@ -110,8 +108,16 @@ function PairsCard({
 	round: NonNullable<ReturnType<typeof useGame.getState>["round"]>
 	unlockedStage: number
 }) {
-	const { question, phase, picked, found, lastStars, shakeNonce, lastPair } =
-		round
+	const {
+		question,
+		phase,
+		picked,
+		found,
+		lastStars,
+		shakeNonce,
+		lastPair,
+		answer,
+	} = round
 	const targets = divisorPairs(question.a, unlockedStage).length
 	const left = targets - found.length
 	// para pokazana w okienkach: w fazie „correct" do przejścia dalej, po parze
@@ -123,26 +129,33 @@ function PairsCard({
 		const t = setTimeout(() => setFlash(null), PAIR_FLASH_MS)
 		return () => clearTimeout(t)
 	}, [lastPair])
-	const shown =
+	// „1" wpisana z klawiatury czeka na drugą cyfrę (store: pressDigit) — widać
+	// ją w okienku jak pierwszą cyfrę wyniku w mnożeniu, żeby klawisz nie
+	// wyglądał na zignorowany
+	const typed: string | null = answer || null
+	const shown: (number | string | null)[] =
 		picked !== null
-			? [picked, null]
-			: phase === "correct"
-				? (lastPair ?? [null, null])
-				: (flash ?? [null, null])
+			? [picked, typed]
+			: typed !== null
+				? [typed, null]
+				: phase === "correct"
+					? (lastPair ?? [null, null])
+					: (flash ?? [null, null])
 	// rozmiary skalowane, by „100 = [_] × [_]" mieściło się w jednej linii na telefonie
 	const box =
-		"inline-flex h-16 min-w-16 items-center justify-center rounded-2xl border-4 border-dashed px-2 sm:h-20 sm:min-w-24 sm:px-3 " +
+		"play-answer inline-flex h-16 min-w-16 items-center justify-center rounded-2xl border-4 border-dashed px-2 sm:h-20 sm:min-w-24 sm:px-3 " +
 		(phase === "correct"
 			? "border-emerald-300 bg-emerald-50 text-emerald-600"
 			: "border-violet-200 bg-violet-50 text-grape-dark")
 	return (
 		<div
 			key={`q-${round.index}-${shakeNonce}`}
-			className={`relative flex w-full flex-col items-center gap-4 rounded-3xl bg-white/90 p-6 shadow-xl
+			data-phase={phase}
+			className={`play-question
 				${shakeNonce > 0 ? "anim-shake" : ""}
 				${phase === "correct" ? "ring-4 ring-emerald-300" : ""}`}
 		>
-			<div className="flex flex-nowrap items-center justify-center gap-x-2 text-4xl font-extrabold tracking-wide text-slate-700 sm:gap-x-3 sm:text-5xl">
+			<div className="play-equation play-pairs-equation">
 				<span>{question.a}</span>
 				<span>=</span>
 				<span className={box}>
@@ -177,11 +190,7 @@ function PairsCard({
 					</span>
 				))}
 			</div>
-			{phase === "correct" && (
-				<div className="anim-pop pointer-events-none absolute -top-6 right-6 rounded-full bg-emerald-500 px-4 py-1 text-2xl font-extrabold text-white shadow-lg">
-					{lastStars > 0 ? `+${lastStars} ⭐` : "Dobrze! 💪"}
-				</div>
-			)}
+			{phase === "correct" && <AnswerReward stars={lastStars} />}
 		</div>
 	)
 }
@@ -213,7 +222,8 @@ function FeedCard({
 	return (
 		<div
 			key={`q-${round.index}-${shakeNonce}`}
-			className={`relative flex w-full flex-col items-center gap-3 rounded-3xl bg-white/90 p-4 shadow-xl sm:p-6
+			data-phase={phase}
+			className={`play-question play-feed
 				${phase === "wrong" && shakeNonce > 0 ? "anim-shake" : ""}
 				${phase === "correct" ? "ring-4 ring-emerald-300" : ""}`}
 		>
@@ -232,7 +242,8 @@ function FeedCard({
 							type="button"
 							onClick={() => feedSide(i as 0 | 1)}
 							disabled={phase === "correct"}
-							className={`flex min-h-16 flex-1 touch-manipulation flex-col items-center gap-1 rounded-3xl border-4 px-2 py-3 transition-transform active:scale-95 ${
+							data-highlighted={revealed && isBigger}
+							className={`play-feed-option flex min-h-16 flex-1 touch-manipulation flex-col items-center gap-1 rounded-3xl border-4 px-2 py-3 transition-transform active:scale-95 ${
 								revealed && isBigger
 									? "border-emerald-300 bg-emerald-50"
 									: "border-violet-100 bg-violet-50"
@@ -259,7 +270,7 @@ function FeedCard({
 									className="monster-silhouette"
 								/>
 							)}
-							<span className="text-4xl font-extrabold tracking-wide text-slate-700 sm:text-5xl">
+							<span className="play-feed-expression">
 								{side.a} × {side.b}
 							</span>
 							{/* stałe miejsce na wynik — bez skoku karty przy odsłonie */}
@@ -274,11 +285,7 @@ function FeedCard({
 					)
 				})}
 			</div>
-			{phase === "correct" && (
-				<div className="anim-pop pointer-events-none absolute -top-6 right-6 rounded-full bg-emerald-500 px-4 py-1 text-2xl font-extrabold text-white shadow-lg">
-					{lastStars > 0 ? `+${lastStars} ⭐` : "Dobrze! 💪"}
-				</div>
-			)}
+			{phase === "correct" && <AnswerReward stars={lastStars} />}
 		</div>
 	)
 }

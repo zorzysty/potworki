@@ -4,6 +4,7 @@ import { MEMORY_COLS } from "../game/facts"
 import type { RoundState } from "../game/round"
 import { FIRST_MONSTER_ID } from "../monsters/catalog"
 import { useGame } from "../store/store"
+import { AnswerReward } from "./AnswerReward"
 import { MonsterStage } from "./MonsterStage"
 
 // jak długo dopasowana para zostaje odkryta, zanim zniknie (ostatnia para:
@@ -33,28 +34,26 @@ export function MemoryBoard({ round }: { round: RoundState }) {
 	}, [lastMatched, paused, hideCards])
 
 	return (
-		<div className="relative w-full">
+		<div className="play-memory relative w-full">
 			{/* wiersz podpowiedzi: przez 2 s po parze zamienia się w „+N ⭐" (ten sam
 			    slot — dymek nie nachodzi ani na tekst, ani na karty) */}
-			<div className="mb-2 flex h-9 items-center justify-center text-center text-lg font-extrabold text-grape-dark">
+			<div className="mb-2 flex h-12 items-center justify-center text-center text-lg font-extrabold text-grape-dark">
 				{lastMatched ? (
-					<span
+					<AnswerReward
 						key={matched.length}
-						className="anim-pop rounded-full bg-emerald-500 px-4 py-1 text-2xl text-white shadow-lg"
-					>
-						{lastStars > 0 ? `+${lastStars} ⭐` : "Para! 💪"}
-					</span>
+						stars={lastStars}
+						fallback="Para! 💪"
+					/>
 				) : (
 					"Znajdź działanie i jego wynik!"
 				)}
 			</div>
-			{/* szerokość: cała kolumna, ale w poziomie nie wyżej niż ekran — 5 rzędów
-			    kart + nagłówek muszą się zmieścić bez przewijania */}
+			{/* szerokość dopasowuje CSS play-memory-board; na bardzo niskim ekranie
+			    plansza przewija się, aby zachować wygodny rozmiar celów dotykowych */}
 			<div
-				className="memory-board mx-auto grid gap-[var(--g)]"
+				className="memory-board play-memory-board mx-auto grid gap-[var(--g)]"
 				style={{
 					gridTemplateColumns: `repeat(${MEMORY_COLS}, minmax(0, 1fr))`,
-					width: "min(100%, calc((var(--app-vh) - 12rem) * 4 / 5))",
 				}}
 			>
 				{board.map((card, i) => {
@@ -86,7 +85,7 @@ export function MemoryBoard({ round }: { round: RoundState }) {
 							>
 								{/* rewers: kafelek obrazka — potworek rozciągnięty na 4 kolumny
 								    i wyśrodkowany w 5 rzędach, przesunięty o pozycję karty */}
-								<div className="memory-face overflow-hidden rounded-xl bg-gradient-to-br from-violet-200 to-fuchsia-200 shadow-md ring-2 ring-white/70">
+								<div className="play-memory-back memory-face overflow-hidden rounded-xl bg-gradient-to-br from-violet-200 to-fuchsia-200 shadow-md ring-2 ring-white/70">
 									<MonsterStage
 										id={pictureId}
 										size="100%"
@@ -102,7 +101,7 @@ export function MemoryBoard({ round }: { round: RoundState }) {
 								</div>
 								{/* awers: działanie albo liczba */}
 								<div
-									className={`memory-face memory-front flex items-center justify-center whitespace-nowrap rounded-xl border-4 px-1 font-extrabold text-slate-700 shadow-md ${
+									className={`play-memory-front memory-face memory-front flex items-center justify-center whitespace-nowrap rounded-xl border-4 px-1 font-extrabold text-slate-700 shadow-md ${
 										card.expr === null
 											? "border-sunny bg-amber-50 text-3xl sm:text-4xl"
 											: card.expr.length > 6

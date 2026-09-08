@@ -16,9 +16,9 @@ import {
 	nextLevelCost,
 } from "../../game/village"
 import { BigButton } from "../BigButton"
+import { CardModal } from "../CardModal"
 import { CosmeticArt } from "../CosmeticArt"
-import { ModalCloseX } from "../ModalCloseX"
-import { useScrollLock } from "../useScrollLock"
+import { SparkWallet } from "../SparkWallet"
 import { BuildingArt, DECORATION_EMOJI } from "./BuildingArt"
 
 export type SheetView = { kind: "building"; id: BuildingId } | { kind: "list" }
@@ -59,7 +59,7 @@ function CosmeticRow({
 }) {
 	const affordable = iskierki >= def.cost
 	return (
-		<div className="flex w-full items-center gap-3 rounded-2xl bg-violet-50 p-3">
+		<div className="village-stock-row">
 			<div
 				className={`flex w-16 shrink-0 justify-center ${
 					unlocked ? "" : "opacity-35 grayscale"
@@ -111,7 +111,7 @@ function SklepikStock({
 	const [justBought, setJustBought] = useState(false)
 	if (level < 1) return null
 	return (
-		<div className="mt-2 flex w-full flex-col gap-2">
+		<div className="village-stock">
 			<div className="text-sm font-extrabold uppercase tracking-wide text-slate-400">
 				Na półkach
 			</div>
@@ -164,7 +164,7 @@ function BuildingDetail({
 	const isGoal = village.goalId === id
 
 	return (
-		<div className="flex flex-col items-center gap-3">
+		<div className="village-building-detail">
 			<div className="text-3xl font-extrabold text-grape-dark">
 				{def.levelNames[showLevel - 1]}
 			</div>
@@ -174,11 +174,11 @@ function BuildingDetail({
 
 			{/* podgląd tego, co POWSTANIE (następny poziom) — w pełnym kolorze,
 			    aspiracja ma pokazywać prawdziwą nagrodę */}
-			<div className="h-36 w-full max-w-60">
+			<div className="village-building-preview">
 				<BuildingArt id={id} level={showLevel} size="fill" />
 			</div>
 
-			<div className="max-w-xs text-center text-lg font-bold text-slate-600">
+			<div className="village-building-description">
 				{def.descriptions[showLevel - 1]}
 			</div>
 
@@ -187,7 +187,10 @@ function BuildingDetail({
 					Maksymalny poziom! 🏆
 				</div>
 			) : cost !== null && iskierki >= cost ? (
-				<BigButton onClick={() => onBuild(id)} className="w-full max-w-xs">
+				<BigButton
+					onClick={() => onBuild(id)}
+					className="village-primary w-full"
+				>
 					{level === 0 ? "Zbuduj!" : "Ulepsz!"} ✨{cost}
 				</BigButton>
 			) : (
@@ -242,7 +245,7 @@ function BuildingRow({
 		<button
 			type="button"
 			onClick={() => onOpen(id)}
-			className="flex w-full touch-manipulation items-center gap-3 rounded-2xl bg-violet-50 p-3 active:scale-[0.98]"
+			className="village-building-row touch-manipulation active:scale-[0.98]"
 		>
 			<div className="h-14 w-16 shrink-0">
 				<BuildingArt
@@ -300,7 +303,7 @@ function DecorationRow({
 	const owned = village.decorations.includes(id)
 	const affordable = iskierki >= def.cost
 	return (
-		<div className="flex w-full items-center gap-3 rounded-2xl bg-violet-50 p-3">
+		<div className="village-stock-row">
 			<div className="w-16 shrink-0 text-center text-3xl">
 				{DECORATION_EMOJI[id]}
 			</div>
@@ -326,7 +329,7 @@ function DecorationRow({
 	)
 }
 
-// Arkusz budowy (bottom sheet): szczegół budynku albo lista wszystkiego.
+// Modal budowy: szczegół budynku albo lista wszystkiego.
 // Czysto prezentacyjny — stan i akcje przekazuje VillageScreen.
 export function BuildSheet({
 	view,
@@ -353,22 +356,20 @@ export function BuildSheet({
 	onSetGoal: (id: BuildingId | null) => void
 	onBuyCosmetic: (id: CosmeticId) => void
 }) {
-	useScrollLock()
 	return (
-		// wyśrodkowany modal (wzór karty kolekcjonerskiej), NIE bottom sheet —
-		// na niskich/szerokich ekranach arkusz przyklejony do dołu wyglądał na ucięty
-		<div className="fixed inset-0 z-40 flex items-center justify-center p-4">
-			<button
-				type="button"
-				aria-label="Zamknij"
-				onClick={onClose}
-				className="absolute inset-0 bg-slate-900/40"
-			/>
-			{/* nieprzewijany wrapper — przypięty ✕ jak na karcie potworka */}
-			<div className="relative w-full max-w-md">
-				<ModalCloseX onClose={onClose} label="Zamknij arkusz" />
-				<div className="max-h-[calc(var(--app-vh)*0.92)] w-full scrollbar-none overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl">
-					<div className="mb-3 flex items-center justify-between pl-7">
+		<CardModal
+			onClose={onClose}
+			closeLabel="Zamknij arkusz"
+			wrapperClassName="village-modal"
+		>
+			<div
+				className="village-sheet"
+				role="dialog"
+				aria-modal="true"
+				aria-label="Budowanie"
+			>
+				<div className="village-sheet-scroll">
+					<div className="village-sheet-header">
 						{view.kind === "building" ? (
 							<button
 								type="button"
@@ -382,9 +383,7 @@ export function BuildSheet({
 								🛠️ Budowanie
 							</div>
 						)}
-						<div className="rounded-full bg-amber-100 px-4 py-2 text-lg font-extrabold text-amber-600">
-							✨ {iskierki}
-						</div>
+						<SparkWallet iskierki={iskierki} />
 					</div>
 
 					{view.kind === "building" ? (
@@ -398,7 +397,7 @@ export function BuildSheet({
 							onBuyCosmetic={onBuyCosmetic}
 						/>
 					) : (
-						<div className="flex flex-col gap-2">
+						<div className="village-building-list">
 							<div className="text-sm font-extrabold uppercase tracking-wide text-slate-400">
 								Budynki
 							</div>
@@ -427,6 +426,6 @@ export function BuildSheet({
 					)}
 				</div>
 			</div>
-		</div>
+		</CardModal>
 	)
 }

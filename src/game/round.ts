@@ -428,6 +428,18 @@ function withRequeue(round: RoundState): RoundState {
 	}
 }
 
+// Czy 10 należy do par-celów tego pytania? Na klawiaturze 10 wpisuje się jako
+// „1"+„0", więc w takim pytaniu sama „1" nigdy nie zatwierdza żetonu — czeka na
+// następną cyfrę (store: pressDigit), dokładnie jak dwucyfrowy wynik w mnożeniu
+// czeka na drugą cyfrę. Bez oglądania się na `picked` ani na znalezione pary:
+// dziecko wpisuje 10 także w odpowiedzi, która okaże się błędna, a wtedy „1"
+// zatwierdzająca własną parę byłaby pomyłką, której nikt nie chciał.
+export function expectsTen(stage: number, round: RoundState): boolean {
+	return divisorPairs(round.question.a, stage).some(
+		(f) => f.a === 10 || f.b === 10,
+	)
+}
+
 // Tryb par: stuknięta para czynników (x, y) do celu `question.a`. Trafienie =
 // nauka faktu x×y (czas od poprzedniej pary); pomyłka = nauka „na minus"
 // faktu, w który dziecko uwierzyło (4×7 = 24?), pytanie gra się dalej bez
