@@ -1,8 +1,8 @@
 import confetti from "canvas-confetti"
 import { useCallback, useMemo, useRef, useState } from "react"
 import { BigButton } from "../components/BigButton"
+import { CatalogHeader } from "../components/CatalogHeader"
 import { GoalProgressBar } from "../components/GoalProgressBar"
-import { HelpTip } from "../components/HelpTip"
 import { MonsterStage } from "../components/MonsterStage"
 import { SparkWallet } from "../components/SparkWallet"
 import { SpeechBubble } from "../components/SpeechBubble"
@@ -300,27 +300,13 @@ export function VillageScreen() {
 	}
 
 	return (
-		<div className="flex min-h-[var(--app-vh)] flex-col gap-3 p-4">
-			<div className="flex items-center justify-between">
-				<button
-					type="button"
-					onClick={() => goTo("home")}
-					className="touch-manipulation rounded-full bg-white/80 px-5 py-2 text-2xl font-extrabold text-grape-dark shadow active:scale-90"
-					aria-label="Wróć do domku"
-				>
-					←
-				</button>
-				<div className="text-2xl font-extrabold text-grape-dark">Wioska 🏡</div>
-				<HelpTip
-					placement="bottom"
-					align="right"
-					text="To dom twoich potworków! Zbieraj ✨ iskierki i buduj — każdy budynek zmienia wioskę, a potworki się do niego wprowadzą. Stuknij szary zarys, żeby zobaczyć, co możesz zbudować!"
-				/>
-			</div>
-
-			{/* pasek budowniczego: portfel + następny cel + arkusz budowy */}
-			<div className="flex items-center gap-2">
+		<main className="catalog-screen">
+			<CatalogHeader title="Wioska 🏡" onBack={() => goTo("home")}>
 				<SparkWallet iskierki={iskierki} />
+			</CatalogHeader>
+
+			{/* pasek budowniczego: następny cel + arkusz budowy + pomoc */}
+			<div className="village-bar">
 				{goal ? (
 					<button
 						type="button"
@@ -329,7 +315,7 @@ export function VillageScreen() {
 								? setSheet({ kind: "building", id: goal.id as BuildingId })
 								: setSheet({ kind: "list" })
 						}
-						className="flex min-w-0 flex-1 touch-manipulation items-center gap-2 rounded-full bg-white/85 px-4 py-2 shadow-sm active:scale-[0.98]"
+						className="village-goal touch-manipulation active:scale-[0.98]"
 					>
 						<GoalProgressBar
 							goal={goal}
@@ -339,7 +325,7 @@ export function VillageScreen() {
 						/>
 					</button>
 				) : (
-					<div className="flex-1 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-4 py-2 text-center text-sm font-extrabold text-white shadow-sm">
+					<div className="village-goal village-goal-done">
 						🏆 Wioska w pełnej krasie!
 					</div>
 				)}
@@ -347,7 +333,7 @@ export function VillageScreen() {
 					type="button"
 					onClick={() => setSheet({ kind: "list" })}
 					aria-label="Otwórz budowanie"
-					className="touch-manipulation rounded-full bg-white/85 px-4 py-2 text-lg shadow-sm active:scale-95"
+					className="map-back touch-manipulation text-2xl active:scale-90"
 				>
 					🛠️
 				</button>
@@ -765,6 +751,6 @@ export function VillageScreen() {
 					onDone={() => setReveal(null)}
 				/>
 			)}
-		</div>
+		</main>
 	)
 }

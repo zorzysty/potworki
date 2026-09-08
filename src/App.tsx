@@ -65,17 +65,15 @@ export function App() {
 			? "bg-gradient-to-b from-indigo-950 via-purple-900 to-indigo-900"
 			: screen === "map"
 				? "bg-gradient-to-b from-sky-200 via-violet-100 to-emerald-50"
-				: screen === "village"
-					? "bg-gradient-to-b from-sky-200 via-emerald-100 to-emerald-200"
-					: screen === "achievements"
-						? "bg-gradient-to-b from-amber-100 via-orange-50 to-violet-100"
-						: "bg-gradient-to-b from-violet-200 via-fuchsia-100 to-amber-50"
+				: screen === "achievements"
+					? "bg-gradient-to-b from-amber-100 via-orange-50 to-violet-100"
+					: "bg-gradient-to-b from-violet-200 via-fuchsia-100 to-amber-50"
 
 	return (
 		// min-h-dvh + padding insetów (border-box): tło maluje CAŁY ekran, także
 		// pod paskiem gestów/notchem, a treść (content-box = --app-vh) ich unika
 		<div
-			className={`${screen === "home" ? "app-home" : screen === "map" ? "app-map" : screen === "achievements" || screen === "collection" ? "app-catalog" : ""} min-h-dvh ${background} pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]`}
+			className={`${screen === "home" ? "app-home" : screen === "map" ? "app-map" : screen === "achievements" || screen === "collection" || screen === "village" ? "app-catalog" : ""} min-h-dvh ${background} pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]`}
 		>
 			<div className="mx-auto min-h-[var(--app-vh)] max-w-lg land:max-w-none">
 				{screen === "home" && <HomeScreen debugEnabled={DEBUG_ENABLED} />}

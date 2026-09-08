@@ -1368,6 +1368,34 @@ button:focus-visible {
 .catalog-wallet > span {
 	display: block;
 }
+/* Wioska: pasek budowniczego w tych samych kremowych pigułkach co portfel. */
+.village-bar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.village-goal {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+	align-items: center;
+	gap: 8px;
+	min-height: 64px;
+	padding: 12px 20px;
+	border: 1px solid #e9dab7;
+	border-radius: 22px;
+	background: #fffcf5;
+	box-shadow: 0 3px 0 #e8ddc7;
+	text-align: left;
+}
+.village-goal-done {
+	justify-content: center;
+	border-color: #e7ba58;
+	background: #fff8dc;
+	color: #96601f;
+	font-size: 16px;
+	font-weight: 800;
+}
 .catalog-hero {
 	display: flex;
 	align-items: center;
