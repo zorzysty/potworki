@@ -1348,6 +1348,8 @@ button:focus-visible {
 }
 .catalog-header h1 {
 	flex: 1;
+	min-width: 0;
+	white-space: nowrap;
 	font-size: clamp(24px, 4vw, 36px);
 	font-weight: 800;
 	line-height: 1.1;
@@ -1672,11 +1674,7 @@ button:focus-visible {
 		gap: 12px;
 	}
 	.catalog-header h1 {
-		order: 3;
-		flex-basis: 100%;
-	}
-	.catalog-wallet {
-		margin-left: auto;
+		font-size: clamp(16px, 5.2vw, 28px);
 	}
 	.catalog-hero {
 		gap: 16px;

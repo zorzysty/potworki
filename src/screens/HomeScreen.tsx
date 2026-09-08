@@ -10,6 +10,7 @@ import { HelpTip } from "../components/HelpTip"
 import { HomeArt } from "../components/HomeArt"
 import { MonsterStage } from "../components/MonsterStage"
 import { MODE_LABELS, MODE_ROWS } from "../components/modeLabels"
+import { SparkWallet } from "../components/SparkWallet"
 import { VISIT_BONUS, visitStage } from "../game/adaptive"
 import * as collection from "../game/collection"
 import { expeditionProgress } from "../game/expeditions"
@@ -92,9 +93,7 @@ export function HomeScreen({ debugEnabled }: { debugEnabled: boolean }) {
 		<div className="home-screen">
 			<header className="home-header">
 				<h1 className="home-logo">Potworki</h1>
-				<div className="whitespace-nowrap rounded-full bg-white/80 px-3 py-2 text-lg font-extrabold text-amber-500 shadow">
-					✨ {iskierki}
-				</div>
+				<SparkWallet iskierki={iskierki} />
 			</header>
 			<section className="home-hero" aria-label="Twój potworek">
 				<HomeArt kind="landscape" />

@@ -10,6 +10,7 @@ import { HomeArt } from "../components/HomeArt"
 import { MonsterStage } from "../components/MonsterStage"
 import { MODE_BADGES, MODE_NAMES } from "../components/modeLabels"
 import { CARD_THEME, RARITY_META } from "../components/rarity"
+import { SparkWallet } from "../components/SparkWallet"
 import { ownedCount as collectionCount } from "../game/collection"
 import type { CosmeticSlot, CosmeticsState } from "../game/cosmetics"
 import {
@@ -783,9 +784,7 @@ export function CollectionScreen() {
 	return (
 		<main className="catalog-screen collection-screen">
 			<CatalogHeader title="Moje Potworki" onBack={() => goTo("home")}>
-				<div className="catalog-wallet collection-wallet">
-					<span>✨ {iskierki}</span>
-				</div>
+				<SparkWallet iskierki={iskierki} />
 			</CatalogHeader>
 			<div className="collection-overview">
 				<section className="catalog-hero" aria-label="Postęp kolekcji">

@@ -4,6 +4,7 @@ import { BigButton } from "../components/BigButton"
 import { GoalProgressBar } from "../components/GoalProgressBar"
 import { HelpTip } from "../components/HelpTip"
 import { MonsterStage } from "../components/MonsterStage"
+import { SparkWallet } from "../components/SparkWallet"
 import { SpeechBubble } from "../components/SpeechBubble"
 import { BuildingArt } from "../components/village/BuildingArt"
 import { BuildReveal } from "../components/village/BuildReveal"
@@ -319,9 +320,7 @@ export function VillageScreen() {
 
 			{/* pasek budowniczego: portfel + następny cel + arkusz budowy */}
 			<div className="flex items-center gap-2">
-				<div className="rounded-full bg-white/85 px-4 py-2 text-lg font-extrabold text-amber-500 shadow-sm">
-					✨ {iskierki}
-				</div>
+				<SparkWallet iskierki={iskierki} />
 				{goal ? (
 					<button
 						type="button"
