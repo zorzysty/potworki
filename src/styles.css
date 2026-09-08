@@ -1322,37 +1322,37 @@ button:focus-visible {
 	}
 }
 
-/* Achievements: a trophy collection with room to grow on tablets and desktops. */
-.app-achievements {
+/* Shared catalog screens: responsive shell, progress summary, and filters. */
+.app-catalog {
 	overflow-x: clip;
 	background:
 		radial-gradient(ellipse at 12% 0, #f7e6bd, transparent 55%),
 		radial-gradient(ellipse at 95% 65%, #e6def4, transparent 60%), #f6f3ec;
 }
-.app-achievements > div:first-child {
+.app-catalog > div:first-child {
 	max-width: 1120px;
 }
-.achievements-screen {
-	--achievements-gutter: clamp(16px, 3vw, 32px);
+.catalog-screen {
+	--catalog-gutter: clamp(16px, 3vw, 32px);
 	min-height: var(--app-vh);
 	display: flex;
 	flex-direction: column;
 	gap: 24px;
-	padding: var(--achievements-gutter);
+	padding: var(--catalog-gutter);
 	color: #514078;
 }
-.achievements-header {
+.catalog-header {
 	display: flex;
 	align-items: center;
 	gap: 16px;
 }
-.achievements-header h1 {
+.catalog-header h1 {
 	flex: 1;
 	font-size: clamp(24px, 4vw, 36px);
 	font-weight: 800;
 	line-height: 1.1;
 }
-.achievements-wallet {
+.catalog-wallet {
 	flex-shrink: 0;
 	padding: 12px 16px;
 	border: 1px solid #e9dab7;
@@ -1363,10 +1363,10 @@ button:focus-visible {
 	font-weight: 800;
 	box-shadow: 0 3px 0 #e8ddc7;
 }
-.achievements-wallet > span {
+.catalog-wallet > span {
 	display: block;
 }
-.achievements-hero {
+.catalog-hero {
 	display: flex;
 	align-items: center;
 	gap: clamp(16px, 4vw, 48px);
@@ -1380,7 +1380,7 @@ button:focus-visible {
 		inset 0 1px 0 #ffffff40;
 	color: #fff8e9;
 }
-.achievements-trophy {
+.catalog-art {
 	display: grid;
 	place-items: center;
 	flex-shrink: 0;
@@ -1391,49 +1391,49 @@ button:focus-visible {
 	background: #ffffff0d;
 	box-shadow: 0 0 0 12px #ffffff05;
 }
-.achievements-trophy svg {
+.catalog-art svg {
 	width: 90%;
 	height: auto;
 	filter: drop-shadow(0 8px 0 #30264b30);
 }
-.achievements-summary {
+.catalog-summary {
 	flex: 1;
 	min-width: 0;
 }
-.achievements-summary-heading {
+.catalog-summary-heading {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px;
 }
-.achievements-summary h2 {
+.catalog-summary h2 {
 	display: flex;
 	flex-direction: column;
 	font-size: 16px;
 	font-weight: 700;
 }
-.achievements-summary strong {
+.catalog-summary strong {
 	font-weight: 800;
 }
-.achievements-summary h2 strong {
+.catalog-summary h2 strong {
 	font-size: clamp(34px, 5vw, 52px);
 	line-height: 1.15;
 }
-.achievements-summary h2 strong span {
+.catalog-summary h2 strong span {
 	font-size: 22px;
 	color: #ddd2ee;
 }
-.achievements-summary p {
+.catalog-summary p {
 	margin-top: 10px;
 	color: #eee5fb;
 	font-size: 16px;
 	font-weight: 600;
 }
-.achievements-summary p strong {
+.catalog-summary p strong {
 	margin-left: 8px;
 	color: #ffe4a1;
 }
-.achievements-total-progress {
+.catalog-total-progress {
 	display: block;
 	appearance: none;
 	width: 100%;
@@ -1444,24 +1444,24 @@ button:focus-visible {
 	border-radius: 20px;
 	background: #32274f;
 }
-.achievements-total-progress::-webkit-progress-bar {
+.catalog-total-progress::-webkit-progress-bar {
 	background: #32274f;
 	border-radius: 20px;
 }
-.achievements-total-progress::-webkit-progress-value {
+.catalog-total-progress::-webkit-progress-value {
 	background: linear-gradient(90deg, #eeb350, #ffe6a0);
 	border-radius: 20px;
 }
-.achievements-total-progress::-moz-progress-bar {
+.catalog-total-progress::-moz-progress-bar {
 	background: linear-gradient(90deg, #eeb350, #ffe6a0);
 	border-radius: 20px;
 }
-.achievements-filters {
+.catalog-filters {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
 }
-.achievements-filter {
+.catalog-filter {
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -1474,19 +1474,19 @@ button:focus-visible {
 	font-weight: 800;
 	transition: transform 0.15s;
 }
-.achievements-filter span {
+.catalog-filter span {
 	padding: 1px 8px;
 	border-radius: 10px;
 	background: #5140780d;
 	font-size: 14px;
 }
-.achievements-filter[aria-pressed="true"] {
+.catalog-filter[aria-pressed="true"] {
 	background: #64508e;
 	border-color: #64508e;
 	color: #fff8ef;
 	box-shadow: 0 3px 0 #d4cbe2;
 }
-.achievements-filter[aria-pressed="true"] span {
+.catalog-filter[aria-pressed="true"] span {
 	background: #ffffff20;
 }
 .achievements-grid {
@@ -1622,7 +1622,7 @@ button:focus-visible {
 	> span:last-child {
 	color: #80541c;
 }
-.achievements-empty {
+.catalog-empty {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -1633,10 +1633,10 @@ button:focus-visible {
 	text-align: center;
 	font-weight: 700;
 }
-.achievements-empty svg {
+.catalog-empty svg {
 	width: 100px;
 }
-.achievements-empty-button {
+.catalog-empty-button {
 	min-height: 64px;
 	padding: 12px 24px;
 	border-radius: 20px;
@@ -1646,12 +1646,12 @@ button:focus-visible {
 .achievements-reset {
 	margin-top: auto;
 }
-.achievements-screen button:focus-visible {
+.catalog-screen button:focus-visible {
 	outline: 3px solid #8c6bc4;
 	outline-offset: 4px;
 }
 .achievement-card:active,
-.achievements-filter:active {
+.catalog-filter:active {
 	transform: scale(0.97);
 }
 @media (hover: hover) {
@@ -1664,36 +1664,36 @@ button:focus-visible {
 	}
 }
 @media (max-width: 599px) {
-	.achievements-screen {
+	.catalog-screen {
 		gap: 20px;
 	}
-	.achievements-header {
+	.catalog-header {
 		flex-wrap: wrap;
 		gap: 12px;
 	}
-	.achievements-header h1 {
+	.catalog-header h1 {
 		order: 3;
 		flex-basis: 100%;
 	}
-	.achievements-wallet {
+	.catalog-wallet {
 		margin-left: auto;
 	}
-	.achievements-hero {
+	.catalog-hero {
 		gap: 16px;
 		padding: 20px 16px;
 		border-radius: 26px;
 	}
-	.achievements-trophy {
+	.catalog-art {
 		width: 82px;
 	}
-	.achievements-summary p {
+	.catalog-summary p {
 		font-size: 14px;
 	}
-	.achievements-filters {
+	.catalog-filters {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
-	.achievements-filter {
+	.catalog-filter {
 		padding: 10px;
 		font-size: 14px;
 	}
@@ -1703,24 +1703,24 @@ button:focus-visible {
 }
 @media (prefers-reduced-motion: reduce) {
 	.achievement-card,
-	.achievements-filter {
+	.catalog-filter {
 		transition: none;
 	}
 }
 
 /* Keep the destination visible even when claiming from deep in the collection. */
-.achievements-header {
+.catalog-header {
 	position: sticky;
 	top: env(safe-area-inset-top, 0px);
 	z-index: 30;
-	margin-inline: calc(-1 * var(--achievements-gutter));
-	margin-top: calc(-1 * var(--achievements-gutter));
-	padding: 16px var(--achievements-gutter);
+	margin-inline: calc(-1 * var(--catalog-gutter));
+	margin-top: calc(-1 * var(--catalog-gutter));
+	padding: 16px var(--catalog-gutter);
 	isolation: isolate;
 }
 /* A viewport-wide veil avoids a boxed edge on desktop. Its soft lower edge
    lets cards disappear gradually beneath the controls instead of being cut off. */
-.achievements-header::before {
+.catalog-header::before {
 	content: "";
 	position: absolute;
 	z-index: -1;
@@ -1739,35 +1739,35 @@ button:focus-visible {
 		transparent
 	);
 }
-.achievements-wallet {
+.catalog-wallet {
 	position: relative;
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
-.achievements-wallet[data-collecting="true"] {
+.catalog-wallet[data-collecting="true"] {
 	border-color: #e7ba58;
 	background: #fff8dc;
 	box-shadow:
 		0 3px 0 #e8d29c,
 		0 0 24px #f2c96140;
 }
-.achievements-wallet-icon {
+.catalog-wallet-icon {
 	position: relative;
 	width: 26px;
 	height: 28px;
 }
-.achievements-wallet-icon > span {
+.catalog-wallet-icon > span {
 	display: block;
 }
-.achievements-wallet-value {
+.catalog-wallet-value {
 	font-variant-numeric: tabular-nums;
 	text-align: right;
 }
-.achievements-wallet-value > span {
+.catalog-wallet-value > span {
 	display: inline-block;
 }
-.achievements-wallet-gain {
+.catalog-wallet-gain {
 	position: absolute;
 	top: calc(100% + 5px);
 	right: 8px;
@@ -2433,5 +2433,177 @@ button:focus-visible {
 		left: 0;
 		right: 0;
 		transform-origin: center bottom;
+	}
+}
+
+/* Creature collection shares the catalog shell and controls with achievements. */
+.collection-overview {
+	display: grid;
+	gap: 20px;
+}
+.collection-overview .catalog-hero {
+	min-width: 0;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+}
+.collection-corner-help {
+	position: absolute;
+	top: -8px;
+	right: -8px;
+	z-index: 10;
+}
+.collection-wish {
+	position: relative;
+	display: flex;
+	min-width: 0;
+	grid-column: 1 / -1;
+	justify-self: end;
+	width: 100%;
+	max-width: 420px;
+}
+.collection-wish-button {
+	width: 100%;
+	min-height: 64px;
+	padding: 12px 20px;
+	border: 1px solid #e6cf9f;
+	border-radius: 18px;
+	background: linear-gradient(140deg, #fff9e9, #f9e9c6);
+	color: #896631;
+	box-shadow: 0 4px 0 #eaddbd;
+	font-size: 18px;
+	font-weight: 800;
+	line-height: 1.4;
+}
+.collection-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 18px;
+	padding-bottom: 24px;
+}
+.collection-tile-slot {
+	min-width: 0;
+	margin: -8px;
+	padding: 8px;
+	content-visibility: auto;
+	contain-intrinsic-size: auto 236px;
+}
+.collection-tile {
+	position: relative;
+	isolation: isolate;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+	height: 100%;
+	gap: 8px;
+	padding: 18px 12px 14px;
+	border-radius: 26px;
+	box-shadow: 0 4px 0 #e3dce8;
+	touch-action: manipulation;
+	transition: transform 0.15s;
+}
+.collection-tile:not(.frame-teczowa) {
+	background: #fffcf7;
+}
+.collection-tile-background {
+	border-radius: 24px;
+}
+.collection-tile-art {
+	position: relative;
+	width: 100%;
+	max-width: 156px;
+	aspect-ratio: 1;
+}
+.collection-tile-art::before {
+	content: "";
+	position: absolute;
+	inset: 8%;
+	border-radius: 50%;
+	background: #c7b8dc14;
+	z-index: -1;
+}
+.collection-tile[data-owned="false"] .monster-silhouette {
+	opacity: 0.22;
+}
+.collection-tile-name {
+	position: relative;
+	max-width: 100%;
+	color: #514078;
+	font-size: 18px;
+	font-weight: 800;
+	line-height: 1.2;
+	text-align: center;
+	overflow-wrap: anywhere;
+}
+.collection-name-backed {
+	padding: 3px 10px;
+	border-radius: 12px;
+	background: #fffaf0ed;
+}
+.collection-tile-rarity {
+	position: relative;
+	margin-top: auto;
+	padding: 3px 9px;
+	border-radius: 9px;
+	font-size: 10px;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+}
+.collection-dream {
+	position: absolute;
+	top: -9px;
+	right: -8px;
+	display: grid;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	border: 1px solid #e8ce90;
+	border-radius: 50%;
+	background: #fff2c5;
+	font-size: 18px;
+}
+.collection-tile:active {
+	transform: scale(0.97);
+}
+@media (hover: hover) {
+	.collection-tile:hover {
+		transform: translateY(-3px);
+	}
+}
+@media (min-width: 480px) {
+	.collection-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+@media (min-width: 700px) {
+	.collection-grid {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
+@media (min-width: 1000px) {
+	.collection-grid {
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+	}
+	.collection-overview .catalog-hero {
+		grid-template-columns: auto minmax(0, 1fr) minmax(0, 300px);
+	}
+	.collection-wish {
+		grid-column: auto;
+	}
+}
+@media (max-width: 599px) {
+	.collection-filters {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+	.collection-filters .catalog-filter {
+		flex-direction: column;
+		gap: 2px;
+		padding: 8px 4px;
+		font-size: 12px;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.collection-tile {
+		transition: none;
 	}
 }

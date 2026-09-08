@@ -1,10 +1,12 @@
 import { memo, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { CardModal } from "../components/CardModal"
+import { CatalogHeader } from "../components/CatalogHeader"
 import { CosmeticArt, EquippedBackground } from "../components/CosmeticArt"
 import { CreatureCardArt } from "../components/CreatureCardArt"
 import { ExpeditionDetails } from "../components/ExpeditionDetails"
 import { HelpTip } from "../components/HelpTip"
+import { HomeArt } from "../components/HomeArt"
 import { MonsterStage } from "../components/MonsterStage"
 import { MODE_BADGES, MODE_NAMES } from "../components/modeLabels"
 import { CARD_THEME, RARITY_META } from "../components/rarity"
@@ -659,54 +661,56 @@ const CollectionTile = memo(function CollectionTile({
 					.trim()
 			: undefined
 	return (
-		<div className="-m-2 p-2 [contain-intrinsic-size:auto_160px] [content-visibility:auto]">
+		<div className="collection-tile-slot">
 			<button
 				type="button"
 				onClick={() => onSelect(monster.id)}
-				className={`touch-manipulation relative flex w-full flex-col items-center rounded-2xl border-4 bg-white/80 p-2 shadow-sm transition-transform active:scale-95
-					${tileFrame ?? RARITY_META[monster.rarity].border} ${isDream ? "ring-4 ring-amber-300" : ""}`}
+				className={`collection-tile border-2 ${tileFrame ?? RARITY_META[monster.rarity].border} ${isDream ? "ring-4 ring-amber-300" : ""}`}
+				data-owned={owned}
+				aria-label={`${owned ? monster.name : "???"}, ${RARITY_META[monster.rarity].label}${isDream ? ", wymarzony" : ""}${traveling ? ", na wyprawie" : ""}`}
 			>
 				{/* tło wypełnia cały kafel (nie okno z artem jak na karcie);
-				    rounded-xl = rounded-2xl kafla minus border-4 */}
+				    zaokrąglenie tła uwzględnia obramowanie kafla */}
 				{owned && (
 					<EquippedBackground
 						monsterId={monster.id}
 						animate={false}
-						className="rounded-xl"
+						className="collection-tile-background"
 					/>
 				)}
-				{traveling ? (
-					// podróżnik: plecak zamiast sprite'a (reszta kafla bez zmian)
-					<div className="relative flex aspect-square w-full items-center justify-center text-6xl">
-						🎒
-					</div>
-				) : owned ? (
-					<MonsterStage
-						id={monster.id}
-						size="100%"
-						animate={false}
-						wrapClassName="w-full"
-					/>
-				) : (
-					<MonsterSvg
-						id={monster.id}
-						size="100%"
-						animate={false}
-						className="monster-silhouette"
-					/>
-				)}
+				<div className="collection-tile-art">
+					{traveling ? (
+						// podróżnik: plecak zamiast sprite'a (reszta kafla bez zmian)
+						<div className="relative flex aspect-square w-full items-center justify-center text-6xl">
+							🎒
+						</div>
+					) : owned ? (
+						<MonsterStage
+							id={monster.id}
+							size="100%"
+							animate={false}
+							wrapClassName="w-full"
+						/>
+					) : (
+						<MonsterSvg
+							id={monster.id}
+							size="100%"
+							animate={false}
+							className="monster-silhouette"
+						/>
+					)}
+				</div>
 				<div
-					className={`relative mt-1 max-w-full truncate text-xs font-extrabold text-slate-600 ${
-						equipped.background ? "rounded-full bg-white/85 px-2" : ""
-					}`}
+					className={`collection-tile-name ${equipped.background ? "collection-name-backed" : ""}`}
 				>
 					{owned ? monster.name : "???"}
 				</div>
-				{isDream && (
-					<div className="anim-sparkle absolute -right-1.5 -top-1.5 text-xl">
-						✨
-					</div>
-				)}
+				<span
+					className={`collection-tile-rarity ${RARITY_META[monster.rarity].badge}`}
+				>
+					{RARITY_META[monster.rarity].label}
+				</span>
+				{isDream && <div className="collection-dream">✨</div>}
 				{isDivisionOnly(monster.id) && (
 					<div className="absolute -left-1.5 -top-1.5 rounded-full bg-violet-500 px-2 py-0.5 text-sm font-extrabold text-white shadow">
 						÷
@@ -750,6 +754,7 @@ export function CollectionScreen() {
 	const expedition = useGame((s) => s.expedition)
 	const [selectedId, setSelectedId] = useState<number | null>(null)
 
+	const [filter, setFilter] = useState<"all" | "owned" | "locked">("all")
 	const ownedCount = collectionCount(ownedMonsters)
 	// studnia życzeń: bez fontanny przycisk kupna ustępuje zajawce (fontanna →
 	// Wioska); guard w store czyta ten sam obiekt
@@ -763,72 +768,128 @@ export function CollectionScreen() {
 	const selectedOwned =
 		selectedId !== null ? ownedMonsters[selectedId] : undefined
 
+	const visibleMonsters = SORTED_MONSTERS.filter(
+		(monster) =>
+			filter === "all" ||
+			(filter === "owned"
+				? monster.id in ownedMonsters
+				: !(monster.id in ownedMonsters)),
+	)
+	const filters = [
+		{ id: "all", label: "Wszystkie", count: MONSTER_COUNT },
+		{ id: "owned", label: "Poznane", count: ownedCount },
+		{ id: "locked", label: "Do odkrycia", count: MONSTER_COUNT - ownedCount },
+	] as const
 	return (
-		<div className="flex min-h-[var(--app-vh)] flex-col gap-4 p-4">
-			<div className="flex flex-wrap items-center justify-between gap-2">
-				<button
-					type="button"
-					onClick={() => goTo("home")}
-					className="shrink-0 touch-manipulation rounded-full bg-white/80 px-5 py-2 text-2xl font-extrabold text-grape-dark shadow active:scale-90"
-					aria-label="Wróć do domku"
-				>
-					←
-				</button>
-				<div className="min-w-0 text-center text-xl font-extrabold leading-tight text-grape-dark max-[400px]:order-last max-[400px]:basis-full sm:text-2xl">
-					Moje Potworki{" "}
-					<span className="whitespace-nowrap">
-						{ownedCount}/{MONSTER_COUNT}
-					</span>
+		<main className="catalog-screen collection-screen">
+			<CatalogHeader title="Moje Potworki" onBack={() => goTo("home")}>
+				<div className="catalog-wallet collection-wallet">
+					<span>✨ {iskierki}</span>
 				</div>
-				<div className="flex shrink-0 items-center gap-1.5">
-					<HelpTip
-						placement="bottom"
-						align="right"
-						text="To twoje iskierki ✨. Dostajesz je, gdy z jajka wykluje się potworek, którego już masz. Uzbieraj ich dość, a przy Fontannie kupisz Jajko Życzeń!"
-					/>
-					<div className="whitespace-nowrap rounded-full bg-white/80 px-3 py-2 text-lg font-extrabold text-amber-500 shadow">
-						✨ {iskierki}
+			</CatalogHeader>
+			<div className="collection-overview">
+				<section className="catalog-hero" aria-label="Postęp kolekcji">
+					<div className="catalog-art" aria-hidden="true">
+						<HomeArt kind="collection" />
 					</div>
-				</div>
-			</div>
+					<div className="catalog-summary">
+						<h2>
+							Poznane
+							<strong>
+								{ownedCount}
+								<span>/{MONSTER_COUNT}</span>
+							</strong>
+						</h2>
+						<progress
+							className="catalog-total-progress"
+							value={ownedCount}
+							max={MONSTER_COUNT}
+							aria-label="Poznane potworki"
+						/>
+						<p>
+							{ownedCount === MONSTER_COUNT
+								? "Cała kolekcja jest Twoja!"
+								: "Każde jajko to nowa znajomość."}
+						</p>
+					</div>
 
-			{/* Jedno rusztowanie dla stanów studni życzeń. Zajawka fontanny
+					{/* Jedno rusztowanie dla stanów studni życzeń. Zajawka fontanny
 			    (aspiracja jak zablokowane półki Sklepiku, nigdy ton błędu) NIE
 			    zależy od portfela — to jedyne miejsce tłumaczące związek
 			    Fontanna→Jajko Życzeń. Dwa powody wyszarzenia (decyzja maintainera
 			    2026-09-06): komplet nielegendarnych (własna etykieta) albo za mało
 			    iskierek na cenę z etykiety. */}
-			<div className="mx-auto flex w-full max-w-sm items-center gap-2">
-				<BigButton
-					onClick={wish.unlocked ? buyWishEgg : () => goTo("village")}
-					variant="secondary"
-					disabled={!wish.available || (wish.unlocked && iskierki < wish.cost)}
-					className={`flex-1 py-3 ${wish.unlocked ? "text-xl" : "text-lg"}`}
-				>
-					{!wish.available ? (
-						"Jajko Życzeń 🌟 — masz już wszystkie potworki poza legendarnymi!"
-					) : wish.unlocked ? (
-						<>
-							Jajko Życzeń 🌟 — {wish.cost} ✨
-							{wish.dreamApplies && " (wymarzony!)"}
-						</>
-					) : (
-						"Jajko Życzeń 🌟 — zbuduj Fontannę! ⛲"
-					)}
-				</BigButton>
-				<HelpTip
-					placement="bottom"
-					align="right"
-					text={
-						wish.unlocked
-							? "Kupujesz je za iskierki ✨. Masz wymarzonego potworka? Dostaniesz dokładnie jego — na pewno! Nie masz? Wykluje się jakiś nowy potworek, którego jeszcze nie masz. Uwaga: legendarnych potworków Jajko Życzeń nie wykluwa — te zdobywasz tylko z jajek za rundy. (Sam wymarzony jest za darmo i tylko sprawia, że zwykłe jajka częściej wykluwają właśnie jego.)"
-							: "Jajko Życzeń kupisz przy Fontannie: wrzucasz iskierki ✨ i wypowiadasz życzenie. Zbuduj Fontannę w Wiosce, a studnia życzeń ruszy!"
-					}
-				/>
+					<div className="collection-wish">
+						<BigButton
+							onClick={wish.unlocked ? buyWishEgg : () => goTo("village")}
+							variant="secondary"
+							disabled={
+								!wish.available || (wish.unlocked && iskierki < wish.cost)
+							}
+							className="collection-wish-button"
+						>
+							{!wish.available ? (
+								"Jajko Życzeń — masz już wszystkie potworki poza legendarnymi!"
+							) : wish.unlocked ? (
+								<>
+									Jajko Życzeń — {wish.cost} ✨
+									{wish.dreamApplies && " (wymarzony!)"}
+								</>
+							) : (
+								"Jajko Życzeń — zbuduj Fontannę! ⛲"
+							)}
+						</BigButton>
+						<div className="collection-corner-help">
+							<HelpTip
+								placement="bottom"
+								align="right"
+								text={
+									wish.unlocked
+										? "Kupujesz je za iskierki ✨. Masz wymarzonego potworka? Dostaniesz dokładnie jego — na pewno! Nie masz? Wykluje się jakiś nowy potworek, którego jeszcze nie masz. Uwaga: legendarnych potworków Jajko Życzeń nie wykluwa — te zdobywasz tylko z jajek za rundy. (Sam wymarzony jest za darmo i tylko sprawia, że zwykłe jajka częściej wykluwają właśnie jego.)"
+										: "Jajko Życzeń kupisz przy Fontannie: wrzucasz iskierki ✨ i wypowiadasz życzenie. Zbuduj Fontannę w Wiosce, a studnia życzeń ruszy!"
+								}
+							/>
+						</div>
+					</div>
+				</section>
 			</div>
-
-			<div className="grid grid-cols-3 gap-3 pb-6 min-[420px]:grid-cols-4">
-				{SORTED_MONSTERS.map((monster) => (
+			<div
+				className="catalog-filters collection-filters"
+				role="group"
+				aria-label="Filtruj potworki"
+			>
+				{filters.map(({ id, label, count }) => (
+					<button
+						type="button"
+						key={id}
+						className="catalog-filter"
+						aria-pressed={filter === id}
+						onClick={() => setFilter(id)}
+					>
+						{label}
+						<span>{count}</span>
+					</button>
+				))}
+			</div>
+			{visibleMonsters.length === 0 && (
+				<div className="catalog-empty" role="status">
+					<HomeArt kind="collection" />
+					<p>
+						{filter === "owned"
+							? "Twoje potworki pojawią się tutaj po wykluciu."
+							: "Cała kolekcja jest Twoja!"}
+					</p>
+					<button
+						type="button"
+						className="catalog-empty-button"
+						onClick={() => setFilter("all")}
+					>
+						Wszystkie
+					</button>
+				</div>
+			)}
+			<div className="collection-grid">
+				{visibleMonsters.map((monster) => (
 					<CollectionTile
 						key={monster.id}
 						monster={monster}
@@ -860,6 +921,6 @@ export function CollectionScreen() {
 					)}
 				</CardModal>
 			)}
-		</div>
+		</main>
 	)
 }

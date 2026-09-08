@@ -75,7 +75,7 @@ export function App() {
 		// min-h-dvh + padding insetów (border-box): tło maluje CAŁY ekran, także
 		// pod paskiem gestów/notchem, a treść (content-box = --app-vh) ich unika
 		<div
-			className={`${screen === "home" ? "app-home" : screen === "map" ? "app-map" : screen === "achievements" ? "app-achievements" : ""} min-h-dvh ${background} pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]`}
+			className={`${screen === "home" ? "app-home" : screen === "map" ? "app-map" : screen === "achievements" || screen === "collection" ? "app-catalog" : ""} min-h-dvh ${background} pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]`}
 		>
 			<div className="mx-auto min-h-[var(--app-vh)] max-w-lg land:max-w-none">
 				{screen === "home" && <HomeScreen debugEnabled={DEBUG_ENABLED} />}

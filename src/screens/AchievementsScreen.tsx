@@ -9,6 +9,7 @@ import { REWARD_BY_DIFFICULTY } from "../achievements/catalog"
 import { type AchievementRow, achievementRows } from "../achievements/evaluate"
 import { TIER_META } from "../components/achievementTier"
 import { CardModal } from "../components/CardModal"
+import { CatalogHeader } from "../components/CatalogHeader"
 import { HelpTip } from "../components/HelpTip"
 import { HomeArt } from "../components/HomeArt"
 import { useScrollLock } from "../components/useScrollLock"
@@ -136,20 +137,11 @@ export function AchievementsScreen() {
 		: undefined
 
 	return (
-		<main className="achievements-screen">
-			<header className="achievements-header">
-				<button
-					type="button"
-					onClick={() => goTo("home")}
-					className="map-back touch-manipulation text-2xl font-extrabold text-grape-dark active:scale-90"
-					aria-label="Wróć do domku"
-				>
-					←
-				</button>
-				<h1>Osiągnięcia</h1>
-				<div className="achievements-wallet" data-collecting={!!flight}>
+		<main className="catalog-screen">
+			<CatalogHeader title="Osiągnięcia" onBack={() => goTo("home")}>
+				<div className="catalog-wallet" data-collecting={!!flight}>
 					<span
-						className="achievements-wallet-icon"
+						className="catalog-wallet-icon"
 						ref={counterRef}
 						aria-hidden="true"
 					>
@@ -167,7 +159,7 @@ export function AchievementsScreen() {
 						)}
 					</span>
 					<span
-						className="achievements-wallet-value"
+						className="catalog-wallet-value"
 						aria-hidden="true"
 						style={{ minWidth: `${String(iskierki).length}ch` }}
 					>
@@ -179,7 +171,7 @@ export function AchievementsScreen() {
 						</span>
 					</span>
 					{flight && arrived > 0 && (
-						<span className="achievements-wallet-gain" aria-hidden="true">
+						<span className="catalog-wallet-gain" aria-hidden="true">
 							+{collected}
 						</span>
 					)}
@@ -187,14 +179,14 @@ export function AchievementsScreen() {
 						{iskierki} iskierek
 					</span>
 				</div>
-			</header>
+			</CatalogHeader>
 
-			<section className="achievements-hero" aria-label="Postęp osiągnięć">
-				<div className="achievements-trophy" aria-hidden="true">
+			<section className="catalog-hero" aria-label="Postęp osiągnięć">
+				<div className="catalog-art" aria-hidden="true">
 					<HomeArt kind="achievements" />
 				</div>
-				<div className="achievements-summary">
-					<div className="achievements-summary-heading">
+				<div className="catalog-summary">
+					<div className="catalog-summary-heading">
 						<h2>
 							Zdobyte{" "}
 							<strong>
@@ -209,7 +201,7 @@ export function AchievementsScreen() {
 						/>
 					</div>
 					<progress
-						className="achievements-total-progress"
+						className="catalog-total-progress"
 						aria-label="Zdobyte osiągnięcia"
 						value={unlockedCount}
 						max={rows.length}
@@ -229,7 +221,7 @@ export function AchievementsScreen() {
 			</section>
 
 			<div
-				className="achievements-filters"
+				className="catalog-filters"
 				role="group"
 				aria-label="Filtruj osiągnięcia"
 			>
@@ -237,7 +229,7 @@ export function AchievementsScreen() {
 					<button
 						type="button"
 						key={id}
-						className="achievements-filter"
+						className="catalog-filter"
 						aria-pressed={filter === id}
 						onClick={() => setFilter(id)}
 					>
@@ -257,7 +249,7 @@ export function AchievementsScreen() {
 				))}
 			</div>
 			{visibleRows.length === 0 && (
-				<div className="achievements-empty" role="status">
+				<div className="catalog-empty" role="status">
 					<HomeArt kind="achievements" />
 					<p>
 						{filter === "claimable"
@@ -267,7 +259,7 @@ export function AchievementsScreen() {
 								: "Cała kolekcja zdobyta! 🏅"}
 					</p>
 					<button
-						className="achievements-empty-button"
+						className="catalog-empty-button"
 						type="button"
 						onClick={() => setFilter("all")}
 					>
