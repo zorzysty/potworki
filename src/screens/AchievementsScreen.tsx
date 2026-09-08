@@ -449,9 +449,8 @@ function ResetModal({
 	)
 }
 
-// Karta szczegółu osiągnięcia (modal). Układ w strefach zamiast pionowego „dumpu":
-// panel-bohater z ikoną + odznaką nagrody, nagłówek (tytuł + trudność), opis,
-// sekcja postępu, stopka ze statusem. Zdobyte = kolory trudności; niezdobyte = szaro.
+// The detail card shares tier colors with the collection; the claim button
+// remains the measured origin of the spark flight.
 function AchievementModal({
 	row,
 	onClose,
@@ -468,89 +467,116 @@ function AchievementModal({
 	return (
 		<CardModal onClose={onClose} closeLabel="Zamknij">
 			<div
-				className={`flex w-full flex-col gap-4 overflow-y-auto rounded-[2rem] border-4 bg-white p-5 shadow-2xl ${unlocked ? tier.border : "border-slate-300"}`}
+				className="achievement-detail scrollbar-none"
+				data-state={claimable ? "ready" : unlocked ? "earned" : "locked"}
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="achievement-detail-title"
 			>
-				{/* ===== PANEL-BOHATER: ikona + odznaka nagrody w rogu ===== */}
-				<div
-					className={`relative flex items-center justify-center rounded-3xl bg-gradient-to-br py-9 ${unlocked ? tier.tint : "from-slate-100 to-slate-200"}`}
-				>
-					<span
-						className={`text-7xl ${unlocked ? "" : "opacity-40 grayscale"}`}
-					>
-						{def.icon}
-					</span>
-					<div
-						className={`absolute top-3 right-3 rounded-full px-3 py-1 text-sm font-extrabold shadow ${tier.badge}`}
-					>
+				<div className="achievement-detail-hero">
+					<div className="achievement-detail-reward">
 						✨ {REWARD_BY_DIFFICULTY[def.difficulty]}
 					</div>
+					<svg
+						className="achievement-detail-ornament"
+						viewBox="0 0 320 190"
+						aria-hidden="true"
+					>
+						<circle
+							cx="160"
+							cy="95"
+							r="77"
+							fill="none"
+							stroke="currentColor"
+							strokeOpacity=".14"
+						/>
+						<circle
+							cx="160"
+							cy="95"
+							r="88"
+							fill="none"
+							stroke="currentColor"
+							strokeOpacity=".18"
+							strokeDasharray="2 10"
+						/>
+						<g fill="currentColor">
+							<path d="m48 57 3 8 8 3-8 3-3 8-3-8-8-3 8-3Zm218 46 4 10 10 4-10 4-4 10-4-10-10-4 10-4ZM80 139l2 6 6 2-6 2-2 6-2-6-6-2 6-2Z" />
+							<circle cx="244" cy="48" r="2.5" />
+							<circle cx="57" cy="115" r="2" />
+						</g>
+						<path
+							d="m124 123-9 51 23-10 14 14 9-51m-2 0 9 51 14-14 23 10-9-51"
+							fill="#c49a59"
+							stroke="#ffe3a3"
+							strokeWidth="2"
+						/>
+					</svg>
+					<div
+						className={`achievement-detail-medal bg-gradient-to-br ${tier.tint}`}
+						aria-hidden="true"
+					>
+						<span>{def.icon}</span>
+						<span className="achievement-detail-seal">
+							{unlocked ? "✓" : "🔒"}
+						</span>
+					</div>
+					<span className={`achievement-detail-tier ${tier.badge}`}>
+						{tier.label}
+					</span>
+				</div>
+
+				<div className="achievement-detail-body">
+					<div className="achievement-detail-heading">
+						<h2 id="achievement-detail-title">{def.title}</h2>
+						<p>{def.description}</p>
+					</div>
+
+					<div className="achievement-detail-progress">
+						<div className="achievement-detail-progress-label">
+							<span>Postęp</span>
+							<strong>
+								{shown}
+								<span> / {progress.target}</span>
+							</strong>
+						</div>
+						<div
+							className="achievement-detail-track"
+							role="progressbar"
+							aria-label="Postęp"
+							aria-valuenow={shown}
+							aria-valuemin={0}
+							aria-valuemax={progress.target}
+						>
+							<div
+								className={`bg-gradient-to-r ${tier.bar}`}
+								style={{ width: `${progress.ratio * 100}%` }}
+							/>
+						</div>
+					</div>
+
+					{claimable && (
+						<button
+							type="button"
+							onClick={onClaim}
+							className="achievement-detail-claim"
+						>
+							Odbierz {REWARD_BY_DIFFICULTY[def.difficulty]} iskierek ✨
+						</button>
+					)}
+
 					{unlocked ? (
-						<div className="absolute -bottom-3 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-emerald-500 text-lg font-extrabold text-white shadow-lg ring-4 ring-white">
-							✓
+						<div className="achievement-detail-status">
+							<span>✓ Zdobyte</span>
+							<time dateTime={new Date(unlockedAt).toISOString()}>
+								{new Date(unlockedAt).toLocaleDateString("pl-PL")}
+							</time>
 						</div>
 					) : (
-						<div className="absolute top-3 left-3 text-2xl opacity-50">🔒</div>
+						<p className="achievement-detail-encouragement">
+							Jeszcze przed tobą — dasz radę! 💪
+						</p>
 					)}
 				</div>
-
-				{/* ===== NAGŁÓWEK: tytuł + trudność ===== */}
-				<div className="flex flex-col items-center gap-0.5 pt-1">
-					<div className="text-center text-3xl font-extrabold leading-tight text-slate-700">
-						{def.title}
-					</div>
-					<div
-						className={`text-sm font-extrabold uppercase tracking-wide ${tier.accent}`}
-					>
-						{tier.label}
-					</div>
-				</div>
-
-				{/* ===== OPIS ===== */}
-				<p className="rounded-2xl bg-slate-50 px-4 py-3 text-center text-base font-bold leading-snug text-slate-600">
-					{def.description}
-				</p>
-
-				{/* ===== POSTĘP ===== */}
-				<div className="flex flex-col gap-1.5">
-					<div className="flex items-center justify-between">
-						<span className="text-xs font-bold uppercase tracking-wide text-slate-400">
-							Postęp
-						</span>
-						<span className="text-sm font-extrabold text-slate-500">
-							{shown}/{progress.target}
-						</span>
-					</div>
-					<div className="h-4 overflow-hidden rounded-full bg-slate-200">
-						<div
-							className={`h-full rounded-full transition-[width] ${unlocked ? `bg-gradient-to-r ${tier.bar}` : "bg-slate-300"}`}
-							style={{ width: `${progress.ratio * 100}%` }}
-						/>
-					</div>
-				</div>
-
-				{claimable && (
-					<button
-						type="button"
-						onClick={onClaim}
-						className="anim-bounce-slow touch-manipulation rounded-2xl bg-amber-400 px-6 py-4 text-xl font-extrabold text-white shadow-lg active:scale-95"
-					>
-						Odbierz {REWARD_BY_DIFFICULTY[def.difficulty]} iskierek ✨
-					</button>
-				)}
-
-				{/* ===== STOPKA: data zdobycia albo zachęta ===== */}
-				{unlocked ? (
-					<div className="flex items-center justify-center gap-2 text-sm font-extrabold text-emerald-500">
-						Zdobyte
-						<span className="-rotate-3 rounded-lg border-2 border-bubblegum/40 px-2 py-0.5 text-xs tracking-wide text-bubblegum">
-							{new Date(unlockedAt).toLocaleDateString("pl-PL")}
-						</span>
-					</div>
-				) : (
-					<div className="text-center text-sm font-bold text-slate-400">
-						Jeszcze przed tobą — dasz radę! 💪
-					</div>
-				)}
 			</div>
 		</CardModal>
 	)
