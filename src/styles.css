@@ -2014,3 +2014,424 @@ button:focus-visible {
 		transition: none;
 	}
 }
+
+/* A character sheet: an illustrated habitat, readable passport, and activity cards. */
+.creature-modal {
+	max-width: 440px;
+}
+.creature-detail {
+	width: 100%;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	border-radius: 30px;
+	color: #46545b;
+	box-shadow:
+		0 8px 0 #30234325,
+		0 24px 70px #201b4c40;
+}
+.creature-detail:not(.frame-teczowa) {
+	background: #fffcf5;
+}
+.creature-detail-hero {
+	position: relative;
+	isolation: isolate;
+	width: 100%;
+	overflow: hidden;
+	padding: 22px 16px 44px;
+	background: #e5eee5;
+}
+.creature-habitat {
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	width: 100%;
+	height: 100%;
+}
+.creature-detail-stage {
+	z-index: 1;
+}
+.creature-detail-ribbon {
+	position: absolute;
+	z-index: 10;
+	bottom: 14px;
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 5px 18px;
+	border: 1px solid #ffffffb0;
+	border-radius: 12px;
+	box-shadow: 0 3px 0 #476c5b15;
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+.creature-detail-body {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 18px;
+	padding: 26px;
+}
+.creature-detail-heading {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 5px;
+}
+.creature-detail-heading h2 {
+	color: #44395e;
+	font-size: 36px;
+	font-weight: 800;
+	line-height: 1;
+	letter-spacing: -0.025em;
+	overflow-wrap: anywhere;
+}
+.creature-detail-description {
+	color: #78817d;
+	font-size: 15px;
+	font-weight: 500;
+	line-height: 1.5;
+	text-wrap: pretty;
+}
+.creature-detail-stats {
+	display: grid;
+	grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+	gap: 12px;
+	padding-block: 14px;
+	border-block: 1px solid #e7e5da;
+}
+.creature-detail-stat {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	min-width: 0;
+	gap: 6px;
+}
+.creature-detail-date {
+	color: #647569;
+	font-size: 13px;
+	font-weight: 700;
+	padding: 4px 0;
+}
+.creature-detail-fact {
+	position: relative;
+	padding: 0 0 0 13px;
+	border-left: 3px solid #e7cc90;
+	color: #8b7e62;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.5;
+}
+.creature-detail-section {
+	width: 100%;
+	border: 1px solid #e2d9e9;
+	border-radius: 22px;
+	background: #f1eaf6;
+	box-shadow: 0 4px 0 #e9e1ed;
+}
+.creature-detail-expedition {
+	background: #eaf2e7;
+	border-color: #d3e1d0;
+	box-shadow: 0 4px 0 #e1eadb;
+}
+.creature-activity-toggle {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	min-width: 0;
+	min-height: 100px;
+	padding: 10px 14px 10px 5px;
+	border-radius: 22px;
+	text-align: left;
+	touch-action: manipulation;
+	transition: transform 0.15s;
+}
+.creature-activity-toggle:active {
+	transform: scale(0.98);
+}
+.creature-activity-art {
+	flex-shrink: 0;
+	width: 76px;
+	height: 76px;
+	filter: drop-shadow(0 3px 0 #4734570c);
+}
+.creature-activity-copy {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	min-width: 0;
+	flex: 1;
+}
+.creature-activity-copy strong {
+	color: #59456d;
+	font-size: 23px;
+	font-weight: 800;
+	line-height: 1.15;
+}
+.creature-activity-copy > span {
+	color: #91849b;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.35;
+}
+.creature-activity-arrow {
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: #ffffff90;
+	color: #8a749b;
+	font-size: 21px;
+	font-weight: 700;
+}
+.creature-detail-expedition .creature-activity-copy strong {
+	color: #496a53;
+}
+.creature-detail-expedition .creature-activity-copy > span {
+	color: #7b9079;
+}
+.creature-expedition-heading {
+	position: relative;
+}
+.creature-help-anchor {
+	position: relative;
+}
+.creature-help-anchor > span {
+	position: absolute;
+	top: -8px;
+	right: -8px;
+	z-index: 20;
+}
+.creature-wardrobe-content {
+	padding: 0 14px 16px;
+}
+.creature-outfit-preview {
+	position: relative;
+	display: flex;
+	justify-content: center;
+	overflow: hidden;
+	padding: 16px;
+	margin-bottom: 12px;
+	border-radius: 16px;
+	background: radial-gradient(ellipse at 50% 60%, #fff8eb, #ded4e8);
+}
+.creature-wardrobe-tabs {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 5px;
+	margin-bottom: 12px;
+}
+.creature-wardrobe-tab {
+	min-height: 64px;
+	padding: 8px;
+	border: 1px solid #dbd1e4;
+	border-radius: 12px;
+	color: #867293;
+	font-size: 13px;
+	font-weight: 800;
+	touch-action: manipulation;
+}
+.creature-wardrobe-tab[aria-pressed="true"] {
+	background: #76618c;
+	border-color: #76618c;
+	color: #fff9ee;
+}
+.creature-wardrobe-items {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 85px), 1fr));
+	gap: 8px;
+}
+.creature-wardrobe-item {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-width: 0;
+	min-height: 98px;
+	gap: 8px;
+	padding: 12px 6px 8px;
+	border: 2px solid transparent;
+	border-radius: 15px;
+	background: #fffcf7;
+	color: #776684;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1.2;
+	text-align: center;
+	touch-action: manipulation;
+}
+.creature-wardrobe-item[aria-pressed="true"] {
+	border-color: #a18ab6;
+	background: #fff7df;
+}
+.creature-wardrobe-item[aria-pressed="true"]::after {
+	content: "✓";
+	position: absolute;
+	right: 4px;
+	top: 3px;
+	color: #806594;
+	font-size: 12px;
+}
+.creature-wardrobe-none {
+	display: grid;
+	place-items: center;
+	width: 48px;
+	height: 48px;
+	font-size: 30px;
+	color: #b2a4bc;
+}
+.creature-frame-swatch {
+	display: grid;
+	place-items: center;
+	width: 44px;
+	height: 44px;
+	border-radius: 10px;
+	background: #eee7f3;
+}
+.creature-wardrobe-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 16px 8px 0;
+	text-align: center;
+	color: #867293;
+	font-size: 13px;
+}
+.creature-shop-link {
+	min-height: 64px;
+	padding: 10px 16px;
+	border-radius: 14px;
+	background: #fff9ec;
+	color: #725986;
+	font-weight: 800;
+}
+.creature-expedition-route {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+	width: 100%;
+	min-width: 0;
+	padding: 16px;
+	border: 1px solid #dbe5d5;
+	border-radius: 16px;
+	text-align: left;
+	box-shadow: 0 2px 0 #dbe5d550;
+}
+.creature-route-heading {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+}
+.creature-detail-primary,
+.creature-detail-secondary {
+	min-width: 0;
+	min-height: 64px;
+	padding: 14px 16px;
+	border: 1px solid #dec491;
+	border-radius: 18px;
+	background: linear-gradient(150deg, #fce8b8, #f1d08a);
+	color: #816032;
+	box-shadow: 0 3px 0 #dcc08a;
+	font-size: 16px;
+	font-weight: 800;
+	line-height: 1.3;
+}
+.creature-detail-secondary {
+	background: #f1eaf6;
+	color: #776684;
+	border-color: #e2d9e9;
+	box-shadow: 0 3px 0 #e9e1ed;
+}
+.creature-detail button:focus-visible {
+	outline: 3px solid #8c6bc4;
+	outline-offset: 3px;
+}
+.creature-detail-mystery {
+	display: flex;
+	justify-content: center;
+}
+.creature-detail-mystery .monster-silhouette {
+	opacity: 0.4;
+}
+@media (min-width: 760px) {
+	.creature-modal {
+		max-width: 840px;
+	}
+	.creature-detail {
+		display: grid;
+		grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+		align-items: start;
+	}
+	.creature-detail-hero {
+		position: sticky;
+		top: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: calc(var(--app-vh) - 48px);
+		max-height: 700px;
+		min-height: 280px;
+		padding: 32px;
+		border-radius: 0 24px 24px 0;
+	}
+	.creature-detail-stage {
+		transform: scale(1.35);
+	}
+	.creature-detail-ribbon {
+		bottom: 32px;
+	}
+	.creature-detail-body {
+		padding: 30px;
+		gap: 20px;
+	}
+}
+@media (max-width: 359px) {
+	.creature-detail-body {
+		padding: 18px;
+		gap: 16px;
+	}
+	.creature-activity-art {
+		width: 56px;
+		height: 64px;
+	}
+	.creature-activity-copy strong {
+		font-size: 20px;
+	}
+	.creature-activity-toggle {
+		gap: 6px;
+		padding-right: 10px;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.creature-activity-toggle {
+		transition: none;
+	}
+}
+
+.creature-habitat-portrait {
+	display: none;
+}
+@media (min-width: 760px) {
+	.creature-habitat-landscape {
+		display: none;
+	}
+	.creature-habitat-portrait {
+		display: block;
+	}
+	.creature-detail-stage {
+		position: absolute;
+		bottom: 22%;
+		left: 0;
+		right: 0;
+		transform-origin: center bottom;
+	}
+}

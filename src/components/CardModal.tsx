@@ -9,10 +9,12 @@ export function CardModal({
 	onClose,
 	closeLabel,
 	children,
+	wrapperClassName = "",
 }: {
 	onClose: () => void
 	closeLabel: string
 	children: ReactNode
+	wrapperClassName?: string
 }) {
 	useScrollLock()
 	return (
@@ -24,7 +26,7 @@ export function CardModal({
 			    wysokości z --app-vh (nie vh — na telefonie vh liczy viewport
 			    bez paska przeglądarki i karta wychodziła poza ekran) minus p-5 */}
 			<div
-				className="anim-pop relative flex max-h-[calc(var(--app-vh)-2.5rem)] w-full max-w-sm flex-col"
+				className={`anim-pop relative flex max-h-[calc(var(--app-vh)-2.5rem)] w-full max-w-sm flex-col ${wrapperClassName}`}
 				onClick={(e) => e.stopPropagation()}
 			>
 				<ModalCloseX onClose={onClose} label={closeLabel} />

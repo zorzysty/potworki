@@ -1,7 +1,8 @@
 import { memo, useState } from "react"
 import { BigButton } from "../components/BigButton"
-import { CARD_SHELL, CardModal } from "../components/CardModal"
+import { CardModal } from "../components/CardModal"
 import { CosmeticArt, EquippedBackground } from "../components/CosmeticArt"
+import { CreatureCardArt } from "../components/CreatureCardArt"
 import { ExpeditionDetails } from "../components/ExpeditionDetails"
 import { HelpTip } from "../components/HelpTip"
 import { MonsterStage } from "../components/MonsterStage"
@@ -47,131 +48,112 @@ const SORTED_MONSTERS = [...MONSTERS].sort(
 		a.id - b.id,
 )
 
-// Garderoba na karcie posiadanego potworka: sekcja ZWIJANA (domyślnie zwinięta
-// — karta ma zostać trofeum, nie panelem sterowania; kolejność sekcji modala:
-// przyjaciel → Ubierz 🎩 → Wyprawa 🎒, patrz plans/README.md „Shared-
-// surface governance"). Per slot poziomy rządek kupionych rzeczy + chip
-// „zdejmij"; tap zakłada od ręki (equipCosmetic), założona rzecz ma ring.
+// The wardrobe stays collapsed initially so the passport remains a character
+// card. Its live preview keeps outfit changes visible while browsing items.
 function WardrobeSection({ monsterId }: { monsterId: number }) {
 	const cosmetics = useGame((s) => s.cosmetics)
 	const equipCosmetic = useGame((s) => s.equipCosmetic)
+	const goTo = useGame((s) => s.goTo)
 	const [open, setOpen] = useState(false)
+	const [slot, setSlot] = useState<CosmeticSlot>(
+		() => COSMETICS.find((item) => isOwned(cosmetics, item.id))?.slot ?? "hat",
+	)
 	const eq = equippedFor(cosmetics, monsterId)
 	const ownedItems = COSMETICS.filter((c) => isOwned(cosmetics, c.id))
 	const slots: { slot: CosmeticSlot; label: string }[] = [
 		{ slot: "hat", label: "Kapelusze" },
 		{ slot: "aura", label: "Aury" },
 		{ slot: "background", label: "Tła" },
+		{ slot: "frame", label: "Ramka" },
 	]
-	// Ramki (slot "frame", plan 014) mają własny rządek pod spodem: chip
-	// „Bez ramki" przywraca oprawę rzadkości, chipy noszą nazwę widocznym
-	// tekstem (swatch pokazuje tylko kolor krawędzi).
-	const ownedFrames = ownedItems.filter((c) => c.slot === "frame")
+	const items = ownedItems.filter((c) => c.slot === slot)
 	return (
-		<div className="w-full rounded-2xl bg-violet-50">
+		<div className="creature-detail-section creature-detail-wardrobe">
 			<button
 				type="button"
+				aria-expanded={open}
 				onClick={() => setOpen((o) => !o)}
-				className="flex min-h-16 w-full touch-manipulation items-center justify-between px-4 py-3 text-lg font-extrabold text-grape-dark active:scale-[0.98]"
+				className="creature-activity-toggle"
 			>
-				<span>Ubierz 🎩</span>
-				<span
-					className={`text-xl transition-transform ${open ? "rotate-180" : ""}`}
-				>
-					▾
+				<CreatureCardArt kind="wardrobe" />
+				<span className="creature-activity-copy">
+					<strong>Ubierz 🎩</strong>
+					<span>Przymierz coś wyjątkowego</span>
+				</span>
+				<span className="creature-activity-arrow" aria-hidden="true">
+					{open ? "−" : "+"}
 				</span>
 			</button>
-			{open &&
-				(ownedItems.length === 0 ? (
-					// pusta garderoba prowadzi do Sklepiku
-					<div className="px-4 pb-4 text-center text-sm font-bold text-slate-500">
-						Kapelusze kupisz w Sklepiku w Wiosce!
+			{open && (
+				<div className="creature-wardrobe-content">
+					<div className="creature-outfit-preview">
+						<EquippedBackground monsterId={monsterId} className="" />
+						<MonsterStage id={monsterId} size={112} animate={false} />
 					</div>
-				) : (
-					<div className="flex flex-col gap-2 px-3 pb-3">
-						{slots.map(({ slot, label }) => {
-							const items = ownedItems.filter((c) => c.slot === slot)
-							if (items.length === 0) return null
-							return (
-								<div key={slot}>
-									<div className="mb-1 text-xs font-extrabold uppercase tracking-wide text-slate-400">
-										{label}
-									</div>
-									{/* p-1 (nie pb-1): przewijalna oś X wymusza clip w osi Y, a ring-4
-									    zaznaczenia rysuje się POZA boksem chipa — bez paddingu ze
-									    wszystkich stron obwódka ucina się od góry/boków */}
-									<div className="flex gap-2 overflow-x-auto p-1">
-										<button
-											type="button"
-											aria-label="Zdejmij"
-											onClick={() => equipCosmetic(monsterId, slot, null)}
-											className={`flex h-16 w-16 shrink-0 touch-manipulation items-center justify-center rounded-2xl bg-white text-2xl font-extrabold text-slate-400 active:scale-95 ${
-												eq[slot] === undefined ? "ring-4 ring-amber-300" : ""
-											}`}
-										>
-											∅
-										</button>
-										{items.map((item) => (
-											<button
-												key={item.id}
-												type="button"
-												aria-label={item.name}
-												onClick={() => equipCosmetic(monsterId, slot, item.id)}
-												className={`flex h-16 w-16 shrink-0 touch-manipulation items-center justify-center rounded-2xl bg-white active:scale-95 ${
-													eq[slot] === item.id ? "ring-4 ring-amber-300" : ""
-												}`}
-											>
-												<CosmeticArt id={item.id} size={44} />
-											</button>
-										))}
-									</div>
-								</div>
-							)
-						})}
-						{ownedFrames.length > 0 && (
-							<div>
-								{/* etykieta rządka ramek */}
-								<div className="mb-1 text-xs font-extrabold uppercase tracking-wide text-slate-400">
-									Ramka
-								</div>
-								{/* p-1 (nie pb-1): przewijalna oś X wymusza clip w osi Y, a ring-4
-									    zaznaczenia rysuje się POZA boksem chipa — bez paddingu ze
-									    wszystkich stron obwódka ucina się od góry/boków */}
-								<div className="flex gap-2 overflow-x-auto p-1">
-									{/* „Bez ramki" = oprawa rzadkości */}
-									<button
-										type="button"
-										onClick={() => equipCosmetic(monsterId, "frame", null)}
-										className={`flex h-16 shrink-0 touch-manipulation items-center gap-1.5 rounded-2xl bg-white px-3 text-sm font-extrabold text-slate-500 active:scale-95 ${
-											eq.frame === undefined ? "ring-4 ring-amber-300" : ""
-										}`}
+					<div
+						className="creature-wardrobe-tabs"
+						role="group"
+						aria-label="Rodzaj stroju"
+					>
+						{slots.map((tab) => (
+							<button
+								type="button"
+								key={tab.slot}
+								className="creature-wardrobe-tab"
+								aria-pressed={slot === tab.slot}
+								onClick={() => setSlot(tab.slot)}
+							>
+								{tab.label}
+							</button>
+						))}
+					</div>
+					<div className="creature-wardrobe-items">
+						<button
+							type="button"
+							aria-pressed={eq[slot] === undefined}
+							onClick={() => equipCosmetic(monsterId, slot, null)}
+							className="creature-wardrobe-item"
+						>
+							<span className="creature-wardrobe-none" aria-hidden="true">
+								∅
+							</span>
+							<span>{slot === "frame" ? "Bez ramki" : "Zdejmij"}</span>
+						</button>
+						{items.map((item) => (
+							<button
+								type="button"
+								key={item.id}
+								aria-pressed={eq[slot] === item.id}
+								onClick={() => equipCosmetic(monsterId, slot, item.id)}
+								className="creature-wardrobe-item"
+							>
+								{slot === "frame" ? (
+									<span
+										className={`creature-frame-swatch border-4 ${item.cardClasses ?? ""}`}
 									>
-										{eq.frame === undefined && <span>✓</span>}
-										<span>Bez ramki</span>
-									</button>
-									{ownedFrames.map((item) => (
-										<button
-											key={item.id}
-											type="button"
-											onClick={() => equipCosmetic(monsterId, "frame", item.id)}
-											className={`flex h-16 shrink-0 touch-manipulation items-center gap-2 rounded-2xl bg-white px-3 active:scale-95 ${
-												eq.frame === item.id ? "ring-4 ring-amber-300" : ""
-											}`}
-										>
-											<span
-												className={`h-8 w-8 shrink-0 rounded-lg border-4 bg-white ${item.cardClasses ?? ""}`}
-											/>
-											<span className="whitespace-nowrap text-sm font-extrabold text-slate-600">
-												{eq.frame === item.id && "✓ "}
-												{item.name}
-											</span>
-										</button>
-									))}
-								</div>
-							</div>
-						)}
+										{item.cornerEmoji ?? "✦"}
+									</span>
+								) : (
+									<CosmeticArt id={item.id} size={48} />
+								)}
+								<span>{item.name}</span>
+							</button>
+						))}
 					</div>
-				))}
+					{items.length === 0 && (
+						<div className="creature-wardrobe-empty">
+							<p>Tu jeszcze nie ma ozdób.</p>
+							<button
+								className="creature-shop-link"
+								type="button"
+								onClick={() => goTo("village")}
+							>
+								Sklepik w Wiosce →
+							</button>
+						</div>
+					)}
+				</div>
+			)}
 		</div>
 	)
 }
@@ -203,25 +185,25 @@ function ExpeditionSection({
 			: null
 
 	return (
-		<div className="w-full rounded-2xl bg-emerald-50">
-			<div className="flex items-center gap-1 pr-3">
+		<div className="creature-detail-section creature-detail-expedition">
+			<div className="creature-expedition-heading creature-help-anchor">
 				<button
 					type="button"
+					aria-expanded={open}
 					onClick={() => setOpen((o) => !o)}
-					className="flex min-h-16 min-w-0 flex-1 touch-manipulation items-center justify-between px-4 py-3 text-lg font-extrabold text-grape-dark active:scale-[0.98]"
+					className="creature-activity-toggle"
 				>
-					<span>
-						Wyprawa 🎒
-						{progress && (
-							<span className="ml-2 text-sm font-extrabold text-emerald-600">
-								{progress.done}/{progress.total}
-							</span>
-						)}
+					<CreatureCardArt kind="expedition" />
+					<span className="creature-activity-copy">
+						<strong>Wyprawa 🎒</strong>
+						<span>
+							{progress
+								? `${progress.done}/${progress.total} rund`
+								: "Mała podróż, wielkie odkrycia"}
+						</span>
 					</span>
-					<span
-						className={`text-xl transition-transform ${open ? "rotate-180" : ""}`}
-					>
-						▾
+					<span className="creature-activity-arrow" aria-hidden="true">
+						{open ? "−" : "+"}
 					</span>
 				</button>
 				<HelpTip
@@ -257,7 +239,7 @@ function ExpeditionSection({
 							// w pełnym kontraście, chip kieruje do budowy, nigdy ton błędu
 							const row = (
 								<>
-									<span className="flex w-full items-baseline justify-between gap-2">
+									<span className="creature-route-heading">
 										<span className="text-lg font-extrabold text-grape-dark">
 											{def.name}
 										</span>
@@ -286,8 +268,7 @@ function ExpeditionSection({
 									)}
 								</>
 							)
-							const rowClass =
-								"flex min-h-16 w-full min-w-0 flex-col items-start justify-center gap-1 rounded-2xl px-4 py-2"
+							const rowClass = "creature-expedition-route"
 							return unlocked ? (
 								<button
 									key={def.id}
@@ -360,16 +341,18 @@ function MonsterCard({
 			: undefined
 
 	return (
-		<div className={`${CARD_SHELL} ${frameDef?.cardClasses ?? cardTheme.card}`}>
+		<div
+			className={`creature-detail scrollbar-none border-4 ${frameDef?.cardClasses ?? cardTheme.card}`}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="creature-detail-title"
+		>
 			{/* ===== OKNO Z ARTEM — bohater karty ===== */}
-			{/* shrink-0: okno ma overflow-hidden (min-height liczy się jako 0),
-			    więc bez tego flexbox ściska JE zamiast przewijać dłuższą kartę
-			    (karta urosła o garderobę) */}
-			<div
-				className={`relative w-full shrink-0 overflow-hidden rounded-3xl border-2 bg-gradient-to-br p-3 ${cardTheme.window} ${cardTheme.windowBorder}`}
-			>
+			<div className="creature-detail-hero">
+				<CreatureCardArt kind="habitat" />
+				<CreatureCardArt kind="portrait" />
 				{/* założone tło wypełnia całe okno z artem (okno ma overflow-hidden
-				    i własne zaokrąglenie) */}
+				    i jest przycięte ramką karty) */}
 				<EquippedBackground monsterId={monsterId} className="" />
 				{/* radialny blask za potworkiem */}
 				<div
@@ -404,7 +387,7 @@ function MonsterCard({
 				)}
 				{/* wstążka rzadkości */}
 				<div
-					className={`absolute top-2 right-2 z-10 rounded-full px-3 py-1 text-sm font-extrabold shadow ${RARITY_META[monster.rarity].badge}`}
+					className={`creature-detail-ribbon ${RARITY_META[monster.rarity].badge}`}
 				>
 					{RARITY_META[monster.rarity].label}
 				</div>
@@ -433,7 +416,7 @@ function MonsterCard({
 						{MODE_BADGES.memory}
 					</div>
 				)}
-				<div className="relative flex justify-center">
+				<div className="creature-detail-stage relative flex justify-center">
 					{/* przez MonsterStage — karta pokazuje założony strój
 				    (każdy potworek z kosmetyką renderuje się przez Stage);
 				    podróżnik „poszedł" — w oknie zostaje plecak, reszta karty bez zmian */}
@@ -447,106 +430,94 @@ function MonsterCard({
 				</div>
 			</div>
 
-			{/* ===== BANER: NAZWA + GATUNEK ===== */}
-			<div
-				className={`flex w-full flex-col items-center gap-1 rounded-2xl px-4 py-3 ${cardTheme.banner}`}
-			>
-				<div className="text-3xl font-extrabold leading-tight text-slate-700">
-					{monster.name}
+			<div className="creature-detail-body">
+				{/* ===== BANER: NAZWA + GATUNEK ===== */}
+				<div className="creature-detail-heading">
+					<h2 id="creature-detail-title">{monster.name}</h2>
+					{lore && (
+						<div className={`text-base font-extrabold ${cardTheme.accent}`}>
+							{lore.species}
+						</div>
+					)}
+					{monster.rarity === "legendary" && (
+						<div className="anim-rainbow mt-0.5 h-1.5 w-24 rounded-full bg-gradient-to-r from-amber-300 via-pink-300 to-violet-300" />
+					)}
 				</div>
-				{lore && (
-					<div className={`text-base font-extrabold ${cardTheme.accent}`}>
-						{lore.species}
-					</div>
-				)}
-				{monster.rarity === "legendary" && (
-					<div className="anim-rainbow mt-0.5 h-1.5 w-24 rounded-full bg-gradient-to-r from-amber-300 via-pink-300 to-violet-300" />
-				)}
-			</div>
 
-			{/* ===== OPIS ===== */}
-			{lore && (
-				<p className="w-full rounded-2xl bg-slate-50 px-4 py-3 text-center text-sm font-bold leading-snug text-slate-600">
-					{lore.blurb}
-				</p>
-			)}
+				{/* ===== OPIS ===== */}
+				{lore && <p className="creature-detail-description">{lore.blurb}</p>}
 
-			{/* ===== MINI-STATY: kraina pochodzenia + data poznania ===== */}
-			<div className="flex w-full items-stretch gap-2">
-				{origin && (
-					<div className="flex flex-1 flex-col items-center gap-1.5 rounded-2xl bg-slate-50 px-2 py-2">
+				{/* ===== MINI-STATY: kraina pochodzenia + data poznania ===== */}
+				<div className="creature-detail-stats">
+					{origin && (
+						<div className="creature-detail-stat">
+							<span className="text-[0.65rem] font-bold uppercase tracking-wide text-slate-400">
+								Pochodzi z
+							</span>
+							{originKnown ? (
+								<span
+									className={`w-full rounded-full px-2 py-1 text-center text-xs font-extrabold leading-snug ${origin.color}`}
+								>
+									{origin.emoji} {origin.name}
+								</span>
+							) : (
+								<span className="w-full rounded-full bg-slate-100 px-2 py-1 text-center text-xs font-extrabold leading-snug text-slate-400">
+									🌫️ Z nieodkrytej krainy…
+								</span>
+							)}
+						</div>
+					)}
+					<div className="creature-detail-stat">
 						<span className="text-[0.65rem] font-bold uppercase tracking-wide text-slate-400">
-							Pochodzi z
+							Poznany
 						</span>
-						{originKnown ? (
-							<span
-								className={`w-full rounded-full px-2 py-1 text-center text-xs font-extrabold leading-snug ${origin.color}`}
-							>
-								{origin.emoji} {origin.name}
-							</span>
-						) : (
-							<span className="w-full rounded-full bg-slate-100 px-2 py-1 text-center text-xs font-extrabold leading-snug text-slate-400">
-								🌫️ Z nieodkrytej krainy…
-							</span>
-						)}
+						<span className="creature-detail-date">
+							{new Date(owned.hatchedAt).toLocaleDateString("pl-PL")}
+						</span>
 					</div>
-				)}
-				<div className="flex flex-col items-center justify-between gap-1.5 rounded-2xl bg-slate-50 px-3 py-2">
-					<span className="text-[0.65rem] font-bold uppercase tracking-wide text-slate-400">
-						Poznany
-					</span>
-					<span className="-rotate-3 rounded-lg border-2 border-bubblegum/40 px-2 py-0.5 text-xs font-extrabold tracking-wide text-bubblegum">
-						{new Date(owned.hatchedAt).toLocaleDateString("pl-PL")}
-					</span>
 				</div>
-			</div>
 
-			{/* ===== CIEKAWOSTKA jako naklejka ===== */}
-			{lore && (
-				<div
-					className={`-rotate-1 w-full rounded-2xl border-2 px-4 py-2 text-center text-sm font-bold leading-snug ${cardTheme.funFact}`}
-				>
-					💡 {lore.funFact}
-				</div>
-			)}
+				{/* ===== CIEKAWOSTKA jako naklejka ===== */}
+				{lore && <div className="creature-detail-fact">💡 {lore.funFact}</div>}
 
-			{/* ===== PRZYJACIEL: wybór ulubieńca ===== */}
-			{monsterId === companionId ? (
-				<div className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-rose-50 px-4 py-3 text-lg font-extrabold text-rose-500">
-					💛 To Twój przyjaciel
-				</div>
-			) : expedition?.monsterId === monsterId ? (
-				/* podróżnik nie może teraz
+				{/* ===== PRZYJACIEL: wybór ulubieńca ===== */}
+				{monsterId === companionId ? (
+					<div className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-rose-50 px-4 py-3 text-lg font-extrabold text-rose-500">
+						💛 To Twój przyjaciel
+					</div>
+				) : expedition?.monsterId === monsterId ? (
+					/* podróżnik nie może teraz
 				   zostać przyjacielem (guard w store jest źródłem prawdy;
 				   łagodna linijka zamiast martwego przycisku) */
-				<div className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-sky-50 px-4 py-3 text-lg font-extrabold text-sky-600">
-					🎒 Wróci z wyprawy — wtedy możecie się zaprzyjaźnić!
-				</div>
-			) : (
-				<div className="flex w-full items-center gap-2">
-					<BigButton
-						onClick={() => {
-							setCompanion(monsterId)
-							onClose()
-						}}
-						variant="secondary"
-						className="flex-1 py-3 text-lg"
-					>
-						Zostań moim przyjacielem! 💛
-					</BigButton>
-					<HelpTip
-						placement="top"
-						align="right"
-						text="Przyjaciel zamieszka na ekranie głównym i będzie Ci kibicował przy dobrych odpowiedziach. Możesz go zmienić, kiedy tylko chcesz."
-					/>
-				</div>
-			)}
+					<div className="flex w-full items-center justify-center gap-1.5 rounded-2xl bg-sky-50 px-4 py-3 text-lg font-extrabold text-sky-600">
+						🎒 Wróci z wyprawy — wtedy możecie się zaprzyjaźnić!
+					</div>
+				) : (
+					<div className="creature-help-anchor w-full">
+						<BigButton
+							onClick={() => {
+								setCompanion(monsterId)
+								onClose()
+							}}
+							variant="secondary"
+							className="creature-detail-primary w-full"
+						>
+							Zostań moim przyjacielem! 💛
+						</BigButton>
+						<HelpTip
+							placement="top"
+							align="right"
+							text="Przyjaciel zamieszka na ekranie głównym i będzie Ci kibicował przy dobrych odpowiedziach. Możesz go zmienić, kiedy tylko chcesz."
+						/>
+					</div>
+				)}
 
-			{/* ===== GARDEROBA (zwijana) ===== */}
-			<WardrobeSection monsterId={monsterId} />
+				{/* ===== GARDEROBA (zwijana) ===== */}
+				<WardrobeSection monsterId={monsterId} />
 
-			{/* ===== WYPRAWA (zwijana) ===== */}
-			<ExpeditionSection monsterId={monsterId} onSent={onClose} />
+				{/* ===== WYPRAWA (zwijana) ===== */}
+				<ExpeditionSection monsterId={monsterId} onSent={onClose} />
+			</div>
 		</div>
 	)
 }
@@ -568,74 +539,88 @@ function MonsterCardLocked({
 	const cardTheme = CARD_THEME[monster.rarity]
 
 	return (
-		<div className={`${CARD_SHELL} ${cardTheme.card}`}>
-			<MonsterSvg
-				id={monsterId}
-				size={180}
-				animate={false}
-				className="monster-silhouette"
-			/>
-			<div className="text-3xl font-extrabold text-slate-700">???</div>
-			<div
-				className={`rounded-full px-4 py-1 text-lg font-extrabold ${RARITY_META[monster.rarity].badge}`}
-			>
-				{RARITY_META[monster.rarity].label}
-			</div>
-			{isDivisionOnly(monsterId) && (
-				<div className="rounded-full bg-violet-100 px-4 py-1 text-sm font-extrabold text-violet-600">
-					➗ Tylko za dzielenie
-				</div>
-			)}
-			{/* etykieta trybu luki */}
-			{isGapOnly(monsterId) && (
-				<div className="rounded-full bg-fuchsia-100 px-4 py-1 text-sm font-extrabold text-fuchsia-600">
-					🧩 Tylko za zgadywanie liczby
-				</div>
-			)}
-			{isPairsOnly(monsterId) && (
-				<div className="rounded-full bg-sky-100 px-4 py-1 text-sm font-extrabold text-sky-600">
-					{MODE_BADGES.pairs} Tylko za {MODE_NAMES.pairs}
-				</div>
-			)}
-			{isFeedOnly(monsterId) && (
-				<div className="rounded-full bg-rose-100 px-4 py-1 text-sm font-extrabold text-rose-600">
-					{MODE_BADGES.feed} Tylko za {MODE_NAMES.feed}
-				</div>
-			)}
-			{isMemoryOnly(monsterId) && (
-				<div className="rounded-full bg-teal-100 px-4 py-1 text-sm font-extrabold text-teal-600">
-					{MODE_BADGES.memory} Tylko za {MODE_NAMES.memory}
-				</div>
-			)}
-			{monsterId === dreamMonsterId ? (
-				<BigButton
-					onClick={() => {
-						setDreamMonster(null)
-						onClose()
-					}}
-					variant="secondary"
-					className="w-full py-3 text-lg"
+		<div
+			className={`creature-detail scrollbar-none border-4 ${cardTheme.card}`}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="creature-detail-title"
+		>
+			<div className="creature-detail-hero creature-detail-mystery">
+				<CreatureCardArt kind="habitat" />
+				<CreatureCardArt kind="portrait" />
+				<MonsterSvg
+					id={monsterId}
+					size={180}
+					animate={false}
+					className="monster-silhouette"
+				/>
+
+				<div
+					className={`creature-detail-ribbon ${RARITY_META[monster.rarity].badge}`}
 				>
-					Już go nie chcę 💔
-				</BigButton>
-			) : (
-				<div className="flex w-full items-center gap-2">
+					{RARITY_META[monster.rarity].label}
+				</div>
+			</div>
+			<div className="creature-detail-body">
+				<div className="creature-detail-heading">
+					<h2 id="creature-detail-title">???</h2>
+				</div>
+				{isDivisionOnly(monsterId) && (
+					<div className="rounded-full bg-violet-100 px-4 py-1 text-sm font-extrabold text-violet-600">
+						➗ Tylko za dzielenie
+					</div>
+				)}
+				{/* etykieta trybu luki */}
+				{isGapOnly(monsterId) && (
+					<div className="rounded-full bg-fuchsia-100 px-4 py-1 text-sm font-extrabold text-fuchsia-600">
+						🧩 Tylko za zgadywanie liczby
+					</div>
+				)}
+				{isPairsOnly(monsterId) && (
+					<div className="rounded-full bg-sky-100 px-4 py-1 text-sm font-extrabold text-sky-600">
+						{MODE_BADGES.pairs} Tylko za {MODE_NAMES.pairs}
+					</div>
+				)}
+				{isFeedOnly(monsterId) && (
+					<div className="rounded-full bg-rose-100 px-4 py-1 text-sm font-extrabold text-rose-600">
+						{MODE_BADGES.feed} Tylko za {MODE_NAMES.feed}
+					</div>
+				)}
+				{isMemoryOnly(monsterId) && (
+					<div className="rounded-full bg-teal-100 px-4 py-1 text-sm font-extrabold text-teal-600">
+						{MODE_BADGES.memory} Tylko za {MODE_NAMES.memory}
+					</div>
+				)}
+				{monsterId === dreamMonsterId ? (
 					<BigButton
 						onClick={() => {
-							setDreamMonster(monsterId)
+							setDreamMonster(null)
 							onClose()
 						}}
-						className="flex-1 py-3 text-lg"
+						variant="secondary"
+						className="creature-detail-secondary w-full"
 					>
-						To mój wymarzony potworek! 💖
+						Już go nie chcę 💔
 					</BigButton>
-					<HelpTip
-						placement="top"
-						align="right"
-						text="Zaznacz potworka, o którym marzysz. Będzie na ciebie czekał — częściej będzie się wykluwał, a Jajko Życzeń (przy Fontannie w Wiosce) da ci dokładnie jego. Możesz mieć tylko jednego wymarzonego naraz."
-					/>
-				</div>
-			)}
+				) : (
+					<div className="creature-help-anchor w-full">
+						<BigButton
+							onClick={() => {
+								setDreamMonster(monsterId)
+								onClose()
+							}}
+							className="creature-detail-primary w-full"
+						>
+							To mój wymarzony potworek! 💖
+						</BigButton>
+						<HelpTip
+							placement="top"
+							align="right"
+							text="Zaznacz potworka, o którym marzysz. Będzie na ciebie czekał — częściej będzie się wykluwał, a Jajko Życzeń (przy Fontannie w Wiosce) da ci dokładnie jego. Możesz mieć tylko jednego wymarzonego naraz."
+						/>
+					</div>
+				)}
+			</div>
 		</div>
 	)
 }
@@ -860,6 +845,7 @@ export function CollectionScreen() {
 				<CardModal
 					onClose={() => setSelectedId(null)}
 					closeLabel="Zamknij kartę"
+					wrapperClassName="creature-modal"
 				>
 					{selectedOwned ? (
 						<MonsterCard
