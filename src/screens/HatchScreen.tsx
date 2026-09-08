@@ -2,6 +2,8 @@ import confetti from "canvas-confetti"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { BigButton } from "../components/BigButton"
 import { CatalogHeader } from "../components/CatalogHeader"
+import { EquippedBackground } from "../components/CosmeticArt"
+import { CreatureCardArt } from "../components/CreatureCardArt"
 import { EGG_LABELS, EggView } from "../components/EggView"
 import { MonsterStage } from "../components/MonsterStage"
 import { MODE_BADGES } from "../components/modeLabels"
@@ -184,58 +186,68 @@ export function HatchScreen() {
 
 			<div className="hatch-content">
 				{monster && lastHatch ? (
-					<>
+					<section className="hatch-reveal" data-dream={lastHatch.isDream}>
 						{lastHatch.isNew && (
-							<div className="hatch-celebration anim-pop bg-gradient-to-r from-bubblegum to-orange-400 text-white">
+							<div className="hatch-reveal-heading anim-pop">
 								{lastHatch.isDream
 									? "WYMARZONY POTWOREK! 💖"
 									: "NOWY POTWOREK! ✨"}
 							</div>
 						)}
 						{collectionComplete && (
-							<div className="hatch-celebration anim-pop bg-gradient-to-r from-amber-300 to-orange-400 text-amber-950">
+							<div className="hatch-reveal-complete anim-pop">
 								🏆 MISTRZYNI KOLEKCJI! 🏆
 							</div>
 						)}
-						<div
-							className={`hatch-portrait anim-pop-in ${
-								lastHatch.isDream ? "ring-8 ring-amber-300" : ""
-							}`}
-						>
-							<MonsterStage id={lastHatch.monsterId} size={210} />
-						</div>
-						<div className="hatch-name">{monster.name}</div>
-						<div
-							className={`rounded-full px-4 py-1 text-lg font-extrabold ${RARITY_META[monster.rarity].badge}`}
-						>
-							{RARITY_META[monster.rarity].label}
-						</div>
-						{/* gained = realny przyrost po capie portfela (credit); 0 tylko przy
+						<div className="hatch-reveal-content">
+							<div className="hatch-reveal-scene">
+								<CreatureCardArt kind="habitat" />
+								<EquippedBackground
+									monsterId={lastHatch.monsterId}
+									className=""
+								/>
+								<div className="hatch-reveal-monster anim-pop-in">
+									<MonsterStage id={lastHatch.monsterId} size={210} />
+								</div>
+							</div>
+							<div className="hatch-reveal-details">
+								<h1 className="hatch-name">{monster.name}</h1>
+								<div
+									className={`rounded-full px-4 py-1 text-lg font-extrabold ${RARITY_META[monster.rarity].badge}`}
+								>
+									{RARITY_META[monster.rarity].label}
+								</div>
+								{/* gained = realny przyrost po capie portfela (credit); 0 tylko przy
 						    pełnym portfelu — wtedy „+0 iskierek" wyglądało jak błąd */}
-						{!lastHatch.isNew &&
-							(lastHatch.iskierkiGained > 0 ? (
-								<div className="hatch-reward anim-fade-up">
-									Już go masz! Zamienia się w ✨ +{lastHatch.iskierkiGained}{" "}
-									{iskierkiWord(lastHatch.iskierkiGained)}
+								{!lastHatch.isNew &&
+									(lastHatch.iskierkiGained > 0 ? (
+										<div className="hatch-reward anim-fade-up">
+											Już go masz! Zamienia się w ✨ +{lastHatch.iskierkiGained}{" "}
+											{iskierkiWord(lastHatch.iskierkiGained)}
+										</div>
+									) : (
+										<div className="hatch-reward anim-fade-up">
+											Już go masz! Twój portfel jest pełny ({ISKIERKI_CAP} ✨) —
+											wydaj trochę iskierek w Wiosce!
+										</div>
+									))}
+								<div className="hatch-actions">
+									{pendingEggs.length > 0 ? (
+										<BigButton
+											onClick={clearLastHatch}
+											className="hatch-action"
+										>
+											Następne jajko! 🥚
+										</BigButton>
+									) : (
+										<BigButton onClick={leave} className="hatch-action">
+											Super! 🎉
+										</BigButton>
+									)}
 								</div>
-							) : (
-								<div className="hatch-reward anim-fade-up">
-									Już go masz! Twój portfel jest pełny ({ISKIERKI_CAP} ✨) —
-									wydaj trochę iskierek w Wiosce!
-								</div>
-							))}
-						<div className="hatch-actions">
-							{pendingEggs.length > 0 ? (
-								<BigButton onClick={clearLastHatch} className="hatch-action">
-									Następne jajko! 🥚
-								</BigButton>
-							) : (
-								<BigButton onClick={leave} className="hatch-action">
-									Super! 🎉
-								</BigButton>
-							)}
+							</div>
 						</div>
-					</>
+					</section>
 				) : egg ? (
 					<>
 						{/* gniazdo i duże jajko skalują się wspólnie od --app-vh: stały

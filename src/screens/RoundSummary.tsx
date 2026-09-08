@@ -6,11 +6,14 @@ import { GoalProgressBar } from "../components/GoalProgressBar"
 import { GateReveal } from "../components/gate"
 import { MonsterStage } from "../components/MonsterStage"
 import { MODE_NAMES } from "../components/modeLabels"
-import { StarMeter } from "../components/StarMeter"
 import { useGateReveal } from "../components/useGateReveal"
 import { VISIT_BONUS } from "../game/adaptive"
 import * as collection from "../game/collection"
-import { fragmentsForEgg, MODE_UNLOCK_STAGE } from "../game/facts"
+import {
+	fragmentsForEgg,
+	MAX_STARS_PER_ROUND,
+	MODE_UNLOCK_STAGE,
+} from "../game/facts"
 import { currentGoal } from "../game/village"
 import { REGIONS } from "../monsters/world"
 import { useGame } from "../store/store"
@@ -63,108 +66,129 @@ export function RoundSummary() {
 		: undefined
 
 	return (
-		<div className="flex min-h-[var(--app-vh)] flex-col items-center justify-center gap-5 p-6">
-			<div className="anim-pop text-4xl font-extrabold text-grape-dark">
-				Koniec rundy! 🎉
-			</div>
+		<main className="round-summary">
+			<section className="summary-card">
+				<header className="summary-heading">
+					<span className="summary-mode">{MODE_NAMES[round.mode]}</span>
+					<h1 className="anim-pop">Koniec rundy! 🎉</h1>
+				</header>
+				<div className="summary-content">
+					<div className="summary-results">
+						<div className="summary-score">
+							<div className="summary-score-value">
+								<strong>{round.stars}</strong>
+								<span> / {MAX_STARS_PER_ROUND} ⭐</span>
+							</div>
+							<div
+								className="summary-score-track"
+								role="progressbar"
+								aria-label="Gwiazdki"
+								aria-valuenow={round.stars}
+								aria-valuemin={0}
+								aria-valuemax={MAX_STARS_PER_ROUND}
+							>
+								<div
+									style={{
+										width: `${Math.min(100, (round.stars / MAX_STARS_PER_ROUND) * 100)}%`,
+									}}
+								/>
+							</div>
+						</div>
 
-			<div className="w-full max-w-sm rounded-3xl bg-white/90 p-5 shadow-xl">
-				<div className="mb-2 text-center text-2xl font-extrabold text-amber-500">
-					{round.stars} / 30 ⭐
-				</div>
-				<StarMeter stars={round.stars} />
-			</div>
+						{round.wageEarned > 0 && (
+							<button
+								type="button"
+								onClick={() => goTo("village")}
+								className="summary-wage anim-fade-up touch-manipulation active:scale-[0.98]"
+							>
+								<span className="summary-wage-value whitespace-nowrap text-lg font-extrabold">
+									+{round.wageEarned} ✨
+								</span>
+								{goal ? (
+									<>
+										<span className="text-slate-300">→</span>
+										<GoalProgressBar
+											goal={goal}
+											iskierki={iskierki}
+											goalId={village.goalId}
+										/>
+									</>
+								) : (
+									<span className="text-sm font-extrabold text-grape-dark">
+										iskierki za rundę!
+									</span>
+								)}
+							</button>
+						)}
 
-			{round.wageEarned > 0 && (
-				<button
-					type="button"
-					onClick={() => goTo("village")}
-					className="anim-fade-up flex w-full max-w-sm touch-manipulation items-center gap-2 rounded-3xl bg-white/90 px-4 py-2.5 shadow-md active:scale-[0.98]"
-				>
-					<span className="whitespace-nowrap text-lg font-extrabold text-amber-500">
-						+{round.wageEarned} ✨
-					</span>
-					{goal ? (
-						<>
-							<span className="text-slate-300">→</span>
-							<GoalProgressBar
-								goal={goal}
-								iskierki={iskierki}
-								goalId={village.goalId}
-							/>
-						</>
-					) : (
-						<span className="text-sm font-extrabold text-grape-dark">
-							iskierki za rundę!
-						</span>
-					)}
-				</button>
-			)}
+						{round.unlockedThisRound && (
+							<div className="summary-notice anim-pop">
+								Nowa brama otwarta! 🎉
+								{unlockedMode && (
+									<div className="mt-1 text-lg">
+										Nowa zabawa na start: {MODE_NAMES[unlockedMode]}!
+									</div>
+								)}
+							</div>
+						)}
 
-			{/* gdy brama otwiera się w tej rundzie (albo ktoś wraca z wyprawy),
+						{visitRegion && (
+							<div className="summary-notice summary-visit anim-pop">
+								<MonsterStage
+									id={visitRegion.guardianId}
+									size={48}
+									className={guardianOwned ? undefined : "monster-silhouette"}
+								/>
+								{/* podziękowanie Strażnika */}
+								<div className="text-xl font-extrabold leading-tight">
+									Strażnik dziękuje za odwiedziny! 💛 +{VISIT_BONUS} ✨
+								</div>
+							</div>
+						)}
+					</div>
+					<div className="summary-egg">
+						{/* gdy brama otwiera się w tej rundzie (albo ktoś wraca z wyprawy),
 			    splash (z-50) zasłania całość — odpalamy animację jajka dopiero po
 			    jego zamknięciu, by dziecko ją zobaczyło */}
-			{!reveal && !returnSplash && (
-				<EggReward
-					roundStars={round.stars}
-					completedEgg={completedEgg}
-					threshold={fragmentsForEgg(eggsEarned)}
-					fragmentsNow={eggFragments}
-					fragmentsAdded={round.total}
-					mode={round.mode}
-				/>
-			)}
-
-			{round.unlockedThisRound && (
-				<div className="anim-pop rounded-3xl bg-gradient-to-r from-amber-300 to-orange-400 px-6 py-3 text-center text-2xl font-extrabold text-white shadow-lg">
-					Nowa brama otwarta! 🎉
-					{unlockedMode && (
-						<div className="mt-1 text-lg">
-							Nowa zabawa na start: {MODE_NAMES[unlockedMode]}!
-						</div>
-					)}
-				</div>
-			)}
-
-			{visitRegion && (
-				<div className="anim-pop flex items-center gap-3 rounded-3xl bg-gradient-to-r from-amber-300 to-orange-400 px-5 py-3 text-white shadow-lg">
-					<MonsterStage
-						id={visitRegion.guardianId}
-						size={48}
-						className={guardianOwned ? undefined : "monster-silhouette"}
-					/>
-					{/* podziękowanie Strażnika */}
-					<div className="text-xl font-extrabold leading-tight">
-						Strażnik dziękuje za odwiedziny! 💛 +{VISIT_BONUS} ✨
+						{!reveal && !returnSplash && (
+							<EggReward
+								roundStars={round.stars}
+								completedEgg={completedEgg}
+								threshold={fragmentsForEgg(eggsEarned)}
+								fragmentsNow={eggFragments}
+								fragmentsAdded={round.total}
+								mode={round.mode}
+							/>
+						)}
 					</div>
 				</div>
-			)}
-
-			<div className="flex w-full max-w-sm flex-col gap-3 pt-2">
-				{pendingEggs.length > 0 && (
+				<div className="summary-actions">
+					{pendingEggs.length > 0 && (
+						<BigButton
+							onClick={() => goTo("hatch")}
+							className="summary-primary"
+						>
+							Wykluj jajko! 🥚
+						</BigButton>
+					)}
 					<BigButton
-						onClick={() => goTo("hatch")}
-						className="w-full py-5 text-3xl"
+						onClick={startRound}
+						variant={pendingEggs.length > 0 ? "secondary" : "primary"}
+						className={
+							pendingEggs.length > 0 ? "summary-secondary" : "summary-primary"
+						}
 					>
-						Wykluj jajko! 🥚
+						Zagraj kolejną rundę 🚀
 					</BigButton>
-				)}
-				<BigButton
-					onClick={startRound}
-					variant={pendingEggs.length > 0 ? "secondary" : "primary"}
-					className="w-full"
-				>
-					Zagraj kolejną rundę 🚀
-				</BigButton>
-				<BigButton
-					onClick={() => goTo("home")}
-					variant="secondary"
-					className="w-full"
-				>
-					Do domku 🏠
-				</BigButton>
-			</div>
-
+					<BigButton
+						onClick={() => goTo("home")}
+						variant="secondary"
+						className="summary-home"
+					>
+						Do domku 🏠
+					</BigButton>
+				</div>
+			</section>
 			{/* splash otwarcia bramy gra automatycznie nad podsumowaniem; powrót z
 			    wyprawy czeka na jego zamknięcie (dwa payoffy po kolei, nie naraz) */}
 			{reveal && <GateReveal stage={reveal.stage} onDone={dismiss} />}
@@ -174,6 +198,6 @@ export function RoundSummary() {
 					onDone={() => setReturnDismissed(true)}
 				/>
 			)}
-		</div>
+		</main>
 	)
 }
