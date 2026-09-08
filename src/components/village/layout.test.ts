@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { BUILDINGS } from "../../game/village"
 import {
+	BACK_Y,
 	GROUND_Y,
 	layoutGate,
 	layoutPlots,
@@ -55,6 +56,12 @@ describe("layoutPlots", () => {
 			// wierzchołek nie wyżej niż ~5% sceny nad niebem (grunt na 47%)
 			expect(r.y1).toBeLessThanOrEqual(0.47 * h)
 		}
+	})
+
+	test.each(SCENES)("tylny rząd stoi na BACK_Y na scenie %dx%d", (w, h) => {
+		const plots = layoutPlots(w, h)
+		for (const id of ["sklepik", "zamek", "latarnie"] as const)
+			expect(plots[id].dy).toBeCloseTo(((GROUND_Y - BACK_Y) / 100) * h, 5)
 	})
 
 	test("zamek stoi na środku (brama = początek drogi)", () => {

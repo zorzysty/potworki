@@ -300,7 +300,7 @@ export function VillageScreen() {
 	}
 
 	return (
-		<main className="catalog-screen">
+		<main className="catalog-screen village-screen">
 			<CatalogHeader title="Wioska 🏡" onBack={() => goTo("home")}>
 				<SparkWallet iskierki={iskierki} />
 			</CatalogHeader>

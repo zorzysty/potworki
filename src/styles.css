@@ -1765,6 +1765,18 @@ button:focus-visible {
 		transparent
 	);
 }
+/* Wioska nie przewija się — sticky nagłówek z welonem i miejscem na jego
+   miękką krawędź to pusty pas nad sceną; tu nagłówek jest statyczny. */
+.village-screen {
+	gap: 12px;
+}
+.village-screen .catalog-header {
+	position: static;
+	padding-bottom: 0;
+}
+.village-screen .catalog-header::before {
+	content: none;
+}
 .catalog-wallet {
 	position: relative;
 	display: flex;

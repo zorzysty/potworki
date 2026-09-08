@@ -4,16 +4,21 @@ import type { ResidentMode } from "./Resident"
 // Linia gruntu przedniego rzędu budynków w % wysokości sceny: kontener działek
 // kotwiczy na niej stopy, teren i droga (Scenery) startują dokładnie na niej.
 export const GROUND_Y = 47
+// Linia gruntu TYLNEGO rzędu w % sceny: na wzgórzach tuż pod pasmem gór
+// (góry kończą się na ~34%, Scenery). Stała procentowa, nie px — teren jest
+// rozciągany w %, więc uniesienie liczone w px lądowało w górach na
+// szerokich, niskich ekranach.
+export const BACK_Y = 37
 
 // Układ działek wioski liczony z ROZMIARU SCENY (px), nie ze stałych
 // procentów — 7 budynków ma się mieścić bez nakładania i na laptopie,
 // i na telefonie. ZAWSZE dwa rzędy z przesunięciem (decyzja maintainera:
 // nigdy jeden rząd, nawet na szerokim ekranie): przedni (niskie, szerokie)
-// na linii gruntu, tylny (wysokie: sklepik, zamek, latarnie) uniesiony
-// o WIĘCEJ niż najwyższy budynek z przodu — rzędy mogą dzielić oś X bez
-// zakrywania. Skala artu maleje z szerokością, ale przycisk działki ma
-// min 64 px niezależnie od artu. Sufit z wysokości sceny pilnuje, żeby
-// zamek nie wystawał ponad niebo.
+// na GROUND_Y, tylny (wysokie: sklepik, zamek, latarnie) na BACK_Y. Skala
+// przedniego rzędu maleje z szerokością ORAZ tak, by najwyższy budynek
+// zmieścił się pod BACK_Y — rzędy mogą dzielić oś X bez zakrywania.
+// Przycisk działki ma min 64 px niezależnie od artu. Sufit z wysokości
+// sceny pilnuje, żeby zamek nie wystawał ponad niebo.
 // Czysta funkcja — test `layout.test.ts` sprawdza brak przecięć prostokątów.
 
 export interface Plot {
@@ -70,8 +75,13 @@ export function layoutPlots(
 		BASE.domki.w + BASE["plac-zabaw"].w,
 		BASE.fontanna.w + BASE.ogrodek.w,
 	)
-	const sF = Math.min(1, (sceneW / 2 - corridor / 2 - GAP * 2) / half)
-	const raise = Math.max(...front.map((id) => h(id, BASE[id].w * sF))) + 6
+	const raise = ((GROUND_Y - BACK_Y) / 100) * sceneH
+	const tallestFront = Math.max(...front.map((id) => h(id, BASE[id].w)))
+	const sF = Math.min(
+		1,
+		(sceneW / 2 - corridor / 2 - GAP * 2) / half,
+		(raise - 6) / tallestFront,
+	)
 
 	const sumBack = back.reduce((a, id) => a + BASE[id].w, 0)
 	const sB = Math.min(
@@ -102,17 +112,32 @@ export function layoutPlots(
 		40,
 		Math.max(GAP, (sceneW / 2 - corridor / 2 - half * sF) / 2),
 	)
+	// plac zabaw i fontanna (przy korytarzu drogi) zsunięte na łąkę o pół
+	// swojej wysokości — bliżej potworków, nie w jednej linii z sąsiadami
+	const sink = (id: BuildingId, w: number) => -h(id, w) / 2
 	let x = sceneW / 2 - corridor / 2
 	for (const id of ["plac-zabaw", "domki"] as const) {
 		const w = BASE[id].w * sF
 		x -= w
-		out[id] = place(id, x, w, 0, id === "domki" ? 11 : 12)
+		out[id] = place(
+			id,
+			x,
+			w,
+			id === "domki" ? 0 : sink(id, w),
+			id === "domki" ? 11 : 12,
+		)
 		x -= gapF
 	}
 	x = sceneW / 2 + corridor / 2
 	for (const id of ["fontanna", "ogrodek"] as const) {
 		const w = BASE[id].w * sF
-		out[id] = place(id, x, w, 0, id === "fontanna" ? 12 : 11)
+		out[id] = place(
+			id,
+			x,
+			w,
+			id === "ogrodek" ? 0 : sink(id, w),
+			id === "fontanna" ? 12 : 11,
+		)
 		x += w + gapF
 	}
 	return out
