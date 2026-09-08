@@ -1,6 +1,7 @@
 import confetti from "canvas-confetti"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { BigButton } from "../components/BigButton"
+import { CatalogHeader } from "../components/CatalogHeader"
 import { EGG_LABELS, EggView } from "../components/EggView"
 import { MonsterStage } from "../components/MonsterStage"
 import { MODE_BADGES } from "../components/modeLabels"
@@ -170,48 +171,40 @@ export function HatchScreen() {
 	}
 
 	return (
-		<div className="flex min-h-[var(--app-vh)] flex-col items-center p-5">
-			<div className="flex w-full items-center justify-between">
-				<button
-					type="button"
-					onClick={leave}
-					className="touch-manipulation rounded-full bg-white/20 px-5 py-2 text-2xl font-extrabold text-white active:scale-90"
-					aria-label="Wróć do domku"
+		<main className="catalog-screen hatch-screen">
+			<CatalogHeader title="Wykluj jajko!" onBack={leave}>
+				<div
+					className="catalog-wallet"
+					aria-label={`Jajka: ${pendingEggs.length}`}
 				>
-					←
-				</button>
-				{pendingEggs.length > 0 && (
-					<div className="rounded-full bg-white/20 px-4 py-1 text-lg font-extrabold text-white">
-						🥚 {pendingEggs.length}
-					</div>
-				)}
-			</div>
+					<span aria-hidden="true">🥚</span>
+					<span>{pendingEggs.length}</span>
+				</div>
+			</CatalogHeader>
 
-			<div className="flex w-full flex-1 flex-col items-center justify-center gap-5">
+			<div className="hatch-content">
 				{monster && lastHatch ? (
 					<>
 						{lastHatch.isNew && (
-							<div className="anim-pop rounded-full bg-gradient-to-r from-bubblegum to-orange-400 px-6 py-2 text-2xl font-extrabold text-white shadow-lg">
+							<div className="hatch-celebration anim-pop bg-gradient-to-r from-bubblegum to-orange-400 text-white">
 								{lastHatch.isDream
 									? "WYMARZONY POTWOREK! 💖"
 									: "NOWY POTWOREK! ✨"}
 							</div>
 						)}
 						{collectionComplete && (
-							<div className="anim-pop rounded-full bg-gradient-to-r from-amber-300 to-orange-400 px-6 py-2 text-2xl font-extrabold text-white shadow-lg">
+							<div className="hatch-celebration anim-pop bg-gradient-to-r from-amber-300 to-orange-400 text-amber-950">
 								🏆 MISTRZYNI KOLEKCJI! 🏆
 							</div>
 						)}
 						<div
-							className={`anim-pop-in rounded-[2.5rem] bg-white/95 p-6 shadow-2xl ${
+							className={`hatch-portrait anim-pop-in ${
 								lastHatch.isDream ? "ring-8 ring-amber-300" : ""
 							}`}
 						>
 							<MonsterStage id={lastHatch.monsterId} size={210} />
 						</div>
-						<div className="text-4xl font-extrabold text-white">
-							{monster.name}
-						</div>
+						<div className="hatch-name">{monster.name}</div>
 						<div
 							className={`rounded-full px-4 py-1 text-lg font-extrabold ${RARITY_META[monster.rarity].badge}`}
 						>
@@ -221,26 +214,23 @@ export function HatchScreen() {
 						    pełnym portfelu — wtedy „+0 iskierek" wyglądało jak błąd */}
 						{!lastHatch.isNew &&
 							(lastHatch.iskierkiGained > 0 ? (
-								<div className="anim-fade-up text-xl font-extrabold text-amber-300">
+								<div className="hatch-reward anim-fade-up">
 									Już go masz! Zamienia się w ✨ +{lastHatch.iskierkiGained}{" "}
 									{iskierkiWord(lastHatch.iskierkiGained)}
 								</div>
 							) : (
-								<div className="anim-fade-up text-center text-xl font-extrabold text-amber-300">
+								<div className="hatch-reward anim-fade-up">
 									Już go masz! Twój portfel jest pełny ({ISKIERKI_CAP} ✨) —
 									wydaj trochę iskierek w Wiosce!
 								</div>
 							))}
-						<div className="flex flex-col gap-3 pt-2">
+						<div className="hatch-actions">
 							{pendingEggs.length > 0 ? (
-								<BigButton
-									onClick={clearLastHatch}
-									className="px-10 py-5 text-3xl"
-								>
+								<BigButton onClick={clearLastHatch} className="hatch-action">
 									Następne jajko! 🥚
 								</BigButton>
 							) : (
-								<BigButton onClick={leave} className="px-10 py-5 text-3xl">
+								<BigButton onClick={leave} className="hatch-action">
 									Super! 🎉
 								</BigButton>
 							)}
@@ -251,9 +241,7 @@ export function HatchScreen() {
 						{/* gniazdo i duże jajko skalują się wspólnie od --app-vh: stały
 						    budżet pionowy (nagłówek, etykiety, podpowiedź, odstępy) to
 						    ~270px, resztę dzielą gniazdo (3/4 szer. = wys.) i jajko */}
-						<div className="text-2xl font-extrabold text-white/90">
-							{EGG_LABELS[egg.quality]}
-						</div>
+						<div className="hatch-title">{EGG_LABELS[egg.quality]}</div>
 						<button
 							type="button"
 							onClick={tapEgg}
@@ -279,7 +267,7 @@ export function HatchScreen() {
 								</div>
 							</div>
 						</button>
-						<div className="anim-bounce-slow text-xl font-extrabold text-white/80">
+						<div className="hatch-hint anim-bounce-slow">
 							👆 Tapnij jajko {3 - cracks} {3 - cracks === 1 ? "raz" : "razy"}!
 						</div>
 						{/* gniazdo zawsze widoczne (puste przy jednym jajku) — stały układ ekranu */}
@@ -342,10 +330,8 @@ export function HatchScreen() {
 				) : (
 					<>
 						<NestArt className="max-w-[28rem]" />
-						<div className="text-2xl font-extrabold text-white/90">
-							Gniazdo jest puste
-						</div>
-						<div className="text-lg font-bold text-white/60">
+						<div className="hatch-title">Gniazdo jest puste</div>
+						<div className="hatch-hint">
 							Zagraj rundę, żeby zdobyć nowe jajka!
 						</div>
 						<BigButton onClick={leave} variant="secondary">
@@ -354,6 +340,6 @@ export function HatchScreen() {
 					</>
 				)}
 			</div>
-		</div>
+		</main>
 	)
 }
