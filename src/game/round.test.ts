@@ -22,8 +22,10 @@ import {
 	flipMemory,
 	hideMemory,
 	newRound,
+	pauseRound,
 	type RoundState,
 	type RoundStep,
+	resumeRound,
 	submitAnswer,
 	submitFeed,
 	submitPair,
@@ -546,5 +548,20 @@ describe("runda: tryb memory", () => {
 		const round = newRound(SAVE, "mult", rand, NOW)
 		expect(flipMemory(SAVE, round, 0, rand, NOW)).toBeNull()
 		expect(hideMemory(round)).toBeNull()
+	})
+})
+
+describe("pauza", () => {
+	test("czas przerwy nie obciąża bieżącego pytania (przesuwa oba zegary)", () => {
+		const round = newRound(INITIAL_SAVE, "mult", mulberry32(1), 1000)
+		const paused = pauseRound(round, 5000)
+		expect(paused.paused).toBe(true)
+		const resumed = resumeRound(paused, 125_000)
+		expect(resumed.paused).toBe(false)
+		expect(resumed.pausedAt).toBeNull()
+		expect(resumed.startedAt).toBe(round.startedAt + 120_000)
+		expect(resumed.pairAt).toBe(round.pairAt + 120_000)
+		// idempotentne: powtórne wznowienie nic nie przesuwa
+		expect(resumeRound(resumed, 999_999)).toBe(resumed)
 	})
 })

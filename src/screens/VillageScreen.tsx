@@ -265,8 +265,11 @@ export function VillageScreen() {
 	const firstHatchedId = firstHatched(ownedMonsters)
 
 	const handleBuild = (id: BuildingId) => {
-		const newLevel = buildingLevel(village, id) + 1
 		buildVillage(id)
+		// store odrzuca cicho (brak środków, maks poziom) — celebrujemy tylko
+		// faktycznie zbudowany poziom
+		const newLevel = buildingLevel(useGame.getState().village, id)
+		if (newLevel === buildingLevel(village, id)) return
 		setSheet(null)
 		setCheerNonce((n) => n + 1)
 		// hierarchia celebracji: każdy poziom Zamku i każde L3 = pełny ekran;

@@ -2,7 +2,7 @@ import { registerSW } from "virtual:pwa-register"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { App } from "./App"
-import { useGame } from "./store/store"
+import { type GameState, useGame } from "./store/store"
 import "./styles.css"
 
 // Wstrzyknięty przez plugin registerSW.js tylko rejestrował SW: nowy build
@@ -10,8 +10,9 @@ import "./styles.css"
 // karta / wybudzony tablet w ogóle nie sprawdzały aktualizacji — dzieci
 // tygodniami grały na starej wersji. Tu: autoUpdate = reload po aktywacji
 // nowego SW, plus jawne sprawdzenie przy każdym powrocie do karty.
-// Runda nie jest persystowana, więc reload w jej trakcie gubi żołd i bonusy —
-// odkładamy go do momentu, gdy `round` wróci do null (koniec/przerwanie rundy).
+// Runda i wynik wyklucia nie są persystowane, więc reload w ich trakcie gubi
+// żołd i bonusy albo zjada ekran „NOWY POTWOREK!" — odkładamy go, aż `round`
+// i `lastHatch` wrócą do null.
 registerSW({
 	immediate: true,
 	onRegisteredSW(_url, r) {
@@ -21,9 +22,10 @@ registerSW({
 		})
 	},
 	onNeedReload() {
-		if (useGame.getState().round === null) return window.location.reload()
+		const idle = (s: GameState) => s.round === null && s.lastHatch === null
+		if (idle(useGame.getState())) return window.location.reload()
 		const unsub = useGame.subscribe((s) => {
-			if (s.round !== null) return
+			if (!idle(s)) return
 			unsub()
 			window.location.reload()
 		})

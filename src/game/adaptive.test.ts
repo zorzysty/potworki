@@ -93,6 +93,15 @@ describe("decayStats", () => {
 		expect(result.mastery).toBeCloseTo(0.97)
 	})
 
+	test("decay zużywa dni: drugie uruchomienie tego samego dnia nic nie zmienia", () => {
+		const stats = { ...emptyStats(), attempts: 1, mastery: 1, lastSeen: 0 }
+		const once = decayStats(stats, 10 * DAY + DAY / 2)
+		expect(once.mastery).toBeCloseTo(0.97 ** 10)
+		expect(once.lastSeen).toBe(10 * DAY)
+		const twice = decayStats(once, 10 * DAY + DAY / 2 + 1000)
+		expect(twice).toEqual(once)
+	})
+
 	test("100 days decay: capped at 30 days, mastery * 0.97^30", () => {
 		const stats = { ...emptyStats(), attempts: 1, mastery: 1, lastSeen: 0 }
 		const result = decayStats(stats, 100 * DAY)

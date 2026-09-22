@@ -36,12 +36,18 @@ export function emptyStats(): FactStats {
 
 const DAY_MS = 86_400_000
 
-// Leniwy decay na starcie sesji — nigdy dla działań bez prób
+// Leniwy decay na starcie sesji — nigdy dla działań bez prób. Zużyte dni
+// przesuwają lastSeen: decay liczy się od upływu czasu, nie od liczby
+// uruchomień (bez tego każdy start appki karał raz jeszcze za te same dni).
 export function decayStats(stats: FactStats, now: number): FactStats {
 	if (stats.attempts === 0) return stats
 	const days = Math.floor((now - stats.lastSeen) / DAY_MS)
 	if (days < 1) return stats
-	return { ...stats, mastery: stats.mastery * 0.97 ** Math.min(days, 30) }
+	return {
+		...stats,
+		mastery: stats.mastery * 0.97 ** Math.min(days, 30),
+		lastSeen: stats.lastSeen + days * DAY_MS,
+	}
 }
 
 // Aktualizacja po pierwszej próbie („szybko" = budżet 3 gwiazdek; tryb par

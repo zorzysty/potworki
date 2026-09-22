@@ -19,6 +19,9 @@ export function App() {
 	useEffect(() => {
 		const onKey = (event: KeyboardEvent) => {
 			if (event.ctrlKey || event.metaKey || event.altKey) return
+			// auto-repeat przytrzymanego klawisza wpisywałby „77" i auto-submit
+			// zatwierdzałby pomyłkę — kara za czas trzymania klawisza
+			if (event.repeat) return
 			const state = useGame.getState()
 			if (state.screen !== "round") return
 			if (event.key >= "0" && event.key <= "9") {

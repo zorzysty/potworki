@@ -38,6 +38,8 @@ import {
 	hideMemory,
 	newRound,
 	newVisitRound,
+	pauseRound,
+	resumeRound,
 	submitAnswer,
 	submitFeed,
 	submitPair,
@@ -76,7 +78,7 @@ export interface HatchResult {
 	iskierkiGained: number
 }
 
-interface GameState extends SaveState {
+export interface GameState extends SaveState {
 	screen: Screen
 	round: RoundState | null
 	lastHatch: HatchResult | null
@@ -238,7 +240,11 @@ export const useGame = create<GameState>()(
 			// pauza jest polem rundy, więc ginie razem z nią (patrz RoundState)
 			setPaused: (paused) => {
 				const { round } = get()
-				if (round) set({ round: { ...round, paused } })
+				if (!round) return
+				const now = Date.now()
+				set({
+					round: paused ? pauseRound(round, now) : resumeRound(round, now),
+				})
 			},
 
 			// tryb zamknięty za bramą (MODE_UNLOCK_STAGE) — cichy no-op, UI pokazuje zajawkę
@@ -287,7 +293,11 @@ export const useGame = create<GameState>()(
 						get().pressDigit(digit)
 						return
 					}
-					if (digit === 1 && expectsTen(get().unlockedStage, round)) {
+					if (
+						digit === 1 &&
+						round.phase === "answering" &&
+						expectsTen(get().unlockedStage, round)
+					) {
 						set({ round: { ...round, answer: "1" } })
 						return
 					}

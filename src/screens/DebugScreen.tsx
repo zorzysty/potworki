@@ -34,6 +34,7 @@ import {
 	LEGENDARY_PITY_EVERY,
 	QUALITY_ORDER,
 	RARITY_ORDER,
+	spend,
 	WISH_MODE,
 } from "../game/rewards"
 import {
@@ -228,6 +229,7 @@ export function DebugScreen() {
 		startVisitRound,
 		debugSimulateRound,
 		debugPatch,
+		debugAddIskierki,
 		debugReset,
 		recallExpedition,
 	} = save
@@ -469,9 +471,9 @@ export function DebugScreen() {
 								type="button"
 								className={BTN}
 								onClick={() =>
-									debugPatch({
-										iskierki: Math.max(0, Math.min(ISKIERKI_CAP, iskierki + d)),
-									})
+									d > 0
+										? debugAddIskierki(d)
+										: debugPatch({ iskierki: spend(iskierki, -d) ?? 0 })
 								}
 							>
 								{d > 0 ? `+${d}` : d}

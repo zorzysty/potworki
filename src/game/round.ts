@@ -109,6 +109,7 @@ export interface RoundState {
 	// auto-submit zatwierdzałby odpowiedzi (błędna połowi mastery: kara za
 	// przerwę, wprost przeciw zasadzie roota „nigdy nie karze").
 	paused: boolean
+	pausedAt: number | null
 	// runda-wizyta u Strażnika: etap odwiedzanej (najsłabszej starszej) tabliczki —
 	// wybiera region/Strażnika i włącza podziękowanie (+VISIT_BONUS ✨) przy finalizacji.
 	// Efemeryczne (RoundState nie jest persystowany). null = zwykła runda.
@@ -148,6 +149,7 @@ function baseRound(
 	return {
 		mode,
 		paused: false,
+		pausedAt: null,
 		introFactor: opts.introFactor,
 		plan: opts.plan,
 		planPos: 1,
@@ -907,5 +909,24 @@ function settleExpedition(
 			expedition: null,
 			...(found === null ? {} : grantMonster(save, found, now)),
 		},
+	}
+}
+
+// Pauza: czas przerwy nie może obciążać bieżącego pytania (0★, wolniejsze
+// mastery) — przy wznowieniu oba zegary przesuwają się o długość przerwy.
+export function pauseRound(round: RoundState, now: number): RoundState {
+	if (round.paused) return round
+	return { ...round, paused: true, pausedAt: now }
+}
+
+export function resumeRound(round: RoundState, now: number): RoundState {
+	if (!round.paused) return round
+	const gap = now - (round.pausedAt ?? now)
+	return {
+		...round,
+		paused: false,
+		pausedAt: null,
+		startedAt: round.startedAt + gap,
+		pairAt: round.pairAt + gap,
 	}
 }

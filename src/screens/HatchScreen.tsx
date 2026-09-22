@@ -9,6 +9,7 @@ import { MonsterStage } from "../components/MonsterStage"
 import { MODE_BADGES } from "../components/modeLabels"
 import { NEST_SLOTS, NestArt, nestSlotStyle } from "../components/NestArt"
 import { RARITY_META } from "../components/rarity"
+import { iskierkiWord } from "../components/SparkWallet"
 import { isCollectionComplete } from "../game/collection"
 import { ISKIERKI_CAP } from "../game/rewards"
 import { MONSTERS } from "../monsters/catalog"
@@ -20,13 +21,6 @@ const EGG_CLIP =
 	"polygon(50.0% 5.3%, 56.4% 6.0%, 62.1% 7.8%, 67.2% 10.7%, 71.8% 14.5%, 75.8% 19.1%, 79.2% 24.3%, 82.0% 30.1%, 84.3% 36.1%, 86.1% 42.5%, 87.3% 48.9%, 88.1% 55.2%, 88.3% 61.3%, 88.0% 66.5%, 87.0% 71.2%, 85.4% 75.5%, 83.2% 79.5%, 80.5% 82.9%, 77.3% 86.0%, 73.6% 88.6%, 69.6% 90.8%, 65.1% 92.5%, 60.4% 93.7%, 55.3% 94.4%, 50.0% 94.7%, 44.7% 94.4%, 39.6% 93.7%, 34.9% 92.5%, 30.4% 90.8%, 26.4% 88.6%, 22.7% 86.0%, 19.5% 82.9%, 16.8% 79.5%, 14.6% 75.5%, 13.0% 71.2%, 12.0% 66.5%, 11.7% 61.3%, 11.9% 55.2%, 12.7% 48.9%, 13.9% 42.5%, 15.7% 36.1%, 18.0% 30.1%, 20.8% 24.3%, 24.2% 19.1%, 28.2% 14.5%, 32.8% 10.7%, 37.9% 7.8%, 43.6% 6.0%)"
 
 // polska liczba mnoga: 1 iskierkę, 2–4 iskierki, 5+ (i 12–14) iskierek
-function iskierkiWord(n: number): string {
-	if (n === 1) return "iskierkę"
-	const d = n % 10
-	const h = n % 100
-	return d >= 2 && d <= 4 && (h < 12 || h > 14) ? "iskierki" : "iskierek"
-}
-
 export function HatchScreen() {
 	const pendingEggs = useGame((s) => s.pendingEggs)
 	const lastHatch = useGame((s) => s.lastHatch)

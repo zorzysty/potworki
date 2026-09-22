@@ -12,6 +12,7 @@ import { CardModal } from "../components/CardModal"
 import { CatalogHeader } from "../components/CatalogHeader"
 import { HelpTip } from "../components/HelpTip"
 import { HomeArt } from "../components/HomeArt"
+import { iskierkiWord } from "../components/SparkWallet"
 import { useScrollLock } from "../components/useScrollLock"
 import { useGame } from "../store/store"
 
@@ -176,7 +177,7 @@ export function AchievementsScreen() {
 						</span>
 					)}
 					<span className="sr-only" role="status">
-						{iskierki} iskierek
+						{iskierki} {iskierki === 1 ? "iskierka" : iskierkiWord(iskierki)}
 					</span>
 				</div>
 			</CatalogHeader>
@@ -552,7 +553,8 @@ function AchievementModal({
 							onClick={onClaim}
 							className="achievement-detail-claim"
 						>
-							Odbierz {REWARD_BY_DIFFICULTY[def.difficulty]} iskierek ✨
+							Odbierz {REWARD_BY_DIFFICULTY[def.difficulty]}{" "}
+							{iskierkiWord(REWARD_BY_DIFFICULTY[def.difficulty])} ✨
 						</button>
 					)}
 
